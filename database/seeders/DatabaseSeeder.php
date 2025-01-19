@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             RegionSeeder::class,
             DistrictSeeder::class,
             BranchSeeder::class,
+            ContactSeeder::class,
+            RolesAndPermissionsSeeder::class
         ]);
     }
 }
