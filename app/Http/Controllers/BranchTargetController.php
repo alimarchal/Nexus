@@ -10,6 +10,9 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Http\Request;
 use Carbon\Carbon;  // Added this import for date handling
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
+
 
 class BranchTargetController extends Controller
 {
@@ -18,32 +21,19 @@ class BranchTargetController extends Controller
      */
     public function index(Request $request)
     {
-        $query = BranchTarget::query(); // Start query
 
-        // Apply filters if available
-        if ($request->has('filter')) {
-            $filters = $request->filter;
 
-            if (!empty($filters['branch_id'])) {
-                $query->where('branch_id', $filters['branch_id']);
-            }
+        $branchTargets = QueryBuilder::for(BranchTarget::class)
+            ->allowedFilters([
+                AllowedFilter::exact('branch_id'),
+                AllowedFilter::exact('fiscal_year'),
+                AllowedFilter::exact('created_by_user_id'),
+                AllowedFilter::exact('updated_by_user_id'),
+                AllowedFilter::exact('annual_target_amount'),
+            ])
+            ->paginate(10);
 
-            if (!empty($filters['fiscal_year'])) {
-                $query->where('fiscal_year', $filters['fiscal_year']);
-            }
 
-            if (!empty($filters['target_date_range'])) {
-                $dates = explode(' - ', $filters['target_date_range']);
-                if (count($dates) === 2) {
-                    $query->whereBetween('target_start_date', [
-                        Carbon::parse($dates[0]),
-                        Carbon::parse($dates[1]),
-                    ]);
-                }
-            }
-        }
-
-        $branchTargets = $query->paginate(10);
         return view('branch-targets.index', compact('branchTargets'));
     }
 

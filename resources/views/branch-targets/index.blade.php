@@ -38,7 +38,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters" style="display: none">
                 <div class="p-6">
-                    <form method="GET" action="#">
+                    <form method="GET" action="{{ route('branch-targets.index') }}">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div>
                                 <x-label for="branch_id" value="{{ __('Branch') }}" />
@@ -46,41 +46,23 @@
                                     <option value="">Select a branch</option>
                                     @foreach (\App\Models\Branch::all() as $branch)
                                         <option value="{{ $branch->id }}" {{ request('filter.branch_id') == $branch->id ? 'selected' : '' }}>
-                                            {{ $branch->branch_custom_code }}
+                                            {{ $branch->code . ' - ' . $branch->name }}
                                         </option>
                                     @endforeach
                                 </select>
                             </div>
-
                             <div>
-                                <x-label for="priority" value="{{ __('Priority') }}" />
-                                <select name="filter[priority]" id="priority" class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
-                                    <option value="">Select a priority</option>
-                                    <option value="HIGH" {{ request('filter.priority') == 'HIGH' ? 'selected' : '' }}>HIGH</option>
-                                    <option value="MEDIUM" {{ request('filter.priority') == 'MEDIUM' ? 'selected' : '' }}>MEDIUM</option>
-                                    <option value="LOW" {{ request('filter.priority') == 'LOW' ? 'selected' : '' }}>LOW</option>
+                                <x-label for="fiscal_year" value="{{ __('Fiscal Year') }}" />
+                                <select name="filter[fiscal_year]" id="fiscal_year" class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
+                                    <option value="">Select a branch</option>
+                                    @for($i = 2025; $i <= 2099; $i++)
+                                        <option value="{{ $i }}" {{ request('filter.fiscal_year') == $i ? 'selected' : '' }}>
+                                            {{ $i }}
+                                        </option>
+                                    @endfor
                                 </select>
                             </div>
-
-                            <div>
-                                <x-label for="status" value="{{ __('Status') }}"/>
-                                <select name="filter[status]" id="status" class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
-                                    <option value="">Select a status</option>
-                                    <option value="OPEN" {{ request('filter.status') == 'OPEN' ? 'selected' : '' }}>OPEN</option>
-                                    <option value="PENDING" {{ request('filter.status') == 'PENDING' ? 'selected' : '' }}>PENDING</option>
-                                    <option value="CLOSED" {{ request('filter.status') == 'CLOSED' ? 'selected' : '' }}>CLOSED</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <x-label for="assignee" value="{{ __('Assignee') }}"/>
-                                <select name="filter[user_id_assigned_to]" id="assignee" class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
-                                    <option value="">Select assignee</option>
-                                    @foreach(\App\Models\User::all() as $user)
-                                        <option value="{{ $user->id }}" {{ request('filter.user_id_assigned_to') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                            <div></div>
                         </div>
 
                         <div class="mt-4">
