@@ -117,14 +117,12 @@
 
 
     <div class="py-6">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
-                @if (session('status'))
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-                    {{ session('status') }}
-                </div>
-            @endif
 
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                <!-- Display session message -->
+                <x-status-message />
                 @if($branchTargets->count() > 0)
                     <div class="relative overflow-x-auto rounded-lg">
                         <table class="min-w-max w-full table-auto text-sm">

@@ -72,7 +72,7 @@ class BranchTargetController extends Controller
         ]);
 
         // Flash the status message to session
-        session()->flash('status', 'Record successfully added!');
+        session()->flash('success', 'Record successfully added!');
 
         return redirect()->route('branch-targets.create');
     }
@@ -111,7 +111,7 @@ class BranchTargetController extends Controller
         ]);
 
         // Flash the success message to session
-        session()->flash('status', 'Record successfully updated!');
+        session()->flash('success', 'Record successfully updated!');
 
         // Redirect back to the edit page with a success message
         return redirect()->route('branch-targets.edit', $branchTarget->id);
@@ -123,6 +123,6 @@ class BranchTargetController extends Controller
     public function destroy(BranchTarget $branchTarget)
     {
         $branchTarget->delete(); // Delete the record
-        return redirect()->route('branch-targets.index')->with('status', 'Target deleted successfully!');
+        return redirect()->route('branch-targets.index')->with('deleted', 'Target deleted successfully!');
     }
 }

@@ -15,17 +15,14 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
 
                 <!-- Display session message -->
-                @if (session('status'))
-                    <div style="background-color: green; color: white; padding: 10px; margin-bottom: 15px;">
-                        {{ session('status') }}
-                    </div>
-                @endif
+               <x-status-message class="mb-4 mt-4" />
 
 
 
-                <x-validation-errors class="mb-4 mt-4" />
+
 
                 <div class="p-6">
+                    <x-validation-errors class="mb-4 mt-4" />
                     <form method="POST" action="{{ route('branch-targets.store') }}">
                         @csrf
 
