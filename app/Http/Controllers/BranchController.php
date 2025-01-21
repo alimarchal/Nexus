@@ -11,6 +11,7 @@ class BranchController extends Controller
     /**
      * Display a listing of the resource.
      */
+    
     public function index()
     {
         //
@@ -21,8 +22,14 @@ class BranchController extends Controller
      */
     public function create()
     {
-        //
+        // Fetch all branches
+        $branches = Branch::all();
+
+        // Passing the Branch collection to the view
+        return view('branch-targets.create', compact('branches'));
     }
+
+
 
     /**
      * Store a newly created resource in storage.

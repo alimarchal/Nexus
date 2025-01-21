@@ -46,11 +46,11 @@ class BranchTarget extends Model
         parent::boot();
 
         static::creating(function ($branchTarget) {
-            $branchTarget->created_by_user_id = auth()->id();
+            $branchTarget->created_by_user_id = auth()->check() ? auth()->id() : null;
         });
 
         static::updating(function ($branchTarget) {
-            $branchTarget->updated_by_user_id = auth()->id();
+            $branchTarget->updated_by_user_id = auth()->check() ? auth()->id() : null;
         });
     }
 }
