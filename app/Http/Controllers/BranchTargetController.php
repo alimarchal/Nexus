@@ -74,7 +74,7 @@ class BranchTargetController extends Controller
         // Flash the status message to session
         session()->flash('success', 'Record successfully added!');
 
-        return redirect()->route('branch-targets.create');
+        return redirect()->route('branch-targets.index');
     }
 
     /**
