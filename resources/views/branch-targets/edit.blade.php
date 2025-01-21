@@ -15,11 +15,8 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
 
                 <!-- Display session message for success -->
-                @if (session('status'))
-                    <div style="background-color: green; color: white; padding: 10px; margin-bottom: 15px;">
-                        {{ session('status') }}
-                    </div>
-                @endif
+                <!-- Display session message -->
+                <x-status-message class="mb-4 mt-4" />
 
 
                 <div class="p-6">
@@ -44,7 +41,14 @@
 
                             <div>
                                 <x-label for="fiscal_year" value="Fiscal Year" :required="true" />
-                                <x-input id="fiscal_year" type="number" name="fiscal_year" class="mt-1 block w-full" :value="old('fiscal_year', $branchTarget->fiscal_year)" required min="2000" max="2099" />
+                                <select name="fiscal_year" id="fiscal_year" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
+                                    <option value="">Select Fiscal Year</option>
+                                    @for ($year = 2025; $year <= 2099; $year++)
+                                        <option value="{{ $year }}" {{ old('fiscal_year', $branchTarget->fiscal_year ?? 2025) == $year ? 'selected' : '' }}>
+                                            {{ $year }}
+                                        </option>
+                                    @endfor
+                                </select>
                             </div>
 
                             <div>

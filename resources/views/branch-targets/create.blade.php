@@ -19,8 +19,6 @@
 
 
 
-
-
                 <div class="p-6">
                     <x-validation-errors class="mb-4 mt-4" />
                     <form method="POST" action="{{ route('branch-targets.store') }}">
@@ -45,13 +43,14 @@
                                 <x-label for="fiscal_year" value="Fiscal Year" :required="true" />
                                 <select name="fiscal_year" id="fiscal_year" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
                                     <option value="">Select Fiscal Year</option>
-                                    @for ($year = 2000; $year <= 2099; $year++)
-                                        <option value="{{ $year }}" {{ old('fiscal_year') == $year ? 'selected' : '' }}>
+                                    @for ($year = 2025; $year <= 2099; $year++)
+                                        <option value="{{ $year }}" {{ old('fiscal_year', 2025) == $year ? 'selected' : '' }}>
                                             {{ $year }}
                                         </option>
                                     @endfor
                                 </select>
                             </div>
+
 
                             <div>
                                 <x-label for="annual_target_amount" value="Annual Target Amount" :required="true" />
