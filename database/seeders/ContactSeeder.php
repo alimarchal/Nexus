@@ -814,6 +814,16 @@ class ContactSeeder extends Seeder
                 'contact' => '05822-923021',
                 'status' => 'telephone_no',
             ],
+            [
+                'branch_id' => 86,
+                'contact' => '05823-920834',
+                'status' => 'telephone_no',
+            ],
+            [
+                'branch_id' => 87,
+                'contact' => '05827-922264',
+                'status' => 'telephone_no',
+            ],
         ];
 
         foreach ($telephones as $telephone) {
