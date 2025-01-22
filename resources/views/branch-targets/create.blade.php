@@ -1,15 +1,25 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl uppercase text-gray-800 dark:text-gray-200 leading-tight inline-block">
-            Create Branch Target
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
+            Branch Targets
         </h2>
+
         <div class="flex justify-center items-center float-right">
-            <a href="{{ route('branch-targets.index') }}" class="inline-flex items-center px-4 py-2 bg-blue-800 dark:bg-blue-200 border border-transparent rounded-md font-semibold text-xs text-white dark:text-blue-800 uppercase tracking-widest hover:bg-blue-700 dark:hover:bg-white focus:bg-blue-700 dark:focus:bg-white active:bg-blue-900 dark:active:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-blue-800 transition ease-in-out duration-150">
-                Back
+            <a href="{{ route('branch-targets.index') }}"
+               class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <!-- Arrow Left Icon SVG -->
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
             </a>
         </div>
     </x-slot>
-
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters" style="display: none">
+            <div class="p-6">
+            </div>
+        </div>
+    </div>
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
@@ -27,7 +37,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <x-label for="branch_id" value="Branch" :required="true" />
-                                <select name="branch_id" id="branch_id" class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full" required>
+                                <select name="branch_id" id="branch_id" class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full" required>
                                     <option value="">Select Branch</option>
 
                                     @foreach($branches as $id => $name)
@@ -41,7 +51,7 @@
 
                             <div>
                                 <x-label for="fiscal_year" value="Fiscal Year" :required="true" />
-                                <select name="fiscal_year" id="fiscal_year" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
+                                <select name="fiscal_year" id="fiscal_year" class="select2 mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" required>
                                     <option value="">Select Fiscal Year</option>
                                     @for ($year = 2025; $year <= 2099; $year++)
                                         <option value="{{ $year }}" {{ old('fiscal_year', 2025) == $year ? 'selected' : '' }}>
@@ -73,5 +83,4 @@
                 </div>
             </div>
         </div>
-    </div>
 </x-app-layout>
