@@ -1,0 +1,145 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
+            Districts
+        </h2>
+
+        <div class="flex justify-center items-center float-right">
+            <a href="{{ route('districts.create') }}"
+               class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                <span class="hidden md:inline-block">Add District</span>
+            </a>
+        </div>
+    </x-slot>
+
+    <div class="py-6">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                <x-status-message />
+                @if($districts->count() > 0)
+                    <div class="relative overflow-x-auto rounded-lg">
+                        <table class="min-w-max w-full table-auto text-sm">
+                            <thead>
+                                <tr class="bg-blue-800 text-white uppercase text-sm">
+                                    <th class="py-2 px-2 text-center">ID</th>
+                                    <th class="py-2 px-2 text-center">Region</th>
+                                    <th class="py-2 px-2 text-center">Name</th>
+                                    <th class="py-2 px-2 text-center print:hidden">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($districts as $district)
+                                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                                        <td class="py-2 px-2 text-center">{{ $district->id }}</td>
+                                        <td class="py-2 px-2 text-center">{{ $district->region->name }}</td>
+                                        <td class="py-2 px-2 text-center">{{ $district->name }}</td>
+                                        <td class="py-2 px-2 text-center">
+                                            <a href="{{ route('districts.edit', $district) }}"
+                                               class="inline-flex items-center px-4 py-2 bg-green-800 text-white rounded-md hover:bg-green-700">
+                                                Edit
+                                            </a>
+                                            <form method="POST" action="{{ route('districts.destroy', $district) }}" class="inline-block">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="px-2 py-2">
+                        {{ $districts->links() }}
+                    </div>
+                @else
+                    <p class="text-gray-700 text-center py-4">No districts found.</p>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    @push('modals')
+        <script>
+            const targetDiv = document.getElementById("filters");
+            const btn = document.getElementById("toggle");
+
+            function showFilters() {
+                targetDiv.style.display = 'block';
+                targetDiv.style.opacity = '0';
+                targetDiv.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    targetDiv.style.opacity = '1';
+                    targetDiv.style.transform = 'translateY(0)';
+                }, 10);
+            }
+
+            function hideFilters() {
+                targetDiv.style.opacity = '0';
+                targetDiv.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    targetDiv.style.display = 'none';
+                }, 300);
+            }
+
+            btn.onclick = function(event) {
+                event.stopPropagation();
+                if (targetDiv.style.display === "none") {
+                    showFilters();
+                } else {
+                    hideFilters();
+                }
+            };
+
+            // Hide filters when clicking outside
+            document.addEventListener('click', function(event) {
+                if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
+                    hideFilters();
+                }
+            });
+
+            // Prevent clicks inside the filter from closing it
+            targetDiv.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+
+            // Add CSS for smooth transitions
+            const style = document.createElement('style');
+            style.textContent = `
+            #filters {
+                transition: opacity 0.3s ease, transform 0.3s ease;
+            }
+        `;
+            document.head.appendChild(style);
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            document.querySelectorAll('.delete-button').forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    const form = this.closest('form');
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "You won't be able to revert this!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit(); // Submit the form if confirmed
+                        }
+                    });
+                });
+            });
+        </script>
+    @endpush
+</x-app-layout>

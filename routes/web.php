@@ -6,6 +6,14 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingController;
 use App\Models\District;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BranchController;
+use App\Http\Controllers\RegionController;
+use App\Http\Controllers\DistrictController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
+Route::resource('permissions', PermissionController::class)->middleware('auth');
+
+
 
 
 Route::get('/', function () {
@@ -22,6 +30,12 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified',
     Route::get('daily-positions/{id}', [DailyPositionController::class, 'view'])->name('daily-positions.view');
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::get('/settings/branchseting', [SettingController::class, 'branchSetting'])->name('settings.branchsetting');
+
+    Route::resource('branches', BranchController::class);
+    Route::resource('regions', RegionController::class);
+    Route::resource('districts', DistrictController::class);
+    Route::resource('roles', RoleController::class);
 
 
 });

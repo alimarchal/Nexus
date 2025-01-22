@@ -22,8 +22,10 @@
                     <!-- Display session message -->
                     <x-status-message class="mb-4 mt-4" />
                     <x-validation-errors class="mb-4 mt-4" />
-                    <form method="POST" action="{{ route('daily-positions.store') }}" id="bankingForm">
-                        @csrf
+
+                        <form method="POST" action="{{ route('daily-positions.store') }}" id="bankingForm">
+                            @csrf
+
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             <!-- Left Side -->
@@ -223,6 +225,7 @@
 
                 // Form is valid, can be submitted
                 alert('Form is valid and ready to submit');
+
             });
         </script>
     @endpush
