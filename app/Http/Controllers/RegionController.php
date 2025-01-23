@@ -2,9 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreRegionRequest;
-use App\Http\Requests\UpdateRegionRequest;
 use App\Models\Region;
+use Illuminate\Http\Request;
 
 class RegionController extends Controller
 {
@@ -13,7 +12,8 @@ class RegionController extends Controller
      */
     public function index()
     {
-        //
+        $regions = Region::paginate(10);
+        return view('regions.index', compact('regions'));
     }
 
     /**
@@ -21,23 +21,21 @@ class RegionController extends Controller
      */
     public function create()
     {
-        //
+        return view('regions.create');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreRegionRequest $request)
+    public function store(Request $request)
     {
-        //
-    }
+        $request->validate([
+            'name' => 'required|string|max:255|unique:regions,name',
+        ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Region $region)
-    {
-        //
+        Region::create($request->only('name'));
+
+        return redirect()->route('regions.index')->with('success', 'Region created successfully.');
     }
 
     /**
@@ -45,15 +43,21 @@ class RegionController extends Controller
      */
     public function edit(Region $region)
     {
-        //
+        return view('regions.edit', compact('region'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateRegionRequest $request, Region $region)
+    public function update(Request $request, Region $region)
     {
-        //
+        $request->validate([
+            'name' => 'required|string|max:255|unique:regions,name,' . $region->id,
+        ]);
+
+        $region->update($request->only('name'));
+
+        return redirect()->route('regions.index')->with('success', 'Region updated successfully.');
     }
 
     /**
@@ -61,6 +65,8 @@ class RegionController extends Controller
      */
     public function destroy(Region $region)
     {
-        //
+        $region->delete();
+
+        return redirect()->route('regions.index')->with('success', 'Region deleted successfully.');
     }
 }
