@@ -14,8 +14,8 @@
         </h2>
 
         <div class="flex justify-center items-center float-right">
-            <button id="toggle" class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bbg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                {{--  <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            {{--  <button id="toggle" class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bbg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 Search
@@ -26,13 +26,14 @@
                 </svg>
                 <span class="hidden md:inline-block">Add Target</span>
             </a>  --}}
-            <a href="{{ route('dashboard') }} class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+            <a href="{{ route('dashboard') }}" class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <!-- Arrow Left Icon SVG -->
                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
             </a>
         </div>
+
     </x-slot>
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
@@ -80,10 +81,11 @@
         <div class="py-6">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="grid grid-cols-12 mb-4 gap-6">
-                    <a href="#" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
+                    <a href="{{ route('users.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
-                                <div class="text-3xl font-bold leading-8">16</div>
+                                <div class="text-3xl font-bold leading-8">{{ \App\Models\User::count() }}</div>
+
                                 <div class="mt-1 text-base font-extrabold text-black">Users</div>
                             </div>
                             <img src="https://mc.imste.com/icons-images/users.png" alt="Users" class="h-16 w-16">
@@ -92,7 +94,7 @@
                     <a href="{{ route('permissions.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
-                                <div class="text-3xl font-bold leading-8">53</div>
+                                <div class="text-3xl font-bold leading-8"></div>
                                 <div class="mt-1 text-base font-extrabold text-black">Permissions</div>
                             </div>
                             <img src="https://mc.imste.com/icons-images/permissions.png" alt="Permissions" class="h-16 w-16">
@@ -101,7 +103,7 @@
                     <a href="{{ route('roles.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
-                                <div class="text-3xl font-bold leading-8">9</div>
+                                <div class="text-3xl font-bold leading-8">{{ \App\Models\Role::count() }}</div>
                                 <div class="mt-1 text-base font-extrabold text-black">Roles</div>
                             </div>
                             <img src="https://mc.imste.com/icons-images/roles.png" alt="Roles" class="h-16 w-16">
@@ -110,8 +112,8 @@
                     <a href="{{ route('settings.branchsetting') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
-                                <div class="text-3xl font-bold leading-8">5</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Branches</div>
+                                <div class="text-3xl font-bold leading-8"></div>
+                                <div class="mt-1 text-base font-extrabold text-black">Branch</div>
                             </div>
                             <img src="https://mc.imste.com/icons-images/branches.png" alt="Branches" class="h-16 w-16">
                         </div>

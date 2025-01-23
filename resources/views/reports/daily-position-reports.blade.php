@@ -28,15 +28,21 @@
                         <input type="date" name="filter[date]" value="{{ request('filter.date') }}" id="date" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">
                     </div>
 
-{{--                    <div>--}}
-{{--                        <label for="branch_id" class="block text-gray-700 font-bold mb-2">Branch ID</label>--}}
-{{--                        <input type="text" name="branch_id" value="{{ request('branch_id') }}" id="branch_id" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">--}}
-{{--                    </div>--}}
+                    <div>
 
-{{--                    <div>--}}
-{{--                        <label for="branch_code" class="block text-gray-700 font-bold mb-2">Branch </label>--}}
-{{--                        <input type="text" name="branch_code" value="{{ request('branch_code') }}" id="branch_code" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">--}}
-{{--                    </div>--}}
+                        <x-label for="branch_id" value="{{ __('Branch') }}"/>
+                        <select name="filter[branch_id]" id="branch_id"
+                                class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
+                            <option value="">Select a branch</option>
+                            @foreach (\App\Models\Branch::all() as $branch)
+                                <option value="{{ $branch->id }}" {{ request('filter.branch_id') == $branch->id ? 'selected' : '' }}>
+                                    {{ $branch->code . ' - ' . $branch->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+
 
                     <div class="flex items-center justify-between">
                         <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"

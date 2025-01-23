@@ -48,13 +48,13 @@
                                                class="inline-flex items-center px-4 py-2 bg-green-800 text-white rounded-md hover:bg-green-700">
                                                 Edit
                                             </a>
-                                            <form method="POST" action="{{ route('districts.destroy', $district) }}" class="inline-block">
+                                            {{--  <form method="POST" action="{{ route('districts.destroy', $district) }}" class="inline-block">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
                                                     Delete
                                                 </button>
-                                            </form>
+                                            </form>  --}}
                                         </td>
                                     </tr>
                                 @endforeach
