@@ -1,3 +1,4 @@
+
 <x-app-layout>
 
     @push('header')
@@ -80,96 +81,46 @@
         <div class="py-6">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="grid grid-cols-12 mb-4 gap-6">
-                    <a href="https://mc.imste.com/users" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
+
+
+                    <a href="{{ route('branches.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
-                                <div class="text-3xl font-bold leading-8">16</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Users</div>
-                            </div>
-                            <img src="https://mc.imste.com/icons-images/users.png" alt="Users" class="h-16 w-16">
-                        </div>
-                    </a>
-                    <a href="{{ route('permissions.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                        <div class="p-5 flex justify-between">
-                            <div>
-                                <div class="text-3xl font-bold leading-8">53</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Permissions</div>
-                            </div>
-                            <img src="https://mc.imste.com/icons-images/permissions.png" alt="Permissions" class="h-16 w-16">
-                        </div>
-                    </a>
-                    <a href="{{ route('roles.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                        <div class="p-5 flex justify-between">
-                            <div>
-                                <div class="text-3xl font-bold leading-8">9</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Roles</div>
-                            </div>
-                            <img src="https://mc.imste.com/icons-images/roles.png" alt="Roles" class="h-16 w-16">
-                        </div>
-                    </a>
-                    <a href="{{ route('settings.branchsetting') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                        <div class="p-5 flex justify-between">
-                            <div>
-                                <div class="text-3xl font-bold leading-8">5</div>
+                                <div class="text-3xl font-bold leading-8">89</div>
                                 <div class="mt-1 text-base font-extrabold text-black">Branches</div>
+                            </div>
+                            <img src="https://mc.imste.com/icons-images/branches.png" alt="Roles" class="h-16 w-16">
+                        </div>
+                    </a>
+                    <a href="{{ route('branch-targets.index') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
+                        <div class="p-5 flex justify-between">
+                            <div>
+                                <div class="text-3xl font-bold leading-8">1</div>
+                                <div class="mt-1 text-base font-extrabold text-black">Branch Target</div>
+                            </div>
+                            <img src="https://mc.imste.com/icons-images/accounting.png" alt="Branches" class="h-16 w-16">
+                        </div>
+                    </a>
+                    <a href="{{ route('regions.index') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
+                        <div class="p-5 flex justify-between">
+                            <div>
+                                <div class="text-3xl font-bold leading-8">1</div>
+                                <div class="mt-1 text-base font-extrabold text-black">Region</div>
                             </div>
                             <img src="https://mc.imste.com/icons-images/branches.png" alt="Branches" class="h-16 w-16">
                         </div>
                     </a>
-                    <a href="settings.branchsetting" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
+                    <a href="{{ route('districts.index') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
-                                <div class="text-3xl font-bold leading-8">35</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Courses</div>
+                                <div class="text-3xl font-bold leading-8">1</div>
+                                <div class="mt-1 text-base font-extrabold text-black">Districts</div>
                             </div>
-                            <img src="https://mc.imste.com/icons-images/course.png" alt="Courses" class="h-16 w-16">
+                            <img src="https://mc.imste.com/icons-images/branches.png" alt="Branches" class="h-16 w-16">
                         </div>
                     </a>
-                    <a href="https://mc.imste.com/certificateCategory" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                        <div class="p-5 flex justify-between">
-                            <div>
-                                <div class="text-3xl font-bold leading-8">Certificate</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Category</div>
-                            </div>
-                            <img src="https://mc.imste.com/icons-images/certificate.png" alt="Certificates Category" class="h-16 w-16">
-                        </div>
-                    </a>
-                    <a href="https://mc.imste.com/instituteClass" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                        <div class="p-5 flex justify-between">
-                            <div>
-                                <div class="text-3xl font-bold leading-8">Class</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Rooms</div>
-                            </div>
-                            <img src="https://mc.imste.com/icons-images/classrooms.png" alt="Class Rooms" class="h-16 w-16">
-                        </div>
-                    </a>
-                    <a href="https://mc.imste.com/account-category" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                        <div class="p-5 flex justify-between">
-                            <div>
-                                <div class="text-3xl font-bold leading-8">Account</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Categories</div>
-                            </div>
-                            <img src="https://mc.imste.com/icons-images/accounting.png" alt="Account Category" class="h-16 w-16">
-                        </div>
-                    </a>
-                    <a href="https://mc.imste.com/transactions" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                        <div class="p-5 flex justify-between">
-                            <div>
-                                <div class="text-3xl font-bold leading-8">MC</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Transactions</div>
-                            </div>
-                            <img src="https://mc.imste.com/icons-images/transaction.png" alt="Transactions" class="h-16 w-16">
-                        </div>
-                    </a>
-                    <a href="https://mc.imste.com/bank-deposit" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                        <div class="p-5 flex justify-between">
-                            <div>
-                                <div class="text-3xl font-bold leading-8">Bank</div>
-                                <div class="mt-1 text-base font-extrabold text-black">Deposits</div>
-                            </div>
-                            <img src="https://mc.imste.com/icons-images/bank-deposit.png" alt="Account" class="h-16 w-16">
-                        </div>
-                    </a>
+
+
                 </div>
             </div>
         </div>
