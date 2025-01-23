@@ -27,7 +27,7 @@ class Region extends Model
         'name',
     ];
 
-    protected $with = ['districts', 'branches'];
+//    protected $with = ['districts', 'branches'];
 
     public function districts(): HasMany
     {
@@ -36,7 +36,7 @@ class Region extends Model
 
     public function branches(): HasMany
     {
-        return $this->hasMany(Branch::class);
+        return $this->hasMany(Branch::class, 'region_id','id');
     }
 
     public function getNameAttribute(?string $value): string

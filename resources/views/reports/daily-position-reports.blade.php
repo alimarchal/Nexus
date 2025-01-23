@@ -21,22 +21,22 @@
 
     <div class="max-w-7xl mx-auto mt-12 px-4 sm:px-6 lg:px-8 print:hidden" style="display: none" id="filters">
         <div class="rounded-xl p-4 bg-white shadow-lg">
-            <form action="{{ route('reports.index') }}" method="GET">
+            <form action="{{ route('reports.daily-position-report') }}" method="GET">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label for="date" class="block text-gray-700 font-bold mb-2">Date</label>
-                        <input type="date" name="date" value="{{ request('date') }}" id="date" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">
+                        <input type="date" name="filter[date]" value="{{ request('filter.date') }}" id="date" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">
                     </div>
 
-                    <div>
-                        <label for="branch_id" class="block text-gray-700 font-bold mb-2">Branch ID</label>
-                        <input type="text" name="branch_id" value="{{ request('branch_id') }}" id="branch_id" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">
-                    </div>
+{{--                    <div>--}}
+{{--                        <label for="branch_id" class="block text-gray-700 font-bold mb-2">Branch ID</label>--}}
+{{--                        <input type="text" name="branch_id" value="{{ request('branch_id') }}" id="branch_id" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">--}}
+{{--                    </div>--}}
 
-                    <div>
-                        <label for="branch_code" class="block text-gray-700 font-bold mb-2">Branch </label>
-                        <input type="text" name="branch_code" value="{{ request('branch_code') }}" id="branch_code" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">
-                    </div>
+{{--                    <div>--}}
+{{--                        <label for="branch_code" class="block text-gray-700 font-bold mb-2">Branch </label>--}}
+{{--                        <input type="text" name="branch_code" value="{{ request('branch_code') }}" id="branch_code" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">--}}
+{{--                    </div>--}}
 
                     <div class="flex items-center justify-between">
                         <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -53,34 +53,33 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
                 <div class="p-6 lg:p-8 bg-white dark:bg-gray-800 dark:bg-gradient-to-bl dark:from-gray-700/50 dark:via-transparent border-b border-gray-200 dark:border-gray-700">
+                    <h1 class="text-center text-2xl font-bold mb-4 text-gray-800 bg-gray-100 p-2 rounded">
+                        Daily Branch Position as of {{ \Carbon\Carbon::parse(request('filter.date'))->format('d-M-Y') ?? Carbon::now()->format('d-M-Y') }}
+                    </h1>
                     <table class="mb-4 w-full text-sm border-collapse border border-slate-400 text-left text-black dark:text-gray-400">
                         <thead class="text-black uppercase bg-gray-50 dark:bg-gray-700">
                         <tr>
                             <th scope="col" class="px-1 py-3 border border-black text-center">ID</th>
                             <th scope="col" class="px-1 py-3 border border-black text-center">Date</th>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">Branch Name</th>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">Branch Code</th>
+                            <th scope="col" class="px-1 py-3 border border-black text-center">Branch</th>
                             <th scope="col" class="px-1 py-3 border border-black text-center">Status</th>
                         </tr>
                         </thead>
                         <tbody>
-                        @foreach ($reports as $report)
+                        @foreach ($data as $key => $value)
                             <tr class="bg-white border-b dark:bg-gray-800 dark:border-black text-left">
                                 <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-center">
-                                    {{ $loop->iteration }}
+                                    {{ $key }}
                                 </td>
                                 <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-center">
-                                    {{ $report->date }}
+                                    {{ $value['date'] }}
                                 </td>
-                                <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-center">
-                                    {{ $report->branch_name }}
+                                <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-left">
+                                    {{ $value['branchCode'] }} - {{ $value['branchName'] }}
                                 </td>
-                                <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-center">
-                                    {{ $report->branch_code }}
-                                </td>
-                                <td class="border px-2 py-2 border-black font-medium text-white dark:text-white text-center 
-                                    {{ $report->status ? 'bg-green-500' : 'bg-red-500' }}">
-                                    {{ $report->status ? 'OK' : 'Missing' }}
+
+                                <td class="border px-2 py-2 border-black font-medium  dark:text-white text-center @if($value['status'] == "OK") bg-green-600 text-white @else bg-red-600 text-white @endif">
+                                {{ $value['status'] }}
                                 </td>
                             </tr>
                         @endforeach
