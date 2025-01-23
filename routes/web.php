@@ -33,7 +33,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     // Updated route to point to the ReportController's method
     Route::get('reports/daily-position-report', [ReportController::class, 'dailyPositionReport'])->name('reports.daily-position-report');
 
-    Route::get('/settings/branchseting', [SettingController::class, 'branchSetting'])->name('settings.branchsetting');
+    Route::get('/settings/branch', [SettingController::class, 'branchSetting'])->name('settings.branchsetting');
     Route::resource('branch-targets', BranchTargetController::class);
     Route::resource('branches', BranchController::class);
     Route::resource('regions', RegionController::class);

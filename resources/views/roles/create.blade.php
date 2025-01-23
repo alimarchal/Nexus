@@ -33,9 +33,9 @@
                         </div>
 
                         <div>
-                            <x-label for="guard_name" value="Guard Name" :required="true" />
-                            <x-input id="guard_name" type="text" name="guard_name" class="mt-1 block w-full" :value="old('guard_name')" required />
+                            <input id="guard_name" type="hidden" name="guard_name" value="web" />
                         </div>
+
                     </div>
 
                     <div class="flex items-center justify-end mt-4">

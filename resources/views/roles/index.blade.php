@@ -19,6 +19,13 @@
                 </svg>
                 <span class="hidden md:inline-block">Add Role</span>
             </a>
+            <a href="{{ route('settings.index') }}"
+            class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+             <!-- Arrow Left Icon SVG -->
+             <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+             </svg>
+         </a>
         </div>
     </x-slot>
 
@@ -76,4 +83,79 @@
             </div>
         </div>
     </div>
+
+    @push('modals')
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+            document.querySelectorAll('.delete-button').forEach(button => {
+                button.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    const form = this.closest('form');
+
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        text: "You won't be able to revert this!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit(); // Submit the form if confirmed
+                        }
+                    });
+                });
+            });
+        </script>
+        <script>
+            const targetDiv = document.getElementById("filters");
+            const btn = document.getElementById("toggle");
+
+            function showFilters() {
+                targetDiv.style.display = 'block';
+                targetDiv.style.opacity = '0';
+                targetDiv.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    targetDiv.style.opacity = '1';
+                    targetDiv.style.transform = 'translateY(0)';
+                }, 10);
+            }
+
+            function hideFilters() {
+                targetDiv.style.opacity = '0';
+                targetDiv.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    targetDiv.style.display = 'none';
+                }, 300);
+            }
+
+            btn.onclick = function(event) {
+                event.stopPropagation();
+                if (targetDiv.style.display === "none") {
+                    showFilters();
+                } else {
+                    hideFilters();
+                }
+            };
+
+            // Hide filters when clicking outside
+            document.addEventListener('click', function(event) {
+                if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
+                    hideFilters();
+                }
+            });
+
+            // Prevent clicks inside the filter from closing it
+            targetDiv.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+
+            // Add CSS for smooth transitions
+            const style = document.createElement('style');
+            style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`;
+            document.head.appendChild(style);
+        </script>
+    @endpush
 </x-app-layout>
