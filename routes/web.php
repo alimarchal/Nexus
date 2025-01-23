@@ -27,14 +27,11 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('daily-positions/{id}', [DailyPositionController::class, 'view'])->name('daily-positions.view');
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
-<<<<<<< HEAD
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-  
     // Updated route to point to the ReportController's method
     Route::get('reports/daily-position-report', [ReportController::class, 'dailyPositionReport'])
         ->name('reports.daily-position-report');
-});
-=======
+
     Route::get('/settings/branchseting', [SettingController::class, 'branchSetting'])->name('settings.branchsetting');
 
     Route::resource('branches', BranchController::class);
@@ -44,4 +41,3 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
 
 });
->>>>>>> 34a739e271893d91c77d89727db8e5e1feb98ad7
