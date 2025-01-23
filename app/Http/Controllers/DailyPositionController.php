@@ -34,11 +34,22 @@ class DailyPositionController extends Controller
     // Store a newly created daily position
     public function store(StoreDailyPositionRequest $request)
     {
+
+
         // Auto-assign branch_id and date
-        $data = $request->validated();
+        $data = $request->all();
         $data['branch_id'] = auth()->user()->branch_id; // Get branch_id from the authenticated user
         $data['date'] = Carbon::today(); // Automatically set today's date
         $data['created_by_user_id'] = auth()->id(); // Assign the authenticated user as the creator
+
+        // Convert numbers to 3 decimal places
+        $data['consumer'] = number_format($data['consumer'], 3);
+        $data['commercial'] = number_format($data['commercial'], 3);
+        $data['micro'] = number_format($data['micro'], 3);
+        $data['agri'] = number_format($data['agri'], 3);
+
+        // Calculate total assets
+        $data['totalAssets'] = number_format($data['consumer'] + $data['commercial'] + $data['micro'] + $data['agri'], 3);
 
         // Create the new daily position record
         DailyPosition::create($data);

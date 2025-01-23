@@ -1160,16 +1160,16 @@
         },
         {
             "name": "laravel/fortify",
-            "version": "v1.25.2",
+            "version": "v1.25.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/fortify.git",
-                "reference": "a20e8033e7329b05820007c398f06065a38ae188"
+                "reference": "ee35e5b8ea25cc51f8323e27a839283becd44160"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/fortify/zipball/a20e8033e7329b05820007c398f06065a38ae188",
-                "reference": "a20e8033e7329b05820007c398f06065a38ae188",
+                "url": "https://api.github.com/repos/laravel/fortify/zipball/ee35e5b8ea25cc51f8323e27a839283becd44160",
+                "reference": "ee35e5b8ea25cc51f8323e27a839283becd44160",
                 "shasum": ""
             },
             "require": {
@@ -1221,20 +1221,20 @@
                 "issues": "https://github.com/laravel/fortify/issues",
                 "source": "https://github.com/laravel/fortify"
             },
-            "time": "2025-01-10T20:33:47+00:00"
+            "time": "2025-01-17T15:17:57+00:00"
         },
         {
             "name": "laravel/framework",
-            "version": "v11.38.2",
+            "version": "v11.39.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "9d290aa90fcad44048bedca5219d2b872e98772a"
+                "reference": "3d693dd36e78121bcd51fc02eda4bc137d2a17f2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/9d290aa90fcad44048bedca5219d2b872e98772a",
-                "reference": "9d290aa90fcad44048bedca5219d2b872e98772a",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/3d693dd36e78121bcd51fc02eda4bc137d2a17f2",
+                "reference": "3d693dd36e78121bcd51fc02eda4bc137d2a17f2",
                 "shasum": ""
             },
             "require": {
@@ -1435,7 +1435,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-01-15T00:06:46+00:00"
+            "time": "2025-01-22T17:01:46+00:00"
         },
         {
             "name": "laravel/jetstream",
@@ -4000,16 +4000,16 @@
         },
         {
             "name": "spatie/laravel-package-tools",
-            "version": "1.18.0",
+            "version": "1.18.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-package-tools.git",
-                "reference": "8332205b90d17164913244f4a8e13ab7e6761d29"
+                "reference": "ba67eee37d86ed775dab7dad58a7cbaf9a6cfe78"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-package-tools/zipball/8332205b90d17164913244f4a8e13ab7e6761d29",
-                "reference": "8332205b90d17164913244f4a8e13ab7e6761d29",
+                "url": "https://api.github.com/repos/spatie/laravel-package-tools/zipball/ba67eee37d86ed775dab7dad58a7cbaf9a6cfe78",
+                "reference": "ba67eee37d86ed775dab7dad58a7cbaf9a6cfe78",
                 "shasum": ""
             },
             "require": {
@@ -4048,7 +4048,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-package-tools/issues",
-                "source": "https://github.com/spatie/laravel-package-tools/tree/1.18.0"
+                "source": "https://github.com/spatie/laravel-package-tools/tree/1.18.3"
             },
             "funding": [
                 {
@@ -4056,7 +4056,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-12-30T13:13:39+00:00"
+            "time": "2025-01-22T08:51:18+00:00"
         },
         {
             "name": "spatie/laravel-permission",
@@ -9930,12 +9930,12 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^8.2"
     },
-    "platform-dev": [],
+    "platform-dev": {},
     "plugin-api-version": "2.6.0"
 }

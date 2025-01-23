@@ -23,7 +23,7 @@
                     <x-status-message class="mb-4 mt-4" />
                     <x-validation-errors class="mb-4 mt-4" />
 
-                        <form method="POST" action="{{ route('daily-positions.store') }}" id="bankingForm">
+                    <form method="POST" action="{{ route('daily-positions.store') }}" id="bankingForm">
                             @csrf
 
 
@@ -208,7 +208,7 @@
                 const totalDeposits = parseFloat(document.querySelector('[name="totalDeposits"]').value) || 0;
                 const totalCasaTdr = parseFloat(document.querySelector('[name="totalCasaTdr"]').value) || 0;
 
-                const grandTotal = totalDeposits + totalCasaTdr;
+                const grandTotal = totalDeposits - totalCasaTdr;
                 document.querySelector('[name="grandTotal"]').value = grandTotal.toFixed(3);
             }
 
@@ -218,14 +218,17 @@
                 const totalDeposits = parseFloat(document.querySelector('[name="totalDeposits"]').value);
                 const totalCasaTdr = parseFloat(document.querySelector('[name="totalCasaTdr"]').value);
 
+                const totalGT = totalDeposits - totalCasaTdr;
+
                 if (totalDeposits !== totalCasaTdr) {
-                    alert('Total Deposits must equal Total CASA + TDR');
+                    alert('Total Difference Must Equal to Zero \nYour Difference is: ' + totalGT + '\nPlease correct before submission.');
                     return false;
                 }
 
                 // Form is valid, can be submitted
-                alert('Form is valid and ready to submit');
-
+                // alert('Form is valid and ready to submit');
+                // Form is valid, submit it
+                this.submit();
             });
         </script>
     @endpush

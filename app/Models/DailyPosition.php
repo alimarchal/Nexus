@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DailyPosition extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     // Table associated with the model
     protected $table = 'daily_positions'; // This is optional if the table name follows the Laravel convention
@@ -18,7 +19,7 @@ class DailyPosition extends Model
         'totalAssets', 'govtDeposit', 'privateDeposit',
         'totalDeposits', 'casa', 'tdr', 'totalCasaTdr',
         'grandTotal', 'noOfAccount', 'noOfAcc', 'profit', 'date',
-        'updated_by_user_id'
+        'updated_by_user_id', 'created_by_user_id'
     ];
 
     // The attributes that should be cast to native types

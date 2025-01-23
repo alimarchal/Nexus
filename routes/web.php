@@ -3,6 +3,7 @@
 use App\Http\Controllers\DailyPositionController;
 use App\Http\Controllers\BranchTargetController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SettingController;
 use App\Models\District;
 use Illuminate\Support\Facades\Route;
@@ -25,13 +26,14 @@ Route::get('/', function () {
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified',])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
 
-    Route::resource('branch-targets', BranchTargetController::class);
+    Route::get('product', [ProductController::class, 'product'])->name('product.index');
+
     Route::resource('daily-positions', DailyPositionController::class);
     Route::get('daily-positions/{id}', [DailyPositionController::class, 'view'])->name('daily-positions.view');
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
     Route::get('/settings/branchseting', [SettingController::class, 'branchSetting'])->name('settings.branchsetting');
-
+    Route::resource('branch-targets', BranchTargetController::class);
     Route::resource('branches', BranchController::class);
     Route::resource('regions', RegionController::class);
     Route::resource('districts', DistrictController::class);
