@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -18,17 +17,15 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, SoftDeletes, LogsActivity;
-
-    /** @use HasFactory<UserFactory> */
+    use HasApiTokens;
     use HasFactory;
     use HasProfilePhoto;
     use Notifiable;
     use TwoFactorAuthenticatable;
     use HasRoles;
     use SoftDeletes;
-    use CausesActivity, LogsActivity;
-
+    use CausesActivity;
+    use LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -36,9 +33,13 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'branch_id',
         'name',
         'email',
         'password',
+        'is_super_admin',
+        'is_active',
+        'profile_photo_path',
     ];
 
     /**
@@ -63,25 +64,58 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
+    /**
+     * Get activity log options.
+     *
+     * @return \Spatie\Activitylog\LogOptions
+     */
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
             ->logAll()
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn(string $eventName) => "User has been {$eventName}");
+            ->setDescriptionForEvent(fn (string $eventName) => "User has been {$eventName}");
     }
 
+    /**
+     * Define the relationship with the Branch model.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Define a scope for filtering active users.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', 'Yes');
+    }
+
+    /**
+     * Define a scope for filtering super admins.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeSuperAdmin($query)
+    {
+        return $query->where('is_super_admin', 'Yes');
+    }
 }

@@ -2,65 +2,55 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreDistrictRequest;
-use App\Http\Requests\UpdateDistrictRequest;
 use App\Models\District;
+use App\Models\Region;
+use Illuminate\Http\Request;
 
 class DistrictController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $districts = District::with('region')->paginate(10);
+        return view('districts.index', compact('districts'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        $regions = Region::all();
+        return view('districts.create', compact('regions'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreDistrictRequest $request)
+    public function store(Request $request)
     {
-        //
+        $request->validate([
+            'region_id' => 'required|exists:regions,id',
+            'name' => 'required|string|max:255|unique:districts,name',
+        ]);
+
+        District::create($request->all());
+        return redirect()->route('districts.index')->with('success', 'District created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(District $district)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(District $district)
     {
-        //
+        $regions = Region::all();
+        return view('districts.edit', compact('district', 'regions'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateDistrictRequest $request, District $district)
+    public function update(Request $request, District $district)
     {
-        //
+        $request->validate([
+            'region_id' => 'required|exists:regions,id',
+            'name' => 'required|string|max:255|unique:districts,name,' . $district->id,
+        ]);
+
+        $district->update($request->all());
+        return redirect()->route('districts.index')->with('success', 'District updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(District $district)
     {
-        //
+        $district->delete();
+        return redirect()->route('districts.index')->with('success', 'District deleted successfully.');
     }
 }

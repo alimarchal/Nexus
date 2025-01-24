@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Branch;
+use App\Models\District;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -24,11 +26,24 @@ class RolesAndPermissionsSeeder extends Seeder
         Role::create(['name' => 'head-office']);
         $superAdmin = Role::create(['name' => 'super-admin']);
 
+
+        foreach(Branch::all() as $branch) {
+            $new_user = User::create([
+                'branch_id' => $branch->id,
+                'name' => 'Branch ' . $branch->code . '-' . $branch->district_id . '-' . $branch->region_id,
+                'email' => 'manager' . $branch->code . '@' . 'bankajk.com',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]);
+
+            $new_user->assignRole('branch');
+        }
+
         // Create super admin
         $user = User::create([
-            'name' => 'Super Admin',
-            'email' => 'superadmin@admin.com',
-            'password' => Hash::make('Admin@123'),
+            'name' => 'Ali Raza Marchal',
+            'email' => 'superadmin@example.com',
+            'password' => Hash::make('password'),
             'email_verified_at' => now(),
         ]);
 

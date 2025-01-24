@@ -610,6 +610,20 @@ class BranchSeeder extends Seeder
                 'name' => 'Chella Bandi Branch',
                 'address' => 'Neelum Road, Chella Bandi, Muzaffarabad AJK',
             ],
+            [
+                'district_id' => District::without('branches', 'region')->where('name', 'Bagh')->first()->id,
+                'region_id' => District::without('branches', 'region')->where('name', 'Bagh')->first()->region_id,
+                'code' => '0086',
+                'name' => 'Hari Ghel Branch',
+                'address' => 'Opposite To Go Petrol Pump Tehsil Hari Ghel District Bagh, Azad Kashmir',
+            ],
+            [
+                'district_id' => District::without('branches', 'region')->where('name', 'Mirpur')->first()->id,
+                'region_id' => District::without('branches', 'region')->where('name', 'Mirpur')->first()->region_id,
+                'code' => '0087',
+                'name' => 'Chechian Branch',
+                'address' => 'Main Bazar Chechian District Mirpur, Azad Kashmir',
+            ],
         ];
 
 

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Requests;
+
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -18,9 +19,8 @@ class StoreBranchTargetRequest extends FormRequest
             'target_start_date' => ['sometimes', 'date'],
             'fiscal_year' => ['sometimes', 'integer', 'min:2000', 'max:2099',
                 Rule::unique('branch_targets')
-                    ->where('branch_id', $this->branch_target->branch_id)
+                    ->where('branch_id', $this->input('branch_id')) // Access branch_id from the request directly
                     ->whereNull('deleted_at')
-                    ->ignore($this->branch_target->id)
             ],
         ];
     }
