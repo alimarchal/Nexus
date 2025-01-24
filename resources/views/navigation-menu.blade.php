@@ -18,8 +18,8 @@
                 </div>
 
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link href="{{ route('daily-positions.index') }}" :active="request()->routeIs('branch-targets.index')">
-                        {{ __('Daily Positions') }}
+                    <x-nav-link href="{{ route('product.index') }}" :active="request()->routeIs('branch-targets.index')">
+                        {{ __('Product') }}
                     </x-nav-link>
                 </div>
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
