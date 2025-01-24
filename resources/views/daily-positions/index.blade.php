@@ -50,6 +50,7 @@
                             <input type="text" id="date_range" name="filter[date_range]" class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full" />
                         </div>
 
+                        <div></div>
                         <div class="mt-4">
                             <x-button class="bg-blue-950 text-white">
                                 {{ __('Apply Filters') }}
@@ -60,13 +61,19 @@
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
-            <x-status-message />
 
-            @if($dailyPositions ?? false)
-                <div class="relative overflow-x-auto rounded-lg">
-                    <table class="min-w-max w-full table-auto text-sm">
-                        <thead>
+    </div>
+
+
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
+            <x-status-message />
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+
+
+                @if($dailyPositions ?? false)
+                    <div class="relative overflow-x-auto rounded-lg">
+                        <table class="min-w-max w-full table-auto text-sm">
+                            <thead>
                             <tr class="bg-blue-800 text-white uppercase text-sm">
                                 <th class="py-2 px-2 text-center">Branch</th>
                                 <th class="py-2 px-2 text-center">Advances & Assets</th>
@@ -76,8 +83,8 @@
                                 <th class="py-2 px-2 text-center">Date</th>
                                 <th class="py-2 px-2 text-center print:hidden">Actions</th>
                             </tr>
-                        </thead>
-                        <tbody class="text-black text-md leading-normal font-medium">
+                            </thead>
+                            <tbody class="text-black text-md leading-normal font-medium">
                             @foreach($dailyPositions as $position)
                                 <tr class="border-b border-gray-200 hover:bg-gray-100">
                                     <td class="py-1 px-2 text-center">{{ $position->branch->name }}</td>
@@ -103,21 +110,25 @@
                                     </td>
                                 </tr>
                             @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                @if($dailyPositions->hasPages())
-                    <div class="px-2 py-2">
-                        {{ $dailyPositions->links() }}
+                            </tbody>
+                        </table>
+                    </div>
+                    @if($dailyPositions->hasPages())
+                        <div class="px-2 py-2">
+                            {{ $dailyPositions->links() }}
+                        </div>
+                    @endif
+                @else
+                    <div class="text-center py-4 text-gray-500">
+                        No records found
                     </div>
                 @endif
-            @else
-                <div class="text-center py-4 text-gray-500">
-                    No records found
-                </div>
-            @endif
+            </div>
         </div>
-    </div>
+
+
+
+
 
 
     @push('modals')

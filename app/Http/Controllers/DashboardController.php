@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Branch;
+use App\Models\Region;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function dashboard()
     {
+
         $user = auth()->user();
 
         // Check if user has any valid dashboard role

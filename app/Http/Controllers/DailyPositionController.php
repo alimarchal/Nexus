@@ -6,7 +6,10 @@ use App\Http\Requests\StoreDailyPositionRequest;
 use App\Http\Requests\UpdateDailyPositionRequest;
 use App\Models\DailyPosition;
 use App\Models\Branch;
-use Illuminate\Support\Carbon; // Import Carbon for date handling
+use App\Models\Region;
+use Illuminate\Support\Carbon;
+
+// Import Carbon for date handling
 use Illuminate\Http\Request;
 
 class DailyPositionController extends Controller
@@ -17,9 +20,34 @@ class DailyPositionController extends Controller
     // Display a list of daily positions with pagination
     public function index()
     {
-        $dailyPositions = DailyPosition::with('branch')
-            ->latest()
-            ->paginate(10); // Paginate results (10 per page)
+        $dailyPositions = null;
+        $user = auth()->user();
+
+        // Check if user has any valid dashboard role
+        if (!$user->hasAnyRole(['branch', 'region', 'division', 'head-office', 'super-admin'])) {
+            abort(403); // Forbidden if no valid role
+        }
+
+        if ($user->roles->first()->name == 'branch') {
+
+            $dailyPositions = DailyPosition::with('branch')
+                ->whereIn('branch_id', [$user->branch_id])
+                ->latest()
+                ->paginate(10);
+
+
+        } elseif($user->roles->first()->name == 'region'){
+
+
+            $branches_ids = $user->branch?->region?->branches?->pluck('id')->toArray();
+
+            $dailyPositions = DailyPosition::with('branch')
+                ->whereIn('branch_id', $branches_ids)
+                ->latest()
+                ->paginate(10);
+        }
+
+
 
         return view('daily-positions.index', compact('dailyPositions'));
     }
@@ -79,22 +107,22 @@ class DailyPositionController extends Controller
 
     // Update the details of a specific daily position
     public function update(UpdateDailyPositionRequest $request, DailyPosition $dailyPosition)
-{
-    // Get all the validated data from the form
-    $data = $request->validated();
+    {
+        // Get all the validated data from the form
+        $data = $request->validated();
 
-    // Set the branch_id and date for the update
-    $data['branch_id'] = auth()->user()->branch_id; // This is for the current user
-    $data['date'] = $dailyPosition->date ?? Carbon::today(); // If no date is provided, use today's date
-    $data['updated_by_user_id'] = auth()->id(); // Who is updating the record?
+        // Set the branch_id and date for the update
+        $data['branch_id'] = auth()->user()->branch_id; // This is for the current user
+        $data['date'] = $dailyPosition->date ?? Carbon::today(); // If no date is provided, use today's date
+        $data['updated_by_user_id'] = auth()->id(); // Who is updating the record?
 
-    // Update the record with the new data
-    $dailyPosition->update($data);
+        // Update the record with the new data
+        $dailyPosition->update($data);
 
-    // Redirect to the list with a success message
-    return redirect()->route('daily-positions.index')
-                     ->with('success', 'Daily position updated successfully.');
-}
+        // Redirect to the list with a success message
+        return redirect()->route('daily-positions.index')
+            ->with('success', 'Daily position updated successfully.');
+    }
 
     // Delete a specific daily position
     public function destroy(DailyPosition $dailyPosition)
