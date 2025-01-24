@@ -80,21 +80,21 @@
         <div class="py-6">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-12 mb-4 gap-6">
-                    
+
                     <a href="{{route('daily-positions.index')}}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
                                 <div class="text-3xl font-bold leading-8">Branch</div>
                                 <div class="mt-1 text-base font-extrabold text-black">Daily Position</div>
                             </div>
-                            <img src="https://mc.imste.com/icons-images/bank-deposit.png" alt="Account" class="h-16 w-16">
+                            <img src="{{ url('icons-images/bank-deposit.png') }}" alt="Account" class="h-16 w-16">
                         </div>
                     </a>
                 </div>
             </div>
         </div>
 
-            
+
 
 
 

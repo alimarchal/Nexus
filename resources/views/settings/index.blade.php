@@ -94,7 +94,7 @@
                     <a href="{{ route('permissions.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
-                                <div class="text-3xl font-bold leading-8"></div>
+                                <div class="text-3xl font-bold leading-8">{{ \Spatie\Permission\Models\Permission::count() }}</div>
                                 <div class="mt-1 text-base font-extrabold text-black">Permissions</div>
                             </div>
                             <img src="https://mc.imste.com/icons-images/permissions.png" alt="Permissions" class="h-16 w-16">
