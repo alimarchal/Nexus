@@ -21,6 +21,10 @@ return new class extends Migration
             $table->rememberToken();
             $table->foreignId('current_team_id')->nullable();
             $table->string('profile_photo_path', 2048)->nullable();
+
+            $table->enum('is_super_admin', ['Yes', 'No'])->default('No');
+            $table->enum('is_active', ['Yes', 'No'])->default('Yes');
+
             $table->softDeletes();
             $table->timestamps();
         });
