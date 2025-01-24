@@ -83,13 +83,13 @@
                                             Edit
                                         </a>
 
-                                        <form class="inline-block" method="POST" action="{{ route('permissions.destroy', $permission) }}">
+                                        {{--  <form class="inline-block" method="POST" action="{{ route('permissions.destroy', $permission) }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 delete-button">
                                                 Delete
                                             </button>
-                                        </form>
+                                        </form>  --}}
                                     </td>
                                 </tr>
                             @endforeach

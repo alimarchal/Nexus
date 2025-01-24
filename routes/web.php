@@ -22,26 +22,31 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
+
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
 
-    Route::get('product', [ProductController::class, 'product'])->name('product.index');
 
-    Route::resource('daily-positions', DailyPositionController::class);
-    Route::get('daily-positions/{id}', [DailyPositionController::class, 'view'])->name('daily-positions.view');
+    Route::get('product', [ProductController::class, 'product'])->name('product.index');
+    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+
+
+    Route::resource('/product/daily-positions', DailyPositionController::class);
+    Route::get('daily-positions/{id}', [DailyPositionController::class, 'show'])->name('daily-positions.view');
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
-    Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/settings/branch', [SettingController::class, 'branchSetting'])->name('settings.branchsetting');
+    Route::resource('/settings/branch/branch-targets', BranchTargetController::class);
+    Route::resource('/settings/branch/branches', BranchController::class);
+    Route::resource('/settings/branch/regions', RegionController::class);
+    Route::resource('/settings/branch/districts', DistrictController::class);
+    Route::resource('/settings/roles', RoleController::class);
+    Route::resource('/settings/permissions', PermissionController::class)->middleware('auth');
+    Route::resource('/settings/users', UserController::class);
+
     // Updated route to point to the ReportController's method
     Route::get('reports/daily-position-report', [ReportController::class, 'dailyPositionReport'])->name('reports.daily-position-report');
 
-    Route::get('/settings/branch', [SettingController::class, 'branchSetting'])->name('settings.branchsetting');
-    Route::resource('branch-targets', BranchTargetController::class);
-    Route::resource('branches', BranchController::class);
-    Route::resource('regions', RegionController::class);
-    Route::resource('districts', DistrictController::class);
-    Route::resource('roles', RoleController::class);
-    Route::resource('permissions', PermissionController::class)->middleware('auth');
-    Route::resource('users', UserController::class);
+
 
 
 

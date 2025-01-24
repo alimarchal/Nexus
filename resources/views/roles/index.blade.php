@@ -55,14 +55,14 @@
                                            class="inline-flex items-center px-4 py-2 bg-green-800 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                                             Edit
                                         </a>
-                                        <form class="inline-block" method="POST" action="{{ route('roles.destroy', $role) }}">
+                                        {{--  <form class="inline-block" method="POST" action="{{ route('roles.destroy', $role) }}">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
                                                     class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 delete-button">
                                                 Delete
                                             </button>
-                                        </form>
+                                        </form>  --}}
                                     </td>
                                 </tr>
                             @endforeach

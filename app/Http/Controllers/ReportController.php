@@ -28,6 +28,9 @@ class ReportController extends Controller
         if ($request->filled('branch_code')) {
             $reports->where('branch_code', $request->branch_code);
         }
+        if ($request->filled('branch_name')) {
+            $reports->where('branch_name', $request->branch_code);
+        }
 
         return view('reports.index', [
             'reports' => $reports->get(),

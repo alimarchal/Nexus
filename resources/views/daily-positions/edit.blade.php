@@ -58,14 +58,14 @@
 
                                 <div class="mb-4">
                                     <label class="block text-sm font-medium text-gray-700">Branch</label>
-                                    <select name="branch_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                        @foreach($branches as $branch)
-                                            <option value="{{ $branch->id }}" {{ $dailyPosition->branch_id == $branch->id ? 'selected' : '' }}>
-                                                {{ $branch->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <input
+                                        type="text"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 bg-gray-100"
+                                        value="{{ $branches->where('id', $dailyPosition->branch_id)->first()->name ?? 'N/A' }}"
+                                        readonly
+                                    >
                                 </div>
+
 
                                 <div class="space-y-4">
                                     <div class="relative">
@@ -106,6 +106,20 @@
                                                value="{{ old('totalAssets', number_format($dailyPosition->totalAssets, 3)) }}"
                                                class="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 font-semibold text-gray-700"
                                                readonly>
+                                    </div>
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Number of Accounts</label>
+                                        <input type="text" name="noOfAccount"
+                                               value="{{ old('noOfAccount', number_format($dailyPosition->noOfAccount, 3)) }}"
+                                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition"
+                                               onblur="formatNumber(this)">
+                                    </div>
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Profit</label>
+                                        <input type="text" name="profit"
+                                               value="{{ old('profit', number_format($dailyPosition->profit, 3)) }}"
+                                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition"
+                                               onblur="formatNumber(this)">
                                     </div>
                                 </div>
                             </div>
@@ -171,11 +185,18 @@
                                     </div>
 
                                     <div class="relative">
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Grand Total</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Difference</label>
                                         <input type="text" name="grandTotal"
                                                value="{{ old('grandTotal', number_format($dailyPosition->grandTotal, 3)) }}"
                                                class="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 font-semibold text-gray-700"
                                                readonly>
+                                    </div>
+                                    <div class="relative">
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Number of ACC</label>
+                                        <input type="text" name="noOfAcc"
+                                               value="{{ old('noOfAcc', number_format($dailyPosition->noOfAcc, 3)) }}"
+                                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition"
+                                               onblur="formatNumber(this)">
                                     </div>
                                 </div>
                             </div>
@@ -183,7 +204,7 @@
 
                         <!-- Bottom Section -->
                         <div class="mt-8 pt-6 border-t border-gray-200">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            {{--  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                                 <div class="relative">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Number of Accounts</label>
                                     <input type="text" name="noOfAccount"
@@ -206,7 +227,7 @@
                                            value="{{ old('profit', number_format($dailyPosition->profit, 3)) }}"
                                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition"
                                            onblur="formatNumber(this)">
-                                </div>
+                                </div>  --}}
 
                                 <div class="relative">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>

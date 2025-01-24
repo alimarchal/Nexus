@@ -132,7 +132,7 @@
                                     </div>
 
                                     <div class="relative">
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Grand Total</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Total Difference</label>
                                         <input type="text" name="grandTotal" class="w-full p-3 border border-gray-200 rounded-lg bg-gray-50 font-semibold text-gray-700"
                                                value="0.000" readonly>
                                     </div>
