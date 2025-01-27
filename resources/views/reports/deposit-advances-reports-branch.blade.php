@@ -9,7 +9,7 @@
 
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
-            Daily Position Reports
+                    Deposit & Advances RegionWise Reports
         </h2>
 
         <div class="flex justify-center items-center float-right">
@@ -19,12 +19,13 @@
                 </svg>
                 Search
             </button>
-            <a href="{{ route('reports.index') }}" class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                <!-- Arrow Left Icon SVG -->
-                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-            </a>
+                <a href="{{ route('reports.index') }}" class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                    <!-- Arrow Left Icon SVG -->
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                </a>
+
         </div>
     </x-slot>
 
@@ -72,30 +73,15 @@
                     <table class="mb-4 w-full text-sm border-collapse border border-slate-400 text-left text-black dark:text-gray-400">
                         <thead class="text-black uppercase bg-gray-50 dark:bg-gray-700">
                         <tr>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">ID</th>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">Date</th>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">Branch</th>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">Status</th>
+                            <th scope="col" class="px-1 py-3 border border-black text-center">NO of branches</th>
+                            <th scope="col" class="px-1 py-3 border border-black text-center">Name of Branch</th>
+                            <th scope="col" class="px-1 py-3 border border-black text-center">Name of regions</th>
+                            <th scope="col" class="px-1 py-3 border border-black text-center">Deposit</th>
+                            <th scope="col" class="px-1 py-3 border border-black text-center">Advances</th>
                         </tr>
                         </thead>
                         <tbody>
-                        @foreach ($data as $key => $value)
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-black text-left">
-                                <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-center">
-                                    {{ $key }}
-                                </td>
-                                <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-center">
-                                    {{ $value['date'] }}
-                                </td>
-                                <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-left">
-                                    {{ $value['branchCode'] }} - {{ $value['branchName'] }}
-                                </td>
-
-                                <td class="border px-2 py-2 border-black font-medium dark:text-white text-center @if($value['status'] == "OK") bg-green-600 text-white @else bg-red-600 text-white @endif">
-                                    {{ $value['status'] }}
-                                </td>
-                            </tr>
-                        @endforeach
+                             
                         </tbody>
                     </table>
                 </div>
@@ -103,21 +89,6 @@
         </div>
     </div>
 
-    @push('modals')
-        <script>
-            $('form').submit(function () {
-                $(this).find(':submit').attr('disabled', 'disabled');
-            });
 
-            const targetDiv = document.getElementById("filters");
-            const btn = document.getElementById("toggle");
-            btn.onclick = function () {
-                if (targetDiv.style.display !== "none") {
-                    targetDiv.style.display = "none";
-                } else {
-                    targetDiv.style.display = "block";
-                }
-            };
-        </script>
-    @endpush
+
 </x-app-layout>

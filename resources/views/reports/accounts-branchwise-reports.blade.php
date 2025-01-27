@@ -9,7 +9,7 @@
 
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
-            Daily Position Reports
+                     Account Reports BranchWise
         </h2>
 
         <div class="flex justify-center items-center float-right">
@@ -72,30 +72,14 @@
                     <table class="mb-4 w-full text-sm border-collapse border border-slate-400 text-left text-black dark:text-gray-400">
                         <thead class="text-black uppercase bg-gray-50 dark:bg-gray-700">
                         <tr>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">ID</th>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">Date</th>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">Branch</th>
-                            <th scope="col" class="px-1 py-3 border border-black text-center">Status</th>
+                            <th scope="col" class="px-1 py-3 border border-black text-center">NO of branches</th>
+                            <th scope="col" class="px-1 py-3 border border-black text-center">Region</th>
+                            <th scope="col" class="px-1 py-3 border border-black text-center">Accounts</th>
+
                         </tr>
                         </thead>
                         <tbody>
-                        @foreach ($data as $key => $value)
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-black text-left">
-                                <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-center">
-                                    {{ $key }}
-                                </td>
-                                <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-center">
-                                    {{ $value['date'] }}
-                                </td>
-                                <td class="border px-2 py-2 border-black font-medium text-black dark:text-white text-left">
-                                    {{ $value['branchCode'] }} - {{ $value['branchName'] }}
-                                </td>
 
-                                <td class="border px-2 py-2 border-black font-medium dark:text-white text-center @if($value['status'] == "OK") bg-green-600 text-white @else bg-red-600 text-white @endif">
-                                    {{ $value['status'] }}
-                                </td>
-                            </tr>
-                        @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -103,21 +87,6 @@
         </div>
     </div>
 
-    @push('modals')
-        <script>
-            $('form').submit(function () {
-                $(this).find(':submit').attr('disabled', 'disabled');
-            });
 
-            const targetDiv = document.getElementById("filters");
-            const btn = document.getElementById("toggle");
-            btn.onclick = function () {
-                if (targetDiv.style.display !== "none") {
-                    targetDiv.style.display = "none";
-                } else {
-                    targetDiv.style.display = "block";
-                }
-            };
-        </script>
-    @endpush
+
 </x-app-layout>

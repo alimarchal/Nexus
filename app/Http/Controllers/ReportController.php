@@ -62,4 +62,47 @@ class ReportController extends Controller
 
         return view('reports.daily-position-reports', compact('data'));
     }
+
+    public function depositadvancesPositionReport(Request $request)
+    {
+        // Fetch regions with branches and aggregate sums of deposit and advances, and count of branches
+        $regions = Region::withCount('branches') // Add branch count
+            ->with(['branches' => function($query) use ($request) {
+                // Apply filters (if any)
+                if ($request->has('filter.branch_id')) {
+                    $query->where('id', $request->input('filter.branch_id'));
+                }
+
+                // Optionally filter by date if needed
+                if ($request->has('filter.date')) {
+                    $query->whereDate('created_at', $request->input('filter.date'));
+                }
+            }])
+            ->get();  // Get all regions with the required relationships
+
+        // Process the data for the view
+        $dailyPositions = $regions->map(function ($region) {
+            // Aggregate data for each region
+            $region->deposit_sum = $region->branches->sum('deposit');
+            $region->advances_sum = $region->branches->sum('advances');
+            return $region;
+        });
+
+        return view('reports.deposit-advances-reports-region', compact('dailyPositions'));
+    }
+
+    public function depositadvancesregionPositionReport()
+    {
+        return view('reports.deposit-advances-reports-branch'); // Render the branch settings view
+    }
+
+    public function accountsbranchwisePositionReport()
+    {
+        return view('reports.accounts-branchwise-reports'); // Render the branch settings view
+
+    }public function accountsregionwisePositionReport()
+    {
+        return view('reports.accounts-regionwise-reports'); // Render the branch settings view
+    }
+
 }

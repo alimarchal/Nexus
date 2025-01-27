@@ -1,17 +1,25 @@
 
 <x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight inline-block">
+        Edit Daily Position
+        </h2>
+
+        <div class="flex justify-center items-center float-right">
+            <a href="{{ route('daily-positions.index') }}"
+               class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <!-- Arrow Left Icon SVG -->
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </a>
+        </div>
+    </x-slot>
+
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 bg-white border-b border-gray-200">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold">Edit Daily Position</h2>
-                        <a href="{{ route('daily-positions.index') }}"
-                           class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                            Back to List
-                        </a>
-                    </div>
-                    <div class="p-6">
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                <div class="p-6 lg:p-8 bg-white border-b border-gray-200">
                         <!-- Success Message -->
                         @if(session('success'))
                             <div class="mb-4 p-4 bg-green-50 border-l-4 border-green-500">
@@ -239,17 +247,10 @@
                         </div>
 
                         <div class="mt-8 flex justify-end space-x-3">
-                            <a href="{{ route('daily-positions.index') }}"
-                               class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">
-                                Cancel
-                            </a>
-                            <button type="submit"
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L"></path>
-                                </svg>
-                                Update
-                            </button>
+                            <div class="mt-8 flex justify-end">
+                                <x-button class="ms-4">
+                                    Update
+                                </x-button>
                         </div>
                     </form>
                 </div>
@@ -267,7 +268,7 @@
         }
 
         function calculateTotalAssets() {
-            const consumer = parseFloat(document.querySelector('[name="consumer"]').value) || 0;
+            const consumer = parseFloat(document.querySelector('[name="consumer"]').value) || 3;
             const commercial = parseFloat(document.querySelector('[name="commercial"]').value) || 0;
             const micro = parseFloat(document.querySelector('[name="micro"]').value) || 0;
             const agri = parseFloat(document.querySelector('[name="agri"]').value) || 0;
@@ -310,11 +311,13 @@
 
             if (totalDeposits !== totalCasaTdr) {
                 alert('Total Deposits must equal Total CASA + TDR');
-                return false;
+                return false; // Stops the form from submitting
             }
 
-            alert('Form is valid and ready to submit');
+            // Proceed with form submission if validation passes
+            this.submit(); // Allows form submission
         });
+
     </script>
 </body>
 </html>
