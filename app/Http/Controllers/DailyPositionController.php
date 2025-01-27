@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDailyPositionRequest;
 use App\Http\Requests\UpdateDailyPositionRequest;
 use App\Models\DailyPosition;
+use App\Models\BranchTarget;
 use App\Models\Branch;
 use App\Models\Region;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 // Import Carbon for date handling
 use Illuminate\Http\Request;
@@ -28,24 +30,49 @@ class DailyPositionController extends Controller
             abort(403); // Forbidden if no valid role
         }
 
-        if ($user->roles->first()->name == 'branch') {
+        $role = $user->roles->first()->name;
+
+        if ($role == 'branch') {
 
             $dailyPositions = DailyPosition::with('branch')
-                ->whereIn('branch_id', [$user->branch_id])
+                ->where('branch_id', $user->branch_id)
                 ->latest()
                 ->paginate(10);
 
+        } elseif ($role == 'region') {
 
-        } elseif($user->roles->first()->name == 'region'){
-
-
-            $branches_ids = $user->branch?->region?->branches?->pluck('id')->toArray();
+            $branches_ids = $user->branch?->region?->branches?->pluck('id')->toArray() ?? [];
 
             $dailyPositions = DailyPosition::with('branch')
                 ->whereIn('branch_id', $branches_ids)
                 ->latest()
                 ->paginate(10);
+
+        } elseif ($role == 'division') {
+
+            $branches_ids = $user->branch?->region?->division?->branches?->pluck('id')->toArray() ?? [];
+
+            $dailyPositions = DailyPosition::with('branch')
+                ->whereIn('branch_id', $branches_ids)
+                ->latest()
+                ->paginate(10);
+
+        } elseif ($role == 'head-office') {
+
+            $branches_ids = $user->headOffice?->branches?->pluck('id')->toArray() ?? [];
+
+            $dailyPositions = DailyPosition::with('branch')
+                ->whereIn('branch_id', $branches_ids)
+                ->latest()
+                ->paginate(10);
+
+        } elseif ($role == 'super-admin') {
+
+            $dailyPositions = DailyPosition::with('branch')
+                ->latest()
+                ->paginate(10);
         }
+
 
 
 
@@ -60,33 +87,63 @@ class DailyPositionController extends Controller
     }
 
     // Store a newly created daily position
-    public function store(StoreDailyPositionRequest $request)
-    {
+ // Store a newly created daily position
+public function store(StoreDailyPositionRequest $request)
+{
+    $data = $request->all();
+    $branchId = auth()->user()->branch_id; // Get branch_id from the authenticated user
 
+    // Check if the branch target is set for the branch
+    $branchTarget = BranchTarget::where('branch_id', $branchId)->first(); // Assuming BranchTarget is the model for branch target
 
-        // Auto-assign branch_id and date
-        $data = $request->all();
-        $data['branch_id'] = auth()->user()->branch_id; // Get branch_id from the authenticated user
-        $data['date'] = Carbon::today(); // Automatically set today's date
-        $data['created_by_user_id'] = auth()->id(); // Assign the authenticated user as the creator
-
-        // Convert numbers to 3 decimal places
-        $data['consumer'] = number_format($data['consumer'], 3);
-        $data['commercial'] = number_format($data['commercial'], 3);
-        $data['micro'] = number_format($data['micro'], 3);
-        $data['agri'] = number_format($data['agri'], 3);
-
-        // Calculate total assets
-        $data['totalAssets'] = number_format($data['consumer'] + $data['commercial'] + $data['micro'] + $data['agri'], 3);
-
-        // Create the new daily position record
-        DailyPosition::create($data);
-
-        // Redirect with success message
-        return redirect()
-            ->route('daily-positions.index')
-            ->with('success', 'Daily position created successfully.');
+    if (!$branchTarget) {
+        // Return an error if branch target is not set
+        return redirect()->back()->withErrors(['error' => 'Branch target not set. Please set the branch target first.']);
     }
+
+    $data['branch_id'] = $branchId; // Use branch_id from the authenticated user
+    $data['date'] = Carbon::today(); // Automatically set today's date
+    $data['created_by_user_id'] = auth()->id(); // Assign the authenticated user as the creator
+
+    // Check for an existing entry, including soft-deleted ones
+    $existingEntry = DailyPosition::withTrashed()
+        ->where('branch_id', $data['branch_id'])
+        ->where('date', $data['date'])
+        ->first();
+
+    if ($existingEntry) {
+        if ($existingEntry->trashed()) {
+            // Permanently delete the soft-deleted record
+            $existingEntry->forceDelete();
+        } else {
+            // If the record is not soft-deleted, return an error
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Data for today already exists. Delete the existing data or try again tomorrow.']);
+        }
+    }
+
+    // Format numeric fields to 3 decimal places
+    $data['consumer'] = number_format($data['consumer'], 3);
+    $data['commercial'] = number_format($data['commercial'], 3);
+    $data['micro'] = number_format($data['micro'], 3);
+    $data['agri'] = number_format($data['agri'], 3);
+
+    // Calculate total assets
+    $data['totalAssets'] = number_format(
+        $data['consumer'] + $data['commercial'] + $data['micro'] + $data['agri'],
+        3
+    );
+
+    // Create the new daily position record
+    DailyPosition::create($data);
+
+    // Redirect to the index page with a success message
+    return redirect()
+        ->route('daily-positions.index')
+        ->with('success', 'Daily position created successfully.');
+}
+
 
     // Show the details of a single daily position
     public function show($id)
@@ -106,23 +163,42 @@ class DailyPositionController extends Controller
     }
 
     // Update the details of a specific daily position
-    public function update(UpdateDailyPositionRequest $request, DailyPosition $dailyPosition)
-    {
-        // Get all the validated data from the form
-        $data = $request->validated();
+    public function update(Request $request, DailyPosition $dailyPosition)
+{
+    // Validate the request data
+    $validatedData = $request->validate([
+        'consumer' => 'required|numeric',
+        'commercial' => 'required|numeric',
+        'micro' => 'required|numeric',
+        'agri' => 'required|numeric',
+    ]);
 
-        // Set the branch_id and date for the update
-        $data['branch_id'] = auth()->user()->branch_id; // This is for the current user
-        $data['date'] = $dailyPosition->date ?? Carbon::today(); // If no date is provided, use today's date
-        $data['updated_by_user_id'] = auth()->id(); // Who is updating the record?
+    // Add additional data
+    $data = $validatedData;
+    $data['branch_id'] = auth()->user()->branch_id; // Current user's branch
+    $data['date'] = $dailyPosition->date; // Date cannot be changed
+    $data['updated_by_user_id'] = auth()->id(); // Track who updated the record
 
-        // Update the record with the new data
-        $dailyPosition->update($data);
+    // Convert numbers to 3 decimal places
+    $data['consumer'] = number_format($data['consumer'], 3);
+    $data['commercial'] = number_format($data['commercial'], 3);
+    $data['micro'] = number_format($data['micro'], 3);
+    $data['agri'] = number_format($data['agri'], 3);
 
-        // Redirect to the list with a success message
-        return redirect()->route('daily-positions.index')
-            ->with('success', 'Daily position updated successfully.');
-    }
+    // Recalculate total assets
+    $data['totalAssets'] = number_format(
+        $data['consumer'] + $data['commercial'] + $data['micro'] + $data['agri'],
+        3
+    );
+
+    // Update the record with the new data
+    $dailyPosition->update($data);
+
+    // Redirect to the list with a success message
+    return redirect()->route('daily-positions.index')->with('success', 'Daily position updated successfully.');
+}
+
+
 
     // Delete a specific daily position
     public function destroy(DailyPosition $dailyPosition)
