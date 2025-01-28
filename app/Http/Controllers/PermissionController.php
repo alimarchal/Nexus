@@ -33,15 +33,25 @@ class PermissionController extends Controller
 
     // Display a listing of the permissions with pagination
     public function index(Request $request)
-    {
-        // Get the branch targets data, if applicable
-        $branchTargets = BranchTarget::paginate(10); // Or modify this to your desired query
+{
+    $query = Permission::query();
 
-        // Return the view with the branchTargets and other necessary data
-        $permissions = Permission::paginate(10); // This should be for permissions listing
-
-        return view('permissions.index', compact('permissions', 'branchTargets'));
+    // Apply filters based on request inputs
+    if ($name = $request->input('filter.name')) {
+        $query->where('name', 'LIKE', '%' . $name . '%');
     }
+
+    if ($createdAt = $request->input('filter.created_at')) {
+        $query->whereDate('created_at', $createdAt);
+    }
+
+    // Paginate the filtered results
+    $permissions = $query->paginate(10);
+
+    // Return the view with permissions data
+    return view('permissions.index', compact('permissions'));
+}
+
 
 
     // Show the form for editing the specified permission
