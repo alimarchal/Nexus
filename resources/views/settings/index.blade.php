@@ -97,7 +97,7 @@
                                 <div class="text-3xl font-bold leading-8">{{ \Spatie\Permission\Models\Permission::count() }}</div>
                                 <div class="mt-1 text-base font-extrabold text-black">Permissions</div>
                             </div>
-                            <img src="https://mc.imste.com/icons-images/permissions.png" alt="Permissions" class="h-16 w-16">
+                            <img src="{{url('icons-images/permission.png') }}" alt="Permissions" class="h-16 w-16">
                         </div>
                     </a>
                     <a href="{{ route('roles.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
@@ -106,7 +106,7 @@
                                 <div class="text-3xl font-bold leading-8">{{ \App\Models\Role::count() }}</div>
                                 <div class="mt-1 text-base font-extrabold text-black">Roles</div>
                             </div>
-                            <img src="https://mc.imste.com/icons-images/roles.png" alt="Roles" class="h-16 w-16">
+                            <img src="{{url('icons-images/roles.png') }}" alt="Roles" class="h-16 w-16">
                         </div>
                     </a>
                     <a href="{{ route('settings.branchsetting') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
@@ -115,7 +115,7 @@
                                 <div class="text-3xl font-bold leading-8"></div>
                                 <div class="mt-1 text-base font-extrabold text-black">Branch</div>
                             </div>
-                            <img src="https://mc.imste.com/icons-images/branches.png" alt="Branches" class="h-16 w-16">
+                            <img src="{{url('icons-images/branch.png') }}" alt="Branches" class="h-16 w-16">
                         </div>
                     </a>
                     {{--  <a href="settings.branchsetting" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
