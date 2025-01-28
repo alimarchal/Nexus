@@ -4,17 +4,35 @@ namespace App\Http\Controllers;
 
 use App\Models\Region;
 use Illuminate\Http\Request;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
+
 
 class RegionController extends Controller
 {
     /**
      * Display a listing of the resource.
-     */
-    public function index()
-    {
-        $regions = Region::paginate(10);
-        return view('regions.index', compact('regions'));
+     */public function index(Request $request)
+{
+    $regions = Region::query();
+
+    // Apply filters, if any
+    if ($request->has('filter.name')) {
+        $regions->where('name', 'like', '%' . $request->input('filter.name') . '%');
     }
+
+    if ($request->has('filter.created_at')) {
+        $regions->whereDate('created_at', $request->input('filter.created_at'));
+    }
+
+    // Paginate the results
+    $regions = $regions->paginate(10);
+
+    return view('regions.index', compact('regions'));
+}
+
+
+
 
     /**
      * Show the form for creating a new resource.

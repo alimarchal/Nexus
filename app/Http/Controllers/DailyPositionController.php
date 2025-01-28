@@ -10,9 +10,9 @@ use App\Models\Branch;
 use App\Models\Region;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-
-// Import Carbon for date handling
 use Illuminate\Http\Request;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
 
 class DailyPositionController extends Controller
 {
@@ -20,8 +20,30 @@ class DailyPositionController extends Controller
 
 
     // Display a list of daily positions with pagination
-    public function index()
+    public function index(Request $request)
     {
+        $query = DailyPosition::query()->with('branch');
+
+    $dailyPositions = QueryBuilder::for($query)
+        ->allowedFilters([
+            AllowedFilter::exact('branch_id'),  // Exact filter for branch_id
+            AllowedFilter::callback('date_range', function ($query, $value) {
+                // Ensure the value is in the correct format "start_date,end_date"
+                if ($value) {
+                    // Split the range into start and end dates
+                    $dates = explode(',', $value);
+
+                    if (count($dates) === 2) {
+                        $startDate = Carbon::parse(trim($dates[0]))->startOfDay(); // Parse and start at the beginning of the day
+                        $endDate = Carbon::parse(trim($dates[1]))->endOfDay(); // Parse and end at the end of the day
+
+                        // Apply the date range filter to the query
+                        $query->whereBetween('date', [$startDate, $endDate]);
+                    }
+                }
+            }),
+        ])
+        ->paginate(10);
         $dailyPositions = null;
         $user = auth()->user();
 
@@ -164,39 +186,55 @@ public function store(StoreDailyPositionRequest $request)
 
     // Update the details of a specific daily position
     public function update(Request $request, DailyPosition $dailyPosition)
-{
-    // Validate the request data
-    $validatedData = $request->validate([
-        'consumer' => 'required|numeric',
-        'commercial' => 'required|numeric',
-        'micro' => 'required|numeric',
-        'agri' => 'required|numeric',
-    ]);
+    {
+        // Validate the request data
+        $validatedData = $request->validate([
+            'consumer' => 'required|numeric',
+            'commercial' => 'required|numeric',
+            'micro' => 'required|numeric',
+            'agri' => 'required|numeric',
+        ]);
 
-    // Add additional data
-    $data = $validatedData;
-    $data['branch_id'] = auth()->user()->branch_id; // Current user's branch
-    $data['date'] = $dailyPosition->date; // Date cannot be changed
-    $data['updated_by_user_id'] = auth()->id(); // Track who updated the record
+        // Add additional data
+        $data = $validatedData;
+        $data['branch_id'] = auth()->user()->branch_id; // Current user's branch
+        $data['date'] = $dailyPosition->date; // Date cannot be changed
+        $data['updated_by_user_id'] = auth()->id(); // Track who updated the record
 
-    // Convert numbers to 3 decimal places
-    $data['consumer'] = number_format($data['consumer'], 3);
-    $data['commercial'] = number_format($data['commercial'], 3);
-    $data['micro'] = number_format($data['micro'], 3);
-    $data['agri'] = number_format($data['agri'], 3);
+        // Check if updating these values will violate the unique constraint
+        $existingRecord = DailyPosition::where('branch_id', $data['branch_id'])
+            ->where('date', $data['date'])
+            ->where('id', '!=', $dailyPosition->id) // Exclude the current record
+            ->first();
 
-    // Recalculate total assets
-    $data['totalAssets'] = number_format(
-        $data['consumer'] + $data['commercial'] + $data['micro'] + $data['agri'],
-        3
-    );
+        if ($existingRecord) {
+            return redirect()->back()->withErrors([
+               'error' => 'This record cannot be updated as more than 24 hours have passed since its creation.'
 
-    // Update the record with the new data
-    $dailyPosition->update($data);
 
-    // Redirect to the list with a success message
-    return redirect()->route('daily-positions.index')->with('success', 'Daily position updated successfully.');
-}
+            ]);
+        }
+
+        // Convert numbers to 3 decimal places
+        $data['consumer'] = number_format($data['consumer'], 3, '.', '');
+        $data['commercial'] = number_format($data['commercial'], 3, '.', '');
+        $data['micro'] = number_format($data['micro'], 3, '.', '');
+        $data['agri'] = number_format($data['agri'], 3, '.', '');
+
+        // Recalculate total assets
+        $data['totalAssets'] = number_format(
+            $data['consumer'] + $data['commercial'] + $data['micro'] + $data['agri'],
+            3,
+            '.',
+            ''
+        );
+
+        // Update the record with the new data
+        $dailyPosition->update($data);
+
+        // Redirect to the list with a success message
+        return redirect()->route('daily-positions.index')->with('success', 'Daily position updated successfully.');
+    }
 
 
 

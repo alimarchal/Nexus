@@ -52,7 +52,7 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700">Active:</label>
+                        <label class="block text-gray-700">Status:</label>
                         <select name="is_active" class="w-full border-gray-300 rounded-md shadow-sm">
                             <option value="Yes" {{ old('is_active', $user->is_active) == 'Yes' ? 'selected' : '' }}>Yes</option>
                             <option value="No" {{ old('is_active', $user->is_active) == 'No' ? 'selected' : '' }}>No</option>

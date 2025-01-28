@@ -11,26 +11,26 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class BranchController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */public function index()
-{
-    // Paginate the branches, e.g., 10 per page
+    public function index(Request $request)
+    {
+        $branches = QueryBuilder::for(Branch::class)
+            ->allowedFilters([
+                AllowedFilter::exact('name'),
+                AllowedFilter::exact('region_id'),
+                AllowedFilter::exact('district_id'),
+                AllowedFilter::exact('id'),  // Allow filtering by 'id' (branch_id)
+            ])
+            ->with(['region', 'district'])  // We only need to eager load 'region' and 'district'
+            ->paginate(10);
 
-    $branchTargets = QueryBuilder::for(Branch::class)
-    ->allowedFilters([
-        AllowedFilter::exact('name'),
-        AllowedFilter::exact('district_id'),
-        AllowedFilter::exact('region_id'),
-        AllowedFilter::exact('updated_by_user_id'),
-        AllowedFilter::exact('annual_target_amount'),
-    ])
-    ->paginate(10);
-    $branches = Branch::with(['region', 'district'])->paginate(10);
+        // Fetch regions and districts for the dropdowns
+        $regions = Region::all();
+        $districts = District::all();
 
-    // Return the view with paginated branches
-    return view('branches.index', compact('branches'));
-}
+        // Return the view with the filtered data
+        return view('branches.index', compact('branches', 'regions', 'districts'));
+    }
+
 
 
     /**
