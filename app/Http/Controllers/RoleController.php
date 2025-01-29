@@ -30,13 +30,26 @@ class RoleController extends Controller
     }
 
     // Display a listing of the roles with pagination
-    public function index()
+    public function index(Request $request)
     {
-        // Paginate roles with 10 per page (adjust this number as necessary)
-        $roles = Role::paginate(10);
+        $query = Role::query();
 
+        // Apply filters based on request inputs
+        if ($name = $request->input('filter.name')) {
+            $query->where('name', 'LIKE', '%' . $name . '%');
+        }
+
+        if ($createdAt = $request->input('filter.created_at')) {
+            $query->whereDate('created_at', $createdAt);
+        }
+
+        // Paginate the filtered results
+        $roles = $query->paginate(10);
+
+        // Return the view with roles data
         return view('roles.index', compact('roles'));
     }
+
 
     // Show the form for editing the specified role
     public function edit(Role $role)

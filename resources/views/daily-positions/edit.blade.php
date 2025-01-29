@@ -1,17 +1,25 @@
 
 <x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight inline-block">
+        Edit Daily Position
+        </h2>
+
+        <div class="flex justify-center items-center float-right">
+            <a href="{{ route('daily-positions.index') }}"
+               class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <!-- Arrow Left Icon SVG -->
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+            </a>
+        </div>
+    </x-slot>
+
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 bg-white border-b border-gray-200">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-2xl font-bold">Edit Daily Position</h2>
-                        <a href="{{ route('daily-positions.index') }}"
-                           class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700">
-                            Back to List
-                        </a>
-                    </div>
-                    <div class="p-6">
+            <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
+                <div class="p-6 lg:p-8 bg-white border-b border-gray-200">
                         <!-- Success Message -->
                         @if(session('success'))
                             <div class="mb-4 p-4 bg-green-50 border-l-4 border-green-500">
@@ -22,7 +30,7 @@
                         @endif
 
                         <!-- Error Message -->
-                        @if ($errors->any())
+                        {{--  @if ($errors->any())
                             <div class="mb-4 p-4 bg-red-50 border-l-4 border-red-500">
                                 <div class="text-red-700">
                                     <ul>
@@ -32,7 +40,7 @@
                                     </ul>
                                 </div>
                             </div>
-                        @endif
+                        @endif  --}}
 
                     <x-status-message class="mb-4 mt-4" />
 
@@ -204,30 +212,7 @@
 
                         <!-- Bottom Section -->
                         <div class="mt-8 pt-6 border-t border-gray-200">
-                            {{--  <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                <div class="relative">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Number of Accounts</label>
-                                    <input type="text" name="noOfAccount"
-                                           value="{{ old('noOfAccount', number_format($dailyPosition->noOfAccount, 3)) }}"
-                                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition"
-                                           onblur="formatNumber(this)">
-                                </div>
 
-                                <div class="relative">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Number of ACC</label>
-                                    <input type="text" name="noOfAcc"
-                                           value="{{ old('noOfAcc', number_format($dailyPosition->noOfAcc, 3)) }}"
-                                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition"
-                                           onblur="formatNumber(this)">
-                                </div>
-
-                                <div class="relative">
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Profit</label>
-                                    <input type="text" name="profit"
-                                           value="{{ old('profit', number_format($dailyPosition->profit, 3)) }}"
-                                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition"
-                                           onblur="formatNumber(this)">
-                                </div>  --}}
 
                                 <div class="relative">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
@@ -239,17 +224,10 @@
                         </div>
 
                         <div class="mt-8 flex justify-end space-x-3">
-                            <a href="{{ route('daily-positions.index') }}"
-                               class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">
-                                Cancel
-                            </a>
-                            <button type="submit"
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L"></path>
-                                </svg>
-                                Update
-                            </button>
+                            <div class="mt-8 flex justify-end">
+                                <x-button class="ms-4">
+                                    Update
+                                </x-button>
                         </div>
                     </form>
                 </div>
@@ -257,65 +235,73 @@
         </div>
     </div>
 
-    <script>
-        function formatNumber(input) {
-            let value = input.value.replace(/[^0-9.-]/g, '');
-            if (value === '' || isNaN(value)) value = '0';
-            let num = parseFloat(value);
-            if (num < 0) num = 0;
-            input.value = num.toFixed(3);
-        }
 
-        function calculateTotalAssets() {
-            const consumer = parseFloat(document.querySelector('[name="consumer"]').value) || 0;
-            const commercial = parseFloat(document.querySelector('[name="commercial"]').value) || 0;
-            const micro = parseFloat(document.querySelector('[name="micro"]').value) || 0;
-            const agri = parseFloat(document.querySelector('[name="agri"]').value) || 0;
-
-            const total = consumer + commercial + micro + agri;
-            document.querySelector('[name="totalAssets"]').value = total.toFixed(3);
-        }
-
-        function calculateTotalDeposits() {
-            const govt = parseFloat(document.querySelector('[name="govtDeposit"]').value) || 0;
-            const private = parseFloat(document.querySelector('[name="privateDeposit"]').value) || 0;
-
-            const total = govt + private;
-            document.querySelector('[name="totalDeposits"]').value = total.toFixed(3);
-            calculateGrandTotal();
-        }
-
-        function calculateTotalCasaTdr() {
-            const casa = parseFloat(document.querySelector('[name="casa"]').value) || 0;
-            const tdr = parseFloat(document.querySelector('[name="tdr"]').value) || 0;
-
-            const total = casa + tdr;
-            document.querySelector('[name="totalCasaTdr"]').value = total.toFixed(3);
-            calculateGrandTotal();
-        }
-
-        function calculateGrandTotal() {
-            const totalDeposits = parseFloat(document.querySelector('[name="totalDeposits"]').value) || 0;
-            const totalCasaTdr = parseFloat(document.querySelector('[name="totalCasaTdr"]').value) || 0;
-
-            const grandTotal = totalDeposits + totalCasaTdr;
-            document.querySelector('[name="grandTotal"]').value = grandTotal.toFixed(3);
-        }
-
-        document.getElementById('bankingForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const totalDeposits = parseFloat(document.querySelector('[name="totalDeposits"]').value);
-            const totalCasaTdr = parseFloat(document.querySelector('[name="totalCasaTdr"]').value);
-
-            if (totalDeposits !== totalCasaTdr) {
-                alert('Total Deposits must equal Total CASA + TDR');
-                return false;
+    @push('modals')
+        <script>
+            function formatNumber(input) {
+                let value = input.value.replace(/[^0-9.-]/g, '');
+                if (value === '' || isNaN(value)) value = '0';
+                let num = parseFloat(value);
+                if (num < 0) num = 0;
+                input.value = num.toFixed(3);
             }
 
-            alert('Form is valid and ready to submit');
-        });
-    </script>
+            function calculateTotalAssets() {
+                const consumer = parseFloat(document.querySelector('[name="consumer"]').value) || 0;
+                const commercial = parseFloat(document.querySelector('[name="commercial"]').value) || 0;
+                const micro = parseFloat(document.querySelector('[name="micro"]').value) || 0;
+                const agri = parseFloat(document.querySelector('[name="agri"]').value) || 0;
+
+                const total = consumer + commercial + micro + agri;
+                document.querySelector('[name="totalAssets"]').value = total.toFixed(3);
+            }
+
+            function calculateTotalDeposits() {
+                const govt = parseFloat(document.querySelector('[name="govtDeposit"]').value) || 0;
+                const privateDeposit = parseFloat(document.querySelector('[name="privateDeposit"]').value) || 0;
+
+                const total = govt + privateDeposit;
+                document.querySelector('[name="totalDeposits"]').value = total.toFixed(3);
+                calculateGrandTotal();
+            }
+
+            function calculateTotalCasaTdr() {
+                const casa = parseFloat(document.querySelector('[name="casa"]').value) || 0;
+                const tdr = parseFloat(document.querySelector('[name="tdr"]').value) || 0;
+
+                const total = casa + tdr;
+                document.querySelector('[name="totalCasaTdr"]').value = total.toFixed(3);
+                calculateGrandTotal();
+            }
+
+            function calculateGrandTotal() {
+                const totalDeposits = parseFloat(document.querySelector('[name="totalDeposits"]').value) || 0;
+                const totalCasaTdr = parseFloat(document.querySelector('[name="totalCasaTdr"]').value) || 0;
+
+                const grandTotal = totalDeposits - totalCasaTdr;
+                document.querySelector('[name="grandTotal"]').value = grandTotal.toFixed(3);
+            }
+
+            document.getElementById('bankingForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const totalDeposits = parseFloat(document.querySelector('[name="totalDeposits"]').value);
+                const totalCasaTdr = parseFloat(document.querySelector('[name="totalCasaTdr"]').value);
+
+                const totalGT = totalDeposits - totalCasaTdr;
+
+                if (totalDeposits !== totalCasaTdr) {
+                    alert('Total Difference Must Equal to Zero \nYour Difference is: ' + totalGT + '\nPlease correct before submission.');
+                    return false;
+                }
+
+                // Form is valid, can be submitted
+                // alert('Form is valid and ready to submit');
+                // Form is valid, submit it
+                this.submit();
+            });
+        </script>
+    @endpush
 </body>
 </html>
 

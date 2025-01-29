@@ -9,10 +9,38 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(Request $request)
+
     {
-        $users = User::with('branch')->paginate(10);
-        return view('users.index', compact('users'));
+        $query = \App\Models\User::query();
+
+    // Apply branch filter
+    if ($branchId = $request->input('filter.branch_id')) {
+        $query->where('branch_id', $branchId);
+    }
+
+    // Apply role filter
+    if ($role = $request->input('filter.role')) {
+        $query->whereHas('roles', function ($q) use ($role) {
+            $q->where('name', $role);
+        });
+    }
+
+    // Apply status filter
+    if ($status = $request->input('filter.is_active')) {
+        $query->where('is_active', $status);
+    }
+
+    // Apply created_at filter
+    if ($createdAt = $request->input('filter.created_at')) {
+        $query->whereDate('created_at', $createdAt);
+    }
+
+    // Paginate the results
+    $users = $query->paginate(10);
+
+    return view('users.index', compact('users'));
+
     }
 
     public function create()

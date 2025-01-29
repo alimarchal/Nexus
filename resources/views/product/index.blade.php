@@ -87,7 +87,7 @@
                                 <div class="text-3xl font-bold leading-8">Branch</div>
                                 <div class="mt-1 text-base font-extrabold text-black">Daily Position</div>
                             </div>
-                            <img src="{{ url('icons-images/bank-deposit.png') }}" alt="Account" class="h-16 w-16">
+                            <img src="{{ url('icons-images/report.png') }}" alt="Account" class="h-16 w-16">
                         </div>
                     </a>
                 </div>

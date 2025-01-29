@@ -5,15 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\District;
 use App\Models\Region;
 use Illuminate\Http\Request;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class DistrictController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $districts = District::with('region')->paginate(10);
+        $districts = QueryBuilder::for(District::class)
+            ->allowedFilters([
+                'id',
+                'name',
+                'district', // Add this to the allowed filters
+            ])
+            ->paginate(10);
+
         return view('districts.index', compact('districts'));
     }
 
+    // ... other methods (create, store, edit, etc.)
     public function create()
     {
         $regions = Region::all();
