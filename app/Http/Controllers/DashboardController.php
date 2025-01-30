@@ -20,9 +20,9 @@ class DashboardController extends Controller
         // Route to role-specific dashboard view
         return match ($user->roles->first()->name) {
             'branch' => view('dashboard.branches'),
-            'region' => view('dashboard.dashboard'),
-            'division' => view('dashboard.dashboard'),
-            'head-office' => view('dashboard.dashboard'),
+            'region' => view('dashboard.region'),
+            'division' => view('dashboard.division'),
+            'head-office' => view('dashboard.all'),
             'super-admin' => view('dashboard.dashboard'),
             default => abort(403)
         };

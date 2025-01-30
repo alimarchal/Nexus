@@ -96,7 +96,7 @@
                                 <div class="text-2xl font-bold leading-8">Deposit & Advances</div>
                                 <div class="mt-1 text-base font-extrabold text-black">BranchWise</div>
                             </div>
-                            <img src="https://mc.imste.com/icons-images/bank-deposit.png" alt="Account" class="h-16 w-16">
+                            <img src="{{url('icons-images/deposit.png') }}" alt="Account" class="h-16 w-16">
                         </div>
                     </a>
                     <a href="{{route('reports.deposit-advances-reports-region')}}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
@@ -105,7 +105,7 @@
                                 <div class="text-2xl font-bold leading-8">Deposit & Advances</div>
                                 <div class="mt-1 text-base font-extrabold text-black"> RegionWise</div>
                             </div>
-                            <img src="https://mc.imste.com/icons-images/bank-deposit.png" alt="Account" class="h-16 w-16">
+                            <img src="{{url('icons-images/regiondeposit.png') }}" alt="Account" class="h-16 w-16">
                         </div>
                     </a>
                     <a href="{{route('reports.accounts-regionwise-reports')}}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
@@ -114,7 +114,7 @@
                                 <div class="text-2xl font-bold leading-8">Accounts</div>
                                 <div class="mt-1 text-base font-extrabold text-black">RegionWise</div>
                             </div>
-                            <img src="https://mc.imste.com/icons-images/accounting.png" alt="Account" class="h-16 w-16">
+                            <img src="{{url('icons-images/accounts.png') }}" alt="Account" class="h-16 w-16">
                         </div>
                     </a>
                     <a href="{{route('reports.accounts-branchwise-reports')}}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
@@ -123,7 +123,7 @@
                                 <div class="text-2xl font-bold leading-8">Accounts</div>
                                 <div class="mt-1 text-base font-extrabold text-black">BranchWise</div>
                             </div>
-                            <img src="https://mc.imste.com/icons-images/accounting.png" alt="Account" class="h-16 w-16">
+                            <img src="{{url('icons-images/branchwise.png') }}" alt="Account" class="h-16 w-16">
                         </div>
                     </a>
                 </div>
