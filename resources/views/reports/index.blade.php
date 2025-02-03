@@ -112,79 +112,73 @@
         </div>
     </div>
 
-    @push('modals')
-        <script>
-            const targetDiv = document.getElementById("filters");
-            const btn = document.getElementById("toggle");
+    
+    <div id="filters">
+    <!-- Content for filters -->
+</div>
 
-            function showFilters() {
-                targetDiv.style.display = 'block';
-                targetDiv.style.opacity = '0';
-                targetDiv.style.transform = 'translateY(-20px)';
-                setTimeout(() => {
-                    targetDiv.style.opacity = '1';
-                    targetDiv.style.transform = 'translateY(0)';
-                }, 10);
+<button id="toggle"></button>
+
+
+@push('modals')
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const targetDiv = document.getElementById("filters");
+        const btn = document.getElementById("toggle");
+
+        if (!targetDiv || !btn) {
+            console.error("Elements not found in the DOM.");
+            return;
+        }
+
+        function showFilters() {
+            targetDiv.style.display = 'block';
+            targetDiv.style.opacity = '0';
+            targetDiv.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                targetDiv.style.opacity = '1';
+                targetDiv.style.transform = 'translateY(0)';
+            }, 10);
+        }
+
+        function hideFilters() {
+            targetDiv.style.opacity = '0';
+            targetDiv.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                targetDiv.style.display = 'none';
+            }, 300);
+        }
+
+        btn.onclick = function(event) {
+            event.stopPropagation();
+            if (targetDiv.style.display === "none") {
+                showFilters();
+            } else {
+                hideFilters();
             }
+        };
 
-            function hideFilters() {
-                targetDiv.style.opacity = '0';
-                targetDiv.style.transform = 'translateY(-20px)';
-                setTimeout(() => {
-                    targetDiv.style.display = 'none';
-                }, 300);
+        // Hide filters when clicking outside
+        document.addEventListener('click', function(event) {
+            if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
+                hideFilters();
             }
+        });
 
-            btn.onclick = function(event) {
-                event.stopPropagation();
-                if (targetDiv.style.display === "none") {
-                    showFilters();
-                } else {
-                    hideFilters();
-                }
-            };
+        // Prevent clicks inside the filter from closing it
+        targetDiv.addEventListener('click', function(event) {
+            event.stopPropagation();
+        });
 
-            document.addEventListener('click', function(event) {
-                if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
-                    hideFilters();
-                }
-            });
-
-            targetDiv.addEventListener('click', function(event) {
-                event.stopPropagation();
-            });
-
-            const style = document.createElement('style');
-            style.textContent = `
+        // Add CSS for smooth transitions
+        const style = document.createElement('style');
+        style.textContent = `
             #filters {
                 transition: opacity 0.3s ease, transform 0.3s ease;
             }
         `;
-            document.head.appendChild(style);
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script>
-            document.querySelectorAll('.delete-button').forEach(button => {
-                button.addEventListener('click', function (e) {
-                    e.preventDefault();
-
-                    const form = this.closest('form');
-
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "You won't be able to revert this!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Yes, delete it!'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            form.submit();
-                        }
-                    });
-                });
-            });
-        </script>
+        document.head.appendChild(style);
+    });
+</script>
     @endpush
 </x-app-layout>
