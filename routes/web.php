@@ -13,6 +13,7 @@ use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\UserModuleController;
 
 
 
@@ -48,9 +49,12 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('reports/deposit-advances-reports-branch', [ReportController::class, 'depositadvancesregionPositionReport'])->name('reports.deposit-advances-reports-branch');
     Route::get('reports/deposit-advances-reports-region', [ReportController::class, 'depositadvancesPositionReport'])->name('reports.deposit-advances-reports-region');
     Route::get('reports/accounts-branchwise-reports', [ReportController::class, 'accountsbranchwisePositionReport'])->name('reports.accounts-branchwise-reports');
-
+    Route::get('settings/user-module', [UserModuleController::class, 'index'])->name('user.module');
+    Route::get('settings/user-module/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('settings/user-module/permissions', [PermissionController::class, 'index'])->name('permissions.index');
+    Route::get('settings/user-module/roles', [RoleController::class, 'index'])->name('roles.index');
+    
 
     Route::get('reports/accounts-regionwise-reports', [ReportController::class, 'accountsregionwisePositionReport'])->name('reports.accounts-regionwise-reports');
-
-
+    
 });

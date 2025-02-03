@@ -18,21 +18,22 @@
                 </div>
 
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link href="{{ route('product.index') }}" :active="request()->is('product/*')">
+                <x-nav-link href="{{ route('product.index') }}" :active="request()->is('product*')">
+
                         {{ __('Product') }}
                     </x-nav-link>
                 </div>
 
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link href="{{ route('reports.index') }}" :active="request()->routeIs('branch-targets.index')">
-                        {{ __('Reports') }}
-                    </x-nav-link>
+                <x-nav-link href="{{ route('reports.index') }}" :active="request()->is('reports*')">
+    {{ __('Reports') }}
+</x-nav-link>
                 </div>
 
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link href="{{ route('settings.index') }}" :active="request()->routeIs('branch-targets.index')">
-                        {{ __('Settings') }}
-                    </x-nav-link>
+                <x-nav-link href="{{ route('settings.index') }}" :active="request()->is('settings*')">
+    {{ __('Settings') }}
+</x-nav-link>
                 </div>
 
 
