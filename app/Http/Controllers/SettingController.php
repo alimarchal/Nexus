@@ -21,4 +21,8 @@ class SettingController extends Controller
     {
         return view('settings.branchsetting'); // Render the branch settings view
     }
+    public function userModule()
+    {
+        return view('settings.user-module'); // Render the branch settings view
+    }
 }

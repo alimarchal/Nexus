@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
-            Permissions
+        Settings User-Module Permissions
         </h2>
 
         <div class="flex justify-center items-center float-right">
@@ -28,7 +28,7 @@
         </div>
     </x-slot>
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters">
+    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters" style="display: none">
             <div class="p-6">
                 <form method="GET" action="{{ route('permissions.index') }}">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

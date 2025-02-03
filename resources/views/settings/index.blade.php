@@ -80,38 +80,21 @@
     <div class="py-6">
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="grid grid-cols-12 mb-4 gap-6">
-            <a href="{{ route('users.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
+            <a href="settings/user-module" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                 <div class="p-5 flex justify-between">
                     <div>
-                        <div class="text-3xl font-bold leading-8">{{ \App\Models\User::count() }}</div>
-                        <div class="mt-1 text-base font-extrabold text-black">Users</div>
+                        
+                        <div class="mt-1 text-base font-extrabold text-black">User-Module</div>
                     </div>
-                    <img src="{{ url('icons-images/user.png') }}" alt="Users" class="h-14 w-14">
+                    <img src="{{ url('icons-images/usermodule.png') }}" alt="Users" class="h-14 w-14">
                 </div>
             </a>
-            <a href="{{ route('permissions.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                <div class="p-5 flex justify-between">
-                    <div>
-                        <div class="text-3xl font-bold leading-8">{{ \Spatie\Permission\Models\Permission::count() }}</div>
-                        <div class="mt-1 text-base font-extrabold text-black">Permissions</div>
-                    </div>
-                    <img src="{{ url('icons-images/permission.png') }}" alt="Permissions" class="h-14 w-14">
-                </div>
-            </a>
-            <a href="{{ route('roles.index') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                <div class="p-5 flex justify-between">
-                    <div>
-                        <div class="text-3xl font-bold leading-8">{{ \App\Models\Role::count() }}</div>
-                        <div class="mt-1 text-base font-extrabold text-black">Roles</div>
-                    </div>
-                    <img src="{{ url('icons-images/roles.png') }}" alt="Roles" class="h-14 w-14">
-                </div>
-            </a>
+           
             <a href="{{ route('settings.branchsetting') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
                 <div class="p-5 flex justify-between">
                     <div>
-                        <div class="text-3xl font-bold leading-8">{{ \App\Models\Role::count() }}</div>
-                        <div class="mt-1 text-base font-extrabold text-black">Branch</div>
+                      
+                        <div class="mt-1 text-base font-extrabold text-black">Branch Module</div>
                     </div>
                     <img src="{{ url('icons-images/branch.png') }}" alt="Branches" class="h-14 w-14">
                 </div>
