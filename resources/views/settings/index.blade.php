@@ -27,8 +27,8 @@
                 <span class="hidden md:inline-block">Add Target</span>
             </a>  --}}
             <a href="{{ route('dashboard') }}" class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                <!-- Arrow Left Icon SVG -->
-                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <!-- Arrow Left Icon SVG -->
+                  <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
             </a>
@@ -86,7 +86,7 @@
                         
                         <div class="mt-1 text-base font-extrabold text-black">User-Module</div>
                     </div>
-                    <img src="{{ url('icons-images/usermodule.png') }}" alt="Users" class="h-14 w-14">
+                    <img src="{{ url('icons-images/user1.png') }}" alt="Users" class="h-14 w-14">
                 </div>
             </a>
            
@@ -96,7 +96,7 @@
                       
                         <div class="mt-1 text-base font-extrabold text-black">Branch Module</div>
                     </div>
-                    <img src="{{ url('icons-images/branch.png') }}" alt="Branches" class="h-14 w-14">
+                    <img src="{{ url('icons-images/bankmodule.png') }}" alt="Branches" class="h-14 w-14">
                 </div>
             </a>
         </div>
