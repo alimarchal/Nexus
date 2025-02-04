@@ -25,6 +25,7 @@ Route::get('/', function () {
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/daily-positions', [DashboardController::class, 'daily_position'])->name('dashboard.daily-positions');
 
 
     Route::get('product', [ProductController::class, 'product'])->name('product.index');
@@ -53,8 +54,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('settings/user-module/users', [UserController::class, 'index'])->name('users.index');
     Route::get('settings/user-module/permissions', [PermissionController::class, 'index'])->name('permissions.index');
     Route::get('settings/user-module/roles', [RoleController::class, 'index'])->name('roles.index');
-    
+
 
     Route::get('reports/accounts-regionwise-reports', [ReportController::class, 'accountsregionwisePositionReport'])->name('reports.accounts-regionwise-reports');
-    
+
 });

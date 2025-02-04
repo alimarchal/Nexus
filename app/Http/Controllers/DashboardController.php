@@ -29,4 +29,9 @@ class DashboardController extends Controller
 
 //        return view('dashboard');
     }
+
+    public function daily_position(Request $request)
+    {
+        return view('dashboard.daily-position');
+    }
 }
