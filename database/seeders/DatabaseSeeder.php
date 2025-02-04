@@ -20,7 +20,8 @@ class DatabaseSeeder extends Seeder
             DistrictSeeder::class,
             BranchSeeder::class,
             ContactSeeder::class,
-            RolesAndPermissionsSeeder::class
+            RolesAndPermissionsSeeder::class,
+            DivisionSeeder::class
         ]);
     }
 }
