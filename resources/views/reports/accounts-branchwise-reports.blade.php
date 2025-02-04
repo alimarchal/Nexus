@@ -30,12 +30,12 @@
 
     <div class="max-w-7xl mx-auto mt-12 px-4 sm:px-6 lg:px-8 print:hidden" style="display: none" id="filters">
         <div class="rounded-xl p-4 bg-white shadow-lg">
-            <form action="{{ route('reports.daily-position-report') }}" method="GET">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label for="date" class="block text-gray-700 font-bold mb-2">Date</label>
-                        <input type="date" name="filter[date]" value="{{ request('filter.date') }}" id="date" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">
-                    </div>
+        <form action="{{ route('reports.daily-position-report') }}" method="GET">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="date" class="block text-gray-700 font-bold mb-2">Date</label>
+                    <input type="date" name="filter[date]" value="{{ request('filter.date') }}" id="date" class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">
+                </div>
 
                     <div>
                         <x-label for="branch_id" value="{{ __('Branch') }}"/>
@@ -86,6 +86,60 @@
             </div>
         </div>
     </div>
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const targetDiv = document.getElementById("filters");
+        const btn = document.getElementById("toggle");
+
+        // Check if elements exist in the DOM
+        if (!targetDiv || !btn) {
+            console.error("Elements not found in the DOM.");
+            return;
+        }
+
+        // Function to show filters with a transition
+        function showFilters() {
+            targetDiv.style.display = 'block'; // Make the filter visible
+            targetDiv.style.opacity = '0';
+            targetDiv.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                targetDiv.style.opacity = '1'; // Fade-in effect
+                targetDiv.style.transform = 'translateY(0)'; // Move filter back into place
+            }, 10);
+        }
+
+        // Function to hide filters with a transition
+        function hideFilters() {
+            targetDiv.style.opacity = '0';
+            targetDiv.style.transform = 'translateY(-20px)';
+            setTimeout(() => {
+                targetDiv.style.display = 'none'; // Hide the filter
+            }, 300);
+        }
+
+        // Toggle the visibility of the filter when the button is clicked
+        btn.addEventListener('click', function(event) {
+            event.stopPropagation();
+            if (targetDiv.style.display === "none" || targetDiv.style.display === "") {
+                showFilters(); // Show the filter
+            } else {
+                hideFilters(); // Hide the filter
+            }
+        });
+
+        // Hide filters if clicking outside of the filter or button
+        document.addEventListener('click', function(event) {
+            if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
+                hideFilters(); // Hide the filter if clicked outside
+            }
+        });
+
+        // Prevent clicks inside the filter from closing it
+        targetDiv.addEventListener('click', function(event) {
+            event.stopPropagation();
+        });
+    });
+</script>
 
 
 
