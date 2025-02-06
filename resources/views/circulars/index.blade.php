@@ -124,11 +124,11 @@
                                             <td class="py-1 px-2 text-center">
                                                 <!-- Truncated preview text -->
                                                 <span
-                                                    class="description-preview block whitespace-pre-wrap break-words">{{ Str::limit($circular->description, 30) }}</span>
+                                                    class="description-preview block whitespace-pre-wrap break-words">{{ Str::limit($circular->description, 25) }}</span>
 
-                                                <!-- Full description text with word wrapping -->
+                                                <!-- Full description text (hidden initially) -->
                                                 <span class="description-full block whitespace-pre-wrap break-words"
-                                                    style="display: none; text-align: justify;">
+                                                    style="display: none;">
                                                     @php
                                                         // Wordwrap the description at 30 characters without cutting words
                                                         $wrappedDescription = wordwrap(
@@ -142,13 +142,26 @@
                                                     @endphp
                                                 </span>
 
-                                                <!-- Link to toggle full description visibility -->
+                                                <!-- Link to open the modal with the full description -->
                                                 @if (strlen($circular->description) > 30)
-                                                    <!-- Show link only if description is longer than 30 chars -->
                                                     <a href="javascript:void(0);" class="text-blue-600 hover:underline"
-                                                        onclick="toggleDescription(this)">Read more</a>
+                                                        onclick="openModal('{{ addslashes($circular->description) }}')">Read
+                                                        more</a>
                                                 @endif
                                             </td>
+
+                                            <!-- Modal for full description -->
+                                            <div id="descriptionModal"
+                                                class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 hidden">
+                                                <div class="bg-white p-6 rounded-lg w-11/12 max-w-lg">
+                                                    <h2 class="text-xl font-semibold mb-4">Full Description</h2>
+                                                    <div id="modalDescription"
+                                                        class="whitespace-pre-wrap break-words"></div>
+                                                    <button onclick="closeModal()"
+                                                        class="mt-4 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Close</button>
+                                                </div>
+                                            </div>
+
 
                                             <td class="py-1 px-2 text-center">
                                                 @if ($circular->attachment)
@@ -233,6 +246,21 @@
                         hideFilters();
                     }
                 });
+                // Function to open the modal and show the full description
+                function openModal(description) {
+                    // Set the description content in the modal
+                    document.getElementById('modalDescription').innerText = description;
+
+                    // Show the modal
+                    document.getElementById('descriptionModal').classList.remove('hidden');
+                }
+
+                // Function to close the modal
+                function closeModal() {
+                    // Hide the modal
+                    document.getElementById('descriptionModal').classList.add('hidden');
+                }
+
 
                 // Prevent clicks inside the filter from closing it
                 targetDiv.addEventListener('click', function(event) {
