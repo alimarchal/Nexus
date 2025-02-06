@@ -1,4 +1,4 @@
-<div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
+<div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100" style="background-image:url(/icons-images/background.jpg);background-size:cover;background-repeat: no-repeat;">
     <div>
         {{ $logo }}
     </div>
