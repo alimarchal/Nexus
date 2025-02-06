@@ -91,7 +91,7 @@
                             <div class="text-3xl font-bold leading-8">{{ \App\Models\Circular::count() }}</div>
                             <div class="mt-1 text-base font-extrabold text-black">Circulars</div>
                         </div>
-                        <img src="{{ url('icons-images/noti.webp') }}" alt="Account" class="h-16 w-16">
+                        <img src="{{ url('icons-images/circular.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
             </div>

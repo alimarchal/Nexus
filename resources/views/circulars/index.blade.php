@@ -93,19 +93,18 @@
                     <x-status-message />
                     @if ($circulars->count() > 0)
                         <div class="relative overflow-x-auto rounded-lg">
-                            <table class="min-w-max w-full table-auto text-sm">
+                        <table class="min-w-max w-full table-auto text-sm">
                                 <thead>
-                                    <tr class="bg-blue-800 text-white uppercase text-sm">
-                                        <th class="py-2 px-2 text-center">Circular No</th>
-                                        <th class="py-2 px-2 text-center">Title</th>
-                                        <th class="py-2 px-2 text-center">Division</th>
-
-                                        <th class="py-2 px-2 text-center">Discription</th>
-                                        <th class="py-2 px-2 text-center">Attachment</th>
-                                        <th class="py-2 px-2 text-center">Created By</th>
-                                        <th class="py-2 px-2 text-center">Created At</th>
-                                        <th class="py-2 px-2 text-center print:hidden">Actions</th>
-                                    </tr>
+                             <tr class="bg-blue-800 text-white uppercase text-sm w-full">
+    <th class="py-2 px-2 text-center">Circular No</th>
+    <th class="py-2 px-2 text-center">Title</th>
+    <th class="py-2 px-2 text-center">Division</th>
+    <th class="py-2 px-2 text-center">Discription</th>
+    <th class="py-2 px-2 text-center">Attachment</th>
+    <th class="py-2 px-2 text-center">Created By</th>
+    <th class="py-2 px-2 text-center">Created At</th>
+    <th class="py-2 px-2 text-center print:hidden">Actions</th>
+</tr>
                                 </thead>
                                 <tbody class="text-black text-md leading-normal font-extrabold">
                                     @foreach ($circulars as $circular)
@@ -224,6 +223,7 @@
                     fullDescription.style.display = 'inline';
                     link.style.display = 'none';
                 }
+                
             </script>
         @endpush
 </x-app-layout>
