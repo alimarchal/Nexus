@@ -26,34 +26,38 @@
                         @csrf
                         @method('PUT')
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <x-label for="circular_no" value="Circular Number" :required="true" />
-                                <x-input id="circular_no" type="text" name="circular_no" class="mt-1 block w-full"
-                                    :value="old('circular_no', $circular->circular_no)" required />
-                            </div>
+                        <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                            <div class="flex flex-col md:flex-row gap-4">
+                                <div class="flex-1">
+                                    <x-label for="circular_no" value="Circular Number" :required="true" />
+                                    <x-input id="circular_no" type="text" name="circular_no"
+                                        class="mt-1 block w-full" :value="old('circular_no', $circular->circular_no)" required />
+                                </div>
 
-                            <div>
-                                <x-label for="title" value="Title" />
-                                <x-input id="title" type="text" name="title" class="mt-1 block w-full"
-                                    :value="old('title', $circular->title)" />
-                            </div>
+                                <div class="flex-1">
+                                    <x-label for="title" value="Title" />
+                                    <x-input id="title" type="text" name="title" class="mt-1 block w-full"
+                                        :value="old('title', $circular->title)" />
+                                </div>
 
-                            <div>
-                                <x-label for="division_id" value="Division" :required="true" />
-                                <select id="division_id" name="division_id"
-                                    class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                    required>
-                                    <option value="">Select Division</option>
-                                    @foreach ($divisions as $division)
-                                        <option value="{{ $division->id }}"
-                                            {{ old('division_id', $circular->division_id) == $division->id ? 'selected' : '' }}>
-                                            {{ $division->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="flex-1">
+                                    <x-label for="division_id" value="Division" :required="true" />
+                                    <select id="division_id" name="division_id"
+                                        class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm select2"
+                                        required>
+                                        <option value="">Select Division</option>
+                                        @foreach ($divisions as $division)
+                                            <option value="{{ $division->id }}"
+                                                {{ old('division_id', $circular->division_id) == $division->id ? 'selected' : '' }}>
+                                                {{ $division->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
+                        </div>
 
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                             <div>
                                 <x-label for="description" value="Description" />
                                 <textarea id="description" name="description"
@@ -96,4 +100,11 @@
             </div>
         </div>
     </div>
+
+    <!-- Include Select2 JS -->
+    <script>
+        $(document).ready(function() {
+            $('.select2').select2();
+        });
+    </script>
 </x-app-layout>
