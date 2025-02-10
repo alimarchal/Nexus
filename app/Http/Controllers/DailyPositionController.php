@@ -187,12 +187,24 @@ public function store(StoreDailyPositionRequest $request)
     // Update the details of a specific daily position
     public function update(Request $request, DailyPosition $dailyPosition)
     {
-        // Validate the request data
+        // Validate the request data, ensuring all fields are included
         $validatedData = $request->validate([
             'consumer' => 'required|numeric',
             'commercial' => 'required|numeric',
             'micro' => 'required|numeric',
             'agri' => 'required|numeric',
+            'totalAssets' => 'required|numeric',
+            'govtDeposit' => 'nullable|numeric',
+            'privateDeposit' => 'nullable|numeric',
+            'totalDeposits' => 'nullable|numeric',
+            'casa' => 'nullable|numeric',
+            'tdr' => 'nullable|numeric',
+            'totalCasaTdr' => 'nullable|numeric',
+            'grandTotal' => 'nullable|numeric',
+            'noOfAccount' => 'nullable|numeric',
+            'noOfAcc' => 'nullable|numeric',
+            'profit' => 'nullable|numeric',
+            // Add any other fields that should be editable
         ]);
 
         // Add additional data
@@ -209,9 +221,7 @@ public function store(StoreDailyPositionRequest $request)
 
         if ($existingRecord) {
             return redirect()->back()->withErrors([
-               'error' => 'This record cannot be updated as more than 24 hours have passed since its creation.'
-
-
+                'error' => 'This record cannot be updated as more than 24 hours have passed since its creation.'
             ]);
         }
 
@@ -220,7 +230,6 @@ public function store(StoreDailyPositionRequest $request)
         $data['commercial'] = number_format($data['commercial'], 3, '.', '');
         $data['micro'] = number_format($data['micro'], 3, '.', '');
         $data['agri'] = number_format($data['agri'], 3, '.', '');
-
         // Recalculate total assets
         $data['totalAssets'] = number_format(
             $data['consumer'] + $data['commercial'] + $data['micro'] + $data['agri'],
@@ -235,7 +244,6 @@ public function store(StoreDailyPositionRequest $request)
         // Redirect to the list with a success message
         return redirect()->route('daily-positions.index')->with('success', 'Daily position updated successfully.');
     }
-
 
 
     // Delete a specific daily position
