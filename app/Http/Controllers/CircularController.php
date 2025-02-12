@@ -65,52 +65,40 @@ class CircularController extends Controller
 
 public function store(Request $request)
 {
-    // Manually check if user is authenticated
     if (!Auth::check()) {
         return redirect()->route('login')->with('error', 'Please login to create a circular.');
     }
 
     // Validate the incoming request
     $validated = $request->validate([
-        'circular_no' => 'required|string|max:255',
-        'title' => 'required|string|max:255', // Validate title
-        'description' => 'nullable|string', // Validate description
+        'circular_no' => 'required|string|max:255|unique:circulars,circular_no',
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
         'division_id' => 'required|exists:divisions,id',
         'attachment' => 'nullable|file|mimes:pdf,jpg,png|max:2048',
+    ], [
+        'circular_no.unique' => 'This circular number is already taken. Please use a different circular number.',
     ]);
 
-    // Log the validated data (optional, for debugging)
     Log::debug('Validated data for store:', $validated);
 
-    // Handle file upload if exists
     if ($request->hasFile('attachment')) {
-        // Store the uploaded file in the 'public' disk under 'circulars' directory
         $path = $request->file('attachment')->store('circulars', 'public');
-        $validated['attachment'] = $path; // Save the file path in the validated data
-        Log::debug('File uploaded and saved at:', ['path' => $path]);
+        $validated['attachment'] = $path;
     }
 
-    // Add user and update_by details
     $validated['user_id'] = Auth::id();
     $validated['update_by'] = Auth::id();
 
-    // Log the final data that will be saved
-    Log::debug('Data being saved to the database:', $validated);
-
-    // Try to create a new circular
     try {
-        $circular = Circular::create($validated); // Store the new circular
-
-        // Log the successful creation (optional, for debugging)
-        Log::debug('Circular created successfully:', $circular->toArray());
-
+        Circular::create($validated);
         return redirect()->route('circulars.index')->with('success', 'Circular created successfully.');
     } catch (\Exception $e) {
-        // Log the error and return back with error message
         Log::error("Circular store error: " . $e->getMessage());
         return redirect()->back()->with('error', 'Failed to create Circular. Please try again.');
     }
 }
+
 
 
     public function show(Circular $circular)
@@ -138,69 +126,41 @@ public function store(Request $request)
 
     public function update(Request $request, Circular $circular)
     {
-        // Manually check if user is authenticated
         if (!Auth::check()) {
             return redirect()->route('login')->with('error', 'Please login to update the circular.');
         }
 
         // Validate the incoming request
         $validated = $request->validate([
-            'circular_no' => 'required|string|max:255',
-            'title' => 'nullable|string|max:255', // Validate the title (if provided)
-            'description' => 'nullable|string', // Validate the description (if provided)
+            'circular_no' => 'required|string|max:255|unique:circulars,circular_no,' . $circular->id,
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
             'division_id' => 'required|exists:divisions,id',
             'attachment' => 'nullable|file|mimes:pdf,jpg,png|max:2048',
+        ], [
+            'circular_no.unique' => 'This circular number is already taken. Please use a different circular number.',
         ]);
 
-        // Log the validated data
         Log::debug('Form data received:', $validated);
 
-        // Handle file upload if there is a new attachment
         if ($request->hasFile('attachment')) {
-            // Delete the old file if it exists
             if ($circular->attachment && Storage::disk('public')->exists($circular->attachment)) {
                 Storage::disk('public')->delete($circular->attachment);
             }
-
-            // Store the new file and set the attachment path
             $path = $request->file('attachment')->store('circulars', 'public');
             $validated['attachment'] = $path;
         }
 
-        // Set the 'update_by' field to the currently authenticated user
         $validated['update_by'] = Auth::id();
 
-        // Log the old and updated data for debugging
-        Log::debug('Old data before update:', $circular->toArray());
-        Log::debug('Updated data to be saved:', $validated);
-
-        // Check if data has changed before updating
-        if ($circular->circular_no === $validated['circular_no'] &&
-            $circular->title === $validated['title'] &&
-            $circular->description === $validated['description'] &&
-            $circular->division_id === $validated['division_id'] &&
-            $circular->attachment === $validated['attachment']) {
-            return redirect()->back()->with('error', 'No changes detected.');
-        }
-
         try {
-            // Update the circular with validated data
             $isUpdated = $circular->update($validated);
-
-            // Log the update result
-            Log::debug('Is updated:', ['success' => $isUpdated]);
-
-            // Refresh the model and log the result to check if it was updated
-            $circular->refresh();
-            Log::debug('Circular after update:', $circular->toArray());
-
             if ($isUpdated) {
                 return redirect()->route('circulars.index')->with('success', 'Circular updated successfully.');
             } else {
                 return redirect()->back()->with('error', 'No changes were made to the circular.');
             }
         } catch (\Exception $e) {
-            // Log the error and return back with error message
             Log::error("Circular update error: " . $e->getMessage());
             return redirect()->back()->with('error', 'Failed to update Circular. Please try again.');
         }
