@@ -9,12 +9,13 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.3",
+        "php": "^8.2",
         "laravel/framework": "^11.31",
         "laravel/jetstream": "^5.3",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "livewire/livewire": "^3.0",
+        "owen-it/laravel-auditing": "^13.6",
         "spatie/laravel-activitylog": "^4.9",
         "spatie/laravel-permission": "^6.10",
         "spatie/laravel-query-builder": "^6.3"
