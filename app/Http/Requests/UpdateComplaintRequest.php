@@ -11,7 +11,7 @@ class UpdateComplaintRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -19,10 +19,16 @@ class UpdateComplaintRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
+    public function rules()
     {
         return [
-            //
+            'subject' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'status_id' => 'required|exists:complaint_status_types,id',
+            'assigned_to' => 'nullable|exists:users,id',
+            'due_date' => 'nullable|date',
+            'priority' => 'nullable|in:low,medium,high',
+            'attachments.*' => 'nullable|file|mimes:jpeg,png,pdf|max:2048', // Optional file uploads
         ];
     }
-}
+    }

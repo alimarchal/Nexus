@@ -9,8 +9,22 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
 
-                <form method="POST" action="{{ route('complaints.store') }}">
+                <form method="POST" action="{{ route('complaints.store') }}" enctype="multipart/form-data">
                     @csrf
+                    @if ($errors->any())
+                        <div class="alert alert-danger">
+                            <ul>
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    <input type="hidden" name="status_id" value="{{ $submitStatusId }}">
+
+
+
+
 
                     <div class="mb-4">
                         <label for="subject" class="block text-gray-700">Subject:</label>
@@ -22,23 +36,7 @@
                         @enderror
                     </div>
 
-                    <div class="mb-4">
-                        <label for="status_id" class="block text-gray-700">Status:</label>
-                        <select name="status_id" id="status_id"
-                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                            required>
-                            <option value="">Select Status</option>
-                            @foreach ($statuses as $status)
-                                <option value="{{ $status->id }}"
-                                    {{ old('status_id', isset($defaultStatus) ? $defaultStatus->id : '') == $status->id ? 'selected' : '' }}>
-                                    {{ $status->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('status_id')
-                            <span class="text-red-500 text-sm">{{ $message }}</span>
-                        @enderror
-                    </div>
+
 
 
 
@@ -55,7 +53,7 @@
 
                     <div class="mb-4">
                         <label class="block text-gray-700">Assigned To:</label>
-                        <select name="assigned_to" class="w-full border-gray-300 rounded-md shadow-sm">
+                        <select name="assigned_to" class="select2 w-full border-gray-300 rounded-md shadow-sm">
                             <option value="">Select User</option>
                             @foreach ($users as $user)
                                 <option value="{{ $user->id }}"
@@ -80,7 +78,7 @@
 
                     <div class="mb-4">
                         <label class="block text-gray-700">Priority:</label>
-                        <select name="priority" class="w-full border-gray-300 rounded-md shadow-sm">
+                        <select name="priority" class="select2 w-full border-gray-300 rounded-md shadow-sm">
                             <option value="low" {{ old('priority') == 'low' ? 'selected' : '' }}>Low</option>
                             <option value="medium" {{ old('priority') == 'medium' ? 'selected' : '' }}>Medium</option>
                             <option value="high" {{ old('priority') == 'high' ? 'selected' : '' }}>High</option>
