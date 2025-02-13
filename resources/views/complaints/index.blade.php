@@ -105,6 +105,7 @@
                                     <th class="py-2 px-2 text-center">Subject</th>
                                     <th class="py-2 px-2 text-center">Description</th>
                                     <th class="py-2 px-2 text-center">Created At</th>
+                                    <th class="py-2 px-2 text-center">Attachment</th>
                                     <th class="py-2 px-2 text-center">Status</th>
                                     <th class="py-2 px-2 text-center">Actions</th>
                                 </tr>
@@ -157,6 +158,21 @@
                                         </div>
                                         <td class="py-1 px-2 text-center">
                                             {{ $complaint->created_at->format('d-m-Y') }}
+                                        </td>
+                                        <td class="py-1 px-2 text-center">
+                                            @if ($complaint->attachments)
+                                                <a href="{{ Storage::url($complaint->attachments) }}"
+                                                    class="text-blue-600 hover:underline" target="_blank" download>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                        class="w-5 h-5 inline-block">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
+                                                    </svg>
+                                                </a>
+                                            @else
+                                                -
+                                            @endif
                                         </td>
                                         <td class="py-1 px-2 text-center">{{ $complaint->status->name }}</td>
                                         <td class="py-1 px-2 text-center">

@@ -64,12 +64,11 @@ $submitStatusId = ComplaintStatusType::where('name', 'Submitted')->value('id')
             Log::info('Storing new complaint', ['data' => $request->all()]);
             Log::info('Received Status ID:', ['status_id' => $request->status_id]);
 
-            // Ensure status_id exists
             $request->validate([
                 'status_id' => 'required|exists:complaint_status_types,id',
-
-
+                'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
             ]);
+
 
             // Generate unique reference number
             $referenceNumber = $this->generateReferenceNumber();
