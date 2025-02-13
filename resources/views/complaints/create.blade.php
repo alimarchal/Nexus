@@ -45,7 +45,7 @@
 
                         <div>
                             <label class="block text-gray-700">Assigned To:</label>
-                            <select name="assigned_to" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <select name="assigned_to" class="select2 w-full border-gray-300 rounded-md shadow-sm">
                                 <option value="">Select User</option>
                                 @foreach ($users as $user)
                                     <option value="{{ $user->id }}"
@@ -85,7 +85,7 @@
 
                     <div class="mb-4">
                         <label class="block text-gray-700">Priority:</label>
-                        <select name="priority" class="w-full border-gray-300 rounded-md shadow-sm">
+                        <select name="priority" class="select2 w-full border-gray-300 rounded-md shadow-sm">
                             <option value="low" {{ old('priority') == 'low' ? 'selected' : '' }}>Low</option>
                             <option value="medium" {{ old('priority') == 'medium' ? 'selected' : '' }}>Medium</option>
                             <option value="high" {{ old('priority') == 'high' ? 'selected' : '' }}>High</option>

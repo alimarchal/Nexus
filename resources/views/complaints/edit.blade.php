@@ -37,7 +37,7 @@
                         <div>
                             <label for="assigned_to" class="block text-gray-700">Assigned To:</label>
                             <select name="assigned_to" id="assigned_to"
-                                class="w-full border-gray-300 rounded-md shadow-sm">
+                                class="select2 w-full border-gray-300 rounded-md shadow-sm">
                                 @foreach ($users as $user)
                                     <option value="{{ $user->id }}"
                                         {{ $complaint->assigned_to == $user->id ? 'selected' : '' }}>
@@ -49,7 +49,8 @@
 
                         <div>
                             <label for="status" class="block text-gray-700">Status:</label>
-                            <select name="status" id="status" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <select name="status" id="status"
+                                class="select2 w-full border-gray-300 rounded-md shadow-sm">
                                 @foreach ($statuses as $status)
                                     <option value="{{ $status->id }}"
                                         {{ $complaint->status_id == $status->id ? 'selected' : '' }}>
