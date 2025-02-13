@@ -29,8 +29,17 @@ class ComplaintHistory extends Model
         return $this->belongsTo(ComplaintStatusType::class, 'status_id');
     }
 
+    public function changedBy()
+    {
+        return $this->belongsTo(User::class, 'changed_by');
+    }
+
+
     public function user()
     {
         return $this->belongsTo(User::class, 'changed_by');
     }
+
+
+
 }

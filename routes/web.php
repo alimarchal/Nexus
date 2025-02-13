@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ComplaintAttachmentController;
 use App\Http\Controllers\DailyPositionController;
 use App\Http\Controllers\BranchTargetController;
 use App\Http\Controllers\DashboardController;
@@ -62,4 +63,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('reports/accounts-regionwise-reports', [ReportController::class, 'accountsregionwisePositionReport'])->name('reports.accounts-regionwise-reports');
     Route::resource('circulars', CircularController::class)->except(['destroy']);
     Route::resource('complaints', ComplaintController::class);
+    Route::patch('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus'])
+        ->name('complaints.update-status');
+    Route::get('/complaints/attachments/{attachment}/download', [ComplaintAttachmentController::class, 'download'])
+        ->name('complaints.attachments.download');
 });

@@ -21,7 +21,8 @@ class DatabaseSeeder extends Seeder
             BranchSeeder::class,
             ContactSeeder::class,
             RolesAndPermissionsSeeder::class,
-            DivisionSeeder::class
+            DivisionSeeder::class,
+            ComplaintStatusTypeSeeder::class,
         ]);
     }
 }

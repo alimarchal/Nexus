@@ -114,9 +114,21 @@ $submitStatusId = ComplaintStatusType::where('name', 'Submitted')->value('id')
      */
     public function show(Complaint $complaint)
     {
-        $complaint->load(['status', 'createdBy', 'assignedTo', 'attachments']);
-        return view('complaints.show', compact('complaint'));
+        $complaint->load([
+            'status',
+            'creator',
+            'assignedTo',
+            'histories.status',
+            'histories.changedBy',
+            'attachments'
+        ]);
+
+        $statuses = ComplaintStatusType::where('is_active', true)->get();
+        $users = User::where('is_active', true)->get();
+
+        return view('complaints.show', compact('complaint', 'statuses', 'users'));
     }
+
 
     /**
      * Show the form for editing the specified complaint.
@@ -242,5 +254,49 @@ public function update(UpdateComplaintRequest $request, Complaint $complaint)
                 ]);
             }
         }
+    }
+
+
+    public function updateStatus(Request $request, Complaint $complaint)
+    {
+        $validated = $request->validate([
+            'status_id' => 'required|exists:complaint_status_types,id',
+            'assigned_to' => 'nullable|exists:users,id',
+            'comments' => 'nullable|string'
+        ]);
+
+        $changes = [];
+        if ($complaint->status_id != $validated['status_id']) {
+            $changes['status'] = [
+                'old' => $complaint->status->name,
+                'new' => ComplaintStatusType::find($validated['status_id'])->name
+            ];
+        }
+
+        if ($complaint->assigned_to != $validated['assigned_to']) {
+            $oldUser = $complaint->assignedTo?->name ?? 'Unassigned';
+            $newUser = User::find($validated['assigned_to'])?->name ?? 'Unassigned';
+            $changes['assigned_to'] = [
+                'old' => $oldUser,
+                'new' => $newUser
+            ];
+        }
+
+        // Update complaint
+        $complaint->update([
+            'status_id' => $validated['status_id'],
+            'assigned_to' => $validated['assigned_to']
+        ]);
+
+        // Create history record
+        $complaint->histories()->create([
+            'status_id' => $validated['status_id'],
+            'changed_by' => auth()->id(),
+            'comments' => $validated['comments'],
+            'changes' => !empty($changes) ? json_encode($changes) : null
+        ]);
+
+        return redirect()->route('complaints.show', $complaint)
+            ->with('success', 'Complaint status updated successfully');
     }
 }

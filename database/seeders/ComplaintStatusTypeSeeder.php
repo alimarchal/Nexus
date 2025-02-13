@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Complaint;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -25,5 +26,13 @@ class ComplaintStatusTypeSeeder extends Seeder
             ['name' => 'Escalated', 'code' => 'ESCALATED', 'description' => 'Complaint has been escalated to higher authority'],
             ['name' => 'On Hold', 'code' => 'ON_HOLD', 'description' => 'Complaint processing temporarily suspended'],
         ]);
+    }
+
+
+    protected $fillable = ['name', 'code', 'description', 'is_active'];
+
+    public function complaints()
+    {
+        return $this->hasMany(Complaint::class, 'status_id');
     }
 }
