@@ -19,10 +19,14 @@ class StoreComplaintStatusTypeRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
-    {
-        return [
-            //
-        ];
-    }
+   public function rules(): array
+{
+    return [
+        'status_id' => ['required', 'exists:complaint_status_types,id'],
+        'assigned_to' => ['nullable', 'exists:users,id'],
+        'title' => ['required', 'string', 'max:255'],
+        'description' => ['required', 'string'],
+    ];
+}
+
 }

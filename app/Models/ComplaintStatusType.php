@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class ComplaintStatusType extends Model
 {
-    /** @use HasFactory<\Database\Factories\ComplaintStatusTypeFactory> */
-    use HasFactory;
+    protected $fillable = ['name', 'code', 'description', 'is_active'];
+
+    public function complaints()
+    {
+        return $this->hasMany(Complaint::class, 'status_id');
+    }
 }

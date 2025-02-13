@@ -118,4 +118,8 @@ class User extends Authenticatable
     {
         return $query->where('is_super_admin', 'Yes');
     }
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
 }
