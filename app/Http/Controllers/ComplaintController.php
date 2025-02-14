@@ -149,53 +149,44 @@ $submitStatusId = ComplaintStatusType::where('name', 'Submitted')->value('id')
 /**
  * Update the specified complaint.
  */
-public function update(UpdateComplaintRequest $request, Complaint $complaint)
-{
-    DB::beginTransaction();
-    try {
-        Log::info('Updating complaint', ['id' => $complaint->id, 'data' => $request->all()]);
 
-        // Validate request
-        $validated = $request->validated();
+ public function update(UpdateComplaintRequest $request, Complaint $complaint)
+ {
+     DB::beginTransaction();
+     try {
+         Log::info('Updating complaint', ['id' => $complaint->id, 'data' => $request->all()]);
 
-        // Update core fields
-        $updatedData = [
-            'subject' => $validated['subject'],
-            'description' => $validated['description'],
-            'status_id' => $validated['status_id'],
-            'assigned_to' => $validated['assigned_to'] ?? null,
-            'due_date' => $validated['due_date'],
-            'priority' => $validated['priority'] ?? 'medium',
-        ];
+         // Only validate and update the fields we want to change
+         $validated = $request->validate([
+             'subject' => 'required|string|max:255',
+             'description' => 'required|string',
+             'status_id' => 'required|exists:complaint_status_types,id',
+             'assigned_to' => 'nullable|exists:users,id',
+         ]);
 
-        Log::info('Updating with data:', $updatedData);
+         $complaint->update($validated);
 
-        $complaint->update($updatedData);
+         // Handle attachments
+         if ($request->hasFile('attachments')) {
+             Log::info('Storing new attachments for complaint', ['id' => $complaint->id]);
+             $this->storeAttachments($request->file('attachments'), $complaint);
+         }
 
-        // Update meta_data
-        $metaData = json_decode($complaint->meta_data, true) ?? [];
-        $metaData['updated_at'] = now()->toIso8601String();
-        $complaint->update(['meta_data' => json_encode($metaData)]);
+         DB::commit();
+         return redirect()
+             ->route('complaints.index', $complaint)
+             ->with('success', 'Complaint updated successfully.');
 
-        // Handle attachments
-        if ($request->hasFile('attachments')) {
-            Log::info('Storing new attachments for complaint', ['id' => $complaint->id]);
-            $this->storeAttachments($request->file('attachments'), $complaint);
-        }
-
-        DB::commit();
-
-        return redirect()->route('complaints.show', $complaint)->with('success', 'Complaint updated successfully.');
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error updating complaint', [
-            'id' => $complaint->id,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-        return back()->withInput()->with('error', 'Failed to update complaint. Please try again.');
-    }
-}
+     } catch (\Exception $e) {
+         DB::rollBack();
+         Log::error('Error updating complaint', [
+             'id' => $complaint->id,
+             'error' => $e->getMessage(),
+             'trace' => $e->getTraceAsString(),
+         ]);
+         return back()->withInput()->with('error', 'Failed to update complaint. Please try again.');
+     }
+ }
 
 
     /**

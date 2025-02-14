@@ -2,65 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreComplaintAttachmentRequest;
-use App\Http\Requests\UpdateComplaintAttachmentRequest;
 use App\Models\ComplaintAttachment;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\Response;
 
 class ComplaintAttachmentController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Download the specified attachment.
      */
-    public function index()
+    public function download($id)
     {
-        //
-    }
+        $attachment = ComplaintAttachment::findOrFail($id);
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+        if (!Storage::disk('public')->exists($attachment->file_path)) {
+            return redirect()->back()->with('error', 'File not found.');
+        }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreComplaintAttachmentRequest $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(ComplaintAttachment $complaintAttachment)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(ComplaintAttachment $complaintAttachment)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateComplaintAttachmentRequest $request, ComplaintAttachment $complaintAttachment)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(ComplaintAttachment $complaintAttachment)
-    {
-        //
+        return response()->download(storage_path("app/public/{$attachment->file_path}"), $attachment->original_filename);
     }
 }
