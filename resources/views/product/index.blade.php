@@ -103,7 +103,7 @@
                             <div class="text-3xl font-bold leading-8">{{ \App\Models\Complaint::count() }}</div>
                             <div class="mt-1 text-base font-extrabold text-black">Complaints</div>
                         </div>
-                        <img src="{{ url('icons-images/circular.png') }}" alt="Account" class="h-16 w-16">
+                        <img src="{{ url('icons-images/complaint.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
             </div>

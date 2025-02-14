@@ -5,30 +5,25 @@
                 <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200">
                     #{{ $complaint->reference_number }}
                 </h2>
-                <span class="px-3 py-1 rounded-full text-sm font-medium
-                    {{ $complaint->priority === 'high' ? 'bg-red-100 text-red-800' :
-                       ($complaint->priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800') }}">
+                <span
+                    class="px-3 py-1 rounded-full text-sm font-medium
+                    {{ $complaint->priority === 'high'
+                        ? 'bg-red-100 text-red-800'
+                        : ($complaint->priority === 'medium'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-green-100 text-green-800') }}">
                     {{ ucfirst($complaint->priority) }} Priority
                 </span>
             </div>
-            <div class="flex items-center space-x-2">
-                <a href="{{ route('complaints.edit', $complaint) }}"
-                   class="p-2 text-emerald-600 hover:text-white hover:bg-emerald-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+            <div class="flex justify-center items-center float-right">
+                <a href="{{ route('complaints.index') }}"
+                    class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
                 </a>
-
-                <button type="button"
-                        class="delete-button p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                    </svg>
-                </button>
-                <form class="hidden" method="POST" action="{{ route('complaints.destroy', $complaint) }}">
-                    @csrf
-                    @method('DELETE')
-                </form>
             </div>
         </div>
     </x-slot>
@@ -41,8 +36,10 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span>Complaint Details</span>
                             </h3>
@@ -62,7 +59,8 @@
                                     </div>
                                     <div>
                                         <label class="text-sm font-medium text-gray-500">Created At</label>
-                                        <p class="mt-1 text-sm text-gray-900">{{ $complaint->created_at->format('M d, Y H:i') }}</p>
+                                        <p class="mt-1 text-sm text-gray-900">
+                                            {{ $complaint->created_at->format('M d, Y H:i') }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -70,8 +68,10 @@
 
                         <div>
                             <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 <span>Status Information</span>
                             </h3>
@@ -80,26 +80,30 @@
                                     <div>
                                         <label class="text-sm font-medium text-gray-500">Current Status</label>
                                         <p class="mt-1">
-                                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            <span
+                                                class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
                                                 {{ $complaint->status->name }}
                                             </span>
                                         </p>
                                     </div>
                                     <div>
                                         <label class="text-sm font-medium text-gray-500">Assigned To</label>
-                                        <p class="mt-1 text-sm text-gray-900">{{ $complaint->assignedTo->name ?? 'Unassigned' }}</p>
+                                        <p class="mt-1 text-sm text-gray-900">
+                                            {{ $complaint->assignedTo->name ?? 'Unassigned' }}</p>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-sm font-medium text-gray-500">Due Date</label>
-                                        <p class="mt-1 text-sm {{ $complaint->due_date && $complaint->due_date->isPast() ? 'text-red-600' : 'text-gray-900' }}">
+                                        <p
+                                            class="mt-1 text-sm {{ $complaint->due_date && $complaint->due_date->isPast() ? 'text-red-600' : 'text-gray-900' }}">
                                             {{ $complaint->due_date?->format('M d, Y') ?? 'Not set' }}
                                         </p>
                                     </div>
                                     <div>
                                         <label class="text-sm font-medium text-gray-500">Time Remaining</label>
-                                        <p class="mt-1 text-sm {{ $complaint->due_date && $complaint->due_date->isPast() ? 'text-red-600' : 'text-gray-900' }}">
+                                        <p
+                                            class="mt-1 text-sm {{ $complaint->due_date && $complaint->due_date->isPast() ? 'text-red-600' : 'text-gray-900' }}">
                                             {{ $complaint->due_date ? $complaint->due_date->diffForHumans() : 'N/A' }}
                                         </p>
                                     </div>
@@ -111,25 +115,30 @@
             </div>
 
             <!-- Resolution Form -->
-            @if($complaint->status->code !== 'RESOLVED')
+            @if ($complaint->status->code !== 'RESOLVED')
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
                     <div class="p-6">
                         <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <span>Update Status</span>
                         </h3>
-                        <form action="{{ route('complaints.update-status', $complaint) }}" method="POST" class="space-y-4">
+                        <form action="{{ route('complaints.update-status', $complaint) }}" method="POST"
+                            class="space-y-4">
                             @csrf
                             @method('PATCH')
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">New Status</label>
-                                    <select name="status_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                        @foreach($statuses as $status)
-                                            <option value="{{ $status->id }}" {{ $complaint->status_id == $status->id ? 'selected' : '' }}>
+                                    <select name="status_id"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        @foreach ($statuses as $status)
+                                            <option value="{{ $status->id }}"
+                                                {{ $complaint->status_id == $status->id ? 'selected' : '' }}>
                                                 {{ $status->name }}
                                             </option>
                                         @endforeach
@@ -138,10 +147,12 @@
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Reassign To</label>
-                                    <select name="assigned_to" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <select name="assigned_to"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                         <option value="">Select User</option>
-                                        @foreach($users as $user)
-                                            <option value="{{ $user->id }}" {{ $complaint->assigned_to == $user->id ? 'selected' : '' }}>
+                                        @foreach ($users as $user)
+                                            <option value="{{ $user->id }}"
+                                                {{ $complaint->assigned_to == $user->id ? 'selected' : '' }}>
                                                 {{ $user->name }}
                                             </option>
                                         @endforeach
@@ -151,11 +162,13 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Comments</label>
-                                <textarea name="comments" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                                <textarea name="comments" rows="3"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
                             </div>
 
                             <div class="flex justify-end">
-                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                <button type="submit"
+                                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                     Update Status
                                 </button>
                             </div>
@@ -168,24 +181,31 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
                 <div class="p-6">
                     <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                         <span>Status Timeline</span>
                     </h3>
                     <div class="flow-root">
                         <ul role="list" class="-mb-8">
-                            @foreach($complaint->histories()->latest()->get() as $history)
+                            @foreach ($complaint->histories()->latest()->get() as $history)
                                 <li>
                                     <div class="relative pb-8">
-                                        @if(!$loop->last)
-                                            <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                        @if (!$loop->last)
+                                            <span class="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200"
+                                                aria-hidden="true"></span>
                                         @endif
                                         <div class="relative flex space-x-3">
                                             <div>
-                                                <span class="h-8 w-8 rounded-full {{ $history->status->code === 'RESOLVED' ? 'bg-green-500' : 'bg-blue-500' }} flex items-center justify-center ring-8 ring-white">
-                                                    <svg class="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fill-rule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z" clip-rule="evenodd" />
+                                                <span
+                                                    class="h-8 w-8 rounded-full {{ $history->status->code === 'RESOLVED' ? 'bg-green-500' : 'bg-blue-500' }} flex items-center justify-center ring-8 ring-white">
+                                                    <svg class="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd"
+                                                            d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"
+                                                            clip-rule="evenodd" />
                                                     </svg>
                                                 </span>
                                             </div>
@@ -195,14 +215,16 @@
                                                         Status changed to
                                                         <span class="font-medium">{{ $history->status->name }}</span>
                                                     </p>
-                                                    @if($history->comments)
-                                                        <p class="mt-2 text-sm text-gray-500">{{ $history->comments }}</p>
+                                                    @if ($history->comments)
+                                                        <p class="mt-2 text-sm text-gray-500">{{ $history->comments }}
+                                                        </p>
                                                     @endif
-                                                    @if($history->changes)
+                                                    @if ($history->changes)
                                                         <div class="mt-2 text-sm text-gray-500">
-                                                            @foreach(json_decode($history->changes, true) as $field => $change)
+                                                            @foreach (json_decode($history->changes, true) as $field => $change)
                                                                 <p>
-                                                                    <span class="font-medium">{{ ucfirst($field) }}</span>:
+                                                                    <span
+                                                                        class="font-medium">{{ ucfirst($field) }}</span>:
                                                                     {{ $change['old'] }} → {{ $change['new'] }}
                                                                 </p>
                                                             @endforeach
@@ -226,21 +248,26 @@
             </div>
 
             <!-- Attachments -->
-            @if($complaint->attachments->count() > 0)
+            @if ($complaint->attachments->count() > 0)
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
                     <div class="p-6">
                         <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                             </svg>
                             <span>Attachments</span>
                         </h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            @foreach($complaint->attachments as $attachment)
-                                <div class="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            @foreach ($complaint->attachments as $attachment)
+                                <div
+                                    class="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                     <div class="p-2 bg-blue-100 rounded-lg">
-                                        <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                        <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                         </svg>
                                     </div>
                                     <div class="ml-4 flex-1">
@@ -252,7 +279,7 @@
                                                 {{ number_format($attachment->file_size / 1024, 2) }} KB
                                             </p>
                                             <a href="{{ route('complaints.attachments.download', $attachment) }}"
-                                               class="text-xs text-blue-600 hover:text-blue-800">
+                                                class="text-xs text-blue-600 hover:text-blue-800">
                                                 Download
                                             </a>
                                         </div>

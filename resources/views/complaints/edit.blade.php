@@ -13,14 +13,22 @@
                 </svg>
             </a>
         </div>
-
     </x-slot>
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
+                @if ($errors->any())
+                    <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
-                <form method="POST" action="{{ route('complaints.update', $complaint->id) }}"
+                <form method="POST" action="{{ route('complaints.update', $complaint) }}"
                     enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
@@ -38,9 +46,10 @@
                             <label for="assigned_to" class="block text-gray-700">Assigned To:</label>
                             <select name="assigned_to" id="assigned_to"
                                 class="select2 w-full border-gray-300 rounded-md shadow-sm">
+                                <option value="">Select User</option>
                                 @foreach ($users as $user)
                                     <option value="{{ $user->id }}"
-                                        {{ $complaint->assigned_to == $user->id ? 'selected' : '' }}>
+                                        {{ old('assigned_to', $complaint->assigned_to) == $user->id ? 'selected' : '' }}>
                                         {{ $user->name }}
                                     </option>
                                 @endforeach
@@ -48,12 +57,12 @@
                         </div>
 
                         <div>
-                            <label for="status" class="block text-gray-700">Status:</label>
-                            <select name="status" id="status"
+                            <label for="status_id" class="block text-gray-700">Status:</label>
+                            <select name="status_id" id="status_id"
                                 class="select2 w-full border-gray-300 rounded-md shadow-sm">
                                 @foreach ($statuses as $status)
                                     <option value="{{ $status->id }}"
-                                        {{ $complaint->status_id == $status->id ? 'selected' : '' }}>
+                                        {{ old('status_id', $complaint->status_id) == $status->id ? 'selected' : '' }}>
                                         {{ $status->name }}
                                     </option>
                                 @endforeach
@@ -74,13 +83,12 @@
                     </div>
 
                     <div class="flex justify-end">
-                        <button type="submit" class="px-6 py-2 bg-blue-800 text-white rounded-md">Update
-                            Complaint</button>
+                        <button type="submit" class="px-6 py-2 bg-blue-800 text-white rounded-md">
+                            Update Complaint
+                        </button>
                     </div>
                 </form>
-
             </div>
         </div>
     </div>
-
 </x-app-layout>

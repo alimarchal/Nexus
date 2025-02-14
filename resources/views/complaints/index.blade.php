@@ -146,22 +146,30 @@
                                         </td>
 
                                         <!-- Modal for full description -->
+                                        <!-- Modal for full description -->
                                         <div id="descriptionModal"
-                                            class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 hidden">
-                                            <div class="bg-white p-6 rounded-lg w-11/12 max-w-lg">
+                                            class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 hidden"
+                                            onclick="closeModal(event)">
+                                            <div class="bg-white p-6 rounded-lg w-11/12 max-w-lg"
+                                                onclick="event.stopPropagation();">
                                                 <h2 class="text-xl font-semibold mb-4">Full Description</h2>
                                                 <div id="modalDescription" class="whitespace-pre-wrap break-words">
                                                 </div>
                                                 <button onclick="closeModal()"
-                                                    class="mt-4 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Close</button>
+                                                    class="mt-4 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                                                    Close
+                                                </button>
                                             </div>
                                         </div>
+
+
+
                                         <td class="py-1 px-2 text-center">
                                             {{ $complaint->created_at->format('d-m-Y') }}
                                         </td>
                                         <td class="py-1 px-2 text-center">
-                                            @if ($complaint->attachments)
-                                                <a href="{{ Storage::url($complaint->attachments) }}"
+                                            @if ($complaint->attachments->isNotEmpty())
+                                                <a href="{{ Storage::url($complaint->attachments->first()->file_path) }}"
                                                     class="text-blue-600 hover:underline" target="_blank" download>
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                         viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
@@ -174,31 +182,47 @@
                                                 -
                                             @endif
                                         </td>
+
+
                                         <td class="py-1 px-2 text-center">{{ $complaint->status->name }}</td>
 
                                         <td class="py-1 px-2 text-center flex gap-2 justify-center">
                                             <a href="{{ route('complaints.edit', $complaint) }}"
-                                               class="p-2 text-emerald-600 hover:text-white hover:bg-emerald-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                                                class="p-2 text-emerald-600 hover:text-white hover:bg-emerald-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="w-5 h-5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
                                                 </svg>
                                             </a>
 
                                             <button type="button"
-                                                    class="delete-button p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                class="delete-button p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="w-5 h-5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                                 </svg>
                                             </button>
-                                            <form class="hidden" method="POST" action="{{ route('complaints.destroy', $complaint) }}">
+
+                                            <form class="delete-form" method="POST"
+                                                action="{{ route('complaints.destroy', $complaint) }}"
+                                                style="display: none;">
                                                 @csrf
                                                 @method('DELETE')
                                             </form>
 
-                                            <a href="#" class="p-2 text-blue-600 hover:text-white hover:bg-blue-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                            <a href="{{ route('complaints.show', $complaint) }}"
+                                                class="p-2 text-blue-600 hover:text-white hover:bg-blue-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
+                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                    class="w-5 h-5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                                 </svg>
                                             </a>
                                         </td>
@@ -206,146 +230,164 @@
                                 @endforeach
                             </tbody>
                         </table>
-                    </div>
-                    <div class="px-2 py-2">{{ $complaints->links() }}</div>
-                @else
-                    <p class="text-gray-700 dark:text-gray-300 text-center py-4">No complaints found.</p>
+                        <div class="px-2 py-2">
+                            {{ $complaints->links() }}
+                        </div>
+                    @else
+                        <p class="text-gray-700 dark:text-gray-300 text-center py-4">
+                            No circulars found.
+                            <a href="{{ route('complaints.create') }}" class="text-blue-600 hover:underline">
+                                Add a new complaint
+                            </a>.
+                        </p>
                 @endif
             </div>
         </div>
-    </div>
-    @push('modals')
-        <script>
-            const targetDiv = document.getElementById("filters");
-            const btn = document.getElementById("toggle");
+        @push('modals')
+            <script>
+                const targetDiv = document.getElementById("filters");
+                const btn = document.getElementById("toggle");
 
-            function showFilters() {
-                targetDiv.style.display = 'block';
-                targetDiv.style.opacity = '0';
-                targetDiv.style.transform = 'translateY(-20px)';
-                setTimeout(() => {
-                    targetDiv.style.opacity = '1';
-                    targetDiv.style.transform = 'translateY(0)';
-                }, 10);
-            }
-
-            function hideFilters() {
-                targetDiv.style.opacity = '0';
-                targetDiv.style.transform = 'translateY(-20px)';
-                setTimeout(() => {
-                    targetDiv.style.display = 'none';
-                }, 300);
-            }
-
-            btn.onclick = function(event) {
-                event.stopPropagation();
-                if (targetDiv.style.display === "none") {
-                    showFilters();
-                } else {
-                    hideFilters();
+                function showFilters() {
+                    targetDiv.style.display = 'block';
+                    targetDiv.style.opacity = '0';
+                    targetDiv.style.transform = 'translateY(-20px)';
+                    setTimeout(() => {
+                        targetDiv.style.opacity = '1';
+                        targetDiv.style.transform = 'translateY(0)';
+                    }, 10);
                 }
-            };
 
-            // Hide filters when clicking outside
-            document.addEventListener('click', function(event) {
-                if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
-                    hideFilters();
+                function hideFilters() {
+                    targetDiv.style.opacity = '0';
+                    targetDiv.style.transform = 'translateY(-20px)';
+                    setTimeout(() => {
+                        targetDiv.style.display = 'none';
+                    }, 300);
                 }
-            });
-            // Function to open the modal and show the full description
-            function openModal(description) {
-                // Set the description content in the modal
-                document.getElementById('modalDescription').innerText = description;
 
-                // Show the modal
-                document.getElementById('descriptionModal').classList.remove('hidden');
-            }
+                btn.onclick = function(event) {
+                    event.stopPropagation();
+                    if (targetDiv.style.display === "none") {
+                        showFilters();
+                    } else {
+                        hideFilters();
+                    }
+                };
 
-            // Function to close the modal
-            function closeModal() {
-                // Hide the modal
-                document.getElementById('descriptionModal').classList.add('hidden');
-            }
+                // Hide filters when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
+                        hideFilters();
+                    }
+                });
+                // Function to open the modal and show the full description
+                function openModal(description) {
+                    // Set the description content in the modal
+                    document.getElementById('modalDescription').innerText = description;
 
-
-            // Prevent clicks inside the filter from closing it
-            targetDiv.addEventListener('click', function(event) {
-                event.stopPropagation();
-            });
-
-            // Add CSS for smooth transitions
-            const style = document.createElement('style');
-            style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`;
-            document.head.appendChild(style);
-        </script>
-        <script>
-            function toggleDescription(link) {
-                var preview = link.previousElementSibling.previousElementSibling;
-                var fullDescription = link.previousElementSibling;
-
-                preview.style.display = 'none';
-                fullDescription.style.display = 'inline';
-                link.style.display = 'none';
-            }
-        </script>
-        <script>
-            function toggleDescription(link) {
-                const fullText = link.previousElementSibling; // Get the full description span
-                const previewText = fullText.previousElementSibling; // Get the preview text span
-
-                // Toggle the visibility of the full text and preview text
-                if (fullText.style.display !== "none") {
-                    fullText.style.display = "none"; // Hide full text
-                    previewText.style.display = "block"; // Show preview text
-                    link.innerText = "Read more"; // Change link text
-                } else {
-                    fullText.style.display = "block"; // Show full text
-                    previewText.style.display = "none"; // Hide preview text
-                    link.innerText = "Read less"; // Change link text
+                    // Show the modal
+                    document.getElementById('descriptionModal').classList.remove('hidden');
                 }
-            }
-        </script>
 
-        <script>
-            function toggleDescription(link) {
-                const fullText = link.previousElementSibling; // Get the full description span
-                const previewText = fullText.previousElementSibling; // Get the preview text span
-
-                // Toggle the visibility of the full text and preview text
-                if (fullText.style.display !== "none") {
-                    fullText.style.display = "none"; // Hide full text
-                    previewText.style.display = "block"; // Show preview text
-                    link.innerText = "Read more"; // Change link text
-                } else {
-                    fullText.style.display = "block"; // Show full text
-                    previewText.style.display = "none"; // Hide preview text
-                    link.innerText = "Read less"; // Change link text
+                // Function to close the modal
+                function closeModal() {
+                    // Hide the modal
+                    document.getElementById('descriptionModal').classList.add('hidden');
                 }
-            }
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script>
-            document.querySelectorAll('.delete-button').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
 
-                    const form = this.closest('form');
 
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "You won't be able to revert this!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Yes, delete it!'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            form.submit(); // Submit the form if confirmed
-                        }
+                // Prevent clicks inside the filter from closing it
+                targetDiv.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                });
+
+                // Add CSS for smooth transitions
+                const style = document.createElement('style');
+                style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`;
+                document.head.appendChild(style);
+            </script>
+            <script>
+                function toggleDescription(link) {
+                    var preview = link.previousElementSibling.previousElementSibling;
+                    var fullDescription = link.previousElementSibling;
+
+                    preview.style.display = 'none';
+                    fullDescription.style.display = 'inline';
+                    link.style.display = 'none';
+                }
+            </script>
+            <script>
+                function toggleDescription(link) {
+                    const fullText = link.previousElementSibling; // Get the full description span
+                    const previewText = fullText.previousElementSibling; // Get the preview text span
+
+                    // Toggle the visibility of the full text and preview text
+                    if (fullText.style.display !== "none") {
+                        fullText.style.display = "none"; // Hide full text
+                        previewText.style.display = "block"; // Show preview text
+                        link.innerText = "Read more"; // Change link text
+                    } else {
+                        fullText.style.display = "block"; // Show full text
+                        previewText.style.display = "none"; // Hide preview text
+                        link.innerText = "Read less"; // Change link text
+                    }
+                }
+            </script>
+
+            <script>
+                function toggleDescription(link) {
+                    const fullText = link.previousElementSibling; // Get the full description span
+                    const previewText = fullText.previousElementSibling; // Get the preview text span
+
+                    // Toggle the visibility of the full text and preview text
+                    if (fullText.style.display !== "none") {
+                        fullText.style.display = "none"; // Hide full text
+                        previewText.style.display = "block"; // Show preview text
+                        link.innerText = "Read more"; // Change link text
+                    } else {
+                        fullText.style.display = "block"; // Show full text
+                        previewText.style.display = "none"; // Hide preview text
+                        link.innerText = "Read less"; // Change link text
+                    }
+                }
+            </script>
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <script>
+                document.querySelectorAll('.delete-button').forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+
+                        const form = this.nextElementSibling; // Get the next form element
+
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: "You won't be able to revert this!",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, delete it!'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                form.submit(); // Submit the form if confirmed
+                            }
+                        });
                     });
                 });
-            });
-        </script>
-    @endpush
+            </script>
+
+            <script>
+                function openModal(description) {
+                    document.getElementById("modalDescription").innerText = description;
+                    document.getElementById("descriptionModal").classList.remove("hidden");
+                }
+
+                function closeModal(event) {
+                    if (!event || event.target.id === "descriptionModal") {
+                        document.getElementById("descriptionModal").classList.add("hidden");
+                    }
+                }
+            </script>
+        @endpush
 </x-app-layout>
