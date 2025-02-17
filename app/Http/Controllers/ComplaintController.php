@@ -8,6 +8,7 @@ use App\Models\Complaint;
 use App\Models\ComplaintAttachment;
 use App\Models\ComplaintStatusType;
 use App\Models\User;
+use App\Models\ComplaintHistory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -247,47 +248,68 @@ $submitStatusId = ComplaintStatusType::where('name', 'Submitted')->value('id')
         }
     }
 
-
     public function updateStatus(Request $request, Complaint $complaint)
     {
+        // Validate request data
         $validated = $request->validate([
             'status_id' => 'required|exists:complaint_status_types,id',
-            'assigned_to' => 'nullable|exists:users,id',
-            'comments' => 'nullable|string'
+            'comments' => 'nullable|string',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048', // Adjust as needed
         ]);
 
+        // Track changes
         $changes = [];
         if ($complaint->status_id != $validated['status_id']) {
-            $changes['status'] = [
-                'old' => $complaint->status->name,
-                'new' => ComplaintStatusType::find($validated['status_id'])->name
+            $changes['status_id'] = [
+                'old' => $complaint->status_id,
+                'new' => $validated['status_id']
             ];
         }
 
-        if ($complaint->assigned_to != $validated['assigned_to']) {
-            $oldUser = $complaint->assignedTo?->name ?? 'Unassigned';
-            $newUser = User::find($validated['assigned_to'])?->name ?? 'Unassigned';
-            $changes['assigned_to'] = [
-                'old' => $oldUser,
-                'new' => $newUser
-            ];
+        // Handle attachment upload
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $attachment = $request->file('attachment');
+            $attachmentName = time() . '.' . $attachment->getClientOriginalExtension();
+
+            // Store file in 'public' disk under 'complaints' directory
+            $attachmentPath = $attachment->storeAs(
+                'complaints',
+                $attachmentName,
+                'public'
+            );
+
+            Log::info('Attachment Stored: ' . $attachmentPath);
+        } else {
+            Log::info('No Attachment Uploaded.');
         }
 
-        // Update complaint
-        $complaint->update([
-            'status_id' => $validated['status_id'],
-            'assigned_to' => $validated['assigned_to']
-        ]);
-
-        // Create history record
-        $complaint->histories()->create([
+        // Prepare history record
+        $historyData = [
+            'complaint_id' => $complaint->id,
             'status_id' => $validated['status_id'],
             'changed_by' => auth()->id(),
             'comments' => $validated['comments'],
-            'changes' => !empty($changes) ? json_encode($changes) : null
-        ]);
+            'changes' => !empty($changes) ? json_encode($changes) : null,
+            'attachment' => $attachmentPath, // Store attachment path in the database
+        ];
+
+        // Log history data before saving
+        Log::info('History Data:', $historyData);
+
+        // Save to database
+        $history = ComplaintHistory::create($historyData);
+
+        if (!$history->attachment) {
+            Log::error('Attachment not saved in database.');
+        } else {
+            Log::info('Attachment saved successfully in database.');
+        }
+
+        // Update complaint status
+        $complaint->update(['status_id' => $validated['status_id']]);
 
         return redirect()->route('complaints.show', $complaint)
-            ->with('success', 'Complaint status updated successfully');
+            ->with('success', 'Complaint status updated successfully.');
     }
 }

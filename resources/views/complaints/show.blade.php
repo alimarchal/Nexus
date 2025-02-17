@@ -226,10 +226,12 @@
                                                         Status changed to
                                                         <span class="font-medium">{{ $history->status->name }}</span>
                                                     </p>
+
                                                     @if ($history->comments)
                                                         <p class="mt-2 text-sm text-gray-500">{{ $history->comments }}
                                                         </p>
                                                     @endif
+
                                                     @if ($history->changes)
                                                         <div class="mt-2 text-sm text-gray-500">
                                                             @foreach (json_decode($history->changes, true) as $field => $change)
@@ -240,23 +242,33 @@
                                                                 </p>
                                                             @endforeach
                                                         </div>
-                                                        <div>
-                                                            @if ($history->attachment)
-                                                                <span class="font-medium">Attachment: <a
-                                                                        href="{{ asset('storage/complaints/' . $history->attachment) }}"
-                                                                        target="_blank">{{ $history->attachment }}</a></span>
-                                                            @endif
                                                     @endif
-                                                </div>
-                                                <div class="whitespace-nowrap text-right text-sm text-gray-500">
-                                                    <time datetime="{{ $history->created_at }}">
-                                                        {{ $history->created_at->format('M d, Y H:i') }}
-                                                    </time>
-                                                    <div class="text-xs mt-1">by {{ $history->changedBy->name }}</div>
+
+                                                    @if ($history->attachment)
+                                                        <a href="{{ Storage::url($history->attachment) }}"
+                                                            class="text-blue-600 hover:underline" target="_blank"
+                                                            download>
+                                                            <span class="font-medium">Attachment:</span>
+
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M12 16v-8m0 8l-4-4m4 4l4-4M4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0" />
+                                                            </svg>
+                                                        </a>
+                                                    @else
+                                                        <span class="text-gray-500"></span>
+                                                    @endif
+
+
+                                                    <div class="whitespace-nowrap text-right text-sm text-gray-500">
+                                                        <time datetime="{{ $history->created_at }}">
+                                                            {{ $history->created_at->format('M d, Y H:i') }}
+                                                        </time>
+                                                        <div class="text-xs mt-1">by
+                                                            {{ $history->changedBy->name }}</div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
                                 </li>
                             @endforeach
                         </ul>
