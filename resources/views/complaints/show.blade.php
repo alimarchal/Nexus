@@ -126,8 +126,9 @@
                             </svg>
                             <span>Update Status</span>
                         </h3>
-                        <form action="{{ route('complaints.update-status', $complaint) }}" method="POST"
-                            class="space-y-4">
+                        <form method="POST" action="{{ route('complaints.update-status', $complaint) }}"
+                            enctype="multipart/form-data">
+
                             @csrf
                             @method('PATCH')
 
@@ -164,6 +165,16 @@
                                 <label class="block text-sm font-medium text-gray-700">Comments</label>
                                 <textarea name="comments" rows="3"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                            </div>
+                            <div>
+                                <x-label for="attachment" value="Attachment" />
+                                <input type="file" id="attachment" name="attachment"
+                                    class="mt-1 block w-full text-sm text-gray-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-md file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-blue-950 file:text-white
+                                    hover:file:bg-green-800" />
                             </div>
 
                             <div class="flex justify-end">
@@ -229,6 +240,12 @@
                                                                 </p>
                                                             @endforeach
                                                         </div>
+                                                        <div>
+                                                            @if ($history->attachment)
+                                                                <span class="font-medium">Attachment: <a
+                                                                        href="{{ asset('storage/complaints/' . $history->attachment) }}"
+                                                                        target="_blank">{{ $history->attachment }}</a></span>
+                                                            @endif
                                                     @endif
                                                 </div>
                                                 <div class="whitespace-nowrap text-right text-sm text-gray-500">
