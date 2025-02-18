@@ -43,18 +43,23 @@
                         </div>
 
                         <div>
-                            <label for="assigned_to" class="block text-gray-700">Assigned To:</label>
+                            <x-label for="assigned_to" value="{{ __('Assign To Division') }}" />
                             <select name="assigned_to" id="assigned_to"
-                                class="select2 w-full border-gray-300 rounded-md shadow-sm">
-                                <option value="">Select User</option>
-                                @foreach ($users as $user)
-                                    <option value="{{ $user->id }}"
-                                        {{ old('assigned_to', $complaint->assigned_to) == $user->id ? 'selected' : '' }}>
-                                        {{ $user->name }}
+                                class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full"
+                                required>
+                                <option value="">Select Division</option>
+                                @foreach ($divisions as $division)
+                                    <option value="{{ $division->id }}"
+                                        {{ old('assigned_to', $complaint->assigned_to) == $division->id ? 'selected' : '' }}>
+                                        {{ $division->name }} ({{ $division->short_name }})
                                     </option>
                                 @endforeach
                             </select>
+                            @error('assigned_to')
+                                <span class="text-red-500 text-sm">{{ $message }}</span>
+                            @enderror
                         </div>
+
 
                         <div>
                             <label for="status_id" class="block text-gray-700">Status:</label>

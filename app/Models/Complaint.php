@@ -27,6 +27,10 @@ class Complaint extends Model
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
+    public function assignedDivision()
+{
+    return $this->belongsTo(Division::class, 'assigned_to');
+}
 
     public function attachments()
     {

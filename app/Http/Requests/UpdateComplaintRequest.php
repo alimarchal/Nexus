@@ -6,29 +6,21 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateComplaintRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
+    public function authorize()
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules()
     {
         return [
             'subject' => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'required|string',
             'status_id' => 'required|exists:complaint_status_types,id',
-            'assigned_to' => 'nullable|exists:users,id',
-            'due_date' => 'nullable|date',
-            'priority' => 'nullable|in:low,medium,high',
-            'attachments.*' => 'nullable|file|mimes:jpeg,png,pdf|max:2048', // Optional file uploads
+            'assigned_to' => 'required|exists:divisions,id',
+            // 'priority' => 'required|in:low,medium,high',
+            // 'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
+            'attachments.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048'
         ];
     }
-    }
+}

@@ -89,7 +89,9 @@
                                     <div>
                                         <label class="text-sm font-medium text-gray-500">Assigned To</label>
                                         <p class="mt-1 text-sm text-gray-900">
-                                            {{ $complaint->assignedTo->name ?? 'Unassigned' }}</p>
+                                            {{ $complaint->assignedDivision ? $complaint->assignedDivision->name : 'Not Assigned' }}
+                                            {{ $complaint->assignedDivision ? '(' . $complaint->assignedDivision->short_name . ')' : '' }}
+                                        </p>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
@@ -149,7 +151,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Reassign To</label>
                                     <select name="assigned_to"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        class="select2 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                         <option value="">Select User</option>
                                         @foreach ($users as $user)
                                             <option value="{{ $user->id }}"
@@ -238,7 +240,9 @@
                                                                 <p>
                                                                     <span
                                                                         class="font-medium">{{ ucfirst($field) }}</span>:
-                                                                    {{ $change['old'] }} → {{ $change['new'] }}
+                                                                    {{ $change['old'] ?? 'N/A' }} →
+                                                                    {{ $change['new'] ?? 'N/A' }}
+
                                                                 </p>
                                                             @endforeach
                                                         </div>
