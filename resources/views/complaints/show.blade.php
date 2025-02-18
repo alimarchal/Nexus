@@ -89,7 +89,9 @@
                                     <div>
                                         <label class="text-sm font-medium text-gray-500">Assigned To</label>
                                         <p class="mt-1 text-sm text-gray-900">
-                                            {{ $complaint->assignedTo->name ?? 'Unassigned' }}</p>
+                                            {{ $complaint->assignedDivision ? $complaint->assignedDivision->name : 'Not Assigned' }}
+                                            {{ $complaint->assignedDivision ? '(' . $complaint->assignedDivision->short_name . ')' : '' }}
+                                        </p>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
@@ -126,8 +128,9 @@
                             </svg>
                             <span>Update Status</span>
                         </h3>
-                        <form action="{{ route('complaints.update-status', $complaint) }}" method="POST"
-                            class="space-y-4">
+                        <form method="POST" action="{{ route('complaints.update-status', $complaint) }}"
+                            enctype="multipart/form-data">
+
                             @csrf
                             @method('PATCH')
 
@@ -148,7 +151,7 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Reassign To</label>
                                     <select name="assigned_to"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        class="select2 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                         <option value="">Select User</option>
                                         @foreach ($users as $user)
                                             <option value="{{ $user->id }}"
@@ -164,6 +167,16 @@
                                 <label class="block text-sm font-medium text-gray-700">Comments</label>
                                 <textarea name="comments" rows="3"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                            </div>
+                            <div>
+                                <x-label for="attachment" value="Attachment" />
+                                <input type="file" id="attachment" name="attachment"
+                                    class="mt-1 block w-full text-sm text-gray-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-md file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-blue-950 file:text-white
+                                    hover:file:bg-green-800" />
                             </div>
 
                             <div class="flex justify-end">
@@ -215,31 +228,51 @@
                                                         Status changed to
                                                         <span class="font-medium">{{ $history->status->name }}</span>
                                                     </p>
+
                                                     @if ($history->comments)
                                                         <p class="mt-2 text-sm text-gray-500">{{ $history->comments }}
                                                         </p>
                                                     @endif
+
                                                     @if ($history->changes)
                                                         <div class="mt-2 text-sm text-gray-500">
                                                             @foreach (json_decode($history->changes, true) as $field => $change)
                                                                 <p>
                                                                     <span
                                                                         class="font-medium">{{ ucfirst($field) }}</span>:
-                                                                    {{ $change['old'] }} → {{ $change['new'] }}
+                                                                    {{ $change['old'] ?? 'N/A' }} →
+                                                                    {{ $change['new'] ?? 'N/A' }}
+
                                                                 </p>
                                                             @endforeach
                                                         </div>
                                                     @endif
-                                                </div>
-                                                <div class="whitespace-nowrap text-right text-sm text-gray-500">
-                                                    <time datetime="{{ $history->created_at }}">
-                                                        {{ $history->created_at->format('M d, Y H:i') }}
-                                                    </time>
-                                                    <div class="text-xs mt-1">by {{ $history->changedBy->name }}</div>
+
+                                                    @if ($history->attachment)
+                                                        <a href="{{ Storage::url($history->attachment) }}"
+                                                            class="text-blue-600 hover:underline" target="_blank"
+                                                            download>
+                                                            <span class="font-medium">Attachment:</span>
+
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                d="M12 16v-8m0 8l-4-4m4 4l4-4M4 12a8 8 0 1 1 16 0 8 8 0 0 1-16 0" />
+                                                            </svg>
+                                                        </a>
+                                                    @else
+                                                        <span class="text-gray-500"></span>
+                                                    @endif
+
+
+                                                    <div class="whitespace-nowrap text-right text-sm text-gray-500">
+                                                        <time datetime="{{ $history->created_at }}">
+                                                            {{ $history->created_at->format('M d, Y H:i') }}
+                                                        </time>
+                                                        <div class="text-xs mt-1">by
+                                                            {{ $history->changedBy->name }}</div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
                                 </li>
                             @endforeach
                         </ul>

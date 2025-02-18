@@ -44,13 +44,14 @@
                         </div>
 
                         <div>
-                            <label class="block text-gray-700">Assigned To:</label>
-                            <select name="assigned_to" class="select2 w-full border-gray-300 rounded-md shadow-sm">
-                                <option value="">Select User</option>
-                                @foreach ($users as $user)
-                                    <option value="{{ $user->id }}"
-                                        {{ old('assigned_to') == $user->id ? 'selected' : '' }}>
-                                        {{ $user->name }}
+                            <label class="block text-gray-700">Assign To Division:</label>
+                            <select name="assigned_to" class="select2 w-full border-gray-300 rounded-md shadow-sm"
+                                required>
+                                <option value="">Select Division</option>
+                                @foreach ($divisions as $division)
+                                    <option value="{{ $division->id }}"
+                                        {{ old('assigned_to') == $division->id ? 'selected' : '' }}>
+                                        {{ $division->name }} ({{ $division->short_name }})
                                     </option>
                                 @endforeach
                             </select>

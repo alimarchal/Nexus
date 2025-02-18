@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreignId('changed_by')->constrained('users');
             $table->text('comments')->nullable();
             $table->text('changes')->nullable(); // json
+            $table->string('attachment')->nullable();
+
             $table->timestamps();
         });
     }

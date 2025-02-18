@@ -61,14 +61,14 @@
                             </select>
                         </div>
                         <div>
-                            <x-label for="assigned_to" value="{{ __('Assigned To') }}" />
+                            <x-label for="assigned_to" value="{{ __('Assigned To Division') }}" />
                             <select name="filter[assigned_to]" id="assigned_to"
                                 class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
-                                <option value="">Select User</option>
-                                @foreach ($users as $user)
-                                    <option value="{{ $user->id }}"
-                                        {{ request('filter.assigned_to') == $user->id ? 'selected' : '' }}>
-                                        {{ $user->name }}
+                                <option value="">Select Division</option>
+                                @foreach ($divisions as $division)
+                                    <option value="{{ $division->id }}"
+                                        {{ request('filter.assigned_to') == $division->id ? 'selected' : '' }}>
+                                        {{ $division->name }} ({{ $division->short_name }})
                                     </option>
                                 @endforeach
                             </select>
@@ -114,7 +114,11 @@
                                 @foreach ($complaints as $index => $complaint)
                                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                                         <td class="py-1 px-2 text-center">{{ $index + 1 }}</td>
-                                        <td class="py-1 px-2 text-center">{{ $complaint->assignedTo->name }}</td>
+                                        <td class="py-1 px-2 text-center">
+
+                                            {{ $complaint->assignedDivision ? $complaint->assignedDivision->name : 'Not Assigned' }}
+                                            {{ $complaint->assignedDivision ? '(' . $complaint->assignedDivision->short_name . ')' : '' }}
+                                        </td>
                                         <td class="py-1 px-2 text-center">{{ $complaint->subject }}</td>
                                         <td class="py-1 px-2 text-center">
                                             <!-- Truncated preview text -->
