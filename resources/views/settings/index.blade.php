@@ -76,27 +76,26 @@
         </div>
     </div>
 
-    <div class="py-6 bg-gray-100 min-h-screen">
-    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+    <div class="py-6">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
         <div class="grid grid-cols-12 gap-6">
-
             <!-- User Module Card -->
-            <a href="settings/user-module"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                <div class="bg-white shadow-lg rounded-xl p-6 flex items-center justify-between transition-transform transform hover:scale-105 hover:shadow-2xl">
+            <a href="settings/user-module" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                <div class="p-5 flex justify-between">
                     <div>
-                    <div class="text-2xl font-bold leading-8">User </div>
-                    <div class="mt-1 text-base font-extrabold text-black">Module</div>
+                        <div class="text-3xl font-bold leading-8">User</div>
+                        <div class="mt-1 text-base font-extrabold text-black">Module</div>
                     </div>
                     <img src="{{ url('icons-images/user1.png') }}" alt="Users" class="h-16 w-16">
                 </div>
             </a>
 
             <!-- Branch Module Card -->
-            <a href="{{ route('settings.branchsetting') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                <div class="bg-white shadow-lg rounded-xl p-6 flex items-center justify-between transition-transform transform hover:scale-105 hover:shadow-2xl">
+            <a href="{{ route('settings.branchsetting') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                <div class="p-5 flex justify-between">
                     <div>
-                    <div class="text-2xl font-bold leading-8">Branch</div>
-                    <div class="mt-1 text-base font-extrabold text-black">Module</div>
+                        <div class="text-3xl font-bold leading-8">Branch</div>
+                        <div class="mt-1 text-base font-extrabold text-black">Module</div>
                     </div>
                     <img src="{{ url('icons-images/bankmodule.png') }}" alt="Branches" class="h-16 w-16">
                 </div>
