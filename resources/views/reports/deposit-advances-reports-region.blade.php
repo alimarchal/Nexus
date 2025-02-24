@@ -43,13 +43,15 @@
 
     <div class="max-w-7xl mx-auto mt-12 px-4 sm:px-6 lg:px-8 print:hidden" style="display: none" id="filters">
         <div class="rounded-xl p-4 bg-white shadow-lg">
-            <form action="{{ route('reports.daily-position-report') }}" method="GET">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label for="date" class="block text-gray-700 font-bold mb-2">Date</label>
-                        <input type="date" name="filter[date]" value="{{ request('filter.date') }}" id="date"
-                            class="w-full px-3 py-2 border rounded-md text-gray-700 focus:outline-none focus:border-blue-500">
-                    </div>
+            <form action="{{ route('reports.deposit-advances-reports-region') }}" method="GET">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+                <div>
+    <x-label for="date" value="{{ __('Date') }}" />
+    <input type="date" name="filter[date]" id="date"
+        value="{{ request('filter.date') }}"
+        class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
+</div>
 
                     <div>
                         <x-label for="branch_id" value="{{ __('Branch') }}" />

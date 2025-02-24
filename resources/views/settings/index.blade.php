@@ -81,7 +81,7 @@
         <div class="grid grid-cols-12 gap-6">
 
             <!-- User Module Card -->
-            <a href="settings/user-module" class="col-span-12 sm:col-span-6 xl:col-span-3">
+            <a href="settings/user-module"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                 <div class="bg-white shadow-lg rounded-xl p-6 flex items-center justify-between transition-transform transform hover:scale-105 hover:shadow-2xl">
                     <div>
                     <div class="text-2xl font-bold leading-8">User </div>
@@ -92,7 +92,7 @@
             </a>
 
             <!-- Branch Module Card -->
-            <a href="{{ route('settings.branchsetting') }}" class="col-span-12 sm:col-span-6 xl:col-span-3">
+            <a href="{{ route('settings.branchsetting') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                 <div class="bg-white shadow-lg rounded-xl p-6 flex items-center justify-between transition-transform transform hover:scale-105 hover:shadow-2xl">
                     <div>
                     <div class="text-2xl font-bold leading-8">Branch</div>
