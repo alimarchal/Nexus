@@ -74,7 +74,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-12 mb-4 gap-6">
                 <a href="{{ route('daily-positions.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
+                class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
                             <div class="text-3xl font-bold leading-8">Branch</div>
@@ -85,11 +85,12 @@
                 </a>
 
                 <a href="{{ route('circulars.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
+                class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
                             <div class="text-3xl font-bold leading-8">{{ \App\Models\Circular::count() }}</div>
                             <div class="mt-1 text-base font-extrabold text-black">Circulars</div>
+                            
                         </div>
                         <img src="{{ url('icons-images/circular.png') }}" alt="Account" class="h-16 w-16">
                     </div>
@@ -97,7 +98,7 @@
 
 
                 <a href="{{ route('complaints.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
+                class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
                             <div class="text-3xl font-bold leading-8">{{ \App\Models\Complaint::count() }}</div>
@@ -109,6 +110,11 @@
             </div>
         </div>
     </div>
+    <div id="filters">
+    <!-- Content for filters -->
+</div>
+
+<button id="toggle"></button>
 
     @push('modals')
         <script>
