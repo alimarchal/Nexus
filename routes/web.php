@@ -18,7 +18,8 @@ use App\Http\Controllers\UserModuleController;
 use App\Http\Controllers\CircularController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\ManagerController;
-
+use App\Http\Controllers\HrdController;
+use App\Http\Controllers\ManualController;
 
 
 
@@ -68,4 +69,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/complaints/attachments/{attachment}/download', [ComplaintAttachmentController::class, 'download'])
         ->name('complaints.attachments.download');
         Route::resource('settings/user-module/managers', ManagerController::class);
+     
+        Route::resource('hrd', HrdController::class);
+Route::resource('manual', ManualController::class);
 });

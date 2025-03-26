@@ -107,6 +107,29 @@
                         <img src="{{ url('icons-images/complaint.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
+
+                <a href="{{ route('manual.index') }}"
+                class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Complaint::count() }}</div>
+                            <div class="mt-1 text-base font-extrabold text-black">Manual</div>
+                        </div>
+                        <img src="{{ url('icons-images/manual.png') }}" alt="Account" class="h-16 w-16">
+                    </div>
+                </a>
+
+                <a href="{{ route('hrd.index') }}"
+                class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Complaint::count() }}</div>
+                            <div class="mt-1 text-base font-extrabold text-black">HR</div>
+                        </div>
+                        <img src="{{ url('icons-images/hr1.png') }}" alt="Account" class="h-16 w-16">
+                    </div>
+                </a>
+                
             </div>
         </div>
     </div>

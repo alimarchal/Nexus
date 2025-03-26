@@ -84,9 +84,9 @@ class ComplaintController extends Controller
             $complaintData = [
                 'reference_number' => $referenceNumber,
                 'subject' => $request->subject,
-                'description' => $request->description,
+                
                 'status_id' => $request->status_id,
-                'created_by' => auth()->id(),
+                
                 'assigned_to' => $request->assigned_to, // This will now store division_id
                 'due_date' => $request->due_date,
                 'priority' => $request->priority ?? 'medium',

@@ -49,9 +49,8 @@ class Complaint extends Model
     protected $fillable = [
         'reference_number',
         'subject',
-        'description',
+        
         'status_id',
-        'created_by',
         'assigned_to',
         'due_date',
         'priority',

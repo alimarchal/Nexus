@@ -15,7 +15,7 @@ class UpdateComplaintRequest extends FormRequest
     {
         return [
             'subject' => 'required|string|max:255',
-            'description' => 'required|string',
+            // 'description' => 'required|string',
             'status_id' => 'required|exists:complaint_status_types,id',
             'assigned_to' => 'required|exists:divisions,id',
             // 'priority' => 'required|in:low,medium,high',
