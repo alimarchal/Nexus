@@ -76,13 +76,13 @@
                         </div>
                     </div>
 
-                    <!-- <div class="mb-4">
+                    <div class="mb-4">
                         <label class="block text-gray-700">Description:</label>
                         <textarea name="description" class="w-full border-gray-300 rounded-md shadow-sm" required>{{ old('description') }}</textarea>
                         @error('description')
                             <span class="text-red-500 text-sm">{{ $message }}</span>
                         @enderror
-                    </div> -->
+                    </div>
 
                     <div class="mb-4">
                         <label class="block text-gray-700">Priority:</label>

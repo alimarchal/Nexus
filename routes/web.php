@@ -64,12 +64,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('reports/accounts-regionwise-reports', [ReportController::class, 'accountsregionwisePositionReport'])->name('reports.accounts-regionwise-reports');
     Route::resource('/products/circulars', CircularController::class)->except(['destroy']);
     Route::resource('/products/complaints', ComplaintController::class);
-    Route::patch('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus'])
-        ->name('complaints.update-status');
-    Route::get('/complaints/attachments/{attachment}/download', [ComplaintAttachmentController::class, 'download'])
-        ->name('complaints.attachments.download');
-        Route::resource('settings/user-module/managers', ManagerController::class);
-     
-        Route::resource('hrd', HrdController::class);
-Route::resource('manual', ManualController::class);
+    Route::patch('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus'])->name('complaints.update-status');
+    Route::get('/complaints/attachments/{attachment}/download', [ComplaintAttachmentController::class, 'download'])->name('complaints.attachments.download');
+    Route::resource('settings/user-module/managers', ManagerController::class);
+
+    Route::resource('hrd', HrdController::class);
+    Route::resource('manual', ManualController::class);
 });
