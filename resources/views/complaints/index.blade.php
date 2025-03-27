@@ -103,8 +103,8 @@
                                     <th class="py-2 px-2 text-center">#</th>
                                     <th class="py-2 px-2 text-center">Assigned To</th>
                                     <th class="py-2 px-2 text-center">Subject</th>
-                                    <th class="py-2 px-2 text-center">Description</th>
-                                    <th class="py-2 px-2 text-center">Created At</th>
+                                    <!-- <th class="py-2 px-2 text-center">Description</th> -->
+                                    <!-- <th class="py-2 px-2 text-center">Created At</th> -->
                                     <th class="py-2 px-2 text-center">Attachment</th>
                                     <th class="py-2 px-2 text-center">Status</th>
                                     <th class="py-2 px-2 text-center">Actions</th>
@@ -118,15 +118,19 @@
 
                                             {{ $complaint->assignedDivision ? $complaint->assignedDivision->name : 'Not Assigned' }}
                                             {{ $complaint->assignedDivision ? '(' . $complaint->assignedDivision->short_name . ')' : '' }}
+                                            <br>
+                                            {{ $complaint->created_at->format('d-m-Y') }}
+                                        </td>
+                                       
                                         </td>
                                         <td class="py-1 px-2 text-center">{{ $complaint->subject }}</td>
-                                        <td class="py-1 px-2 text-center">
-                                            <!-- Truncated preview text -->
+                                        <!-- <td class="py-1 px-2 text-center"> -->
+                                            <!-- Truncated preview text
                                             <span
                                                 class="description-preview block whitespace-pre-wrap break-words">{{ Str::limit($complaint->description, 25) }}</span>
 
-                                            <!-- Full description text (hidden initially) -->
-                                            <span class="description-full block whitespace-pre-wrap break-words"
+                                             Full description text (hidden initially) -->
+                                            <!-- <span class="description-full block whitespace-pre-wrap break-words"
                                                 style="display: none;">
                                                 @php
                                                     // Wordwrap the description at 30 characters without cutting words
@@ -139,19 +143,19 @@
                                                     // Echo the wrapped description
                                                     echo nl2br(e($wrappedDescription));
                                                 @endphp
-                                            </span>
+                                            </span> -->
 
                                             <!-- Link to open the modal with the full description -->
-                                            @if (strlen($complaint->description) > 30)
+                                            <!-- @if (strlen($complaint->description) > 30)
                                                 <a href="javascript:void(0);" class="text-blue-600 hover:underline"
                                                     onclick="openModal('{{ addslashes($complaint->description) }}')">Read
                                                     more</a>
                                             @endif
-                                        </td>
+                                        </td> -->
 
                                         <!-- Modal for full description -->
                                         <!-- Modal for full description -->
-                                        <div id="descriptionModal"
+                                        <!-- <div id="descriptionModal"
                                             class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 hidden"
                                             onclick="closeModal(event)">
                                             <div class="bg-white p-6 rounded-lg w-11/12 max-w-lg"
@@ -164,13 +168,13 @@
                                                     Close
                                                 </button>
                                             </div>
-                                        </div>
+                                        </div>  -->
 
 
 
-                                        <td class="py-1 px-2 text-center">
+                                        <!-- <td class="py-1 px-2 text-center">
                                             {{ $complaint->created_at->format('d-m-Y') }}
-                                        </td>
+                                        </td> -->
                                         <td class="py-1 px-2 text-center">
                                             @if ($complaint->attachments->isNotEmpty())
                                                 <a href="{{ Storage::url($complaint->attachments->first()->file_path) }}"
@@ -201,7 +205,7 @@
                                                 </svg>
                                             </a>
 
-                                            <button type="button"
+                                            <!-- <button type="button"
                                                 class="delete-button p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                     viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
@@ -216,7 +220,7 @@
                                                 style="display: none;">
                                                 @csrf
                                                 @method('DELETE')
-                                            </form>
+                                            </form> -->
 
                                             <a href="{{ route('complaints.show', $complaint) }}"
                                                 class="p-2 text-blue-600 hover:text-white hover:bg-blue-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
@@ -356,7 +360,7 @@
                     }
                 }
             </script>
-            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <!-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
             <script>
                 document.querySelectorAll('.delete-button').forEach(button => {
                     button.addEventListener('click', function(e) {
@@ -379,9 +383,9 @@
                         });
                     });
                 });
-            </script>
+            </script> -->
 
-            <script>
+             <!-- <script>
                 function openModal(description) {
                     document.getElementById("modalDescription").innerText = description;
                     document.getElementById("descriptionModal").classList.remove("hidden");
@@ -392,6 +396,6 @@
                         document.getElementById("descriptionModal").classList.add("hidden");
                     }
                 }
-            </script>
+            </script>   -->
         @endpush
 </x-app-layout>

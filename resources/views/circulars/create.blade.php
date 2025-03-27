@@ -49,19 +49,27 @@
                             </div>
 
                             <div>
-                                <x-label for="title" value="Title" />
-                                <x-input id="title" type="text" name="title" class="mt-1 block w-full"
-                                    :value="old('title')" />
-                            </div>
+    <x-label for="title" value="Title" />
+    <x-input id="title" type="text" name="title" class="mt-1 block w-full"
+        :value="old('title')" />
+</div>
 
-                            <div>
+<div>
+    <x-label for="circular_date" value="Circular Date" />
+    <x-input id="circular_date" type="date" name="circular_date" class="mt-1 block w-full"
+        :value="old('circular_date')" />
+</div>
+
+   <!-- Description - Full Width -->
+   <div class="col-span-2">
                                 <x-label for="description" value="Description" />
                                 <textarea id="description" name="description"
                                     class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
                                     rows="3">{{ old('description') }}</textarea>
                             </div>
 
-                            <div>
+                            <!-- Attachment - Placed Below Description -->
+                            <div class="col-span-2">
                                 <x-label for="attachment" value="Attachment" />
                                 <input type="file" id="attachment" name="attachment"
                                     class="mt-1 block w-full text-sm text-gray-500

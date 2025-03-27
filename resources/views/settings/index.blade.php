@@ -100,6 +100,26 @@
                     <img src="{{ url('icons-images/bankmodule.png') }}" alt="Branches" class="h-16 w-16">
                 </div>
             </a>
+            <a href="{{ url('settings/user-module/managers') }}" class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Manager::count() }}</div>
+                            <div class="mt-1 text-base font-extrabold text-black">Managers</div>
+                        </div>
+                        <img src="{{ url('icons-images/user.png') }}" alt="Users" class="h-16 w-16">
+                    </div>
+                </a>
+                <a href="{{ route('branch-targets.index') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                        <div class="p-5 flex justify-between">
+                            <div>
+                                <div class="text-3xl font-bold leading-8">{{ \App\Models\BranchTarget::count() }}</div>
+                                <div class="mt-1 text-base font-extrabold text-black">Target</div>
+                            </div>
+                            <img src="{{url('icons-images/branchtarget.png') }}" alt="Branches" class="h-16 w-16">
+                        </div>
+                    </a>
+                  
         </div>
     </div>
 </div>
