@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('reference_number')->unique();
             $table->string('subject');
-            $table->text('description');
+            // $table->text('description');
             $table->foreignId('status_id')->constrained('complaint_status_types');
             $table->foreignId('created_by')->constrained('users');
             $table->foreignId('assigned_to')->nullable()->constrained('users');

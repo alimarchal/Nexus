@@ -75,10 +75,10 @@
                         </div>
                     </div>
 
-                    <div class="mb-4">
+                    <!-- <div class="mb-4">
                         <label for="description" class="block text-gray-700">Description:</label>
                         <textarea name="description" id="description" class="w-full border-gray-300 rounded-md shadow-sm" required>{{ old('description', $complaint->description) }}</textarea>
-                    </div>
+                    </div> -->
 
                     <div class="mb-4">
                         <label class="block text-gray-700">Attachments:</label>

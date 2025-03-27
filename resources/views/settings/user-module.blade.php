@@ -57,16 +57,7 @@
                         <img src="{{ url('icons-images/roles.png') }}" alt="Roles" class="h-14 w-14">
                     </div>
                 </a>
-                <a href="{{ url('settings/user-module/managers') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-3 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Manager::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Managers</div>
-                        </div>
-                        <img src="{{ url('icons-images/user.png') }}" alt="Users" class="h-14 w-14">
-                    </div>
-                </a>
+              
             </div>
         </div>
     </div>

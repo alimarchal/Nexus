@@ -57,42 +57,39 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                            <div>
-                                <x-label for="description" value="Description" />
-                                <textarea id="description" name="description"
-                                    class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                    rows="3">{{ old('description', $circular->description) }}</textarea>
-                            </div>
-
-                            <div>
-                                <x-label for="attachment" value="Attachment" />
-                                @if ($circular->attachment)
-                                    <div class="mb-2">
-                                        <span class="text-sm text-gray-600 dark:text-gray-400">Current file: </span>
-                                        <a href="{{ Storage::url($circular->attachment) }}"
-                                            class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                                            target="_blank">
-                                            View Current Attachment
-                                        </a>
-                                    </div>
-                                @endif
-                                <input type="file" id="attachment" name="attachment"
-                                    class="mt-1 block w-full text-sm text-gray-500
-                                    file:mr-4 file:py-2 file:px-4
-                                    file:rounded-md file:border-0
-                                    file:text-sm file:font-semibold
-                                    file:bg-blue-950 file:text-white
-                                    hover:file:bg-green-800" />
-                                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                    Leave empty to keep the current file
-                                </p>
-                            </div>
+                        <div class="col-span-2">
+                            <x-label for="description" value="Description" />
+                            <textarea id="description" name="description"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                rows="3">{{ old('description', $circular->description) }}</textarea>
                         </div>
 
+                        <div>
+                            <x-label for="attachment" value="Attachment" />
+                            @if ($circular->attachment)
+                                <div class="mb-2">
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Current file: </span>
+                                    <a href="{{ Storage::url($circular->attachment) }}"
+                                        class="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                        target="_blank">
+                                        View Current Attachment
+                                    </a>
+                                </div>
+                            @endif
+                            <input type="file" id="attachment" name="attachment"
+                                class="mt-1 block w-full text-sm text-gray-500
+                                file:mr-4 file:py-2 file:px-4
+                                file:rounded-md file:border-0
+                                file:text-sm file:font-semibold
+                                file:bg-blue-950 file:text-white
+                                hover:file:bg-green-800" />
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                Leave empty to keep the current file
+                            </p>
+                        </div>
                         <div class="flex items-center justify-end mt-4">
                             <x-button class="ml-4">
-                                Update Circular
+                                Create Circular
                             </x-button>
                         </div>
                     </form>
@@ -100,6 +97,12 @@
             </div>
         </div>
     </div>
+
+    <!-- Include jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Include Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.0.13/dist/js/select2.min.js"></script>
 
     <!-- Include Select2 JS -->
     <script>

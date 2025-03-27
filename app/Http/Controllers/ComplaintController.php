@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateComplaintRequest;
 use App\Models\Complaint;
 use App\Models\ComplaintAttachment;
 use App\Models\ComplaintStatusType;
+use App\Models\Manager;
 use App\Models\User;
 use App\Models\ComplaintHistory;
 use Illuminate\Http\Request;
@@ -69,8 +70,6 @@ class ComplaintController extends Controller
     {
         DB::beginTransaction();
         try {
-            Log::info('Storing new complaint', ['data' => $request->all()]);
-            Log::info('Received Status ID:', ['status_id' => $request->status_id]);
 
             $request->validate([
                 'status_id' => 'required|exists:complaint_status_types,id',
@@ -84,9 +83,9 @@ class ComplaintController extends Controller
             $complaintData = [
                 'reference_number' => $referenceNumber,
                 'subject' => $request->subject,
-                'description' => $request->description,
+
                 'status_id' => $request->status_id,
-                'created_by' => auth()->id(),
+
                 'assigned_to' => $request->assigned_to, // This will now store division_id
                 'due_date' => $request->due_date,
                 'priority' => $request->priority ?? 'medium',
@@ -97,8 +96,12 @@ class ComplaintController extends Controller
                 ])
             ];
 
+
+            $get_manager = Manager::where('division_id', $request->assigned_to)->first();
+
+            $complaintData['assigned_to'] = $get_manager->manager_user_id;
+
             $complaint = Complaint::create($complaintData);
-            Log::info('Complaint created successfully', ['id' => $complaint->id]);
 
             // Handle attachments
             if ($request->hasFile('attachments')) {
@@ -112,7 +115,6 @@ class ComplaintController extends Controller
                 ->with('success', "Complaint created successfully! Reference Number: {$referenceNumber}");
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error storing complaint', ['error' => $e->getMessage()]);
             return back()->withInput()->with('error', 'Failed to create complaint. Please try again.');
         }
     }

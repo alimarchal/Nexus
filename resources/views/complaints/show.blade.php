@@ -48,10 +48,10 @@
                                     <label class="text-sm font-medium text-gray-500">Subject</label>
                                     <p class="mt-1 text-sm text-gray-900">{{ $complaint->subject }}</p>
                                 </div>
-                                <div>
+                                <!-- <div>
                                     <label class="text-sm font-medium text-gray-500">Description</label>
                                     <p class="mt-1 text-sm text-gray-900">{{ $complaint->description }}</p>
-                                </div>
+                                </div> -->
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <label class="text-sm font-medium text-gray-500">Created By</label>

@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
-            Settings User-Module Managers
+            Categories
         </h2>
         <div class="flex justify-center items-center float-right">
             <button id="toggle"
@@ -22,12 +22,12 @@
                 </svg>
             </a>
 
-            <a href="{{ route('managers.create') }}"
+            <a href="{{ route('categories.create') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>
-                <span class="hidden md:inline-block">Add Manager</span>
+                <span class="hidden md:inline-block">Add </span>
             </a>
             {{--  <a href="{{ route('user.module') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
@@ -37,61 +37,39 @@
                         d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
             </a>  --}}
-            <a href="{{ route('settings.index') }}" class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+            <a href="{{ route('settings.index') }}"
+                class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <!-- Arrow Left Icon SVG -->
-                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
             </a>
         </div>
-        
+
     </x-slot>
+
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters"
             style="display: none">
             <div class="p-6">
-                <form method="GET" action="{{ route('managers.index') }}">
+                <form method="GET" action="{{ route('categories.index') }}">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- Branch Filter -->
+                        <!-- Name Filter -->
                         <div>
-                            <x-label for="branch_id" value="{{ __('Branch') }}" />
-                            <select name="filter[branch_id]" id="branch_id"
-                                class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
-                                <option value="">Select a branch</option>
-                                @foreach (\App\Models\Branch::all() as $branch)
-                                    <option value="{{ $branch->id }}"
-                                        {{ request('filter.branch_id') == $branch->id ? 'selected' : '' }}>
-                                        {{ $branch->code . ' - ' . $branch->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <!-- Title Filter -->
-                        <div>
-                            <x-label for="title" value="{{ __('Title') }}" />
-                            <input type="text" name="filter[title]" id="title"
-                                value="{{ request('filter.title') }}"
+                            <x-label for="name" value="{{ __('Category Name') }}" />
+                            <input type="text" name="filter[name]" id="name"
+                                value="{{ request('filter.name') }}"
                                 class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
                         </div>
 
-                        <!-- Created By Filter -->
-                        <div>
-                            <x-label for="created_by" value="{{ __('Created By') }}" />
-                            <select name="filter[created_by]" id="created_by"
-                                class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
-                                <option value="">Select creator</option>
-                                @foreach (\App\Models\User::all() as $user)
-                                    <option value="{{ $user->id }}"
-                                        {{ request('filter.created_by') == $user->id ? 'selected' : '' }}>
-                                        {{ $user->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
 
-                        <!-- Created At Filter -->
+
+
+
+                        <!-- Created Date Filter -->
                         <div>
                             <x-label for="created_at" value="{{ __('Created Date') }}" />
                             <input type="date" name="filter[created_at]" id="created_at"
@@ -101,7 +79,7 @@
                     </div>
 
                     <div class="mt-4 flex justify-end">
-                        <x-button class="mc-bg-blue text-white hover:bg-green-800">
+                        <x-button class="bg-blue-800 text-white hover:bg-green-800">
                             {{ __('Apply Filters') }}
                         </x-button>
                     </div>
@@ -110,35 +88,32 @@
         </div>
     </div>
 
+    <!-- Categories Table -->
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
                 <x-status-message />
-                @if ($managers->count() > 0)
+                @if ($categories->count() > 0)
                     <div class="relative overflow-x-auto rounded-lg">
                         <table class="min-w-max w-full table-auto text-sm">
                             <thead>
                                 <tr class="bg-blue-800 text-white uppercase text-sm">
-                                    <th class="py-2 px-4 text-center">Division</th>
-                                    <th class="py-2 px-4 text-center">Title</th>
-                                    <th class="py-2 px-4 text-center">Manager</th>
-                                    <th class="py-2 px-4 text-center">Created By</th>
+                                    <th class="py-2 px-4 text-left">Category Name</th>
+
+                                    <th class="py-2 px-4 text-left">Created At</th>
                                     <th class="py-2 px-4 text-center">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="text-black text-md leading-normal font-extrabold">
-                                @foreach ($managers as $manager)
+                            <tbody class="text-gray-800 text-md leading-normal font-semibold">
+                                @foreach ($categories as $category)
                                     <tr class="border-b border-gray-200 hover:bg-gray-100">
-                                        <td class="py-1 px-4 text-center">{{ $manager->division->name ?? 'N/A' }}</td>
-                                        <td class="py-1 px-4 text-center">{{ $manager->title }}</td>
-                                        <td class="py-1 px-4 text-center">{{ $manager->managerUser->name }}</td>
-                                        <td class="py-1 px-4 text-center">{{ $manager->createdBy->name }}</td>
+                                        <td class="py-2 px-4">{{ $category->name }}</td>
 
-
-                                        <td class="py-1 px-4 text-center flex justify-center space-x-2">
-                                            <a href="{{ route('managers.edit', $manager) }}"
+                                        <td class="py-2 px-4">{{ $category->created_at->format('Y-m-d') }}</td>
+                                        <td class="py-2 px-4 text-center flex justify-center space-x-2">
+                                            <a href="{{ route('categories.edit', $category) }}"
                                                 class="px-4 py-2 text-white bg-green-800 hover:bg-green-700 rounded-md">Edit</a>
-                                            <form action="{{ route('managers.destroy', $manager) }}" method="POST"
+                                            <form action="{{ route('categories.destroy', $category) }}" method="POST"
                                                 class="inline">
                                                 @csrf
                                                 @method('DELETE')
@@ -151,16 +126,17 @@
                             </tbody>
                         </table>
                         <div class="mt-4">
-                            {{ $managers->links() }}
+                            {{ $categories->links() }}
                         </div>
                     </div>
                 @else
-                    <p class="text-center py-6">No managers found. <a href="{{ route('managers.create') }}"
-                            class="text-blue-600 hover:underline">Add a new manager</a>.</p>
+                    <p class="text-center py-6">No categories found. <a href="{{ route('categories.create') }}"
+                            class="text-blue-600 hover:underline">Add a new category</a>.</p>
                 @endif
             </div>
         </div>
     </div>
+
 
     @push('modals')
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
