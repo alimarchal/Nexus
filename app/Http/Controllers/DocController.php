@@ -74,27 +74,31 @@ class DocController extends Controller
         return view('docs.edit', compact('doc', 'categories', 'divisions'));
     }
 
-    public function update(Request $request, Doc $doc)
-    {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'category_id' => 'required|exists:categories,id',
-            'division_id' => 'required|exists:divisions,id',
-            'document' => 'nullable|file|mimes:pdf,doc,docx|max:2048'
-        ]);
 
-        if ($request->hasFile('document')) {
-            // Delete old document
-            Storage::delete($doc->document);
-            $validated['document'] = $request->file('document')->store('documents');
+public function update(Request $request, Doc $doc)
+{
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'category_id' => 'required|exists:categories,id',
+        'division_id' => 'required|exists:divisions,id',
+        'document' => 'nullable|file|mimes:pdf,doc,docx|max:2048'
+    ]);
+
+    if ($request->hasFile('document')) {
+        // Delete old document if it exists
+        if ($doc->document && Storage::disk('public')->exists($doc->document)) {
+            Storage::disk('public')->delete($doc->document);
         }
 
-        $doc->update($validated);
-
-        return redirect()->route('docs.index')->with('success', 'Document updated successfully.');
+        // Store the new document in the 'public/documents' folder
+        $validated['document'] = $request->file('document')->store('documents', 'public');
     }
 
+    $doc->update($validated);
+
+    return redirect()->route('docs.index')->with('success', 'Document updated successfully.');
+}
     public function destroy(Doc $doc)
     {
         // Delete associated document

@@ -122,7 +122,7 @@
                                         <td class="py-2 px-2 text-center">{{ $doc->category->name }}</td>
                                         <td class="py-2 px-2 text-center">{{ $doc->division->name }}</td>
                                         <td class="py-1 px-2 text-center">
-                                            @if ($doc->document && Storage::exists($doc->document))
+                                            @if ($doc->document && Storage::disk('public')->exists($doc->document))
                                                 <a href="{{ asset('storage/' . $doc->document) }}"
                                                     class="text-blue-600 hover:underline" target="_blank" download>
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none"
@@ -136,6 +136,7 @@
                                                 <span class="text-red-500">-</span>
                                             @endif
                                         </td>
+
 
 
 
