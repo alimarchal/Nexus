@@ -9,12 +9,13 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up()
     {
-        Schema::create('hrds', function (Blueprint $table) {
+        Schema::create('docs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
             $table->foreignId('category_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
+            $table->foreignId('division_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
             $table->string('title')->nullable();
             $table->text('description')->nullable();
             $table->string('document')->nullable();
@@ -27,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('hrds');
+        Schema::dropIfExists('documents');
     }
 };

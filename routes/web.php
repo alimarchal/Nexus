@@ -1,25 +1,31 @@
 <?php
 
-use App\Http\Controllers\ComplaintAttachmentController;
-use App\Http\Controllers\DailyPositionController;
-use App\Http\Controllers\BranchTargetController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\ProductController;
-use App\Http\Controllers\SettingController;
-use App\Http\Controllers\ReportController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BranchController;
-use App\Http\Controllers\RegionController;
-use App\Http\Controllers\DistrictController;
-use App\Http\Controllers\RoleController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\UserModuleController;
+use App\Http\Controllers\BranchTargetController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CircularController;
+use App\Http\Controllers\ComplaintAttachmentController;
 use App\Http\Controllers\ComplaintController;
-use App\Http\Controllers\ManagerController;
+use App\Http\Controllers\DailyPositionController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DistrictController;
+use App\Http\Controllers\DocController;
+
 use App\Http\Controllers\HrdController;
+use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\ManualController;
+use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\RegionController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SettingController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserModuleController;
+use Illuminate\Support\Facades\Route;
+
+
+
 
 
 
@@ -42,7 +48,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
     Route::get('/settings/branch', [SettingController::class, 'branchSetting'])->name('settings.branchsetting');
-    Route::resource('/settings/branch/branch-targets', BranchTargetController::class);
+    Route::resource('/settings/branch-targets', BranchTargetController::class);
     Route::resource('/settings/branch/branches', BranchController::class);
     Route::resource('/settings/branch/regions', RegionController::class);
     Route::resource('/settings/branch/districts', DistrictController::class);
@@ -70,4 +76,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::resource('hrd', HrdController::class);
     Route::resource('manual', ManualController::class);
+    Route::resource('/settings/categories', CategoryController::class);
+
+    Route::resource('/products/docs', DocController::class);
 });
