@@ -173,6 +173,7 @@
                             <th class="py-2 px-2 text-center">Date</th>
                             <th class="py-2 px-2 text-center">Type</th>
                             <th class="py-2 px-2 text-center">Quantity</th>
+                            <th class="py-2 px-2 text-center">Unit Price</th>
                             <th class="py-2 px-2 text-center">Current Balance</th>
                             <th class="py-2 px-2 text-center">Reference</th>
                             <th class="py-2 px-2 text-center">Destination</th>
@@ -203,6 +204,11 @@
                                         <div class="text-xs text-gray-500 font-normal">@ {{ number_format($transaction->unit_price, 2) }}</div>
                                     @endif
                                 </td>
+
+                                <td class="py-1 px-2 text-center">
+                                    {{ $transaction->quantity  * $transaction->unit_price}}
+                                </td>
+
                                 <td class="py-1 px-2 text-center">{{ $transaction->balance_after_transaction }}</td>
                                 <td class="py-1 px-2 text-center">{{ $transaction->reference_number ?? 'N/A' }}</td>
                                 <td class="py-1 px-2 text-center">
