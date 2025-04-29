@@ -6,6 +6,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use Illuminate\Database\Eloquent\Builder;
+
+
+
 class Doc extends Model
 {
     use HasFactory;
@@ -33,4 +37,18 @@ class Doc extends Model
     {
         return $this->belongsTo(Division::class);
     }
+
+    public function scopeTitle(Builder $query, string $search): void
+    {
+        $query->where('title', 'LIKE', "%{$search}%");
+    }
+
+    /**
+     * Scope for created_at filter
+     */
+    public function scopeCreatedAt(Builder $query, string $date): void
+    {
+        $query->whereDate('created_at', $date);
+    }
+
 }
