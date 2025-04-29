@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="header">
+    <x-slot name="header" class="print:hidden">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
             Printed Stationeries
         </h2>
@@ -32,7 +32,7 @@
         </div>
     </x-slot>
 
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4 print:hidden">
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters" style="display: none">
             <div class="p-6">
                 <form method="GET" action="{{ route('printed-stationeries.index') }}">
@@ -80,96 +80,90 @@
         </div>
     </div>
 
-
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-2 pb-16">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-2 pb-16 print:p-0">
         <x-status-message />
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
-            <!-- Display session message -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl print:shadow-none">
+            <!-- Print-specific styles -->
+            <style>
+                @media print {
+                    body {
+                        margin: 0;
+                        padding: 0;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        page-break-inside: avoid;
+                    }
+                    th, td {
+                        padding: 2px 4px !important;
+                        font-size: 10px !important;
+                        border: 1px solid #000 !important;
+                    }
+                    .print-wrapper {
+                        padding: 0.5cm;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f8f8f8 !important;
+                        -webkit-print-color-adjust: exact;
+                        print-color-adjust: exact;
+                    }
+                }
+            </style>
 
-            @if ($stationeries->count() > 0)
-                <div class="relative overflow-x-auto rounded-lg">
-                    <table class="min-w-max w-full table-auto text-sm">
-                        <thead>
-                        <tr class="bg-green-800 text-white uppercase text-sm">
-                            <th class="py-2 px-2 text-center">#</th>
-                            <th class="py-2 px-2 text-center">Item Code</th>
-                            <th class="py-2 px-2 text-center">Item Name</th>
-                            <th class="py-2 px-2 text-center">Stock In Hand</th>
-                            <th class="py-2 px-2 text-center">Latest Price</th>
-{{--                            <th class="py-2 px-2 text-center">Created By</th>--}}
-{{--                            <th class="py-2 px-2 text-center">Created At</th>--}}
-                            <th class="py-2 px-2 text-center print:hidden">Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody class="text-black text-md leading-normal font-extrabold">
-                        @foreach ($stationeries as $index => $stationery)
-                            <tr class="border-b border-gray-200 hover:bg-gray-100">
-                                <td class="py-1 px-2 text-center">{{ $index + 1 }}</td>
-                                <td class="py-1 px-2 text-center">{{ $stationery->item_code }}</td>
-                                <td class="py-1 px-2 text-left">{{ $stationery->name ?? '-' }}</td>
-                                <td class="py-1 px-2 text-center">
-                                    <span class="{{ $stationery->current_stock > 0 ? 'text-green-700' : 'text-red-700' }} font-bold">
-                                        {{ $stationery->current_stock }}
-                                    </span>
-                                </td>
-                                <td class="py-1 px-2 text-center">
-                                    {{ $stationery->latest_purchase_price ? number_format($stationery->latest_purchase_price, 2) : 'N/A' }}
-                                </td>
-{{--                                <td class="py-1 px-2 text-center">{{ $stationery->creator->name ?? 'N/A' }}</td>--}}
-{{--                                <td class="py-1 px-2 text-center">{{ $stationery->created_at->format('d-m-Y') }}</td>--}}
-                                <td class="py-1 px-2 text-center">
-                                    <div class="flex justify-center space-x-2">
-                                        <!-- Stock Management Buttons -->
-                                        <div class="flex space-x-1">
-                                            <a href="{{ route('stationery-transactions.create', ['stationery_id' => $stationery->id, 'transaction_type' => 'in']) }}"
-                                               class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" title="Stock In">
-                                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                </svg>
-                                                <span class="hidden sm:inline-block ml-1">In</span>
-                                            </a>
-                                            <a href="{{ route('stationery-transactions.create', ['stationery_id' => $stationery->id, 'transaction_type' => 'out']) }}"
-                                               class="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2" title="Stock Out">
-                                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13l-7 7-7-7m14-8l-7 7-7-7" />
-                                                </svg>
-                                                <span class="hidden sm:inline-block ml-1">Out</span>
-                                            </a>
-                                        </div>
+            <table class="mb-4 w-full text-sm border-collapse border border-slate-400 text-left text-black dark:text-gray-400 print:text-black">
+                <thead class="text-black uppercase bg-gray-50 dark:bg-gray-700 print:bg-gray-200">
+                <tr>
+                    <th scope="col" class="px-2 py-2 border border-black text-center" rowspan="2">S.No</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center" rowspan="2">Name</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center" rowspan="2">Code</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center" rowspan="2">Supply To Branch</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center" colspan="12">MONTHLY DISTRIBUTION OF STATIONERY</th>
+                </tr>
 
-                                        <!-- Edit Button -->
-                                        <a href="{{ route('printed-stationeries.edit', $stationery) }}"
-                                           class="inline-flex items-center px-3 py-1 bg-blue-800 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                            Edit
-                                        </a>
 
-                                        <!-- Delete Button -->
-{{--                                        <form action="{{ route('printed-stationeries.destroy', $stationery) }}" method="POST" class="inline-block">--}}
-{{--                                            @csrf--}}
-{{--                                            @method('DELETE')--}}
-{{--                                            <button type="submit" onclick="return confirm('Are you sure you want to delete this item?')"--}}
-{{--                                                    class="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">--}}
-{{--                                                Delete--}}
-{{--                                            </button>--}}
-{{--                                        </form>--}}
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                <div class="px-2 py-2">
-                    {{ $stationeries->links() }}
-                </div>
-            @else
-                <p class="text-gray-700 dark:text-gray-300 text-center py-4">
-                    No printed stationeries found.
-                    <a href="{{ route('printed-stationeries.create') }}" class="text-blue-600 hover:underline">
-                        Add a new stationery item
-                    </a>.
-                </p>
-            @endif
+                <tr>
+
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Jan</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Feb</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Mar</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Apr</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">May</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Jun</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Jul</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Aug</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Sep</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Oct</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Nov</th>
+                    <th scope="col" class="px-2 py-2 border border-black text-center">Dec</th>
+                </tr>
+                </thead>
+                <tbody>
+
+                @foreach(\App\Models\PrintedStationery::all() as $item)
+                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 print:hover:bg-white">
+                        <td class="px-2 py-2 border border-black text-center">{{ $item->id }}</td>
+                        <td class="px-2 py-2 border border-black text-left">{{ $item->name }}</td>
+                        <td class="px-2 py-2 border border-black text-center">{{ $item->item_code }}</td>
+                        <td class="px-2 py-2 border border-black text-center">North</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                        <td class="px-2 py-2 border border-black text-center">N/A</td>
+                    </tr>
+                @endforeach
+                <!-- Row 1 -->
+
+                </tbody>
+            </table>
         </div>
     </div>
 

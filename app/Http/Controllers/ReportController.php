@@ -105,4 +105,9 @@ class ReportController extends Controller
         return view('reports.accounts-regionwise-reports'); // Render the branch settings view
     }
 
+    public function printedStationeries(Request $request)
+    {
+        return view('reports.stationeries.printed-stationeries');
+    }
+
 }
