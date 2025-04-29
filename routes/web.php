@@ -21,6 +21,7 @@ use App\Http\Controllers\RegionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\StationeryTransactionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserModuleController;
 use Illuminate\Support\Facades\Route;
@@ -84,5 +85,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
 
     Route::resource('printed-stationeries', PrintedStationeryController::class);
+    Route::resource('stationery-transactions', StationeryTransactionController::class);
+
 
 });
