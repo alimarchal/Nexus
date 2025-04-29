@@ -15,6 +15,7 @@ use App\Http\Controllers\HrdController;
 use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\ManualController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\PrintedStationeryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RegionController;
 use App\Http\Controllers\ReportController;
@@ -79,4 +80,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/settings/categories', CategoryController::class);
 
     Route::resource('/products/docs', DocController::class);
+
+
+
+    Route::resource('printed-stationeries', PrintedStationeryController::class);
+
 });

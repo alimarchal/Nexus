@@ -52,8 +52,7 @@
     </x-slot>
 
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters"
-            style="display: none">
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters" style="display: none">
             <div class="p-6">
                 <form method="GET" action="{{ route('daily-positions.index') }}">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -89,6 +88,8 @@
             </div>
         </div>
     </div>
+
+
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
         <x-status-message />
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
