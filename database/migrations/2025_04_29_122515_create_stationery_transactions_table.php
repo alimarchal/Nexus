@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('stationery_transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('printed_stationery_id')->constrained()->onDelete('cascade');
-            $table->enum('stock_out_to', ['Branch', 'Region','Division']);
+            $table->enum('stock_out_to', ['Branch', 'Region','Division'])->nullable();
             $table->foreignId('division_id')->nullable()->constrained()->onUpdate('cascade')->onDelete('cascade');
             $table->foreignId('branch_id')->nullable()->constrained()->onUpdate('cascade')->onDelete('cascade');
             $table->foreignId('region_id')->nullable()->constrained()->onUpdate('cascade')->onDelete('cascade');

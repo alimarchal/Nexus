@@ -66,10 +66,14 @@
                     </div>
 
                     <!-- Submit Button -->
-                    <div class="mt-4">
+                    <div class="mt-4 flex space-x-3">
                         <x-button class="bg-blue-950 text-white hover:bg-green-800">
                             {{ __('Apply Filters') }}
                         </x-button>
+
+                        <a href="{{ route('printed-stationeries.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-800 dark:text-gray-300 uppercase tracking-widest hover:bg-gray-400 dark:hover:bg-gray-600 focus:bg-gray-400 dark:focus:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                            {{ __('Clear Filters') }}
+                        </a>
                     </div>
                 </form>
             </div>
@@ -82,7 +86,6 @@
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
             <!-- Display session message -->
 
-
             @if ($stationeries->count() > 0)
                 <div class="relative overflow-x-auto rounded-lg">
                     <table class="min-w-max w-full table-auto text-sm">
@@ -91,6 +94,8 @@
                             <th class="py-2 px-2 text-center">#</th>
                             <th class="py-2 px-2 text-center">Item Code</th>
                             <th class="py-2 px-2 text-center">Name</th>
+                            <th class="py-2 px-2 text-center">Current Stock</th>
+                            <th class="py-2 px-2 text-center">Latest Price</th>
                             <th class="py-2 px-2 text-center">Created By</th>
                             <th class="py-2 px-2 text-center">Created At</th>
                             <th class="py-2 px-2 text-center print:hidden">Actions</th>
@@ -102,14 +107,43 @@
                                 <td class="py-1 px-2 text-center">{{ $index + 1 }}</td>
                                 <td class="py-1 px-2 text-center">{{ $stationery->item_code }}</td>
                                 <td class="py-1 px-2 text-center">{{ $stationery->name ?? '-' }}</td>
+                                <td class="py-1 px-2 text-center">
+                                    <span class="{{ $stationery->current_stock > 0 ? 'text-green-700' : 'text-red-700' }} font-bold">
+                                        {{ $stationery->current_stock }}
+                                    </span>
+                                </td>
+                                <td class="py-1 px-2 text-center">
+                                    {{ $stationery->latest_purchase_price ? number_format($stationery->latest_purchase_price, 2) : 'N/A' }}
+                                </td>
                                 <td class="py-1 px-2 text-center">{{ $stationery->creator->name ?? 'N/A' }}</td>
                                 <td class="py-1 px-2 text-center">{{ $stationery->created_at->format('d-m-Y') }}</td>
                                 <td class="py-1 px-2 text-center">
                                     <div class="flex justify-center space-x-2">
+                                        <!-- Stock Management Buttons -->
+                                        <div class="flex space-x-1">
+                                            <a href="{{ route('stationery-transactions.create', ['stationery_id' => $stationery->id, 'transaction_type' => 'in']) }}"
+                                               class="inline-flex items-center px-2 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2" title="Stock In">
+                                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                </svg>
+                                                <span class="hidden sm:inline-block ml-1">In</span>
+                                            </a>
+                                            <a href="{{ route('stationery-transactions.create', ['stationery_id' => $stationery->id, 'transaction_type' => 'out']) }}"
+                                               class="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2" title="Stock Out">
+                                                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13l-7 7-7-7m14-8l-7 7-7-7" />
+                                                </svg>
+                                                <span class="hidden sm:inline-block ml-1">Out</span>
+                                            </a>
+                                        </div>
+
+                                        <!-- Edit Button -->
                                         <a href="{{ route('printed-stationeries.edit', $stationery) }}"
-                                           class="inline-flex items-center px-3 py-1 bg-green-800 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                                           class="inline-flex items-center px-3 py-1 bg-blue-800 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                             Edit
                                         </a>
+
+                                        <!-- Delete Button -->
                                         <form action="{{ route('printed-stationeries.destroy', $stationery) }}" method="POST" class="inline-block">
                                             @csrf
                                             @method('DELETE')
