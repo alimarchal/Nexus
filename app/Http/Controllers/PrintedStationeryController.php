@@ -33,7 +33,7 @@ class PrintedStationeryController extends Controller
             ->defaultSort('-created_at')
             ->allowedSorts(['item_code', 'name', 'created_at'])
             ->with(['creator']) // Eager load relationships
-            ->paginate(10)
+            ->paginate(100)
             ->withQueryString();
 
         return view('printed-stationeries.index', compact('stationeries'));

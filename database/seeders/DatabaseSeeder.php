@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             DivisionSeeder::class,
             ComplaintStatusTypeSeeder::class,
+            PrintedStationerySeeder::class,
         ]);
     }
 }

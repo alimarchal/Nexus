@@ -81,7 +81,7 @@
     </div>
 
 
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-2">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-2 pb-16">
         <x-status-message />
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
             <!-- Display session message -->
@@ -93,11 +93,11 @@
                         <tr class="bg-green-800 text-white uppercase text-sm">
                             <th class="py-2 px-2 text-center">#</th>
                             <th class="py-2 px-2 text-center">Item Code</th>
-                            <th class="py-2 px-2 text-center">Name</th>
-                            <th class="py-2 px-2 text-center">Current Stock</th>
+                            <th class="py-2 px-2 text-center">Item Name</th>
+                            <th class="py-2 px-2 text-center">Stock In Hand</th>
                             <th class="py-2 px-2 text-center">Latest Price</th>
-                            <th class="py-2 px-2 text-center">Created By</th>
-                            <th class="py-2 px-2 text-center">Created At</th>
+{{--                            <th class="py-2 px-2 text-center">Created By</th>--}}
+{{--                            <th class="py-2 px-2 text-center">Created At</th>--}}
                             <th class="py-2 px-2 text-center print:hidden">Actions</th>
                         </tr>
                         </thead>
@@ -106,7 +106,7 @@
                             <tr class="border-b border-gray-200 hover:bg-gray-100">
                                 <td class="py-1 px-2 text-center">{{ $index + 1 }}</td>
                                 <td class="py-1 px-2 text-center">{{ $stationery->item_code }}</td>
-                                <td class="py-1 px-2 text-center">{{ $stationery->name ?? '-' }}</td>
+                                <td class="py-1 px-2 text-left">{{ $stationery->name ?? '-' }}</td>
                                 <td class="py-1 px-2 text-center">
                                     <span class="{{ $stationery->current_stock > 0 ? 'text-green-700' : 'text-red-700' }} font-bold">
                                         {{ $stationery->current_stock }}
@@ -115,8 +115,8 @@
                                 <td class="py-1 px-2 text-center">
                                     {{ $stationery->latest_purchase_price ? number_format($stationery->latest_purchase_price, 2) : 'N/A' }}
                                 </td>
-                                <td class="py-1 px-2 text-center">{{ $stationery->creator->name ?? 'N/A' }}</td>
-                                <td class="py-1 px-2 text-center">{{ $stationery->created_at->format('d-m-Y') }}</td>
+{{--                                <td class="py-1 px-2 text-center">{{ $stationery->creator->name ?? 'N/A' }}</td>--}}
+{{--                                <td class="py-1 px-2 text-center">{{ $stationery->created_at->format('d-m-Y') }}</td>--}}
                                 <td class="py-1 px-2 text-center">
                                     <div class="flex justify-center space-x-2">
                                         <!-- Stock Management Buttons -->
@@ -144,14 +144,14 @@
                                         </a>
 
                                         <!-- Delete Button -->
-                                        <form action="{{ route('printed-stationeries.destroy', $stationery) }}" method="POST" class="inline-block">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" onclick="return confirm('Are you sure you want to delete this item?')"
-                                                    class="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                                                Delete
-                                            </button>
-                                        </form>
+{{--                                        <form action="{{ route('printed-stationeries.destroy', $stationery) }}" method="POST" class="inline-block">--}}
+{{--                                            @csrf--}}
+{{--                                            @method('DELETE')--}}
+{{--                                            <button type="submit" onclick="return confirm('Are you sure you want to delete this item?')"--}}
+{{--                                                    class="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">--}}
+{{--                                                Delete--}}
+{{--                                            </button>--}}
+{{--                                        </form>--}}
                                     </div>
                                 </td>
                             </tr>

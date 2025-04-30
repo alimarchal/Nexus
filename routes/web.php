@@ -87,6 +87,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::resource('printed-stationeries', PrintedStationeryController::class);
     Route::resource('stationery-transactions', StationeryTransactionController::class);
+    //Report
+    Route::get('reports/printed-stationeries', [ReportController::class, 'printedStationeries'])->name('report.printed-stationeries');
 
 
 });
