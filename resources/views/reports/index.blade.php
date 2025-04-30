@@ -71,6 +71,18 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-12 mb-4 gap-6">
+                <a href="{{ route('report.printed-stationeries') }}"
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-2xl font-bold leading-8">Reports</div>
+                            <div class="mt-1 text-base font-extrabold text-black">Stationary</div>
+                        </div>
+                        <img src="{{ url('icons-images/reportss.png') }}" alt="Report" class="h-16 w-16">
+                    </div>
+                </a>
+
+
                 <a href="{{ route('reports.daily-position-report') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -122,16 +134,7 @@
                     </div>
                 </a>
 
-                <a href="{{ route('stationary-branchwise-reports') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-2xl font-bold leading-8">Stationary</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Branch Report</div>
-                        </div>
-                        <img src="{{ url('icons-images/branchwise.png') }}" alt="Account" class="h-16 w-16">
-                    </div>
-                </a>
+
             </div>
         </div>
     </div>

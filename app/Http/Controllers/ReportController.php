@@ -2,24 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Branch;
 use App\Models\DailyPosition;
 use App\Models\Division;
 use App\Models\PrintedStationery;
 use App\Models\Region;
-<<<<<<< HEAD
-use App\Models\Report;
-use App\Models\StationeryTransaction;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-=======
 use App\Models\StationeryTransaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\Branch;
 use App\Models\Report;
 use Illuminate\Support\Facades\DB;
->>>>>>> 4b8a5effb31ba3590d774eaa36d73a7fdf99e8ef
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -114,62 +106,11 @@ class ReportController extends Controller
     {
         return view('reports.accounts-branchwise-reports'); // Render the branch settings view
 
-    }
-    public function accountsregionwisePositionReport()
+    }public function accountsregionwisePositionReport()
     {
         return view('reports.accounts-regionwise-reports'); // Render the branch settings view
     }
-    public function stationarybranchwisereport()
-    {
 
-<<<<<<< HEAD
-        $transactions = QueryBuilder::for(StationeryTransaction::class)
-        ->allowedFilters([
-            AllowedFilter::exact('printed_stationery_id'),
-            AllowedFilter::exact('type'),
-            AllowedFilter::exact('stock_out_to'),
-            AllowedFilter::exact('branch_id'),   // Added filter for branch
-            AllowedFilter::exact('region_id'),   // Added filter for region
-            AllowedFilter::exact('division_id'), // Added filter for division
-            AllowedFilter::callback('date_from', function ($query, $value) {
-                $query->whereDate('transaction_date', '>=', $value);
-            }),
-            AllowedFilter::callback('date_to', function ($query, $value) {
-                $query->whereDate('transaction_date', '<=', $value);
-            }),
-            AllowedFilter::callback('min_quantity', function ($query, $value) {
-                $query->where('quantity', '>=', $value);
-            }),
-            AllowedFilter::callback('max_quantity', function ($query, $value) {
-                $query->where('quantity', '<=', $value);
-            }),
-            AllowedFilter::callback('reference', function ($query, $value) {
-                $query->where('reference_number', 'like', "%{$value}%");
-            }),
-        ])
-        ->defaultSort('-transaction_date')
-        ->allowedSorts(['transaction_date', 'quantity', 'balance_after_transaction', 'type'])
-        ->with(['printedStationery', 'creator', 'branch', 'region', 'division'])
-        ->paginate(10)
-        ->withQueryString();
-
-    // Get data for filter dropdowns
-    $stationeries = PrintedStationery::orderBy('item_code')->get();
-    $branches = Branch::orderBy('name')->get();
-    $regions = Region::orderBy('name')->get();
-    $divisions = Division::orderBy('name')->get();
-
-    return view('reports.stationary-branchwise-reports', compact(
-        'transactions',
-        'stationeries',
-        'branches',
-        'regions',
-        'divisions'
-    ));
-
-
-    }
-=======
 
     public function printedStationeries(Request $request)
     {
@@ -359,5 +300,4 @@ class ReportController extends Controller
         ));
     }
 
->>>>>>> 4b8a5effb31ba3590d774eaa36d73a7fdf99e8ef
 }
