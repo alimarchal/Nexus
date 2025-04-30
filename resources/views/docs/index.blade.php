@@ -39,10 +39,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- Title Filter -->
                         <div>
-                            <x-label for="title" value="{{ __('Document Title') }}" />
+                            <x-label for="title" value="{{ __('Title') }}" />
                             <input type="text" name="filter[title]" id="title"
                                 value="{{ request('filter.title') }}"
-                                class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
+                                class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full"
+                                placeholder="Search by title">
                         </div>
 
                         <!-- Category Filter -->

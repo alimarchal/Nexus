@@ -138,7 +138,7 @@
                             <div class="text-3xl font-bold leading-8">{{ \App\Models\Category::count() }}</div>
                             <div class="mt-1 text-base font-extrabold text-black">Category</div>
                         </div>
-                        <img src="{{ url('icons-images/branchtarget.png') }}" alt="Branches" class="h-16 w-16">
+                        <img src="{{ url('icons-images/classification.png') }}" alt="Branches" class="h-16 w-16">
                     </div>
                 </a>
 

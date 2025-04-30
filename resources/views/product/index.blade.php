@@ -133,10 +133,11 @@
 
 
                 <a href="{{ route('printed-stationeries.index') }}"
-                   class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
-                            <div class="text-3xl font-bold leading-8">{{ \App\Models\PrintedStationery::count() }}</div>
+                            <div class="text-3xl font-bold leading-8">{{ \App\Models\PrintedStationery::count() }}
+                            </div>
                             <div class="mt-1 text-base font-extrabold text-black">Printed Stationeries</div>
 
                         </div>
@@ -146,10 +147,11 @@
 
 
                 <a href="{{ route('stationery-transactions.index') }}"
-                   class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
-                            <div class="text-3xl font-bold leading-8">&nbsp;</div>
+                            <div class="text-3xl font-bold leading-8">
+                                &nbsp;{{ \App\Models\StationeryTransaction::count() }}</div>
                             <div class="mt-1 text-base font-extrabold text-black">Stationery Transactions</div>
 
                         </div>

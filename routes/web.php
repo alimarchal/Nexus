@@ -59,6 +59,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/settings/users', UserController::class);
 
     // Updated route to point to the ReportController's method
+    // Route::get('reports/stationary-branchwise-reports', [ReportController::class, 'stationarybranchwisereport'])->name('stationary-branchwise-reports');
     Route::get('reports/daily-position-report', [ReportController::class, 'dailyPositionReport'])->name('reports.daily-position-report');
     Route::get('reports/deposit-advances-reports-branch', [ReportController::class, 'depositadvancesregionPositionReport'])->name('reports.deposit-advances-reports-branch');
     Route::get('reports/deposit-advances-reports-region', [ReportController::class, 'depositadvancesPositionReport'])->name('reports.deposit-advances-reports-region');
