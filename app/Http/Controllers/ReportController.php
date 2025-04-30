@@ -111,7 +111,6 @@ class ReportController extends Controller
         return view('reports.accounts-regionwise-reports'); // Render the branch settings view
     }
 
-
     public function printedStationeries(Request $request)
     {
         // Get all stationeries
