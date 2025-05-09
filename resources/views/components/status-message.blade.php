@@ -7,7 +7,7 @@
 @endif
 
 @if (session('error'))
-    <div {{ $attributes->merge(['class' => 'bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mx-6']) }}
+    <div {{ $attributes->merge(['class' => 'max-w-7xl mx-auto sm:px-6 lg:px-8 bg-red-100 border-l-4 border-red-500 text-red-700 py-4 mx-6']) }}
          role="alert">
         <p class="font-bold">Error</p>
         <p>{{ session('error') }}</p>

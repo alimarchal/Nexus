@@ -128,7 +128,7 @@
                                         </td>
 
                                         <td class="py-1 px-2 text-center">
-                                            {{ $circular->created_at->format('d-m-Y') }}</td>
+                                            {{ $circular->created_at->format('d-m-Y h:i:s') }}</td>
                                         <td class="py-1 px-2 text-center">{{ $circular->title }}</td>
 
                                         <td class="py-1 px-2 text-center">

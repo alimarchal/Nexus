@@ -73,16 +73,7 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-12 mb-4 gap-6">
-                <a href="{{ route('daily-positions.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">Branch</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Daily Position</div>
-                        </div>
-                        <img src="{{ url('icons-images/report.png') }}" alt="Account" class="h-16 w-16">
-                    </div>
-                </a>
+
 
                 <a href="{{ route('circulars.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
@@ -108,23 +99,13 @@
                     </div>
                 </a>
 
-                <a href="{{ route('manual.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Complaint::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Manual</div>
-                        </div>
-                        <img src="{{ url('icons-images/manual.png') }}" alt="Account" class="h-16 w-16">
-                    </div>
-                </a>
 
                 <a href="{{ route('docs.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
                             <div class="text-3xl font-bold leading-8">{{ \App\Models\Doc::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Documents</div>
+                            <div class="mt-1 text-base font-extrabold text-black">HR & Operations Documents</div>
                         </div>
                         <img src="{{ url('icons-images/hr1.png') }}" alt="Account" class="h-16 w-16">
                     </div>
@@ -141,7 +122,7 @@
                             <div class="mt-1 text-base font-extrabold text-black">Printed Stationeries</div>
 
                         </div>
-                        <img src="{{ url('icons-images/circular.png') }}" alt="Account" class="h-16 w-16">
+                        <img src="{{ url('icons-images/stationary.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
 
@@ -155,9 +136,31 @@
                             <div class="mt-1 text-base font-extrabold text-black">Stationery Transactions</div>
 
                         </div>
-                        <img src="{{ url('icons-images/circular.png') }}" alt="Account" class="h-16 w-16">
+                        <img src="{{ url('icons-images/stat-report.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
+                <a href="{{ route('dispatch_registers.index') }}"
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-3xl font-bold leading-8">
+                                &nbsp;{{ \App\Models\DispatchRegister::count() }}</div>
+                            <div class="mt-1 text-base font-extrabold text-black">Dispatch Record</div>
+                        </div>
+                        <img src="{{ url('icons-images/dispatch.png') }}" alt="Account" class="h-16 w-16">
+                    </div>
+                </a>
+                <a href="{{ route('daily-positions.index') }}"
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-3xl font-bold leading-8">Branch</div>
+                            <div class="mt-1 text-base font-extrabold text-black">Daily Position</div>
+                        </div>
+                        <img src="{{ url('icons-images/report.png') }}" alt="Account" class="h-16 w-16">
+                    </div>
+                </a>
+
 
 
 

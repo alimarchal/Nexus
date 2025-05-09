@@ -19,10 +19,6 @@ use App\Models\Division;
 
 class ComplaintController extends Controller
 {
-    /**
-     * Display a listing of complaints.
-     */
-
      public function index(Request $request)
      {
          $statusTypes = ComplaintStatusType::all();
@@ -44,7 +40,7 @@ class ComplaintController extends Controller
              $complaints->where('assigned_to', $request->input('filter.assigned_to'));
          }
 
-         $complaints = $complaints->paginate(10);
+         $complaints = $complaints->orderBy('complaints.created_at','DESC')->paginate(10);
 
          return view('complaints.index', compact('complaints', 'statusTypes', 'divisions'));
      }
@@ -68,6 +64,8 @@ class ComplaintController extends Controller
      */
     public function store(StoreComplaintRequest $request)
     {
+
+
         DB::beginTransaction();
         try {
 
@@ -83,9 +81,8 @@ class ComplaintController extends Controller
             $complaintData = [
                 'reference_number' => $referenceNumber,
                 'subject' => $request->subject,
-
+                'created_by' => auth()->user()->id,
                 'status_id' => $request->status_id,
-
                 'assigned_to' => $request->assigned_to, // This will now store division_id
                 'due_date' => $request->due_date,
                 'priority' => $request->priority ?? 'medium',
@@ -96,10 +93,13 @@ class ComplaintController extends Controller
                 ])
             ];
 
+            $manager = Manager::where('division_id', $request->assigned_to)->first();
 
-            $get_manager = Manager::where('division_id', $request->assigned_to)->first();
+            if (!$manager) {
+                throw new \Exception('Failed to create complaint. Please ask the division to assign a manager for this complaint.');
+            }
 
-            $complaintData['assigned_to'] = $get_manager->manager_user_id;
+            $complaintData['assigned_to'] = $manager->manager_user_id;
 
             $complaint = Complaint::create($complaintData);
 
@@ -115,7 +115,7 @@ class ComplaintController extends Controller
                 ->with('success', "Complaint created successfully! Reference Number: {$referenceNumber}");
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Failed to create complaint. Please try again.');
+            return back()->withInput()->with('error', 'Failed to create complaint. Please try again.  Please ask the division to assign a manager for this complaint.');
         }
     }
 
