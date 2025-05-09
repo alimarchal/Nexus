@@ -84,13 +84,13 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
 
 
-    Route::resource('printed-stationeries', PrintedStationeryController::class);
-    Route::resource('stationery-transactions', StationeryTransactionController::class);
+    Route::resource('product/printed-stationeries', PrintedStationeryController::class);
+    Route::resource('product/stationery-transactions', StationeryTransactionController::class);
     //Report
     Route::get('reports/printed-stationeries', [ReportController::class, 'printedStationeries'])->name('report.printed-stationeries');
 
 
-    Route::resource('dispatch_registers', DispatchRegisterController::class);
+    Route::resource('product/dispatch_registers', DispatchRegisterController::class);
 
 
 });
