@@ -23,6 +23,7 @@ return new class extends Migration
             $table->string('receipt_no')->nullable();
             $table->string('name_of_courier_service')->nullable();
             $table->string('remarks')->nullable();
+            $table->string('attachment')->nullable();
             $table->text('meta_data')->nullable();
             $table->userTracking();
             $table->timestamps();
