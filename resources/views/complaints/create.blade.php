@@ -15,9 +15,19 @@
         </div>
     </x-slot>
 
+
+
+
     <div class="py-6">
+
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <x-status-message />
+
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
+
+
+
+
 
                 <form method="POST" action="{{ route('complaints.store') }}" enctype="multipart/form-data">
                     @csrf

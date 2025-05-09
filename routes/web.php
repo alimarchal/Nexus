@@ -77,8 +77,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/complaints/attachments/{attachment}/download', [ComplaintAttachmentController::class, 'download'])->name('complaints.attachments.download');
     Route::resource('settings/user-module/managers', ManagerController::class);
 
-    Route::resource('hrd', HrdController::class);
-    Route::resource('manual', ManualController::class);
     Route::resource('/settings/categories', CategoryController::class);
 
     Route::resource('/products/docs', DocController::class);

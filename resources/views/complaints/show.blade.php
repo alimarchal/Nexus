@@ -36,7 +36,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -45,20 +45,20 @@
                             </h3>
                             <div class="bg-gray-50 rounded-lg p-4 space-y-4">
                                 <div>
-                                    <label class="text-sm font-medium text-gray-500">Subject</label>
+                                    <label class="text-sm font-medium text-black">Subject</label>
                                     <p class="mt-1 text-sm text-gray-900">{{ $complaint->subject }}</p>
                                 </div>
                                 <!-- <div>
-                                    <label class="text-sm font-medium text-gray-500">Description</label>
+                                    <label class="text-sm font-medium text-black">Description</label>
                                     <p class="mt-1 text-sm text-gray-900">{{ $complaint->description }}</p>
                                 </div> -->
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="text-sm font-medium text-gray-500">Created By</label>
+                                        <label class="text-sm font-medium text-black">Created By</label>
                                         <p class="mt-1 text-sm text-gray-900">{{ $complaint->creator->name }}</p>
                                     </div>
                                     <div>
-                                        <label class="text-sm font-medium text-gray-500">Created At</label>
+                                        <label class="text-sm font-medium text-black">Created At</label>
                                         <p class="mt-1 text-sm text-gray-900">
                                             {{ $complaint->created_at->format('M d, Y H:i') }}</p>
                                     </div>
@@ -68,7 +68,7 @@
 
                         <div>
                             <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black" fill="none"
                                     viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -78,7 +78,7 @@
                             <div class="bg-gray-50 rounded-lg p-4 space-y-4">
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="text-sm font-medium text-gray-500">Current Status</label>
+                                        <label class="text-sm font-medium text-black">Current Status</label>
                                         <p class="mt-1">
                                             <span
                                                 class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
@@ -87,7 +87,7 @@
                                         </p>
                                     </div>
                                     <div>
-                                        <label class="text-sm font-medium text-gray-500">Assigned To</label>
+                                        <label class="text-sm font-medium text-black">Assigned To</label>
                                         <p class="mt-1 text-sm text-gray-900">
                                             {{ $complaint->assignedDivision ? $complaint->assignedDivision->name : 'Not Assigned' }}
                                             {{ $complaint->assignedDivision ? '(' . $complaint->assignedDivision->short_name . ')' : '' }}
@@ -96,14 +96,14 @@
                                 </div>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="text-sm font-medium text-gray-500">Due Date</label>
+                                        <label class="text-sm font-medium text-black">Due Date</label>
                                         <p
                                             class="mt-1 text-sm {{ $complaint->due_date && $complaint->due_date->isPast() ? 'text-red-600' : 'text-gray-900' }}">
                                             {{ $complaint->due_date?->format('M d, Y') ?? 'Not set' }}
                                         </p>
                                     </div>
                                     <div>
-                                        <label class="text-sm font-medium text-gray-500">Time Remaining</label>
+                                        <label class="text-sm font-medium text-black">Time Remaining</label>
                                         <p
                                             class="mt-1 text-sm {{ $complaint->due_date && $complaint->due_date->isPast() ? 'text-red-600' : 'text-gray-900' }}">
                                             {{ $complaint->due_date ? $complaint->due_date->diffForHumans() : 'N/A' }}
@@ -121,7 +121,7 @@
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
                     <div class="p-6">
                         <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -139,6 +139,7 @@
                                     <label class="block text-sm font-medium text-gray-700">New Status</label>
                                     <select name="status_id"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        \
                                         @foreach ($statuses as $status)
                                             <option value="{{ $status->id }}"
                                                 {{ $complaint->status_id == $status->id ? 'selected' : '' }}>
@@ -171,7 +172,7 @@
                             <div>
                                 <x-label for="attachment" value="Attachment" />
                                 <input type="file" id="attachment" name="attachment"
-                                    class="mt-1 block w-full text-sm text-gray-500
+                                    class="mt-1 block w-full text-sm text-black
                                     file:mr-4 file:py-2 file:px-4
                                     file:rounded-md file:border-0
                                     file:text-sm file:font-semibold
@@ -194,7 +195,7 @@
             <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
                 <div class="p-6">
                     <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black" fill="none"
                             viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -224,25 +225,37 @@
                                             </div>
                                             <div class="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
                                                 <div>
+
                                                     <p class="text-sm text-gray-900">
                                                         Status changed to
                                                         <span class="font-medium">{{ $history->status->name }}</span>
                                                     </p>
 
+
                                                     @if ($history->comments)
-                                                        <p class="mt-2 text-sm text-gray-500">{{ $history->comments }}
+                                                        <p class="mt-2 text-sm text-black">
+                                                            <strong>Comment:</strong>
+                                                            {{ $history->comments }}
                                                         </p>
                                                     @endif
 
                                                     @if ($history->changes)
-                                                        <div class="mt-2 text-sm text-gray-500">
+                                                        <div class="mt-2 text-sm text-black">
                                                             @foreach (json_decode($history->changes, true) as $field => $change)
                                                                 <p>
-                                                                    <span
-                                                                        class="font-medium">{{ ucfirst($field) }}</span>:
-                                                                    {{ $change['old'] ?? 'N/A' }} →
-                                                                    {{ $change['new'] ?? 'N/A' }}
-
+                                                                    <strong class="underline">Status History </strong>
+                                                                    <br>
+                                                                    <span class="text-red-600 font-extrabold">
+                                                                    From  {{ \App\Models\ComplaintStatusType::find($change['old'])->code ?? 'N/A' }}
+                                                                    to
+                                                                    {{ \App\Models\ComplaintStatusType::find($change['new'])->code ?? 'N/A' }}
+                                                                    on
+                                                                    <time datetime="{{ $history->created_at }}">
+                                                                        {{ $history->created_at->format('M d, Y H:i') }}
+                                                                    </time>
+                                                              by
+                                                                    {{ $history->changedBy->name }}
+                                                                    </span>
                                                                 </p>
                                                             @endforeach
                                                         </div>
@@ -259,16 +272,12 @@
                                                             </svg>
                                                         </a>
                                                     @else
-                                                        <span class="text-gray-500"></span>
+                                                        <span class="text-black"></span>
                                                     @endif
 
 
-                                                    <div class="whitespace-nowrap text-right text-sm text-gray-500">
-                                                        <time datetime="{{ $history->created_at }}">
-                                                            {{ $history->created_at->format('M d, Y H:i') }}
-                                                        </time>
-                                                        <div class="text-xs mt-1">by
-                                                            {{ $history->changedBy->name }}</div>
+                                                    <div class="whitespace-nowrap text-right text-sm text-black">
+
                                                     </div>
                                                 </div>
                                             </div>
@@ -285,7 +294,7 @@
                 <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg overflow-hidden">
                     <div class="p-6">
                         <h3 class="text-lg font-semibold mb-4 flex items-center space-x-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500" fill="none"
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-black" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
@@ -308,7 +317,7 @@
                                             {{ $attachment->original_filename }}
                                         </p>
                                         <div class="flex items-center justify-between mt-1">
-                                            <p class="text-xs text-gray-500">
+                                            <p class="text-xs text-black">
                                                 {{ number_format($attachment->file_size / 1024, 2) }} KB
                                             </p>
                                             <a href="{{ route('complaints.attachments.download', $attachment) }}"

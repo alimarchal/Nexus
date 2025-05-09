@@ -101,7 +101,9 @@
                             <thead>
                                 <tr class="bg-blue-800 text-white uppercase text-sm">
                                     <th class="py-2 px-2 text-center">#</th>
+                                    <th class="py-2 px-2 text-center">Reference #</th>
                                     <th class="py-2 px-2 text-center">Assigned To</th>
+                                    <th class="py-2 px-2 text-center">Created At</th>
                                     <th class="py-2 px-2 text-center">Subject</th>
                                     <!-- <th class="py-2 px-2 text-center">Description</th> -->
                                     <!-- <th class="py-2 px-2 text-center">Created At</th> -->
@@ -114,15 +116,18 @@
                                 @foreach ($complaints as $index => $complaint)
                                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                                         <td class="py-1 px-2 text-center">{{ $index + 1 }}</td>
+                                        <td class="py-1 px-2 text-center">{{ $complaint->reference_number }}</td>
                                         <td class="py-1 px-2 text-center">
 
-                                            {{ $complaint->assignedDivision ? $complaint->assignedDivision->name : 'Not Assigned' }}
-                                            {{ $complaint->assignedDivision ? '(' . $complaint->assignedDivision->short_name . ')' : '' }}
-                                            <br>
-                                            {{ $complaint->created_at->format('d-m-Y') }}
+{{--                                            {{ $complaint->assignedDivision ? $complaint->assignedDivision->name : 'Not Assigned' }}--}}
+
+{{--                                            {{ $complaint->assignedDivision ? '(' . $complaint->assignedDivision->short_name . ')' : '' }}--}}
+                                            {{ $complaint->assignedTo ? $complaint->assignedTo->name : 'Not Assigned' }}
                                         </td>
-                                       
+                                        <td class="py-1 px-2 text-center">
+                                            {{ $complaint->created_at->format('d-m-Y H:i:s') }}
                                         </td>
+
                                         <td class="py-1 px-2 text-center">{{ $complaint->subject }}</td>
                                         <!-- <td class="py-1 px-2 text-center"> -->
                                             <!-- Truncated preview text
@@ -175,6 +180,7 @@
                                         <!-- <td class="py-1 px-2 text-center">
                                             {{ $complaint->created_at->format('d-m-Y') }}
                                         </td> -->
+
                                         <td class="py-1 px-2 text-center">
                                             @if ($complaint->attachments->isNotEmpty())
                                                 <a href="{{ Storage::url($complaint->attachments->first()->file_path) }}"
@@ -194,16 +200,8 @@
 
                                         <td class="py-1 px-2 text-center">{{ $complaint->status->name }}</td>
 
+
                                         <td class="py-1 px-2 text-center flex gap-2 justify-center">
-                                            <a href="{{ route('complaints.edit', $complaint) }}"
-                                                class="p-2 text-emerald-600 hover:text-white hover:bg-emerald-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                    viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                    class="w-5 h-5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                                </svg>
-                                            </a>
 
                                             <!-- <button type="button"
                                                 class="delete-button p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-full transition-all duration-300 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
