@@ -90,7 +90,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('reports/printed-stationeries', [ReportController::class, 'printedStationeries'])->name('report.printed-stationeries');
 
 
-    Route::resource('product/dispatch_registers', DispatchRegisterController::class);
+    Route::resource('product/dispatch-registers', DispatchRegisterController::class);
 
 
 });

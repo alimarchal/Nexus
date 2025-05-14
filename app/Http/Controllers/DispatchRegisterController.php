@@ -7,42 +7,43 @@ use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Carbon\Carbon;
+
 class DispatchRegisterController extends Controller
 {
-
-
     public function index(Request $request)
     {
-        $query = DispatchRegister::with('division');
+        // Implement Spatie Query Builder properly
+        $dispatches = QueryBuilder::for(DispatchRegister::class)
+            ->allowedFilters([
+                // Basic filters
+                AllowedFilter::exact('division_id'),
+                AllowedFilter::exact('dispatch_no'),
+                // Custom filters
+                AllowedFilter::callback('year', function ($query, $value) {
+                    $query->whereYear('date', $value);
+                }),
+                AllowedFilter::callback('date_from', function ($query, $value) {
+                    $query->whereDate('date', '>=', Carbon::parse($value));
+                }),
+                AllowedFilter::callback('date_to', function ($query, $value) {
+                    $query->whereDate('date', '<=', Carbon::parse($value));
+                }),
+                // Add more filters based on the database schema
+                AllowedFilter::partial('particulars'),
+                AllowedFilter::partial('address'),
+                AllowedFilter::partial('name_of_courier_service'),
+                AllowedFilter::partial('receipt_no'),
+                AllowedFilter::partial('reference_number'),
+            ])
+            ->with('division') // Eager load division relationship
+            ->latest()
+            ->paginate(10)
+            ->withQueryString(); // Add query string to pagination links
 
-        // Extract filters from nested input
-        $filters = $request->input('filter', []);
-
-        // Year filter (applied on 'date' column)
-        if (!empty($filters['year'])) {
-            $query->whereYear('date', $filters['year']);
-        }
-
-        // Date range filter
-        if (!empty($filters['date_from'])) {
-            $query->whereDate('date', '>=', Carbon::parse($filters['date_from']));
-        }
-
-        if (!empty($filters['date_to'])) {
-            $query->whereDate('date', '<=', Carbon::parse($filters['date_to']));
-        }
-
-        // Division filter
-        if (!empty($filters['division_id'])) {
-            $query->where('division_id', $filters['division_id']);
-        }
-
-        $dispatches = $query->latest()->paginate(10);
         $divisions = Division::all();
 
         return view('dispatch_registers.index', compact('dispatches', 'divisions'));
@@ -69,8 +70,11 @@ class DispatchRegisterController extends Controller
                 // reference_number is no longer required from the user
             ]);
 
-            // Generate unique reference number
-            $referenceNumber = $this->generateReferenceNumber();
+            // Get division data for reference number
+            $division = Division::findOrFail($request->division_id);
+
+            // Generate unique reference number with division short name
+            $referenceNumber = $this->generateReferenceNumber($division);
 
             // Create data array with all needed fields
             $data = $request->only([
@@ -101,7 +105,7 @@ class DispatchRegisterController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('dispatch_registers.index')
+                ->route('dispatch-registers.index')
                 ->with('success', "Dispatch record created successfully! Reference Number: {$referenceNumber}");
 
         } catch (\Exception $e) {
@@ -110,15 +114,22 @@ class DispatchRegisterController extends Controller
                 ->withInput()
                 ->with('error', 'Failed to create dispatch record. ' . $e->getMessage());
         }
-
     }
 
     /**
-     * Generate a unique reference number for dispatch registers.
+     * Generate a unique reference number for dispatch registers including division short name.
+     *
+     * @param Division $division
+     * @return string
      */
-    private function generateReferenceNumber()
+    private function generateReferenceNumber(Division $division)
     {
-        $prefix = 'DISP-' . date('Y');
+        // Get division short name, fallback to name if short_name is not set
+        $divisionCode = $division->short_name ?: $division->name;
+        $divisionCode = strtoupper($divisionCode);
+
+        $year = date('Y');
+        $prefix = "DISP-{$divisionCode}/{$year}";
 
         // Check if the model uses SoftDeletes trait
         $usesSoftDeletes = in_array(
@@ -134,20 +145,34 @@ class DispatchRegisterController extends Controller
             $query->withTrashed();
         }
 
-        // Get the last record for this year
-        $lastDispatch = $query->whereYear('created_at', date('Y'))
+        // Get the last record for this division and year
+        $lastDispatch = $query
+            ->where('division_id', $division->id)
+            ->whereYear('created_at', $year)
             ->orderBy('id', 'desc')
             ->first();
 
+        // Set the starting number
+        $nextNumber = 1;
+
         if ($lastDispatch && $lastDispatch->reference_number) {
             // Extract the numerical part after the last hyphen
-            $lastNumberStr = substr($lastDispatch->reference_number, strrpos($lastDispatch->reference_number, '-') + 1);
-            $lastNumber = is_numeric($lastNumberStr) ? (int) $lastNumberStr : 0;
-        } else {
-            $lastNumber = 0;
+            $parts = explode('-', $lastDispatch->reference_number);
+            $lastPart = end($parts);
+
+            // Handle multiple formats (with or without division code)
+            if (strpos($lastPart, '/') !== false) {
+                // Format is like DISP-DIV/2025-00001
+                $lastNumberStr = substr($lastPart, strpos($lastPart, '-') + 1);
+            } else {
+                // Format is like DISP-2025-00001
+                $lastNumberStr = $lastPart;
+            }
+
+            $nextNumber = is_numeric($lastNumberStr) ? (int) $lastNumberStr + 1 : 1;
         }
 
-        return $prefix . '-' . str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
+        return $prefix . '-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
     }
 
     public function show(DispatchRegister $dispatchRegister)
@@ -193,7 +218,7 @@ class DispatchRegisterController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('dispatch_registers.index')
+                ->route('dispatch-registers.index')
                 ->with('success', 'Receipt number and attachment updated successfully!');
 
         } catch (\Exception $e) {
@@ -204,7 +229,7 @@ class DispatchRegisterController extends Controller
         }
     }
 
-
+    // The destroy method commented out in original code
     // public function destroy(DispatchRegister $dispatchRegister)
     // {
     //     try {
@@ -216,9 +241,10 @@ class DispatchRegisterController extends Controller
     //         $dispatchRegister->delete();
 
     //         return redirect()
-    //             ->route('dispatch_registers.index')
+    //             ->route('dispatch-registers.index')
     //             ->with('success', 'Dispatch record deleted successfully.');
     //     } catch (\Exception $e) {
     //         return back()->with('error', 'Failed to delete dispatch record. Please try again.');
     //     }
-    }
+    // }
+}

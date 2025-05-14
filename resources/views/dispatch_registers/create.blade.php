@@ -4,7 +4,7 @@
             Create Dispatch Register Entry
         </h2>
         <div class="flex justify-center items-center float-right">
-            <a href="{{ route('dispatch_registers.index') }}"
+            <a href="{{ route('dispatch-registers.index') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor">
@@ -22,7 +22,7 @@
                 <div class="p-6">
                     <x-validation-errors class="mb-4 mt-4" />
 
-                    <form method="POST" action="{{ route('dispatch_registers.store') }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ route('dispatch-registers.store') }}" enctype="multipart/form-data">
                         @csrf
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -90,7 +90,7 @@
                         </div>
 
                         <div class="flex items-center justify-end space-x-3 mt-6">
-                            <a href="{{ route('dispatch_registers.index') }}"
+                            <a href="{{ route('dispatch-registers.index') }}"
                                 class="inline-flex items-center px-4 py-2 bg-gray-300 dark:bg-gray-700 border border-transparent rounded-md font-semibold text-xs text-gray-800 dark:text-gray-300 uppercase tracking-widest hover:bg-gray-400 dark:hover:bg-gray-600 focus:bg-gray-400 dark:focus:bg-gray-600 active:bg-gray-400 dark:active:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                                 Cancel
                             </a>

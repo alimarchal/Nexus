@@ -139,7 +139,7 @@
                         <img src="{{ url('icons-images/stat-report.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
-                <a href="{{ route('dispatch_registers.index') }}"
+                <a href="{{ route('dispatch-registers.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
