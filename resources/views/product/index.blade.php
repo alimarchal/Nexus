@@ -105,7 +105,7 @@
                     <div class="p-5 flex justify-between">
                         <div>
                             <div class="text-3xl font-bold leading-8">{{ \App\Models\Doc::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">HR & Operations Documents</div>
+                            <div class="mt-1 text-base font-extrabold text-black">HRMD & Manuals</div>
                         </div>
                         <img src="{{ url('icons-images/hr1.png') }}" alt="Account" class="h-16 w-16">
                     </div>
