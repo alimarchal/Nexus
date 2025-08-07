@@ -2,50 +2,39 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreCircularRequest;
-use App\Http\Requests\UpdateCircularRequest;
+use App\Models\User;
 use App\Models\Circular;
 use App\Models\Division;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\StoreCircularRequest;
+use App\Http\Requests\UpdateCircularRequest;
 
 class CircularController extends Controller
 {
     public function index(Request $request)
     {
-        // Manually check if user is authenticated
-        if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'Please login to access this page.');
-        }
+    
+        $circulars = QueryBuilder::for(Circular::class)
+            ->allowedFilters([
+                AllowedFilter::exact('division_id'),
+                AllowedFilter::partial('circular_no'),
+                AllowedFilter::callback('date_from', function ($query, $value) {
+                    $query->whereDate('created_at', '>=', $value);
+                }),
+                AllowedFilter::callback('date_to', function ($query, $value) {
+                    $query->whereDate('created_at', '<=', $value);
+                })
+            ])
+            ->with(['user', 'division', 'updatedBy'])
+            ->latest()
+            ->paginate(10);
 
-        $query = Circular::with(['user', 'division', 'updatedBy']);
-
-        // Apply filters
-        if ($request->has('filter')) {
-            $filters = $request->filter;
-
-            if (!empty($filters['division_id'])) {
-                $query->where('division_id', $filters['division_id']);
-            }
-
-            if (!empty($filters['circular_no'])) {
-                $query->where('circular_no', 'like', '%' . $filters['circular_no'] . '%');
-            }
-
-            if (!empty($filters['date_from'])) {
-                $query->whereDate('created_at', '>=', $filters['date_from']);
-            }
-
-            if (!empty($filters['date_to'])) {
-                $query->whereDate('created_at', '<=', $filters['date_to']);
-            }
-        }
-
-        $circulars = $query->latest()->paginate(10);
         $divisions = Division::all();
 
         return view('circulars.index', compact('circulars', 'divisions'));

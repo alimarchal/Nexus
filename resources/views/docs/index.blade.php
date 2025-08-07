@@ -52,10 +52,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- Title Filter -->
                         <div>
-                            <x-label for="title" value="Title" />
-                            <x-input type="text" name="filter[title]" id="title"
-                                     value="{{ request('filter.title') }}" class="block mt-1 w-full"
-                                     placeholder="Search by title" />
+                             <x-input-filters name="title" label="Title" type="text" />
                         </div>
 
                         <!-- Category Filter -->
@@ -86,14 +83,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-4 flex space-x-3">
-                        <x-button class="bg-blue-950 text-white hover:bg-green-800">
-                            Apply Filters
-                        </x-button>
-
-                        <x-reset-button />
-
-                    </div>
+                    <x-submit-button />
                 </form>
             </div>
         </div>

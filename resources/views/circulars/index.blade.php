@@ -42,80 +42,63 @@
         </div>
     </x-slot>
 
+    <!-- FILTER SECTION -->
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters"
-            style="display: none">
+             style="display: none">
             <div class="p-6">
-                <form method="GET" action="{{ route('circulars.index') }}">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <form method="GET" action="{{ route('circulars.index') }}">
+                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- Filter by Division -->
                         <div>
-                            <x-label for="division_id" value="{{ __('Division') }}" />
-                            <select name="filter[division_id]" id="division_id"
-                                class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
-                                <option value="">{{ __('Select Division') }}</option>
-                                @foreach ($divisions as $division)
-                                    <option value="{{ $division->id }}"
-                                        {{ request('filter.division_id') == $division->id ? 'selected' : '' }}>
-                                        {{ $division->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+
+                            <x-division />
+
+
                         </div>
 
                         <!-- Filter by Circular Number -->
-                        <div>
-                            <x-label for="circular_no" value="{{ __('Circular Number') }}" />
-                            <x-input type="text" name="filter[circular_no]" id="circular_no"
-                                value="{{ request('filter.circular_no') }}" class="block mt-1 w-full" />
+                        <div>   
+                            <x-input-filters name="circular_no" label="Circular Number" type="text" />
                         </div>
 
                         <!-- Filter by Date Range -->
                         <div>
-                            <x-label for="date_from" value="{{ __('Date From') }}" />
-                            <x-input type="date" name="filter[date_from]" id="date_from"
-                                value="{{ request('filter.date_from') }}" class="block mt-1 w-full" />
+                            <x-date-from />
                         </div>
 
                         <div>
-                            <x-label for="date_to" value="{{ __('Date To') }}" />
-                            <x-input type="date" name="filter[date_to]" id="date_to"
-                                value="{{ request('filter.date_to') }}" class="block mt-1 w-full" />
+                           <x-date-to />
                         </div>
                     </div>
 
                     <!-- Submit Button -->
-                    <div class="mt-4">
-                        <x-button class="mc-bg-blue text-white hover:bg-green-800">
-                            {{ __('Apply Filters') }}
-                        </x-button>
-                    </div>
+                   <x-submit-button />
                 </form>
             </div>
         </div>
+    </div>
 
-        <div class="py-6">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
 
-                <!-- Display session message -->
-                <x-status-message />
+
+
+        <!-- TABLE SECTION -->
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-2 pb-16">
+        <x-status-message />
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+
                 @if ($circulars->count() > 0)
                     <div class="relative overflow-x-auto rounded-lg">
                         <table class="min-w-max w-full table-auto text-sm">
                             <thead>
-
-
-                                <tr class="bg-blue-800 text-white uppercase text-sm">
-                                    <th class="py-2 px-2 text-center"> # </th>
+                                <tr class="bg-green-800 text-white uppercase text-sm">
+                                    <th class="py-2 px-2 text-center">#</th>
                                     <th class="py-2 px-2 text-center">Circular No</th>
-                                    <th class="py-2 px-2 text-center">Division</th>
-                                    <th class="py-2 px-2 text-center">Created At</th>
                                     <th class="py-2 px-2 text-center">Title</th>
-
-
-                                    <th class="py-2 px-2 text-center">Discription</th>
+                                    <th class="py-2 px-2 text-center">Description</th>
+                                    <th class="py-2 px-2 text-center">Division</th>
                                     <th class="py-2 px-2 text-center">Attachment</th>
-
+                                    <th class="py-2 px-2 text-center">Created Date</th>
                                     <th class="py-2 px-2 text-center print:hidden">Actions</th>
                                 </tr>
                             </thead>
@@ -124,55 +107,11 @@
                                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                                         <td class="py-1 px-2 text-center">{{ $index + 1 }}</td>
                                         <td class="py-1 px-2 text-center">{{ $circular->circular_no }}</td>
-                                        <td class="py-1 px-2 text-center">{{ $circular->division->short_name }}
-                                        </td>
-
-                                        <td class="py-1 px-2 text-center">
-                                            {{ $circular->created_at->format('d-m-Y h:i:s') }}</td>
                                         <td class="py-1 px-2 text-center">{{ $circular->title }}</td>
-
                                         <td class="py-1 px-2 text-center">
-                                            <!-- Truncated preview text -->
-                                            <span
-                                                class="description-preview block whitespace-pre-wrap break-words">{{ Str::limit($circular->description, 25) }}</span>
-
-                                            <!-- Full description text (hidden initially) -->
-                                            <span class="description-full block whitespace-pre-wrap break-words"
-                                                style="display: none;">
-                                                @php
-                                                    // Wordwrap the description at 30 characters without cutting words
-                                                    $wrappedDescription = wordwrap(
-                                                        $circular->description,
-                                                        30,
-                                                        "\n",
-                                                        true,
-                                                    );
-                                                    // Echo the wrapped description
-                                                    echo nl2br(e($wrappedDescription));
-                                                @endphp
-                                            </span>
-
-                                            <!-- Link to open the modal with the full description -->
-                                            @if (strlen($circular->description) > 30)
-                                                <a href="javascript:void(0);" class="text-blue-600 hover:underline"
-                                                    onclick="openModal('{{ addslashes($circular->description) }}')">Read
-                                                    more</a>
-                                            @endif
+                                            {{ Str::limit($circular->description, 30) }}
                                         </td>
-
-                                        <!-- Modal for full description -->
-                                        <div id="descriptionModal"
-                                            class="fixed inset-0 flex items-center justify-center bg-gray-500 bg-opacity-50 hidden">
-                                            <div class="bg-white p-6 rounded-lg w-11/12 max-w-lg">
-                                                <h2 class="text-xl font-semibold mb-4">Full Description</h2>
-                                                <div id="modalDescription" class="whitespace-pre-wrap break-words">
-                                                </div>
-                                                <button onclick="closeModal()"
-                                                    class="mt-4 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Close</button>
-                                            </div>
-                                        </div>
-
-
+                                        <td class="py-1 px-2 text-center">{{ $circular->division->short_name ?? '-' }}</td>
                                         <td class="py-1 px-2 text-center">
                                             @if ($circular->attachment)
                                                 <a href="{{ Storage::url($circular->attachment) }}"
@@ -188,14 +127,16 @@
                                                 -
                                             @endif
                                         </td>
-
-
                                         <td class="py-1 px-2 text-center">
-
-                                            <a href="{{ route('circulars.edit', $circular) }}"
-                                                class="inline-flex items-center px-4 py-2 bg-green-800 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                                                Edit
-                                            </a>
+                                            {{ $circular->created_at->format('d-m-Y') }}
+                                        </td>
+                                        <td class="py-1 px-2 text-center">
+                                            <div class="flex justify-center space-x-2">
+                                                <a href="{{ route('circulars.edit', $circular) }}"
+                                                    class="inline-flex items-center px-3 py-1 bg-blue-800 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                                    Edit
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
@@ -213,9 +154,11 @@
                         </a>.
                     </p>
                 @endif
-            </div>
         </div>
     </div>
+
+    
+
 
     @push('modals')
         <script>
