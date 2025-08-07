@@ -33,7 +33,7 @@ use App\Http\Controllers\DispatchRegisterController;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return to_route('login');
 });
 
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
