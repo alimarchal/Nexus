@@ -52,7 +52,6 @@
                 top: 8px!important;
                 right: 10px!important;
             }
-
         </style>
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
