@@ -17,9 +17,9 @@ use App\Http\Requests\UpdateCircularRequest;
 
 class CircularController extends Controller
 {
+
     public function index(Request $request)
     {
-    
         $circulars = QueryBuilder::for(Circular::class)
             ->allowedFilters([
                 AllowedFilter::exact('division_id'),

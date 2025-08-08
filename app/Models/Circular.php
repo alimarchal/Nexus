@@ -2,18 +2,23 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\UserTracking;
+use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Circular extends Model
 {
-    use HasFactory;
+    use HasFactory, UserTracking;
+    use SoftDeletes;
+    use LogsActivity;
+
 
     protected $fillable = [
         'circular_no',
         'division_id',
-        'user_id',
-        'update_by',
         'attachment',
         'title',
         'description',
@@ -22,7 +27,7 @@ class Circular extends Model
     // Define the relationship with the User (created by)
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     // Define the relationship with the Division
@@ -36,4 +41,20 @@ class Circular extends Model
     {
         return $this->belongsTo(User::class, 'update_by');
     }
+
+
+    /**
+     * Get activity log options.
+     *
+     * @return \Spatie\Activitylog\LogOptions
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $eventName) => "User has been {$eventName}");
+    }
+
 }
