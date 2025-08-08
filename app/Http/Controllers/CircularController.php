@@ -72,9 +72,18 @@ public function store(Request $request)
     Log::debug('Validated data for store:', $validated);
 
     if ($request->hasFile('attachment')) {
-        $path = $request->file('attachment')->store('circulars', 'public');
-        $validated['attachment'] = $path;
-    }
+    $divisionName = Division::find($request->division_id)->name;
+    $dateFolder   = now()->format('Y-m-d');
+
+    // Build folder path: circulars/DivisionName/Date
+    $folderPath = "circulars/{$divisionName}/{$dateFolder}";
+
+    // Store file in public storage inside the structured folder
+    $path = $request->file('attachment')->store($folderPath, 'public');
+
+    $validated['attachment'] = $path;
+}
+
 
     $validated['user_id'] = Auth::id();
     $validated['update_by'] = Auth::id();
@@ -132,13 +141,20 @@ public function store(Request $request)
 
         Log::debug('Form data received:', $validated);
 
-        if ($request->hasFile('attachment')) {
-            if ($circular->attachment && Storage::disk('public')->exists($circular->attachment)) {
-                Storage::disk('public')->delete($circular->attachment);
-            }
-            $path = $request->file('attachment')->store('circulars', 'public');
-            $validated['attachment'] = $path;
-        }
+      if ($request->hasFile('attachment')) {
+    if ($circular->attachment && Storage::disk('public')->exists($circular->attachment)) {
+        Storage::disk('public')->delete($circular->attachment);
+    }
+
+    $divisionName = Division::find($request->division_id)->name;
+    $dateFolder   = now()->format('Y-m-d');
+
+    $folderPath = "circulars/{$divisionName}/{$dateFolder}";
+
+    $path = $request->file('attachment')->store($folderPath, 'public');
+    $validated['attachment'] = $path;
+}
+
 
         $validated['update_by'] = Auth::id();
 
