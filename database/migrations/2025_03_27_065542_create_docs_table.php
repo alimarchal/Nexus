@@ -20,6 +20,8 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->string('document')->nullable();
             $table->timestamps();
+             $table->userTracking();
+            $table->softDeletes();
         });
     }
 

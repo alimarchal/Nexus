@@ -17,7 +17,7 @@ public function rules()
 {
     return [
         'subject' => 'required|string|max:255',
-        'description' => 'required|string|min:20',
+        'description' => 'required|string',
         'status_id' => 'required|exists:complaint_status_types,id',
         'assigned_to' => 'required|exists:divisions,id',
         'due_date' => 'required|date|after_or_equal:today',

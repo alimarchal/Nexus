@@ -54,7 +54,7 @@ class Circular extends Model
             ->logAll()
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn (string $eventName) => "User has been {$eventName}");
+            ->setDescriptionForEvent(fn (string $eventName) => "Circular has been {$eventName}");
     }
 
 }

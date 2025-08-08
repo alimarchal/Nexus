@@ -6,10 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\UserTracking;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Complaint extends Model
 {
+    use HasFactory, UserTracking;
     use SoftDeletes;
+    use LogsActivity;
+
 
 
     public function histories()
@@ -69,5 +76,17 @@ class Complaint extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-
+ /**
+     * Get activity log options.
+     *
+     * @return \Spatie\Activitylog\LogOptions
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $eventName) => "Cpmplaint has been {$eventName}");
+    }
 }
