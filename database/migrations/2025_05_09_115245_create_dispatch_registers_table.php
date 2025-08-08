@@ -27,6 +27,7 @@ return new class extends Migration
             $table->text('meta_data')->nullable();
             $table->userTracking();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

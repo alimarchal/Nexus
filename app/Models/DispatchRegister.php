@@ -3,14 +3,18 @@
 namespace App\Models;
 
 use App\Traits\UserTracking;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\Activitylog\LogOptions;
 use Illuminate\Database\Eloquent\Model;
-
+use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class DispatchRegister extends Model
 {
     /** @use HasFactory<\Database\Factories\DispatchRegisterFactory> */
-    use HasFactory, UserTracking;
+     use HasFactory, UserTracking;
+    use SoftDeletes;
+    use LogsActivity;
 
     protected $fillable = [
         'reference_number', // Changed from reference_no to match database column
@@ -31,4 +35,20 @@ class DispatchRegister extends Model
     {
         return $this->belongsTo(Division::class);
     }
+
+     /**
+     * Get activity log options.
+     *
+     * @return \Spatie\Activitylog\LogOptions
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $eventName) => "Dispatch has been {$eventName}");
+    }
+
 }
+
