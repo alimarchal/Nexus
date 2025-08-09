@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\Division;
+use App\Helpers\FileStorageHelper;
+
 
 class ComplaintController extends Controller
 {
@@ -62,62 +64,66 @@ class ComplaintController extends Controller
     /**
      * Store a newly created complaint.
      */
-    public function store(StoreComplaintRequest $request)
-    {
+public function store(StoreComplaintRequest $request)
+{
+    DB::beginTransaction();
+    try {
 
+        $request->validate([
+            'status_id' => 'required|exists:complaint_status_types,id',
+            'assigned_to' => 'required|exists:divisions,id',
+            'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
+        ]);
 
-        DB::beginTransaction();
-        try {
+        // Generate unique reference number
+        $referenceNumber = $this->generateReferenceNumber();
 
-            $request->validate([
-                'status_id' => 'required|exists:complaint_status_types,id',
-                'assigned_to' => 'required|exists:divisions,id', // Updated validation rule
-                'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
-            ]);
+        $complaintData = [
+            'reference_number' => $referenceNumber,
+            'subject' => $request->subject,
+            'created_by' => auth()->user()->id,
+            'status_id' => $request->status_id,
+            'assigned_to' => $request->assigned_to,
+            'due_date' => $request->due_date,
+            'priority' => $request->priority ?? 'medium',
+            'meta_data' => json_encode([
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->header('User-Agent'),
+                'created_at' => now()->toIso8601String()
+            ])
+        ];
 
-            // Generate unique reference number
-            $referenceNumber = $this->generateReferenceNumber();
+        $manager = Manager::where('division_id', $request->assigned_to)->first();
 
-            $complaintData = [
-                'reference_number' => $referenceNumber,
-                'subject' => $request->subject,
-                'created_by' => auth()->user()->id,
-                'status_id' => $request->status_id,
-                'assigned_to' => $request->assigned_to, // This will now store division_id
-                'due_date' => $request->due_date,
-                'priority' => $request->priority ?? 'medium',
-                'meta_data' => json_encode([
-                    'ip_address' => $request->ip(),
-                    'user_agent' => $request->header('User-Agent'),
-                    'created_at' => now()->toIso8601String()
-                ])
-            ];
-
-            $manager = Manager::where('division_id', $request->assigned_to)->first();
-
-            if (!$manager) {
-                throw new \Exception('Failed to create complaint. Please ask the division to assign a manager for this complaint.');
-            }
-
-            $complaintData['assigned_to'] = $manager->manager_user_id;
-
-            $complaint = Complaint::create($complaintData);
-
-            // Handle attachments
-            if ($request->hasFile('attachments')) {
-                $this->storeAttachments($request->file('attachments'), $complaint);
-            }
-
-            DB::commit();
-
-            return redirect()
-                ->route('complaints.index')
-                ->with('success', "Complaint created successfully! Reference Number: {$referenceNumber}");
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withInput()->with('error', 'Failed to create complaint. Please try again.  Please ask the division to assign a manager for this complaint.');
+        if (!$manager) {
+            throw new \Exception('Failed to create complaint. Please ask the division to assign a manager for this complaint.');
         }
+
+        $complaintData['assigned_to'] = $manager->manager_user_id;
+
+        $complaint = Complaint::create($complaintData);
+
+        // Handle attachments using FileStorageHelper
+        if ($request->hasFile('attachments')) {
+            FileStorageHelper::storeFiles(
+                files: $request->file('attachments'),
+                modelClass: ComplaintAttachment::class,
+                folderName: 'complaints',
+                relationData: ['complaint_id' => $complaint->id],
+                subFolder: $complaint->reference_number
+            );
+        }
+
+        DB::commit();
+
+        return redirect()
+            ->route('complaints.index')
+            ->with('success', "Complaint created successfully! Reference Number: {$referenceNumber}");
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->withInput()->with('error', 'Failed to create complaint. Please try again. Please ask the division to assign a manager for this complaint.');
     }
+}
 
 
     /**

@@ -16,6 +16,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CircularController;
 use App\Http\Controllers\DistrictController;
+use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PermissionController;
@@ -92,5 +93,18 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::resource('product/dispatch-registers', DispatchRegisterController::class);
 
+
+
+    Route::middleware('auth')->group(function () {
+        // Download private files by path
+        Route::get('/download/{path}', [DownloadController::class, 'download'])
+            ->where('path', '.*')
+            ->name('file.download');
+
+        // Stream/view files inline
+        Route::get('/view/{path}', [DownloadController::class, 'view'])
+            ->where('path', '.*')
+            ->name('file.view');
+    });
 
 });
