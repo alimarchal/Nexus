@@ -8,12 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Support\Str;
 
 class Circular extends Model
 {
     use HasFactory, UserTracking;
     use SoftDeletes;
     use LogsActivity;
+    use HasUuids;
+
+    // public $incrementing = false;
+    // protected $keyType = 'string';
 
 
     protected $fillable = [
@@ -23,6 +29,16 @@ class Circular extends Model
         'title',
         'description',
     ];
+
+    // protected static function boot()
+    // {
+    //     parent::boot();
+    //     static::creating(function ($model) {
+    //         if (empty($model->id)) {
+    //             $model->id = (string) Str::uuid();
+    //         }
+    //     });
+    // }
 
     // Define the relationship with the User (created by)
     public function user()

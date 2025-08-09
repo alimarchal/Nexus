@@ -13,6 +13,7 @@ class AddBatchUuidColumnToActivityLogTable extends Migration
             $table->string('batch_uuid', 36)->nullable()->after('properties');
 
         });
+        
     }
 
     public function down()

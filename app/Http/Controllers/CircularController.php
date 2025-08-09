@@ -52,39 +52,45 @@ class CircularController extends Controller
 }
 
 
-public function store(Request $request)
+public function store(StoreCircularRequest $request)
 {
-    if (!Auth::check()) {
-        return redirect()->route('login')->with('error', 'Please login to create a circular.');
-    }
+    $validated = $request->validated();
 
-    // Validate the incoming request
-    $validated = $request->validate([
-        'circular_no' => 'required|string|max:255|unique:circulars,circular_no',
-        'title' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'division_id' => 'required|exists:divisions,id',
-        'attachment' => 'nullable|file|mimes:pdf,jpg,png|max:2048',
-    ], [
-        'circular_no.unique' => 'This circular number is already taken. Please use a different circular number.',
-    ]);
-
-    Log::debug('Validated data for store:', $validated);
-
+    // Handle file upload
     if ($request->hasFile('attachment')) {
-        $path = $request->file('attachment')->store('circulars', 'public');
-        $validated['attachment'] = $path;
+        try {
+            $validated['attachment'] = $request->file('attachment')->store('circulars', 'public');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'File upload failed: ' . $e->getMessage());
+        }
     }
 
-    $validated['user_id'] = Auth::id();
-    $validated['update_by'] = Auth::id();
-
+    // Create circular
     try {
-        Circular::create($validated);
-        return redirect()->route('circulars.index')->with('success', 'Circular created successfully.');
+        $circular = Circular::create($validated);
+        
+        return redirect()
+            ->route('circulars.show', $circular->id)
+            ->with('success', 'Circular "' . $circular->title . '" created successfully.');
+            
+    } catch (\Illuminate\Database\QueryException $e) {
+        // Handle specific database errors
+        if ($e->getCode() === '23000') {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Circular number already exists. Please use a different number.');
+        }
+        
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Database error: ' . $e->getMessage());
+            
     } catch (\Exception $e) {
-        Log::error("Circular store error: " . $e->getMessage());
-        return redirect()->back()->with('error', 'Failed to create Circular. Please try again.');
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Failed to create circular: ' . $e->getMessage());
     }
 }
 
@@ -103,10 +109,6 @@ public function store(Request $request)
 
     public function edit(Circular $circular)
     {
-        // Manually check if user is authenticated
-        if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'Please login to edit the circular.');
-        }
 
         $divisions = Division::all();
         $users = User::all();

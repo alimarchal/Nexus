@@ -11,7 +11,7 @@ class StoreCircularRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true; // Changed from false to true
     }
 
     /**
@@ -22,7 +22,21 @@ class StoreCircularRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'circular_no' => 'required|string|max:255|unique:circulars,circular_no',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'division_id' => 'required|exists:divisions,id',
+            'attachment' => 'nullable|file|mimes:pdf,jpg,png|max:2048',
+        ];
+    }
+
+    /**
+     * Custom validation messages
+     */
+    public function messages(): array
+    {
+        return [
+            'circular_no.unique' => 'This circular number is already taken. Please use a different circular number.',
         ];
     }
 }

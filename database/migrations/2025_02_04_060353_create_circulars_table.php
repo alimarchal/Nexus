@@ -12,14 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('circulars', function (Blueprint $table) {
-            $table->id();
-            // $table->foreignId('user_id')->comment('Created By User ID')->constrained()->onUpdate('cascade')->onDelete('cascade');
+            $table->uuid('id')->primary();
             $table->foreignId('division_id')->constrained()->onUpdate('cascade')->onDelete('cascade');
             $table->string('circular_no')->unique();
             $table->string('title')->nullable();
             $table->text('description')->nullable();
             $table->string('attachment')->nullable();
-            // $table->foreignId('update_by')->constrained('users', 'id');
             $table->userTracking();
             $table->softDeletes();
             $table->timestamps();
