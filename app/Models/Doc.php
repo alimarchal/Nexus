@@ -21,7 +21,7 @@ class Doc extends Model
     use LogsActivity;
 
     protected $fillable = [
-        // 'user_id',
+        'user_id',
         'category_id',
         'division_id',
         'title',
