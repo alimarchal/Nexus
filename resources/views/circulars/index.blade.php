@@ -93,11 +93,12 @@
                     <thead>
                         <tr class="bg-green-800 text-white uppercase text-sm">
                             <th class="py-2 px-2 text-center">#</th>
-                            <th class="py-2 px-2 text-center">Date</th>
-                            <th class="py-2 px-2 text-center">Circular No</th>
-                            <th class="py-2 px-2 text-center">Title</th>
-                            <th class="py-2 px-2 text-center">Description</th>
-                            <th class="py-2 px-2 text-center">Division</th>
+                            <th class="py-2 px-2 text-left">Date</th>
+                            <th class="py-2 px-2 text-left">Division</th>
+                            <th class="py-2 px-2 text-left">Circular No</th>
+                            <th class="py-2 px-2 text-left">Title</th>
+                            {{-- <th class="py-2 px-2 text-center">Description</th> --}}
+
                             <th class="py-2 px-2 text-center">Attachment</th>
 
                             <th class="py-2 px-2 text-center print:hidden">Actions</th>
@@ -106,16 +107,27 @@
                     <tbody class="text-black text-md leading-normal font-extrabold">
                         @foreach ($circulars->sortByDesc('created_at')->values() as $index => $circular)
                         <tr class="border-b border-gray-200 hover:bg-gray-100">
-                            <td class="py-1 px-2 text-center">{{ $index + 1 }}</td>
                             <td class="py-1 px-2 text-center">
+                                {{-- {{ $index + 1 }} --}}
+                                {{ $circular->circular_number }}
+                            </td>
+                            <td class="py-1 px-2 text-left">
                                 {{ $circular->created_at->format('d-m-Y') }}
                             </td>
-                            <td class="py-1 px-2 text-center">{{ $circular->circular_no }}</td>
-                            <td class="py-1 px-2 text-center">{{ $circular->title }}</td>
-                            <td class="py-1 px-2 text-center">
-                                {{ Str::limit($circular->description, 30) }}
+                            <td class="py-1 px-2 text-left">
+                                <abbr title="{{ $circular->division->name ?? '-' }}">
+                                    {{ $circular->division->short_name ?? '-' }}
+                                </abbr>
                             </td>
-                            <td class="py-1 px-2 text-center">{{ $circular->division->short_name ?? '-' }}</td>
+                            <td class="py-1 px-2 text-left">{{ $circular->circular_no }}</td>
+                            <td class="py-1 px-2 text-left">
+                                <div class="w-96 break-words leading-relaxed">
+                                    {{ $circular->title }}
+                                </div>
+                            </td>
+                            {{-- <td class="py-1 px-2 text-center">
+                                {{ Str::limit($circular->description, 30) }}
+                            </td> --}}
                             <td class="py-1 px-2 text-center">
                                 @if ($circular->attachment)
                                 <div class="flex justify-center space-x-2">

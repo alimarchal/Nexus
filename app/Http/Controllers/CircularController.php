@@ -6,16 +6,17 @@ use App\Models\User;
 use App\Models\Circular;
 use App\Models\Division;
 use Illuminate\Http\Request;
+use App\Helpers\FileStorageHelper;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
+use Alimarchal\IdGenerator\IdGenerator;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreCircularRequest;
 use App\Http\Requests\UpdateCircularRequest;
-use App\Helpers\FileStorageHelper;
-use Illuminate\Support\Facades\DB;
 
 /**
  * CircularController handles CRUD operations for circulars
@@ -29,8 +30,9 @@ class CircularController extends Controller
      * @param Request $request
      * @return \Illuminate\View\View
      */
-    public function index(Request $request)
+    public function index(Request $request, IdGenerator $idGenerator)
     {
+
         // Build query with filters using Spatie QueryBuilder
         $circulars = QueryBuilder::for(Circular::class)
             ->allowedFilters([
@@ -76,12 +78,17 @@ class CircularController extends Controller
         // Start database transaction
         DB::beginTransaction();
 
+
         // Create folder path based on division name
         $folderName = 'Circulars/' . Division::find($request->division_id)->name;
 
         try {
             // Get validated data from form request
             $validated = $request->validated();
+            //$circular_number_auto_generated = generateUniqueId('circular', 'circulars', 'circular_number');
+            $validated['circular_number'] = generateUniqueId('circular', 'circulars', 'circular_number');
+
+
 
             // Handle file upload if attachment provided
             if ($request->hasFile('attachment')) {

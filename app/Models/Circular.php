@@ -24,6 +24,7 @@ class Circular extends Model
 
     protected $fillable = [
         'circular_no',
+        'circular_number',
         'division_id',
         'attachment',
         'title',
@@ -70,7 +71,7 @@ class Circular extends Model
             ->logAll()
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn (string $eventName) => "Circular has been {$eventName}");
+            ->setDescriptionForEvent(fn(string $eventName) => "Circular has been {$eventName}");
     }
 
 }

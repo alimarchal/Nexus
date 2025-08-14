@@ -42,7 +42,8 @@ class StoreCircularRequest extends FormRequest
             ],
             'priority' => 'nullable|in:low,medium,high',
             'effective_date' => 'nullable|date|after_or_equal:today',
-            'expiry_date' => 'nullable|date|after:effective_date'
+            'expiry_date' => 'nullable|date|after:effective_date',
+            'circular_number' => 'nullable',
         ];
     }
 
