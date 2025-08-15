@@ -21,31 +21,31 @@ use App\Helpers\FileStorageHelper;
 
 class ComplaintController extends Controller
 {
-     public function index(Request $request)
-     {
-         $statusTypes = ComplaintStatusType::all();
-         $divisions = Division::all(); // Changed from users to divisions
+    public function index(Request $request)
+    {
+        $statusTypes = ComplaintStatusType::all();
+        $divisions = Division::all(); // Changed from users to divisions
 
-         $complaints = Complaint::with([
-             'assignedTo' => function ($query) {
-                 $query->latest(); // Fetch the latest assigned user
-             },
-             'assignedDivision' => function ($query) {
-                 $query->latest(); // Fetch the latest assigned division
-             }
-         ]);
+        $complaints = Complaint::with([
+            'assignedTo' => function ($query) {
+                $query->latest(); // Fetch the latest assigned user
+            },
+            'assignedDivision' => function ($query) {
+                $query->latest(); // Fetch the latest assigned division
+            }
+        ]);
 
-         if ($request->has('filter.status')) {
-             $complaints->where('status_id', $request->input('filter.status'));
-         }
-         if ($request->has('filter.assigned_to')) {
-             $complaints->where('assigned_to', $request->input('filter.assigned_to'));
-         }
+        if ($request->has('filter.status')) {
+            $complaints->where('status_id', $request->input('filter.status'));
+        }
+        if ($request->has('filter.assigned_to')) {
+            $complaints->where('assigned_to', $request->input('filter.assigned_to'));
+        }
 
-         $complaints = $complaints->orderBy('complaints.created_at','DESC')->paginate(10);
+        $complaints = $complaints->orderBy('complaints.created_at', 'DESC')->paginate(10);
 
-         return view('complaints.index', compact('complaints', 'statusTypes', 'divisions'));
-     }
+        return view('complaints.index', compact('complaints', 'statusTypes', 'divisions'));
+    }
 
     /**
      * Show the form for creating a new complaint.
@@ -64,66 +64,65 @@ class ComplaintController extends Controller
     /**
      * Store a newly created complaint.
      */
-public function store(StoreComplaintRequest $request)
-{
-    DB::beginTransaction();
-    try {
+    public function store(StoreComplaintRequest $request)
+    {
+        DB::beginTransaction();
+        try {
 
-        $request->validate([
-            'status_id' => 'required|exists:complaint_status_types,id',
-            'assigned_to' => 'required|exists:divisions,id',
-            'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
-        ]);
+            $request->validate([
+                'status_id' => 'required|exists:complaint_status_types,id',
+                'assigned_to' => 'required|exists:divisions,id',
+                'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
+            ]);
 
-        // Generate unique reference number
-        $referenceNumber = $this->generateReferenceNumber();
+            // Generate unique reference number
+            $referenceNumber = generateUniqueId('complaint', 'complaints', 'reference_number');
 
-        $complaintData = [
-            'reference_number' => $referenceNumber,
-            'subject' => $request->subject,
-            'created_by' => auth()->user()->id,
-            'status_id' => $request->status_id,
-            'assigned_to' => $request->assigned_to,
-            'due_date' => $request->due_date,
-            'priority' => $request->priority ?? 'medium',
-            'meta_data' => json_encode([
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->header('User-Agent'),
-                'created_at' => now()->toIso8601String()
-            ])
-        ];
+            $complaintData = [
+                'reference_number' => $referenceNumber,
+                'subject' => $request->subject,
+                'status_id' => $request->status_id,
+                'assigned_to' => $request->assigned_to,
+                'due_date' => $request->due_date,
+                'priority' => $request->priority ?? 'medium',
+                'meta_data' => json_encode([
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->header('User-Agent'),
+                    'created_at' => now()->toIso8601String()
+                ])
+            ];
 
-        $manager = Manager::where('division_id', $request->assigned_to)->first();
+            $manager = Manager::where('division_id', $request->assigned_to)->first();
 
-        if (!$manager) {
-            throw new \Exception('Failed to create complaint. Please ask the division to assign a manager for this complaint.');
+            if (!$manager) {
+                throw new \Exception('Failed to create complaint. Please ask the division to assign a manager for this complaint.');
+            }
+
+            $complaintData['assigned_to'] = $manager->manager_user_id;
+
+            $complaint = Complaint::create($complaintData);
+
+            // Handle attachments using FileStorageHelper
+            if ($request->hasFile('attachments')) {
+                FileStorageHelper::storeFiles(
+                    files: $request->file('attachments'),
+                    modelClass: ComplaintAttachment::class,
+                    folderName: 'complaints',
+                    relationData: ['complaint_id' => $complaint->id],
+                    subFolder: $complaint->reference_number
+                );
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('complaints.index')
+                ->with('success', "Complaint created successfully! Reference Number: {$referenceNumber}");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Failed to create complaint. Please try again. Please ask the division to assign a manager for this complaint.');
         }
-
-        $complaintData['assigned_to'] = $manager->manager_user_id;
-
-        $complaint = Complaint::create($complaintData);
-
-        // Handle attachments using FileStorageHelper
-        if ($request->hasFile('attachments')) {
-            FileStorageHelper::storeFiles(
-                files: $request->file('attachments'),
-                modelClass: ComplaintAttachment::class,
-                folderName: 'complaints',
-                relationData: ['complaint_id' => $complaint->id],
-                subFolder: $complaint->reference_number
-            );
-        }
-
-        DB::commit();
-
-        return redirect()
-            ->route('complaints.index')
-            ->with('success', "Complaint created successfully! Reference Number: {$referenceNumber}");
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return back()->withInput()->with('error', 'Failed to create complaint. Please try again. Please ask the division to assign a manager for this complaint.');
     }
-}
 
 
     /**
@@ -150,74 +149,75 @@ public function store(StoreComplaintRequest $request)
     /**
      * Show the form for editing the specified complaint.
      */
-  /**
- * Show the form for editing the specified complaint.
- */
-public function edit(Complaint $complaint)
-{
-    $statuses = ComplaintStatusType::all();
-    $divisions = Division::all(); // Changed from users to divisions
-    return view('complaints.edit', compact('complaint', 'statuses', 'divisions'));
-}
-
-/**
- * Update the specified complaint.
- */public function update(UpdateComplaintRequest $request, Complaint $complaint)
-{
-    DB::beginTransaction();
-    try {
-        Log::info('Updating complaint', ['id' => $complaint->id, 'data' => $request->all()]);
-
-        // Validate all required fields
-        $validated = $request->validate([
-            'subject' => 'required|string|max:255',
-            'description' => 'required|string',
-            'status_id' => 'required|exists:complaint_status_types,id',
-            'assigned_to' => 'required|exists:divisions,id',
-            // 'priority' => 'required|in:low,medium,high',
-            // 'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
-        ]);
-
-        // Update complaint with validated data
-        $complaint->update([
-            'subject' => $validated['subject'],
-            'description' => $validated['description'],
-            'status_id' => $validated['status_id'],
-            'assigned_to' => $validated['assigned_to'],
-            // 'priority' => $validated['priority'],
-            // 'due_date' => $validated['due_date'],
-        ]);
-
-        // Create history record for the update
-        ComplaintHistory::create([
-            'complaint_id' => $complaint->id,
-            'status_id' => $validated['status_id'],
-            'changed_by' => auth()->id(),
-            'comments' => 'Complaint updated',
-            'changes' => json_encode($validated),
-        ]);
-
-        // Handle attachments if any
-        if ($request->hasFile('attachments')) {
-            Log::info('Storing new attachments for complaint', ['id' => $complaint->id]);
-            $this->storeAttachments($request->file('attachments'), $complaint);
-        }
-
-        DB::commit();
-        return redirect()
-            ->route('complaints.show', $complaint)
-            ->with('success', 'Complaint updated successfully.');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error updating complaint', [
-            'id' => $complaint->id,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ]);
-        return back()->withInput()->with('error', 'Failed to update complaint. Please try again.');
+    /**
+     * Show the form for editing the specified complaint.
+     */
+    public function edit(Complaint $complaint)
+    {
+        $statuses = ComplaintStatusType::all();
+        $divisions = Division::all(); // Changed from users to divisions
+        return view('complaints.edit', compact('complaint', 'statuses', 'divisions'));
     }
-}
+
+    /**
+     * Update the specified complaint.
+     */
+    public function update(UpdateComplaintRequest $request, Complaint $complaint)
+    {
+        DB::beginTransaction();
+        try {
+            Log::info('Updating complaint', ['id' => $complaint->id, 'data' => $request->all()]);
+
+            // Validate all required fields
+            $validated = $request->validate([
+                'subject' => 'required|string|max:255',
+                'description' => 'required|string',
+                'status_id' => 'required|exists:complaint_status_types,id',
+                'assigned_to' => 'required|exists:divisions,id',
+                // 'priority' => 'required|in:low,medium,high',
+                // 'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
+            ]);
+
+            // Update complaint with validated data
+            $complaint->update([
+                'subject' => $validated['subject'],
+                'description' => $validated['description'],
+                'status_id' => $validated['status_id'],
+                'assigned_to' => $validated['assigned_to'],
+                // 'priority' => $validated['priority'],
+                // 'due_date' => $validated['due_date'],
+            ]);
+
+            // Create history record for the update
+            ComplaintHistory::create([
+                'complaint_id' => $complaint->id,
+                'status_id' => $validated['status_id'],
+                'changed_by' => auth()->id(),
+                'comments' => 'Complaint updated',
+                'changes' => json_encode($validated),
+            ]);
+
+            // Handle attachments if any
+            if ($request->hasFile('attachments')) {
+                Log::info('Storing new attachments for complaint', ['id' => $complaint->id]);
+                $this->storeAttachments($request->file('attachments'), $complaint);
+            }
+
+            DB::commit();
+            return redirect()
+                ->route('complaints.show', $complaint)
+                ->with('success', 'Complaint updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating complaint', [
+                'id' => $complaint->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withInput()->with('error', 'Failed to update complaint. Please try again.');
+        }
+    }
 
     /**
      * Remove the specified complaint.
