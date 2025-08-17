@@ -20,6 +20,7 @@ return new class extends Migration {
             ['name' => 'invoice', 'prefix' => 'INV', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'complaint', 'prefix' => 'CMP', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'quotation', 'prefix' => 'QTN', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'circular', 'prefix' => 'CIR', 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 

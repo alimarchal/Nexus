@@ -35,7 +35,7 @@ class StoreCircularRequest extends FormRequest
             'description' => 'nullable|string|max:5000', // Set reasonable limit
             'division_id' => 'required|exists:divisions,id',
             'attachment' => [
-                'nullable',
+                'required',
                 'file',
                 'mimes:pdf,doc,docx,jpg,jpeg,png', // Added more formats
                 'max:5120' // 5MB limit

@@ -27,17 +27,17 @@ class RolesAndPermissionsSeeder extends Seeder
         $superAdmin = Role::create(['name' => 'super-admin']);
 
 
-        foreach(Branch::all() as $branch) {
-            $new_user = User::create([
-                'branch_id' => $branch->id,
-                'name' => 'Branch ' . $branch->code . '-' . $branch->district_id . '-' . $branch->region_id,
-                'email' => 'manager' . $branch->code . '@' . 'bankajk.com',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]);
+        // foreach(Branch::all() as $branch) {
+        //     $new_user = User::create([
+        //         'branch_id' => $branch->id,
+        //         'name' => 'Branch ' . $branch->code . '-' . $branch->district_id . '-' . $branch->region_id,
+        //         'email' => 'manager' . $branch->code . '@' . 'bankajk.com',
+        //         'password' => Hash::make('password'),
+        //         'email_verified_at' => now(),
+        //     ]);
 
-            $new_user->assignRole('branch');
-        }
+        //     $new_user->assignRole('branch');
+        // }
 
         // Create super admin
         $user = User::create([

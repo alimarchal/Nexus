@@ -46,13 +46,10 @@ class CircularController extends Controller
                 })
             ])
             ->with(['user', 'division', 'updatedBy'])          // Eager load relationships
-            ->latest()                                         // Order by newest first
+            ->latest()                                                   // Order by newest first
             ->paginate(10);                                    // Paginate results
 
-        // Get all divisions for filter dropdown
-        $divisions = Division::all();
-
-        return view('circulars.index', compact('circulars', 'divisions'));
+        return view('circulars.index', compact('circulars'));
     }
 
     /**
@@ -162,12 +159,17 @@ class CircularController extends Controller
                     FileStorageHelper::deleteFile($circular->attachment);
                 }
 
-                // Store new file (using public storage for update)
-                $validated['attachment'] = FileStorageHelper::storeSingleFile(
-                    $request->file('attachment'),
-                    $folderName,
-                    $circular->circular_no  // Use circular number as subfolder
-                );
+
+
+
+                // Handle file upload update if attachment provided
+                if ($request->hasFile('attachment')) {
+                    $validated['attachment'] = FileStorageHelper::storeSinglePrivateFile(
+                        $request->file('attachment'),
+                        $folderName,
+                        $validated['circular_no'] ?? null  // Use circular number as subfolder
+                    );
+                }
             }
 
             // Update circular record

@@ -92,7 +92,7 @@
                 <table class="min-w-max w-full table-auto text-sm">
                     <thead>
                         <tr class="bg-green-800 text-white uppercase text-sm">
-                            <th class="py-2 px-2 text-center">#</th>
+                            <th class="py-2 px-2 text-center">Reference #</th>
                             <th class="py-2 px-2 text-left">Date</th>
                             <th class="py-2 px-2 text-left">Division</th>
                             <th class="py-2 px-2 text-left">Circular No</th>
