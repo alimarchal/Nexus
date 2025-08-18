@@ -26,6 +26,7 @@ use App\Http\Controllers\DailyPositionController;
 use App\Http\Controllers\DispatchRegisterController;
 use App\Http\Controllers\PrintedStationeryController;
 use App\Http\Controllers\ComplaintAttachmentController;
+use App\Http\Controllers\ComplaintStatusTypeController;
 use App\Http\Controllers\StationeryTransactionController;
 
 
@@ -94,6 +95,18 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('product/dispatch-registers', DispatchRegisterController::class);
 
 
+
+
+    // ComplaintStatusType Routes
+    Route::prefix('complaint-status-types')->name('complaint-status-types.')->group(function () {
+        Route::get('/', [ComplaintStatusTypeController::class, 'index'])->name('index');
+        Route::get('/create', [ComplaintStatusTypeController::class, 'create'])->name('create');
+        Route::post('/', [ComplaintStatusTypeController::class, 'store'])->name('store');
+        Route::get('/{complaintStatusType}', [ComplaintStatusTypeController::class, 'show'])->name('show');
+        Route::get('/{complaintStatusType}/edit', [ComplaintStatusTypeController::class, 'edit'])->name('edit');
+        Route::put('/{complaintStatusType}', [ComplaintStatusTypeController::class, 'update'])->name('update');
+        Route::delete('/{complaintStatusType}', [ComplaintStatusTypeController::class, 'destroy'])->name('destroy');
+    });
 
     Route::middleware('auth')->group(function () {
         // Download private files by path

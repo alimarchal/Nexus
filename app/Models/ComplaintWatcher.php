@@ -11,25 +11,13 @@ use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedInclude;
 use Spatie\QueryBuilder\AllowedSort;
 
-class ComplaintHistory extends Model
+class ComplaintWatcher extends Model
 {
     use HasFactory, SoftDeletes, UserTracking;
 
     protected $fillable = [
         'complaint_id',
-        'action_type',
-        'old_value',
-        'new_value',
-        'comments',
-        'status_id',
-        'performed_by',
-        'performed_at',
-        'attachment',
-        'complaint_type',
-    ];
-
-    protected $casts = [
-        'performed_at' => 'datetime',
+        'user_id',
     ];
 
     // Relationships
@@ -38,14 +26,9 @@ class ComplaintHistory extends Model
         return $this->belongsTo(Complaint::class);
     }
 
-    public function status(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(ComplaintStatusType::class, 'status_id');
-    }
-
-    public function performedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'performed_by');
+        return $this->belongsTo(User::class);
     }
 
     // Spatie Query Builder
@@ -53,20 +36,13 @@ class ComplaintHistory extends Model
     {
         return [
             AllowedFilter::exact('complaint_id'),
-            AllowedFilter::exact('action_type'),
-            AllowedFilter::exact('complaint_type'),
-            AllowedFilter::exact('performed_by'),
-            AllowedFilter::exact('status_id'),
-            AllowedFilter::scope('performed_between'),
+            AllowedFilter::exact('user_id'),
         ];
     }
 
     public static function getAllowedSorts(): array
     {
         return [
-            AllowedSort::field('id'),
-            AllowedSort::field('performed_at'),
-            AllowedSort::field('action_type'),
             AllowedSort::field('created_at'),
         ];
     }
@@ -75,16 +51,9 @@ class ComplaintHistory extends Model
     {
         return [
             AllowedInclude::relationship('complaint'),
-            AllowedInclude::relationship('status'),
-            AllowedInclude::relationship('performedBy'),
+            AllowedInclude::relationship('user'),
             AllowedInclude::relationship('creator'),
             AllowedInclude::relationship('updater'),
         ];
-    }
-
-    // Scopes
-    public function scopePerformedBetween($query, $dates)
-    {
-        return $query->whereBetween('performed_at', $dates);
     }
 }

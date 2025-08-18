@@ -11,25 +11,19 @@ use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedInclude;
 use Spatie\QueryBuilder\AllowedSort;
 
-class ComplaintHistory extends Model
+class ComplaintComment extends Model
 {
     use HasFactory, SoftDeletes, UserTracking;
 
     protected $fillable = [
         'complaint_id',
-        'action_type',
-        'old_value',
-        'new_value',
-        'comments',
-        'status_id',
-        'performed_by',
-        'performed_at',
-        'attachment',
-        'complaint_type',
+        'comment_text',
+        'comment_type',
+        'is_private',
     ];
 
     protected $casts = [
-        'performed_at' => 'datetime',
+        'is_private' => 'boolean',
     ];
 
     // Relationships
@@ -38,26 +32,14 @@ class ComplaintHistory extends Model
         return $this->belongsTo(Complaint::class);
     }
 
-    public function status(): BelongsTo
-    {
-        return $this->belongsTo(ComplaintStatusType::class, 'status_id');
-    }
-
-    public function performedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'performed_by');
-    }
-
     // Spatie Query Builder
     public static function getAllowedFilters(): array
     {
         return [
             AllowedFilter::exact('complaint_id'),
-            AllowedFilter::exact('action_type'),
-            AllowedFilter::exact('complaint_type'),
-            AllowedFilter::exact('performed_by'),
-            AllowedFilter::exact('status_id'),
-            AllowedFilter::scope('performed_between'),
+            AllowedFilter::exact('comment_type'),
+            AllowedFilter::exact('is_private'),
+            AllowedFilter::exact('created_by'),
         ];
     }
 
@@ -65,9 +47,8 @@ class ComplaintHistory extends Model
     {
         return [
             AllowedSort::field('id'),
-            AllowedSort::field('performed_at'),
-            AllowedSort::field('action_type'),
             AllowedSort::field('created_at'),
+            AllowedSort::field('updated_at'),
         ];
     }
 
@@ -75,16 +56,19 @@ class ComplaintHistory extends Model
     {
         return [
             AllowedInclude::relationship('complaint'),
-            AllowedInclude::relationship('status'),
-            AllowedInclude::relationship('performedBy'),
             AllowedInclude::relationship('creator'),
             AllowedInclude::relationship('updater'),
         ];
     }
 
     // Scopes
-    public function scopePerformedBetween($query, $dates)
+    public function scopePublic($query)
     {
-        return $query->whereBetween('performed_at', $dates);
+        return $query->where('is_private', false);
+    }
+
+    public function scopePrivate($query)
+    {
+        return $query->where('is_private', true);
     }
 }

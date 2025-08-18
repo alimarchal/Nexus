@@ -2,91 +2,207 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Traits\UserTracking;
-use Spatie\Activitylog\LogOptions;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedInclude;
+use Spatie\QueryBuilder\AllowedSort;
 
 class Complaint extends Model
 {
-    use HasFactory, UserTracking;
-    use SoftDeletes;
-    use LogsActivity;
+    use HasFactory, SoftDeletes;
 
+    protected $fillable = [
+        'complaint_number',
+        'title',
+        'description',
+        'category',
+        'priority',
+        'status',
+        'source',
+        'complainant_name',
+        'complainant_email',
+        'complainant_phone',
+        'complainant_account_number',
+        'branch_id',
+        'assigned_to',
+        'assigned_by',
+        'assigned_at',
+        'resolution',
+        'resolved_by',
+        'resolved_at',
+        'closed_at',
+        'expected_resolution_date',
+        'sla_breached',
+    ];
 
+    protected $casts = [
+        'assigned_at' => 'datetime',
+        'resolved_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'expected_resolution_date' => 'datetime',
+        'sla_breached' => 'boolean',
+    ];
 
-    public function histories()
+    // Relationships
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function assignedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function resolvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'resolved_by');
+    }
+
+    public function histories(): HasMany
     {
         return $this->hasMany(ComplaintHistory::class);
     }
 
-// Also add these relationships if not already present
-    public function status()
+    public function comments(): HasMany
     {
-        return $this->belongsTo(ComplaintStatusType::class, 'status_id');
+        return $this->hasMany(ComplaintComment::class);
     }
 
-    public function assignedTo()
-    {
-        return $this->belongsTo(User::class, 'assigned_to');
-    }
-    public function assignedDivision()
-    {
-        return $this->belongsTo(Division::class, 'assigned_to');
-    }
-
-    public function attachments()
+    public function attachments(): HasMany
     {
         return $this->hasMany(ComplaintAttachment::class);
     }
 
-
-    public function createdBy(): BelongsTo
+    public function categories(): HasMany
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->hasMany(ComplaintCategory::class);
     }
 
-
-    use SoftDeletes;
-
-    protected $fillable = [
-        'reference_number',
-        'subject',
-        'description',
-        'status_id',
-        'created_by',
-        'assigned_to',
-        'due_date',
-        'priority',
-        'meta_data'
-    ];
-
-    protected $casts = [
-        'due_date' => 'date',
-        'meta_data' => 'array'
-    ];
-
-
-    public function creator()
+    public function assignments(): HasMany
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->hasMany(ComplaintAssignment::class);
     }
 
- /**
-     * Get activity log options.
-     *
-     * @return \Spatie\Activitylog\LogOptions
-     */
-    public function getActivitylogOptions(): LogOptions
+    public function escalations(): HasMany
     {
-        return LogOptions::defaults()
-            ->logAll()
-            ->logOnlyDirty()
-            ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn (string $eventName) => "Cpmplaint has been {$eventName}");
+        return $this->hasMany(ComplaintEscalation::class);
+    }
+
+    public function watchers(): HasMany
+    {
+        return $this->hasMany(ComplaintWatcher::class);
+    }
+
+    public function metrics(): HasOne
+    {
+        return $this->hasOne(ComplaintMetric::class);
+    }
+
+    // Spatie Query Builder
+    public static function getAllowedFilters(): array
+    {
+        return [
+            AllowedFilter::exact('id'),
+            AllowedFilter::partial('complaint_number'),
+            AllowedFilter::partial('title'),
+            AllowedFilter::exact('status'),
+            AllowedFilter::exact('priority'),
+            AllowedFilter::exact('source'),
+            AllowedFilter::exact('category'),
+            AllowedFilter::exact('branch_id'),
+            AllowedFilter::exact('assigned_to'),
+            AllowedFilter::exact('assigned_by'),
+            AllowedFilter::exact('resolved_by'),
+            AllowedFilter::exact('sla_breached'),
+            AllowedFilter::scope('created_between'),
+            AllowedFilter::scope('resolved_between'),
+            AllowedFilter::scope('assigned_between'),
+        ];
+    }
+
+    public static function getAllowedSorts(): array
+    {
+        return [
+            AllowedSort::field('id'),
+            AllowedSort::field('complaint_number'),
+            AllowedSort::field('title'),
+            AllowedSort::field('status'),
+            AllowedSort::field('priority'),
+            AllowedSort::field('created_at'),
+            AllowedSort::field('updated_at'),
+            AllowedSort::field('assigned_at'),
+            AllowedSort::field('resolved_at'),
+            AllowedSort::field('expected_resolution_date'),
+        ];
+    }
+
+    public static function getAllowedIncludes(): array
+    {
+        return [
+            AllowedInclude::relationship('branch'),
+            AllowedInclude::relationship('assignedTo'),
+            AllowedInclude::relationship('assignedBy'),
+            AllowedInclude::relationship('resolvedBy'),
+            AllowedInclude::relationship('histories'),
+            AllowedInclude::relationship('comments'),
+            AllowedInclude::relationship('attachments'),
+            AllowedInclude::relationship('categories'),
+            AllowedInclude::relationship('assignments'),
+            AllowedInclude::relationship('escalations'),
+            AllowedInclude::relationship('watchers'),
+            AllowedInclude::relationship('metrics'),
+        ];
+    }
+
+    // Scopes for filters
+    public function scopeCreatedBetween($query, $dates)
+    {
+        return $query->whereBetween('created_at', $dates);
+    }
+
+    public function scopeResolvedBetween($query, $dates)
+    {
+        return $query->whereBetween('resolved_at', $dates);
+    }
+
+    public function scopeAssignedBetween($query, $dates)
+    {
+        return $query->whereBetween('assigned_at', $dates);
+    }
+
+    // Helper methods
+    public function isOverdue(): bool
+    {
+        return $this->expected_resolution_date &&
+            $this->expected_resolution_date->isPast() &&
+            !$this->resolved_at;
+    }
+
+    public function isResolved(): bool
+    {
+        return in_array($this->status, ['Resolved', 'Closed']);
+    }
+
+    // Auto-generate complaint number
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($complaint) {
+            if (!$complaint->complaint_number) {
+                $complaint->complaint_number = 'C' . date('Y') . str_pad(static::count() + 1, 6, '0', STR_PAD_LEFT);
+            }
+        });
     }
 }

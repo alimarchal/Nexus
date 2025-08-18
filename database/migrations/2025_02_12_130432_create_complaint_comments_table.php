@@ -10,19 +10,21 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('complaint_attachments', function (Blueprint $table) {
+        Schema::create('complaint_comments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('complaint_id')->constrained()->onDelete('cascade');
-            $table->string('file_name', 255);
-            $table->string('file_path', 500);
-            $table->integer('file_size')->nullable(); // Size in bytes
-            $table->string('file_type', 50)->nullable();
+            $table->text('comment_text');
+            $table->enum('comment_type', ['Internal', 'Customer', 'System'])->default('Internal');
+            $table->boolean('is_private')->default(false);
             $table->userTracking(); // Tracks who created/modified records
             $table->softDeletes(); // Soft delete for audit trail
             $table->timestamps();
             // Index
-            $table->index(['complaint_id'], 'idx_complaint_attachments');
+            $table->index(['complaint_id', 'created_at'], 'idx_complaint_comments');
+
         });
+
+
     }
 
     /**
@@ -30,6 +32,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('complaint_attachments');
+        Schema::dropIfExists('complaint_comments');
     }
 };

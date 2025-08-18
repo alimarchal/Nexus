@@ -6,30 +6,29 @@ use App\Traits\UserTracking;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedInclude;
 use Spatie\QueryBuilder\AllowedSort;
 
-class ComplaintHistory extends Model
+class ComplaintCategory extends Model
 {
     use HasFactory, SoftDeletes, UserTracking;
 
     protected $fillable = [
         'complaint_id',
-        'action_type',
-        'old_value',
-        'new_value',
-        'comments',
-        'status_id',
-        'performed_by',
-        'performed_at',
-        'attachment',
-        'complaint_type',
+        'category_name',
+        'parent_category_id',
+        'description',
+        'default_priority',
+        'sla_hours',
+        'is_active',
     ];
 
     protected $casts = [
-        'performed_at' => 'datetime',
+        'is_active' => 'boolean',
+        'sla_hours' => 'integer',
     ];
 
     // Relationships
@@ -38,14 +37,14 @@ class ComplaintHistory extends Model
         return $this->belongsTo(Complaint::class);
     }
 
-    public function status(): BelongsTo
+    public function parent(): BelongsTo
     {
-        return $this->belongsTo(ComplaintStatusType::class, 'status_id');
+        return $this->belongsTo(ComplaintCategory::class, 'parent_category_id');
     }
 
-    public function performedBy(): BelongsTo
+    public function children(): HasMany
     {
-        return $this->belongsTo(User::class, 'performed_by');
+        return $this->hasMany(ComplaintCategory::class, 'parent_category_id');
     }
 
     // Spatie Query Builder
@@ -53,20 +52,19 @@ class ComplaintHistory extends Model
     {
         return [
             AllowedFilter::exact('complaint_id'),
-            AllowedFilter::exact('action_type'),
-            AllowedFilter::exact('complaint_type'),
-            AllowedFilter::exact('performed_by'),
-            AllowedFilter::exact('status_id'),
-            AllowedFilter::scope('performed_between'),
+            AllowedFilter::partial('category_name'),
+            AllowedFilter::exact('parent_category_id'),
+            AllowedFilter::exact('default_priority'),
+            AllowedFilter::exact('is_active'),
         ];
     }
 
     public static function getAllowedSorts(): array
     {
         return [
-            AllowedSort::field('id'),
-            AllowedSort::field('performed_at'),
-            AllowedSort::field('action_type'),
+            AllowedSort::field('category_name'),
+            AllowedSort::field('default_priority'),
+            AllowedSort::field('sla_hours'),
             AllowedSort::field('created_at'),
         ];
     }
@@ -75,16 +73,21 @@ class ComplaintHistory extends Model
     {
         return [
             AllowedInclude::relationship('complaint'),
-            AllowedInclude::relationship('status'),
-            AllowedInclude::relationship('performedBy'),
+            AllowedInclude::relationship('parent'),
+            AllowedInclude::relationship('children'),
             AllowedInclude::relationship('creator'),
             AllowedInclude::relationship('updater'),
         ];
     }
 
     // Scopes
-    public function scopePerformedBetween($query, $dates)
+    public function scopeActive($query)
     {
-        return $query->whereBetween('performed_at', $dates);
+        return $query->where('is_active', true);
+    }
+
+    public function scopeTopLevel($query)
+    {
+        return $query->whereNull('parent_category_id');
     }
 }

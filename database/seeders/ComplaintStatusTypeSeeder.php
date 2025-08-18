@@ -14,17 +14,13 @@ class ComplaintStatusTypeSeeder extends Seeder
      */
     public function run(): void
     {
-        // Insert default status types
         DB::table('complaint_status_types')->insert([
-            ['name' => 'Submitted', 'code' => 'SUBMITTED', 'description' => 'Complaint has been received'],
-            ['name' => 'Under Review', 'code' => 'UNDER_REVIEW', 'description' => 'Complaint is being evaluated'],
-            ['name' => 'Investigation', 'code' => 'INVESTIGATION', 'description' => 'Detailed investigation in progress'],
-            ['name' => 'Pending Response', 'code' => 'PENDING_RESPONSE', 'description' => 'Awaiting response from relevant parties'],
-            ['name' => 'Resolution Proposed', 'code' => 'RESOLUTION_PROPOSED', 'description' => 'Solution has been proposed'],
+            ['name' => 'Open', 'code' => 'OPEN', 'description' => 'Complaint is open and awaiting action'],
+            ['name' => 'In Progress', 'code' => 'IN_PROGRESS', 'description' => 'Complaint is actively being worked on'],
+            ['name' => 'Pending', 'code' => 'PENDING', 'description' => 'Complaint is pending further action or information'],
             ['name' => 'Resolved', 'code' => 'RESOLVED', 'description' => 'Complaint has been resolved'],
             ['name' => 'Closed', 'code' => 'CLOSED', 'description' => 'Complaint case has been closed'],
-            ['name' => 'Escalated', 'code' => 'ESCALATED', 'description' => 'Complaint has been escalated to higher authority'],
-            ['name' => 'On Hold', 'code' => 'ON_HOLD', 'description' => 'Complaint processing temporarily suspended'],
+            ['name' => 'Reopened', 'code' => 'REOPENED', 'description' => 'Previously closed complaint has been reopened'],
         ]);
     }
 
