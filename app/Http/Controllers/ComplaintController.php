@@ -2,343 +2,1613 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreComplaintRequest;
-use App\Http\Requests\UpdateComplaintRequest;
-use App\Models\Complaint;
-use App\Models\ComplaintAttachment;
-use App\Models\ComplaintStatusType;
-use App\Models\Manager;
 use App\Models\User;
+use App\Models\Branch;
+use App\Models\Complaint;
 use App\Models\ComplaintHistory;
+use App\Models\ComplaintComment;
+use App\Models\ComplaintAttachment;
+use App\Models\ComplaintCategory;
+use App\Models\ComplaintAssignment;
+use App\Models\ComplaintEscalation;
+use App\Models\ComplaintWatcher;
+use App\Models\ComplaintMetric;
+use App\Models\ComplaintStatusType;
+use App\Models\ComplaintTemplate;
+use App\View\Components\Division;
 use Illuminate\Http\Request;
+use App\Helpers\FileStorageHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use App\Models\Division;
-use App\Helpers\FileStorageHelper;
+use Carbon\Carbon;
 
-
+/**
+ * ComplaintController handles comprehensive CRUD operations for complaints
+ * Manages file uploads, assignments, escalations, histories, and all related entities
+ */
 class ComplaintController extends Controller
 {
+    /**
+     * Display paginated list of complaints with advanced filtering capabilities
+     * 
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
     public function index(Request $request)
     {
-        $statusTypes = ComplaintStatusType::all();
-        $divisions = Division::all(); // Changed from users to divisions
+        // Build query with filters using Spatie QueryBuilder
+        $complaints = QueryBuilder::for(Complaint::class)
+            ->allowedFilters([
+                AllowedFilter::exact('id'),
+                AllowedFilter::partial('complaint_number'),
+                AllowedFilter::partial('title'),
+                AllowedFilter::exact('status'),
+                AllowedFilter::exact('priority'),
+                AllowedFilter::exact('source'),
+                AllowedFilter::partial('category'),
+                AllowedFilter::exact('branch_id'),
+                AllowedFilter::exact('assigned_to'),
+                AllowedFilter::exact('assigned_by'),
+                AllowedFilter::exact('resolved_by'),
+                AllowedFilter::exact('sla_breached'),
+                AllowedFilter::partial('complainant_name'),
+                AllowedFilter::partial('complainant_email'),
+                AllowedFilter::callback('date_from', function ($query, $value) {
+                    $query->whereDate('created_at', '>=', $value);
+                }),
+                AllowedFilter::callback('date_to', function ($query, $value) {
+                    $query->whereDate('created_at', '<=', $value);
+                }),
+                AllowedFilter::callback('assigned_date_from', function ($query, $value) {
+                    $query->whereDate('assigned_at', '>=', $value);
+                }),
+                AllowedFilter::callback('assigned_date_to', function ($query, $value) {
+                    $query->whereDate('assigned_at', '<=', $value);
+                }),
+                AllowedFilter::callback('resolved_date_from', function ($query, $value) {
+                    $query->whereDate('resolved_at', '>=', $value);
+                }),
+                AllowedFilter::callback('resolved_date_to', function ($query, $value) {
+                    $query->whereDate('resolved_at', '<=', $value);
+                })
+            ])
+            ->allowedSorts([
+                'id',
+                'complaint_number',
+                'title',
+                'status',
+                'priority',
+                'created_at',
+                'updated_at',
+                'assigned_at',
+                'resolved_at',
+                'expected_resolution_date'
+            ])
+            ->with([
+                'branch',
+                'assignedTo',
+                'assignedBy',
+                'resolvedBy',
+                'histories' => function ($query) {
+                    $query->latest()->limit(3);
+                },
+                'comments' => function ($query) {
+                    $query->latest()->limit(2);
+                },
+                'attachments',
+                'metrics'
+            ])
+            ->latest()
+            ->paginate(15);
 
-        $complaints = Complaint::with([
-            'assignedTo' => function ($query) {
-                $query->latest(); // Fetch the latest assigned user
-            },
-            'assignedDivision' => function ($query) {
-                $query->latest(); // Fetch the latest assigned division
-            }
-        ]);
+        // Get filter options for dropdowns
+        $branches = Branch::orderBy('name')->get();
+        $users = User::active()->orderBy('name')->get();
+        $statusTypes = ComplaintStatusType::active()->orderBy('name')->get();
 
-        if ($request->has('filter.status')) {
-            $complaints->where('status_id', $request->input('filter.status'));
-        }
-        if ($request->has('filter.assigned_to')) {
-            $complaints->where('assigned_to', $request->input('filter.assigned_to'));
-        }
+        // Get statistics for dashboard
+        $statistics = [
+            'total_complaints' => Complaint::count(),
+            'open_complaints' => Complaint::whereIn('status', ['Open', 'In Progress', 'Pending'])->count(),
+            'resolved_complaints' => Complaint::whereIn('status', ['Resolved', 'Closed'])->count(),
+            'overdue_complaints' => Complaint::where('expected_resolution_date', '<', now())
+                ->whereNotIn('status', ['Resolved', 'Closed'])->count(),
+            'high_priority' => Complaint::where('priority', 'High')->count(),
+            'critical_priority' => Complaint::where('priority', 'Critical')->count(),
+            'sla_breached' => Complaint::where('sla_breached', true)->count(),
+        ];
 
-        $complaints = $complaints->orderBy('complaints.created_at', 'DESC')->paginate(10);
-
-        return view('complaints.index', compact('complaints', 'statusTypes', 'divisions'));
+        return view('complaints.index', compact('complaints', 'branches', 'users', 'statusTypes', 'statistics'));
     }
 
     /**
-     * Show the form for creating a new complaint.
+     * Show form to create new complaint
+     * 
+     * @return \Illuminate\View\View
      */
     public function create()
     {
-        $divisions = Division::all(); // Changed from users to divisions
-        $statuses = ComplaintStatusType::all();
-        $submitStatusId = ComplaintStatusType::where('name', 'Submitted')->value('id')
-            ?? ComplaintStatusType::first()?->id
-            ?? 1;
+        $branches = Branch::orderBy('name')->get();
+        $users = User::active()->orderBy('name')->get();
+        $categories = ComplaintCategory::active()->topLevel()->orderBy('category_name')->get();
+        $templates = ComplaintTemplate::active()->orderBy('template_name')->get();
 
-        return view('complaints.create', compact('divisions', 'statuses', 'submitStatusId'));
+        return view('complaints.create', compact('branches', 'users', 'categories', 'templates'));
     }
 
     /**
-     * Store a newly created complaint.
+     * Store new complaint with comprehensive data handling
+     * Uses transaction for data consistency
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function store(StoreComplaintRequest $request)
+    public function store(Request $request)
     {
-        DB::beginTransaction();
-        try {
+        // Validate request data
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'category' => 'nullable|string|max:255',
+            'priority' => 'required|in:Low,Medium,High,Critical',
+            'source' => 'required|in:Phone,Email,Portal,Walk-in,Other',
+            'complainant_name' => 'nullable|string|max:100',
+            'complainant_email' => 'nullable|email|max:100',
+            'complainant_phone' => 'nullable|string|max:20',
+            'complainant_account_number' => 'nullable|string|max:50',
+            'branch_id' => 'nullable|exists:branches,id',
+            'assigned_to' => 'nullable|exists:users,id',
+            'expected_resolution_date' => 'nullable|date|after:today',
+            'attachments.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,txt|max:10240', // 10MB max
+            'comments' => 'nullable|string',
+            'comment_type' => 'nullable|in:Internal,Customer,System',
+            'is_private' => 'nullable|boolean',
+            'category_id' => 'nullable|exists:complaint_categories,id',
+            'watchers' => 'nullable|array',
+            'watchers.*' => 'exists:users,id'
+        ]);
 
-            $request->validate([
-                'status_id' => 'required|exists:complaint_status_types,id',
-                'assigned_to' => 'required|exists:divisions,id',
-                'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
+        // Start database transaction
+        DB::beginTransaction();
+
+        try {
+            // Auto-generate complaint number
+            $validated['complaint_number'] = generateUniqueId('complaint', 'complaints', 'complaint_number');
+
+            // Set default values
+            $validated['status'] = 'Open';
+            $validated['assigned_by'] = auth()->id();
+
+            if ($validated['assigned_to']) {
+                $validated['assigned_at'] = now();
+            }
+
+            // Create complaint record
+            $complaint = Complaint::create($validated);
+
+            // Create folder path for attachments
+            $folderName = 'Complaints/' . $complaint->complaint_number;
+
+            // Handle file attachments
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    if ($file->isValid()) {
+                        $filePath = FileStorageHelper::storeSinglePrivateFile(
+                            $file,
+                            $folderName
+                        );
+
+                        ComplaintAttachment::create([
+                            'complaint_id' => $complaint->id,
+                            'file_name' => $file->getClientOriginalName(),
+                            'file_path' => $filePath,
+                            'file_size' => $file->getSize(),
+                            'file_type' => $file->getMimeType(),
+                        ]);
+                    }
+                }
+            }
+
+            // Create initial comment if provided
+            if ($request->filled('comments')) {
+                ComplaintComment::create([
+                    'complaint_id' => $complaint->id,
+                    'comment_text' => $request->comments,
+                    'comment_type' => $request->comment_type ?? 'Internal',
+                    'is_private' => $request->boolean('is_private', false),
+                ]);
+            }
+
+            // Create complaint category if provided
+            if ($request->filled('category_id')) {
+                $categoryData = ComplaintCategory::find($request->category_id);
+                if ($categoryData) {
+                    ComplaintCategory::create([
+                        'complaint_id' => $complaint->id,
+                        'category_name' => $categoryData->category_name,
+                        'parent_category_id' => $categoryData->parent_category_id,
+                        'description' => $categoryData->description,
+                        'default_priority' => $categoryData->default_priority,
+                        'sla_hours' => $categoryData->sla_hours,
+                        'is_active' => true,
+                    ]);
+                }
+            }
+
+            // Create assignment record if assigned
+            if ($complaint->assigned_to) {
+                ComplaintAssignment::create([
+                    'complaint_id' => $complaint->id,
+                    'assigned_to' => $complaint->assigned_to,
+                    'assigned_by' => $complaint->assigned_by,
+                    'assignment_type' => 'Primary',
+                    'assigned_at' => $complaint->assigned_at,
+                    'reason' => 'Initial assignment during complaint creation',
+                    'is_active' => true,
+                ]);
+            }
+
+            // Add watchers if provided
+            if ($request->filled('watchers')) {
+                foreach ($request->watchers as $userId) {
+                    ComplaintWatcher::create([
+                        'complaint_id' => $complaint->id,
+                        'user_id' => $userId,
+                    ]);
+                }
+            }
+
+            // Create initial history record
+            $statusType = ComplaintStatusType::where('code', 'CREATED')->first()
+                ?? ComplaintStatusType::first();
+
+            if ($statusType) {
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => 'Created',
+                    'old_value' => null,
+                    'new_value' => 'Open',
+                    'comments' => 'Complaint created successfully',
+                    'status_id' => $statusType->id,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Customer',
+                ]);
+            }
+
+            // Create metrics record
+            ComplaintMetric::create([
+                'complaint_id' => $complaint->id,
+                'time_to_first_response' => null,
+                'time_to_resolution' => null,
+                'reopened_count' => 0,
+                'escalation_count' => 0,
+                'assignment_count' => $complaint->assigned_to ? 1 : 0,
+                'customer_satisfaction_score' => null,
             ]);
 
-            // Generate unique reference number
-            $referenceNumber = generateUniqueId('complaint', 'complaints', 'reference_number');
-
-            $complaintData = [
-                'reference_number' => $referenceNumber,
-                'subject' => $request->subject,
-                'status_id' => $request->status_id,
-                'assigned_to' => $request->assigned_to,
-                'due_date' => $request->due_date,
-                'priority' => $request->priority ?? 'medium',
-                'meta_data' => json_encode([
-                    'ip_address' => $request->ip(),
-                    'user_agent' => $request->header('User-Agent'),
-                    'created_at' => now()->toIso8601String()
-                ])
-            ];
-
-            $manager = Manager::where('division_id', $request->assigned_to)->first();
-
-            if (!$manager) {
-                throw new \Exception('Failed to create complaint. Please ask the division to assign a manager for this complaint.');
-            }
-
-            $complaintData['assigned_to'] = $manager->manager_user_id;
-
-            $complaint = Complaint::create($complaintData);
-
-            // Handle attachments using FileStorageHelper
-            if ($request->hasFile('attachments')) {
-                FileStorageHelper::storeFiles(
-                    files: $request->file('attachments'),
-                    modelClass: ComplaintAttachment::class,
-                    folderName: 'complaints',
-                    relationData: ['complaint_id' => $complaint->id],
-                    subFolder: $complaint->reference_number
-                );
-            }
-
+            // Commit transaction if everything successful
             DB::commit();
 
             return redirect()
-                ->route('complaints.index')
-                ->with('success', "Complaint created successfully! Reference Number: {$referenceNumber}");
-        } catch (\Exception $e) {
+                ->route('complaints.show', $complaint)
+                ->with('success', "Complaint '{$complaint->title}' created successfully with number: {$complaint->complaint_number}");
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
-            return back()->withInput()->with('error', 'Failed to create complaint. Please try again. Please ask the division to assign a manager for this complaint.');
+            return redirect()->back()
+                ->withInput()
+                ->withErrors($e->errors());
+
+        } catch (\Exception $e) {
+            // Rollback transaction on any error
+            DB::rollBack();
+
+            // Log the error for debugging
+            Log::error('Error creating complaint', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'request_data' => $request->except(['attachments'])
+            ]);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create complaint. Please try again.');
         }
     }
 
-
     /**
-     * Display the specified complaint.
+     * Display the specified complaint with all related data
+     * 
+     * @param Complaint $complaint
+     * @return \Illuminate\View\View
      */
     public function show(Complaint $complaint)
     {
+        // Load all relationships
         $complaint->load([
-            'status',
-            'creator',
+            'branch',
             'assignedTo',
-            'histories.status',
-            'histories.changedBy',
-            'attachments'
+            'assignedBy',
+            'resolvedBy',
+            'histories' => function ($query) {
+                $query->with(['status', 'performedBy'])->latest();
+            },
+            'comments' => function ($query) {
+                $query->with('creator')->latest();
+            },
+            'attachments' => function ($query) {
+                $query->with('creator')->latest();
+            },
+            'categories' => function ($query) {
+                $query->with(['parent', 'creator'])->latest();
+            },
+            'assignments' => function ($query) {
+                $query->with(['assignedTo', 'assignedBy'])->latest();
+            },
+            'escalations' => function ($query) {
+                $query->with(['escalatedFrom', 'escalatedTo'])->latest();
+            },
+            'watchers' => function ($query) {
+                $query->with('user');
+            },
+            'metrics'
         ]);
 
-        $statuses = ComplaintStatusType::where('is_active', true)->get();
-        $users = User::where('is_active', true)->get();
+        // Get additional data for forms
+        $users = User::active()->orderBy('name')->get();
+        $statusTypes = ComplaintStatusType::active()->orderBy('name')->get();
+        $templates = ComplaintTemplate::active()->orderBy('template_name')->get();
 
-        return view('complaints.show', compact('complaint', 'statuses', 'users'));
+        return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates'));
     }
 
-
     /**
-     * Show the form for editing the specified complaint.
-     */
-    /**
-     * Show the form for editing the specified complaint.
+     * Show form to edit existing complaint
+     * 
+     * @param Complaint $complaint
+     * @return \Illuminate\View\View
      */
     public function edit(Complaint $complaint)
     {
-        $statuses = ComplaintStatusType::all();
-        $divisions = Division::all(); // Changed from users to divisions
-        return view('complaints.edit', compact('complaint', 'statuses', 'divisions'));
+        $branches = Branch::orderBy('name')->get();
+        $users = User::orderBy('name')->get();
+        $categories = ComplaintCategory::active()->topLevel()->orderBy('category_name')->get();
+        $templates = ComplaintTemplate::active()->orderBy('template_name')->get();
+        $divisions = \App\Models\Division::orderBy('name')->get();
+
+        return view('complaints.edit', compact('complaint', 'branches', 'users', 'categories', 'templates', 'divisions'));
     }
 
     /**
-     * Update the specified complaint.
+     * Update existing complaint with comprehensive data handling
+     * Uses transaction for data consistency
+     * 
+     * @param Request $request
+     * @param Complaint $complaint
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(UpdateComplaintRequest $request, Complaint $complaint)
+    public function update(Request $request, Complaint $complaint)
     {
+        // Validate request data
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'category' => 'nullable|string|max:255',
+            'priority' => 'required|in:Low,Medium,High,Critical',
+            'status' => 'required|in:Open,In Progress,Pending,Resolved,Closed,Reopened',
+            'source' => 'required|in:Phone,Email,Portal,Walk-in,Other',
+            'complainant_name' => 'nullable|string|max:100',
+            'complainant_email' => 'nullable|email|max:100',
+            'complainant_phone' => 'nullable|string|max:20',
+            'complainant_account_number' => 'nullable|string|max:50',
+            'branch_id' => 'nullable|exists:branches,id',
+            'assigned_to' => 'nullable|exists:users,id',
+            'expected_resolution_date' => 'nullable|date',
+            'resolution' => 'nullable|string',
+            'resolved_by' => 'nullable|exists:users,id',
+            'resolved_at' => 'nullable|date',
+            'closed_at' => 'nullable|date',
+            'sla_breached' => 'nullable|boolean',
+            'attachments.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,txt|max:10240',
+        ]);
+
+        // Start database transaction
         DB::beginTransaction();
+
         try {
-            Log::info('Updating complaint', ['id' => $complaint->id, 'data' => $request->all()]);
+            // Store original values for history tracking
+            $originalValues = $complaint->getOriginal();
 
-            // Validate all required fields
-            $validated = $request->validate([
-                'subject' => 'required|string|max:255',
-                'description' => 'required|string',
-                'status_id' => 'required|exists:complaint_status_types,id',
-                'assigned_to' => 'required|exists:divisions,id',
-                // 'priority' => 'required|in:low,medium,high',
-                // 'due_date' => ['required', 'date', 'after_or_equal:today', 'before_or_equal:' . now()->addDays(7)->toDateString()],
-            ]);
-
-            // Update complaint with validated data
-            $complaint->update([
-                'subject' => $validated['subject'],
-                'description' => $validated['description'],
-                'status_id' => $validated['status_id'],
-                'assigned_to' => $validated['assigned_to'],
-                // 'priority' => $validated['priority'],
-                // 'due_date' => $validated['due_date'],
-            ]);
-
-            // Create history record for the update
-            ComplaintHistory::create([
-                'complaint_id' => $complaint->id,
-                'status_id' => $validated['status_id'],
-                'changed_by' => auth()->id(),
-                'comments' => 'Complaint updated',
-                'changes' => json_encode($validated),
-            ]);
-
-            // Handle attachments if any
-            if ($request->hasFile('attachments')) {
-                Log::info('Storing new attachments for complaint', ['id' => $complaint->id]);
-                $this->storeAttachments($request->file('attachments'), $complaint);
+            // Handle assignment changes
+            $assignmentChanged = false;
+            if ($complaint->assigned_to != $validated['assigned_to']) {
+                $assignmentChanged = true;
+                if ($validated['assigned_to']) {
+                    $validated['assigned_by'] = auth()->id();
+                    $validated['assigned_at'] = now();
+                } else {
+                    $validated['assigned_by'] = null;
+                    $validated['assigned_at'] = null;
+                }
             }
 
+            // Handle status changes
+            if ($validated['status'] === 'Resolved' && $complaint->status !== 'Resolved') {
+                $validated['resolved_by'] = auth()->id();
+                $validated['resolved_at'] = now();
+            } elseif ($validated['status'] === 'Closed' && $complaint->status !== 'Closed') {
+                $validated['closed_at'] = now();
+            }
+
+            // Update complaint record
+            $complaint->update($validated);
+
+            // Create folder path for new attachments
+            $folderName = 'Complaints/' . $complaint->complaint_number;
+
+            // Handle new file attachments
+            if ($request->hasFile('attachments')) {
+                foreach ($request->file('attachments') as $file) {
+                    if ($file->isValid()) {
+                        $filePath = FileStorageHelper::storeSinglePrivateFile(
+                            $file,
+                            $folderName
+                        );
+
+                        ComplaintAttachment::create([
+                            'complaint_id' => $complaint->id,
+                            'file_name' => $file->getClientOriginalName(),
+                            'file_path' => $filePath,
+                            'file_size' => $file->getSize(),
+                            'file_type' => $file->getMimeType(),
+                        ]);
+                    }
+                }
+            }
+
+            // Create new assignment record if assignment changed
+            if ($assignmentChanged && $validated['assigned_to']) {
+                // Deactivate previous assignments
+                ComplaintAssignment::where('complaint_id', $complaint->id)
+                    ->where('is_active', true)
+                    ->update(['is_active' => false, 'unassigned_at' => now()]);
+
+                // Create new assignment
+                ComplaintAssignment::create([
+                    'complaint_id' => $complaint->id,
+                    'assigned_to' => $validated['assigned_to'],
+                    'assigned_by' => auth()->id(),
+                    'assignment_type' => 'Primary',
+                    'assigned_at' => now(),
+                    'reason' => 'Assignment changed during complaint update',
+                    'is_active' => true,
+                ]);
+
+                // Update metrics
+                $complaint->metrics()->increment('assignment_count');
+            }
+
+            // Create history records for significant changes
+            $this->createHistoryRecords($complaint, $originalValues, $validated);
+
+            // Update metrics based on status changes
+            $this->updateComplaintMetrics($complaint, $originalValues, $validated);
+
+            // Commit transaction if update successful
             DB::commit();
+
             return redirect()
                 ->route('complaints.show', $complaint)
-                ->with('success', 'Complaint updated successfully.');
+                ->with('success', "Complaint '{$complaint->title}' updated successfully.");
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->withInput()
+                ->withErrors($e->errors());
 
         } catch (\Exception $e) {
+            // Rollback transaction on any error
             DB::rollBack();
+
+            // Log the error for debugging
             Log::error('Error updating complaint', [
-                'id' => $complaint->id,
+                'complaint_id' => $complaint->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id()
             ]);
-            return back()->withInput()->with('error', 'Failed to update complaint. Please try again.');
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to update complaint. Please try again.');
         }
     }
 
     /**
-     * Remove the specified complaint.
+     * Remove the specified complaint from storage (soft delete)
+     * 
+     * @param Complaint $complaint
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Complaint $complaint)
     {
-        try {
-            Log::info('Deleting complaint', ['id' => $complaint->id]);
+        DB::beginTransaction();
 
+        try {
+            // Create history record for deletion
+            $statusType = ComplaintStatusType::where('code', 'DELETED')->first()
+                ?? ComplaintStatusType::first();
+
+            if ($statusType) {
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => 'Closed',
+                    'old_value' => $complaint->status,
+                    'new_value' => 'Deleted',
+                    'comments' => 'Complaint deleted by user',
+                    'status_id' => $statusType->id,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'System',
+                ]);
+            }
+
+            // Soft delete the complaint (this will cascade to related records due to SoftDeletes)
             $complaint->delete();
+
+            DB::commit();
+
             return redirect()
                 ->route('complaints.index')
-                ->with('success', 'Complaint deleted successfully.');
+                ->with('success', "Complaint '{$complaint->title}' has been deleted successfully.");
+
         } catch (\Exception $e) {
-            Log::error('Error deleting complaint', ['id' => $complaint->id, 'error' => $e->getMessage()]);
-            return back()->with('error', 'Failed to delete complaint. Please try again.');
+            DB::rollBack();
+
+            Log::error('Error deleting complaint', [
+                'complaint_id' => $complaint->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to delete complaint. Please try again.');
         }
     }
 
     /**
-     * Generate a unique reference number for complaints.
+     * Add comment to complaint
+     * 
+     * @param Request $request
+     * @param Complaint $complaint
+     * @return \Illuminate\Http\RedirectResponse
      */
-    private function generateReferenceNumber()
+    public function addComment(Request $request, Complaint $complaint)
     {
-        $prefix = 'COMP-' . date('Y');
-        $lastComplaint = Complaint::withTrashed()
-            ->whereYear('created_at', date('Y'))
-            ->orderBy('id', 'desc')
-            ->first();
+        $validated = $request->validate([
+            'comment_text' => 'required|string',
+            'comment_type' => 'required|in:Internal,Customer,System',
+            'is_private' => 'nullable|boolean',
+        ]);
 
-        $lastNumber = $lastComplaint ?
-            (int) substr($lastComplaint->reference_number, strrpos($lastComplaint->reference_number, '-') + 1) : 0;
+        DB::beginTransaction();
 
-        return $prefix . '-' . str_pad($lastNumber + 1, 5, '0', STR_PAD_LEFT);
+        try {
+            ComplaintComment::create([
+                'complaint_id' => $complaint->id,
+                'comment_text' => $validated['comment_text'],
+                'comment_type' => $validated['comment_type'],
+                'is_private' => $request->boolean('is_private', false),
+            ]);
+
+            // Create history record
+            $statusType = ComplaintStatusType::where('code', 'COMMENT')->first()
+                ?? ComplaintStatusType::first();
+
+            if ($statusType) {
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => 'Comment Added',
+                    'old_value' => null,
+                    'new_value' => $validated['comment_type'] . ' comment',
+                    'comments' => 'Comment added: ' . substr($validated['comment_text'], 0, 100),
+                    'status_id' => $statusType->id,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Internal',
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('complaints.show', $complaint)
+                ->with('success', 'Comment added successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Failed to add comment. Please try again.');
+        }
     }
 
     /**
-     * Store multiple attachments for a complaint.
+     * Escalate complaint to higher authority
+     * 
+     * @param Request $request
+     * @param Complaint $complaint
+     * @return \Illuminate\Http\RedirectResponse
      */
-    private function storeAttachments($files, Complaint $complaint)
+    public function escalate(Request $request, Complaint $complaint)
     {
-        foreach ($files as $file) {
-            if ($file->isValid()) {
-                $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-                $path = $file->storeAs('complaints/' . $complaint->reference_number, $filename, 'public');
+        $validated = $request->validate([
+            'escalated_to' => 'required|exists:users,id',
+            'escalation_reason' => 'required|string',
+            'escalation_level' => 'required|integer|min:1|max:5',
+        ]);
 
-                ComplaintAttachment::create([
+        DB::beginTransaction();
+
+        try {
+            // Create escalation record
+            ComplaintEscalation::create([
+                'complaint_id' => $complaint->id,
+                'escalated_from' => auth()->id(),
+                'escalated_to' => $validated['escalated_to'],
+                'escalation_level' => $validated['escalation_level'],
+                'escalated_at' => now(),
+                'escalation_reason' => $validated['escalation_reason'],
+            ]);
+
+            // Update complaint assignment
+            $complaint->update([
+                'assigned_to' => $validated['escalated_to'],
+                'assigned_by' => auth()->id(),
+                'assigned_at' => now(),
+            ]);
+
+            // Update metrics
+            $complaint->metrics()->increment('escalation_count');
+
+            // Create history record
+            $statusType = ComplaintStatusType::where('code', 'ESCALATED')->first()
+                ?? ComplaintStatusType::first();
+
+            if ($statusType) {
+                ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
-                    'filename' => $filename,
-                    'original_filename' => $file->getClientOriginalName(),
-                    'file_path' => $path,
-                    'mime_type' => $file->getMimeType(),
-                    'file_size' => $file->getSize(),
-                    'uploaded_by' => auth()->id()
+                    'action_type' => 'Escalated',
+                    'old_value' => 'Level ' . ($validated['escalation_level'] - 1),
+                    'new_value' => 'Level ' . $validated['escalation_level'],
+                    'comments' => $validated['escalation_reason'],
+                    'status_id' => $statusType->id,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Internal',
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('complaints.show', $complaint)
+                ->with('success', 'Complaint escalated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Failed to escalate complaint. Please try again.');
+        }
+    }
+
+    /**
+     * Add/Remove watchers for complaint
+     * 
+     * @param Request $request
+     * @param Complaint $complaint
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateWatchers(Request $request, Complaint $complaint)
+    {
+        $validated = $request->validate([
+            'watchers' => 'nullable|array',
+            'watchers.*' => 'exists:users,id'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            // Remove existing watchers
+            $complaint->watchers()->delete();
+
+            // Add new watchers
+            if (!empty($validated['watchers'])) {
+                foreach ($validated['watchers'] as $userId) {
+                    ComplaintWatcher::create([
+                        'complaint_id' => $complaint->id,
+                        'user_id' => $userId,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('complaints.show', $complaint)
+                ->with('success', 'Watchers updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Failed to update watchers. Please try again.');
+        }
+    }
+
+    /**
+     * Download attachment file
+     * 
+     * @param ComplaintAttachment $attachment
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function downloadAttachment(ComplaintAttachment $attachment)
+    {
+        try {
+            if (!Storage::disk('local')->exists($attachment->file_path)) {
+                return redirect()->back()
+                    ->with('error', 'File not found.');
+            }
+
+            return Storage::disk('local')->download(
+                $attachment->file_path,
+                $attachment->file_name
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Error downloading attachment', [
+                'attachment_id' => $attachment->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to download file. Please try again.');
+        }
+    }
+
+    /**
+     * Delete attachment file
+     * 
+     * @param ComplaintAttachment $attachment
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function deleteAttachment(ComplaintAttachment $attachment)
+    {
+        DB::beginTransaction();
+
+        try {
+            // Delete physical file
+            if (Storage::disk('local')->exists($attachment->file_path)) {
+                Storage::disk('local')->delete($attachment->file_path);
+            }
+
+            // Delete database record
+            $attachment->delete();
+
+            DB::commit();
+
+            return redirect()->back()
+                ->with('success', 'Attachment deleted successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error deleting attachment', [
+                'attachment_id' => $attachment->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to delete attachment. Please try again.');
+        }
+    }
+
+    /**
+     * Create history records for complaint changes
+     * 
+     * @param Complaint $complaint
+     * @param array $originalValues
+     * @param array $newValues
+     * @return void
+     */
+    private function createHistoryRecords(Complaint $complaint, array $originalValues, array $newValues)
+    {
+        $statusType = ComplaintStatusType::first();
+        $trackableFields = [
+            'status' => 'Status Changed',
+            'priority' => 'Priority Changed',
+            'assigned_to' => 'Reassigned',
+            'category' => 'Category Changed'
+        ];
+
+        foreach ($trackableFields as $field => $actionType) {
+            if (isset($newValues[$field]) && $originalValues[$field] != $newValues[$field]) {
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => $actionType,
+                    'old_value' => $originalValues[$field] ?? 'None',
+                    'new_value' => $newValues[$field] ?? 'None',
+                    'comments' => "{$field} changed from '{$originalValues[$field]}' to '{$newValues[$field]}'",
+                    'status_id' => $statusType->id,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Internal',
                 ]);
             }
         }
     }
 
-    public function updateStatus(Request $request, Complaint $complaint)
+    /**
+     * Update complaint metrics based on changes
+     * 
+     * @param Complaint $complaint
+     * @param array $originalValues
+     * @param array $newValues
+     * @return void
+     */
+    private function updateComplaintMetrics(Complaint $complaint, array $originalValues, array $newValues)
     {
-        // Validate request data
+        $metrics = $complaint->metrics;
+        if (!$metrics) {
+            return;
+        }
+
+        // Calculate time to first response (if this is the first status change)
+        if (
+            !$metrics->time_to_first_response &&
+            $originalValues['status'] === 'Open' &&
+            $newValues['status'] !== 'Open'
+        ) {
+            $timeToResponse = $complaint->created_at->diffInMinutes(now());
+            $metrics->update(['time_to_first_response' => $timeToResponse]);
+        }
+
+        // Calculate time to resolution
+        if ($newValues['status'] === 'Resolved' && $originalValues['status'] !== 'Resolved') {
+            $timeToResolution = $complaint->created_at->diffInMinutes(now());
+            $metrics->update(['time_to_resolution' => $timeToResolution]);
+        }
+
+        // Track reopened count
+        if ($originalValues['status'] === 'Closed' && $newValues['status'] === 'Reopened') {
+            $metrics->increment('reopened_count');
+        }
+    }
+
+    /**
+     * Bulk update complaints status
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
         $validated = $request->validate([
-            'status_id' => 'required|exists:complaint_status_types,id',
-            'comments' => 'nullable|string',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,pdf,doc,docx|max:2048', // Adjust as needed
+            'complaint_ids' => 'required|array',
+            'complaint_ids.*' => 'exists:complaints,id',
+            'status' => 'required|in:Open,In Progress,Pending,Resolved,Closed',
+            'bulk_comment' => 'nullable|string'
         ]);
 
-        // Track changes
-        $changes = [];
-        if ($complaint->status_id != $validated['status_id']) {
-            $changes['status_id'] = [
-                'old' => $complaint->status_id,
-                'new' => $validated['status_id']
+        DB::beginTransaction();
+
+        try {
+            $updatedCount = 0;
+            $statusType = ComplaintStatusType::first();
+
+            foreach ($validated['complaint_ids'] as $complaintId) {
+                $complaint = Complaint::find($complaintId);
+                if ($complaint && $complaint->status !== $validated['status']) {
+                    $oldStatus = $complaint->status;
+
+                    // Update complaint status
+                    $updateData = ['status' => $validated['status']];
+
+                    if ($validated['status'] === 'Resolved') {
+                        $updateData['resolved_by'] = auth()->id();
+                        $updateData['resolved_at'] = now();
+                    } elseif ($validated['status'] === 'Closed') {
+                        $updateData['closed_at'] = now();
+                    }
+
+                    $complaint->update($updateData);
+
+                    // Create history record
+                    if ($statusType) {
+                        ComplaintHistory::create([
+                            'complaint_id' => $complaint->id,
+                            'action_type' => 'Status Changed',
+                            'old_value' => $oldStatus,
+                            'new_value' => $validated['status'],
+                            'comments' => 'Bulk status update: ' . ($validated['bulk_comment'] ?? 'No comment'),
+                            'status_id' => $statusType->id,
+                            'performed_by' => auth()->id(),
+                            'performed_at' => now(),
+                            'complaint_type' => 'Internal',
+                        ]);
+                    }
+
+                    $updatedCount++;
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('complaints.index')
+                ->with('success', "Successfully updated {$updatedCount} complaints.");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error in bulk status update', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'complaint_ids' => $validated['complaint_ids']
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to update complaints. Please try again.');
+        }
+    }
+
+    /**
+     * Bulk assign complaints to user
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bulkAssign(Request $request)
+    {
+        $validated = $request->validate([
+            'complaint_ids' => 'required|array',
+            'complaint_ids.*' => 'exists:complaints,id',
+            'assigned_to' => 'required|exists:users,id',
+            'assignment_reason' => 'nullable|string'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $assignedCount = 0;
+            $statusType = ComplaintStatusType::first();
+
+            foreach ($validated['complaint_ids'] as $complaintId) {
+                $complaint = Complaint::find($complaintId);
+                if ($complaint) {
+                    $oldAssignee = $complaint->assigned_to;
+
+                    // Update complaint assignment
+                    $complaint->update([
+                        'assigned_to' => $validated['assigned_to'],
+                        'assigned_by' => auth()->id(),
+                        'assigned_at' => now(),
+                    ]);
+
+                    // Deactivate previous assignments
+                    ComplaintAssignment::where('complaint_id', $complaint->id)
+                        ->where('is_active', true)
+                        ->update(['is_active' => false, 'unassigned_at' => now()]);
+
+                    // Create new assignment record
+                    ComplaintAssignment::create([
+                        'complaint_id' => $complaint->id,
+                        'assigned_to' => $validated['assigned_to'],
+                        'assigned_by' => auth()->id(),
+                        'assignment_type' => 'Primary',
+                        'assigned_at' => now(),
+                        'reason' => 'Bulk assignment: ' . ($validated['assignment_reason'] ?? 'No reason provided'),
+                        'is_active' => true,
+                    ]);
+
+                    // Update metrics
+                    $complaint->metrics()->increment('assignment_count');
+
+                    // Create history record
+                    if ($statusType) {
+                        $oldAssigneeName = $oldAssignee ? User::find($oldAssignee)->name : 'Unassigned';
+                        $newAssigneeName = User::find($validated['assigned_to'])->name;
+
+                        ComplaintHistory::create([
+                            'complaint_id' => $complaint->id,
+                            'action_type' => 'Reassigned',
+                            'old_value' => $oldAssigneeName,
+                            'new_value' => $newAssigneeName,
+                            'comments' => 'Bulk assignment: ' . ($validated['assignment_reason'] ?? 'No reason provided'),
+                            'status_id' => $statusType->id,
+                            'performed_by' => auth()->id(),
+                            'performed_at' => now(),
+                            'complaint_type' => 'Internal',
+                        ]);
+                    }
+
+                    $assignedCount++;
+                }
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('complaints.index')
+                ->with('success', "Successfully assigned {$assignedCount} complaints.");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error in bulk assignment', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'complaint_ids' => $validated['complaint_ids']
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to assign complaints. Please try again.');
+        }
+    }
+
+    /**
+     * Export complaints to CSV
+     * 
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     */
+    public function export(Request $request)
+    {
+        try {
+            $query = QueryBuilder::for(Complaint::class)
+                ->allowedFilters([
+                    AllowedFilter::exact('status'),
+                    AllowedFilter::exact('priority'),
+                    AllowedFilter::exact('branch_id'),
+                    AllowedFilter::exact('assigned_to'),
+                    AllowedFilter::callback('date_from', function ($query, $value) {
+                        $query->whereDate('created_at', '>=', $value);
+                    }),
+                    AllowedFilter::callback('date_to', function ($query, $value) {
+                        $query->whereDate('created_at', '<=', $value);
+                    }),
+                ])
+                ->with(['branch', 'assignedTo', 'resolvedBy']);
+
+            $complaints = $query->get();
+
+            $filename = 'complaints_export_' . now()->format('Y_m_d_H_i_s') . '.csv';
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
             ];
+
+            return response()->stream(function () use ($complaints) {
+                $handle = fopen('php://output', 'w');
+
+                // CSV Headers
+                fputcsv($handle, [
+                    'Complaint Number',
+                    'Title',
+                    'Description',
+                    'Category',
+                    'Priority',
+                    'Status',
+                    'Source',
+                    'Complainant Name',
+                    'Complainant Email',
+                    'Complainant Phone',
+                    'Branch',
+                    'Assigned To',
+                    'Resolved By',
+                    'Created At',
+                    'Assigned At',
+                    'Resolved At',
+                    'Expected Resolution Date',
+                    'SLA Breached'
+                ]);
+
+                // CSV Data
+                foreach ($complaints as $complaint) {
+                    fputcsv($handle, [
+                        $complaint->complaint_number,
+                        $complaint->title,
+                        $complaint->description,
+                        $complaint->category,
+                        $complaint->priority,
+                        $complaint->status,
+                        $complaint->source,
+                        $complaint->complainant_name,
+                        $complaint->complainant_email,
+                        $complaint->complainant_phone,
+                        $complaint->branch ? $complaint->branch->name : '',
+                        $complaint->assignedTo ? $complaint->assignedTo->name : '',
+                        $complaint->resolvedBy ? $complaint->resolvedBy->name : '',
+                        $complaint->created_at ? $complaint->created_at->format('Y-m-d H:i:s') : '',
+                        $complaint->assigned_at ? $complaint->assigned_at->format('Y-m-d H:i:s') : '',
+                        $complaint->resolved_at ? $complaint->resolved_at->format('Y-m-d H:i:s') : '',
+                        $complaint->expected_resolution_date ? $complaint->expected_resolution_date->format('Y-m-d H:i:s') : '',
+                        $complaint->sla_breached ? 'Yes' : 'No'
+                    ]);
+                }
+
+                fclose($handle);
+            }, 200, $headers);
+
+        } catch (\Exception $e) {
+            Log::error('Error exporting complaints', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to export complaints. Please try again.');
+        }
+    }
+
+    /**
+     * Generate complaint analytics/dashboard data
+     * 
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function analytics(Request $request)
+    {
+
+        try {
+            // Date range filter
+            $dateFrom = $request->input('date_from', now()->subMonth()->startOfDay());
+            $dateTo = $request->input('date_to', now()->endOfDay());
+
+            // Basic statistics
+            $totalComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])->count();
+            $resolvedComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->whereIn('status', ['Resolved', 'Closed'])->count();
+            $openComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->whereIn('status', ['Open', 'In Progress', 'Pending'])->count();
+            $overdueComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->where('expected_resolution_date', '<', now())
+                ->whereNotIn('status', ['Resolved', 'Closed'])->count();
+
+            // Status distribution
+            $statusDistribution = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->selectRaw('status, COUNT(*) as count')
+                ->groupBy('status')
+                ->get();
+
+            // Priority distribution
+            $priorityDistribution = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->selectRaw('priority, COUNT(*) as count')
+                ->groupBy('priority')
+                ->get();
+
+            // Source distribution
+            $sourceDistribution = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->selectRaw('source, COUNT(*) as count')
+                ->groupBy('source')
+                ->get();
+
+            // Branch performance
+            $branchPerformance = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->join('branches', 'complaints.branch_id', '=', 'branches.id')
+                ->selectRaw('branches.name as branch_name, COUNT(*) as total_complaints,
+                    SUM(CASE WHEN complaints.status IN ("Resolved", "Closed") THEN 1 ELSE 0 END) as resolved_complaints')
+                ->groupBy('branches.id', 'branches.name')
+                ->get();
+
+            // User performance
+            $userPerformance = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->join('users', 'complaints.assigned_to', '=', 'users.id')
+                ->selectRaw('users.name as user_name, COUNT(*) as assigned_complaints,
+                    SUM(CASE WHEN complaints.status IN ("Resolved", "Closed") THEN 1 ELSE 0 END) as resolved_complaints')
+                ->groupBy('users.id', 'users.name')
+                ->get();
+
+            // Average resolution time
+            $avgResolutionTime = ComplaintMetric::join('complaints', 'complaint_metrics.complaint_id', '=', 'complaints.id')
+                ->whereBetween('complaints.created_at', [$dateFrom, $dateTo])
+                ->whereNotNull('time_to_resolution')
+                ->avg('time_to_resolution');
+
+            // SLA performance
+            $slaBreached = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+                ->where('sla_breached', true)->count();
+            $slaCompliance = $totalComplaints > 0 ? (($totalComplaints - $slaBreached) / $totalComplaints) * 100 : 100;
+
+            // Monthly trend (last 12 months)
+            $monthlyTrend = Complaint::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
+                ->where('created_at', '>=', now()->subYear())
+                ->groupBy('year', 'month')
+                ->orderBy('year')
+                ->orderBy('month')
+                ->get();
+
+            return view('complaints.analytics', compact(
+                'totalComplaints',
+                'resolvedComplaints',
+                'openComplaints',
+                'overdueComplaints',
+                'statusDistribution',
+                'priorityDistribution',
+                'sourceDistribution',
+                'branchPerformance',
+                'userPerformance',
+                'avgResolutionTime',
+                'slaCompliance',
+                'monthlyTrend',
+                'dateFrom',
+                'dateTo'
+            ));
+
+        } catch (\Exception $e) {
+            Log::error('Error generating complaint analytics', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to generate analytics. Please try again.');
+        }
+    }
+
+    /**
+     * Update customer satisfaction score
+     * 
+     * @param Request $request
+     * @param Complaint $complaint
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateSatisfactionScore(Request $request, Complaint $complaint)
+    {
+        $validated = $request->validate([
+            'customer_satisfaction_score' => 'required|numeric|min:1|max:5'
+        ]);
+
+        try {
+            $complaint->metrics()->update([
+                'customer_satisfaction_score' => $validated['customer_satisfaction_score']
+            ]);
+
+            // Create history record
+            $statusType = ComplaintStatusType::where('code', 'FEEDBACK')->first()
+                ?? ComplaintStatusType::first();
+
+            if ($statusType) {
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => 'Feedback',
+                    'old_value' => null,
+                    'new_value' => $validated['customer_satisfaction_score'] . '/5',
+                    'comments' => 'Customer satisfaction score updated',
+                    'status_id' => $statusType->id,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Customer',
+                ]);
+            }
+
+            return redirect()
+                ->route('complaints.show', $complaint)
+                ->with('success', 'Customer satisfaction score updated successfully.');
+
+        } catch (\Exception $e) {
+            Log::error('Error updating satisfaction score', [
+                'complaint_id' => $complaint->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to update satisfaction score. Please try again.');
+        }
+    }
+
+
+
+    /**
+     * Handle bulk operations on complaints
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $validated = $request->validate([
+            'operation_type' => 'required|in:status_update,assignment,priority_change,branch_transfer,bulk_comment,bulk_delete',
+            'complaint_ids' => 'required|array',
+            'complaint_ids.*' => 'exists:complaints,id',
+            // Dynamic validation based on operation type
+            'status' => 'required_if:operation_type,status_update|in:Open,In Progress,Pending,Resolved,Closed',
+            'status_change_reason' => 'nullable|string|max:255',
+            'assigned_to' => 'required_if:operation_type,assignment|exists:users,id',
+            'assignment_reason' => 'required_if:operation_type,assignment|string|max:255',
+            'priority' => 'required_if:operation_type,priority_change|in:Low,Medium,High,Critical',
+            'priority_change_reason' => 'required_if:operation_type,priority_change|string|max:255',
+            'branch_id' => 'required_if:operation_type,branch_transfer|exists:branches,id',
+            'comment_text' => 'required_if:operation_type,bulk_comment|string',
+            'comment_type' => 'required_if:operation_type,bulk_comment|in:Internal,Customer,System',
+            'is_private' => 'nullable|boolean',
+            'deletion_reason' => 'required_if:operation_type,bulk_delete|string',
+            'confirm_deletion' => 'required_if:operation_type,bulk_delete|accepted',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $operationType = $validated['operation_type'];
+            $complaintIds = $validated['complaint_ids'];
+            $updatedCount = 0;
+            $statusType = ComplaintStatusType::first();
+
+            foreach ($complaintIds as $complaintId) {
+                $complaint = Complaint::find($complaintId);
+                if (!$complaint)
+                    continue;
+
+                switch ($operationType) {
+                    case 'status_update':
+                        $this->handleBulkStatusUpdate($complaint, $validated, $statusType);
+                        break;
+
+                    case 'assignment':
+                        $this->handleBulkAssignment($complaint, $validated, $statusType);
+                        break;
+
+                    case 'priority_change':
+                        $this->handleBulkPriorityChange($complaint, $validated, $statusType);
+                        break;
+
+                    case 'branch_transfer':
+                        $this->handleBulkBranchTransfer($complaint, $validated, $statusType);
+                        break;
+
+                    case 'bulk_comment':
+                        $this->handleBulkComment($complaint, $validated, $statusType);
+                        break;
+
+                    case 'bulk_delete':
+                        $this->handleBulkDelete($complaint, $validated, $statusType);
+                        break;
+                }
+
+                $updatedCount++;
+            }
+
+            DB::commit();
+
+            $operationName = str_replace('_', ' ', $operationType);
+            return redirect()
+                ->route('complaints.index')
+                ->with('success', "Successfully performed {$operationName} on {$updatedCount} complaint(s).");
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error in bulk operation', [
+                'operation_type' => $operationType,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'complaint_ids' => $complaintIds
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Failed to perform bulk operation. Please try again.');
+        }
+    }
+
+    /**
+     * Handle bulk status update
+     */
+    private function handleBulkStatusUpdate($complaint, $validated, $statusType)
+    {
+        if ($complaint->status === $validated['status']) {
+            return; // No change needed
         }
 
-        // Handle attachment upload
-        $attachmentPath = null;
-        if ($request->hasFile('attachment')) {
-            $attachment = $request->file('attachment');
-            $attachmentName = time() . '.' . $attachment->getClientOriginalExtension();
+        $oldStatus = $complaint->status;
+        $updateData = ['status' => $validated['status']];
 
-            // Store file in 'public' disk under 'complaints' directory
-            $attachmentPath = $attachment->storeAs(
-                'complaints',
-                $attachmentName,
-                'public'
-            );
-
-            Log::info('Attachment Stored: ' . $attachmentPath);
-        } else {
-            Log::info('No Attachment Uploaded.');
+        if ($validated['status'] === 'Resolved') {
+            $updateData['resolved_by'] = auth()->id();
+            $updateData['resolved_at'] = now();
+        } elseif ($validated['status'] === 'Closed') {
+            $updateData['closed_at'] = now();
         }
 
-        // Prepare history record
-        $historyData = [
+        $complaint->update($updateData);
+
+        // Create history record
+        if ($statusType) {
+            ComplaintHistory::create([
+                'complaint_id' => $complaint->id,
+                'action_type' => 'Status Changed',
+                'old_value' => $oldStatus,
+                'new_value' => $validated['status'],
+                'comments' => 'Bulk status update: ' . ($validated['status_change_reason'] ?? 'No reason provided'),
+                'status_id' => $statusType->id,
+                'performed_by' => auth()->id(),
+                'performed_at' => now(),
+                'complaint_type' => 'Internal',
+            ]);
+        }
+
+        // Update metrics if resolved
+        if ($validated['status'] === 'Resolved' && $oldStatus !== 'Resolved') {
+            $this->updateComplaintMetrics($complaint, ['status' => $oldStatus], $updateData);
+        }
+    }
+
+    /**
+     * Handle bulk assignment
+     */
+    private function handleBulkAssignment($complaint, $validated, $statusType)
+    {
+        $oldAssignee = $complaint->assigned_to;
+
+        // Update complaint assignment
+        $complaint->update([
+            'assigned_to' => $validated['assigned_to'],
+            'assigned_by' => auth()->id(),
+            'assigned_at' => now(),
+        ]);
+
+        // Deactivate previous assignments
+        ComplaintAssignment::where('complaint_id', $complaint->id)
+            ->where('is_active', true)
+            ->update(['is_active' => false, 'unassigned_at' => now()]);
+
+        // Create new assignment record
+        ComplaintAssignment::create([
             'complaint_id' => $complaint->id,
-            'status_id' => $validated['status_id'],
-            'changed_by' => auth()->id(),
-            'comments' => $validated['comments'],
-            'changes' => !empty($changes) ? json_encode($changes) : null,
-            'attachment' => $attachmentPath, // Store attachment path in the database
-        ];
+            'assigned_to' => $validated['assigned_to'],
+            'assigned_by' => auth()->id(),
+            'assignment_type' => 'Primary',
+            'assigned_at' => now(),
+            'reason' => 'Bulk assignment: ' . ($validated['assignment_reason'] ?? 'No reason provided'),
+            'is_active' => true,
+        ]);
 
-        // Log history data before saving
-        Log::info('History Data:', $historyData);
+        // Update metrics
+        $complaint->metrics()->increment('assignment_count');
 
-        // Save to database
-        $history = ComplaintHistory::create($historyData);
+        // Create history record
+        if ($statusType) {
+            $oldAssigneeName = $oldAssignee ? User::find($oldAssignee)->name : 'Unassigned';
+            $newAssigneeName = User::find($validated['assigned_to'])->name;
 
-        if (!$history->attachment) {
-            Log::error('Attachment not saved in database.');
-        } else {
-            Log::info('Attachment saved successfully in database.');
+            ComplaintHistory::create([
+                'complaint_id' => $complaint->id,
+                'action_type' => 'Reassigned',
+                'old_value' => $oldAssigneeName,
+                'new_value' => $newAssigneeName,
+                'comments' => 'Bulk assignment: ' . ($validated['assignment_reason'] ?? 'No reason provided'),
+                'status_id' => $statusType->id,
+                'performed_by' => auth()->id(),
+                'performed_at' => now(),
+                'complaint_type' => 'Internal',
+            ]);
+        }
+    }
+
+    /**
+     * Handle bulk priority change
+     */
+    private function handleBulkPriorityChange($complaint, $validated, $statusType)
+    {
+        if ($complaint->priority === $validated['priority']) {
+            return; // No change needed
         }
 
-        // Update complaint status
-        $complaint->update(['status_id' => $validated['status_id']]);
+        $oldPriority = $complaint->priority;
+        $complaint->update(['priority' => $validated['priority']]);
 
-        return redirect()->route('complaints.show', $complaint)
-            ->with('success', 'Complaint status updated successfully.');
+        // Create history record
+        if ($statusType) {
+            ComplaintHistory::create([
+                'complaint_id' => $complaint->id,
+                'action_type' => 'Priority Changed',
+                'old_value' => $oldPriority,
+                'new_value' => $validated['priority'],
+                'comments' => 'Bulk priority change: ' . ($validated['priority_change_reason'] ?? 'No reason provided'),
+                'status_id' => $statusType->id,
+                'performed_by' => auth()->id(),
+                'performed_at' => now(),
+                'complaint_type' => 'Internal',
+            ]);
+        }
+    }
+
+    /**
+     * Handle bulk branch transfer
+     */
+    private function handleBulkBranchTransfer($complaint, $validated, $statusType)
+    {
+        if ($complaint->branch_id == $validated['branch_id']) {
+            return; // No change needed
+        }
+
+        $oldBranch = $complaint->branch ? $complaint->branch->name : 'None';
+        $complaint->update(['branch_id' => $validated['branch_id']]);
+        $newBranch = Branch::find($validated['branch_id'])->name;
+
+        // Create history record
+        if ($statusType) {
+            ComplaintHistory::create([
+                'complaint_id' => $complaint->id,
+                'action_type' => 'Branch Transfer',
+                'old_value' => $oldBranch,
+                'new_value' => $newBranch,
+                'comments' => 'Bulk branch transfer',
+                'status_id' => $statusType->id,
+                'performed_by' => auth()->id(),
+                'performed_at' => now(),
+                'complaint_type' => 'Internal',
+            ]);
+        }
+    }
+
+    /**
+     * Handle bulk comment addition
+     */
+    private function handleBulkComment($complaint, $validated, $statusType)
+    {
+        // Create comment
+        ComplaintComment::create([
+            'complaint_id' => $complaint->id,
+            'comment_text' => $validated['comment_text'],
+            'comment_type' => $validated['comment_type'],
+            'is_private' => $validated['is_private'] ?? false,
+        ]);
+
+        // Create history record
+        if ($statusType) {
+            ComplaintHistory::create([
+                'complaint_id' => $complaint->id,
+                'action_type' => 'Comment Added',
+                'old_value' => null,
+                'new_value' => $validated['comment_type'] . ' comment',
+                'comments' => 'Bulk comment: ' . substr($validated['comment_text'], 0, 100),
+                'status_id' => $statusType->id,
+                'performed_by' => auth()->id(),
+                'performed_at' => now(),
+                'complaint_type' => 'Internal',
+            ]);
+        }
+    }
+
+    /**
+     * Handle bulk deletion
+     */
+    private function handleBulkDelete($complaint, $validated, $statusType)
+    {
+        // Create history record before deletion
+        if ($statusType) {
+            ComplaintHistory::create([
+                'complaint_id' => $complaint->id,
+                'action_type' => 'Closed',
+                'old_value' => $complaint->status,
+                'new_value' => 'Deleted',
+                'comments' => 'Bulk deletion: ' . $validated['deletion_reason'],
+                'status_id' => $statusType->id,
+                'performed_by' => auth()->id(),
+                'performed_at' => now(),
+                'complaint_type' => 'System',
+            ]);
+        }
+
+        // Soft delete the complaint
+        $complaint->delete();
     }
 }

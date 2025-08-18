@@ -201,8 +201,25 @@ class Complaint extends Model
 
         static::creating(function ($complaint) {
             if (!$complaint->complaint_number) {
-                $complaint->complaint_number = 'C' . date('Y') . str_pad(static::count() + 1, 6, '0', STR_PAD_LEFT);
+                $complaint->complaint_number = generateUniqueId('complaint', 'complaints', 'complaint_number');
             }
         });
+
+    }
+
+
+
+    /**
+     * Get activity log options.
+     *
+     * @return \Spatie\Activitylog\LogOptions
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Circular has been {$eventName}");
     }
 }

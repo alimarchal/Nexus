@@ -75,7 +75,36 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::get('reports/accounts-regionwise-reports', [ReportController::class, 'accountsregionwisePositionReport'])->name('reports.accounts-regionwise-reports');
     Route::resource('/products/circulars', CircularController::class)->except(['destroy']);
-    Route::resource('/products/complaints', ComplaintController::class);
+    // Route::resource('/products/complaints', ComplaintController::class);
+
+
+
+    Route::resource('products/complaints', ComplaintController::class);
+
+    // Additional complaint-specific routes
+    Route::prefix('products/complaints')->name('complaints.')->group(function () {
+        // Comment management
+        Route::post('{complaint}/comments', [ComplaintController::class, 'addComment'])->name('add-comment');
+        // Escalation management
+        Route::post('{complaint}/escalate', [ComplaintController::class, 'escalate'])->name('escalate');
+        // Watcher management
+        Route::post('{complaint}/watchers', [ComplaintController::class, 'updateWatchers'])->name('update-watchers');
+        // File attachment management
+        Route::get('attachments/{attachment}/download', [ComplaintController::class, 'downloadAttachment'])->name('download-attachment');
+        Route::delete('attachments/{attachment}', [ComplaintController::class, 'deleteAttachment'])->name('delete-attachment');
+        // Bulk operations
+        Route::post('bulk-update-status', [ComplaintController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
+        Route::post('bulk-assign', [ComplaintController::class, 'bulkAssign'])->name('bulk-assign');
+        Route::post('bulk-update', [ComplaintController::class, 'bulkUpdate'])->name('bulk-update');
+        // Export functionality
+        Route::get('export', [ComplaintController::class, 'export'])->name('export');
+        // Analytics and reporting
+        Route::get('analytics', [ComplaintController::class, 'analytics'])->name('analytics');
+        // Customer satisfaction
+        Route::post('{complaint}/satisfaction', [ComplaintController::class, 'updateSatisfactionScore'])->name('update-satisfaction');
+    });
+
+
     Route::patch('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus'])->name('complaints.update-status');
     Route::get('/complaints/attachments/{attachment}/download', [ComplaintAttachmentController::class, 'download'])->name('complaints.attachments.download');
     Route::resource('settings/user-module/managers', ManagerController::class);
