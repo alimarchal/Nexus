@@ -501,57 +501,59 @@
     <!-- TABLE SECTION -->
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-2 pb-16">
         <x-status-message />
-        @if ($complaints->count() > 0)
-        <div class="relative overflow-x-auto">
-            <table class="min-w-full table-auto text-sm">
-                <thead>
-                    <tr class="bg-blue-800 text-white uppercase text-sm">
-                        <th class="py-3 px-2 text-center">
-                            <input type="checkbox" id="select-all" class="rounded border-gray-300">
-                        </th>
-                        <th class="py-3 px-2 text-center">#</th>
-                        <th class="py-3 px-2 text-left">Complaint Details</th>
-                        <th class="py-3 px-2 text-center">Status</th>
-                        <th class="py-3 px-2 text-center">Priority</th>
-                        <th class="py-3 px-2 text-center">Assigned To</th>
-                        <th class="py-3 px-2 text-center">Source</th>
-                        <th class="py-3 px-2 text-center">Created</th>
-                        <th class="py-3 px-2 text-center">SLA</th>
-                        <th class="py-3 px-2 text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="text-black text-sm leading-normal">
-                    @foreach ($complaints as $index => $complaint)
-                    <tr
-                        class="border-b border-gray-200 hover:bg-gray-50 {{ $complaint->isOverdue() ? 'bg-red-50' : '' }}">
-                        <td class="py-3 px-2 text-center">
-                            <input type="checkbox" name="complaint_ids[]" value="{{ $complaint->id }}"
-                                class="complaint-checkbox rounded border-gray-300">
-                        </td>
-                        <td class="py-3 px-2 text-center font-semibold">{{ $index + 1 }}</td>
-                        <td class="py-3 px-2">
-                            <div class="flex flex-col">
-                                <div class="font-semibold text-blue-600">
-                                    <a href="{{ route('complaints.show', $complaint) }}" class="hover:underline">
-                                        {{ $complaint->complaint_number }}
-                                    </a>
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+
+            @if ($complaints->count() > 0)
+            <div class="relative overflow-x-auto rounded-lg">
+                <table class="min-w-max w-full table-auto text-sm">
+                    <thead>
+                        <tr class="bg-green-800 text-white uppercase text-sm">
+                            <th class="py-3 px-2 text-center">
+                                <input type="checkbox" id="select-all" class="rounded border-gray-300">
+                            </th>
+                            <th class="py-3 px-2 text-center">#</th>
+                            <th class="py-3 px-2 text-left">Complaint Details</th>
+                            <th class="py-3 px-2 text-center">Status</th>
+                            <th class="py-3 px-2 text-center">Priority</th>
+                            <th class="py-3 px-2 text-center">Assigned To</th>
+                            <th class="py-3 px-2 text-center">Source</th>
+                            <th class="py-3 px-2 text-center">Created</th>
+                            <th class="py-3 px-2 text-center">SLA</th>
+                            <th class="py-3 px-2 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-black text-sm leading-normal">
+                        @foreach ($complaints as $index => $complaint)
+                        <tr
+                            class="border-b border-gray-200 hover:bg-gray-50 {{ $complaint->isOverdue() ? 'bg-red-50' : '' }}">
+                            <td class="py-3 px-2 text-center">
+                                <input type="checkbox" name="complaint_ids[]" value="{{ $complaint->id }}"
+                                    class="complaint-checkbox rounded border-gray-300">
+                            </td>
+                            <td class="py-3 px-2 text-center font-semibold">{{ $index + 1 }}</td>
+                            <td class="py-3 px-2">
+                                <div class="flex flex-col">
+                                    <div class="font-semibold text-blue-600">
+                                        <a href="{{ route('complaints.show', $complaint) }}" class="hover:underline">
+                                            {{ $complaint->complaint_number }}
+                                        </a>
+                                    </div>
+                                    <div class="text-gray-800 font-medium">{{ Str::limit($complaint->title, 40) }}
+                                    </div>
+                                    @if($complaint->complainant_name)
+                                    <div class="text-gray-600 text-xs">
+                                        <i class="fas fa-user mr-1"></i>{{ $complaint->complainant_name }}
+                                    </div>
+                                    @endif
+                                    @if($complaint->branch)
+                                    <div class="text-gray-600 text-xs">
+                                        <i class="fas fa-building mr-1"></i>{{ $complaint->branch->name }}
+                                    </div>
+                                    @endif
                                 </div>
-                                <div class="text-gray-800 font-medium">{{ Str::limit($complaint->title, 40) }}
-                                </div>
-                                @if($complaint->complainant_name)
-                                <div class="text-gray-600 text-xs">
-                                    <i class="fas fa-user mr-1"></i>{{ $complaint->complainant_name }}
-                                </div>
-                                @endif
-                                @if($complaint->branch)
-                                <div class="text-gray-600 text-xs">
-                                    <i class="fas fa-building mr-1"></i>{{ $complaint->branch->name }}
-                                </div>
-                                @endif
-                            </div>
-                        </td>
-                        <td class="py-3 px-2 text-center">
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold
                                         @switch($complaint->status)
                                             @case('Open') bg-yellow-100 text-yellow-800 @break
                                             @case('In Progress') bg-blue-100 text-blue-800 @break
@@ -561,11 +563,11 @@
                                             @case('Reopened') bg-red-100 text-red-800 @break
                                             @default bg-gray-100 text-gray-800
                                         @endswitch">
-                                {{ $complaint->status }}
-                            </span>
-                        </td>
-                        <td class="py-3 px-2 text-center">
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                    {{ $complaint->status }}
+                                </span>
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold
                                         @switch($complaint->priority)
                                             @case('Low') bg-green-100 text-green-800 @break
                                             @case('Medium') bg-yellow-100 text-yellow-800 @break
@@ -573,138 +575,140 @@
                                             @case('Critical') bg-red-100 text-red-800 @break
                                             @default bg-gray-100 text-gray-800
                                         @endswitch">
-                                {{ $complaint->priority }}
-                            </span>
-                        </td>
-                        <td class="py-3 px-2 text-center">
-                            @if($complaint->assignedTo)
-                            <div class="text-sm font-medium">{{ $complaint->assignedTo->name }}</div>
-                            @if($complaint->assigned_at)
-                            <div class="text-xs text-gray-500">{{ $complaint->assigned_at->diffForHumans() }}
-                            </div>
-                            @endif
-                            @else
-                            <span class="text-gray-400 italic">Unassigned</span>
-                            @endif
-                        </td>
-                        <td class="py-3 px-2 text-center">
-                            <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ $complaint->source }}</span>
-                        </td>
-                        <td class="py-3 px-2 text-center">
-                            <div class="text-sm">{{ $complaint->created_at->format('M d, Y') }}</div>
-                            <div class="text-xs text-gray-500">{{ $complaint->created_at->diffForHumans() }}
-                            </div>
-                        </td>
-                        <td class="py-3 px-2 text-center">
-                            @if($complaint->sla_breached)
-                            <span class="text-red-600 font-semibold text-xs">
-                                <i class="fas fa-exclamation-triangle mr-1"></i>Breached
-                            </span>
-                            @elseif($complaint->expected_resolution_date)
-                            <div class="text-xs">
-                                <div class="text-gray-600">Due:</div>
-                                <div
-                                    class="{{ $complaint->expected_resolution_date->isPast() ? 'text-red-600' : 'text-green-600' }}">
-                                    {{ $complaint->expected_resolution_date->format('M d') }}
+                                    {{ $complaint->priority }}
+                                </span>
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                @if($complaint->assignedTo)
+                                <div class="text-sm font-medium">{{ $complaint->assignedTo->name }}</div>
+                                @if($complaint->assigned_at)
+                                <div class="text-xs text-gray-500">{{ $complaint->assigned_at->diffForHumans() }}
                                 </div>
-                            </div>
-                            @else
-                            <span class="text-gray-400">-</span>
-                            @endif
-                        </td>
-                        <td class="py-3 px-2 text-center">
-                            <div class="flex justify-center space-x-1">
-                                <a href="{{ route('complaints.show', $complaint) }}"
-                                    class="p-2 text-blue-600 hover:text-white hover:bg-blue-600 rounded-full transition-all duration-300 hover:scale-110"
-                                    title="View Details">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                    </svg>
-                                </a>
-                                <a href="{{ route('complaints.edit', $complaint) }}"
-                                    class="p-2 text-yellow-600 hover:text-white hover:bg-yellow-600 rounded-full transition-all duration-300 hover:scale-110"
-                                    title="Edit Complaint">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
-                                    </svg>
-                                </a>
-                                @if($complaint->attachments->count() > 0)
-                                <span class="p-2 text-green-600"
-                                    title="{{ $complaint->attachments->count() }} Attachments">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
-                                    </svg>
-                                </span>
                                 @endif
-                                @if($complaint->comments->count() > 0)
-                                <span class="p-2 text-purple-600" title="{{ $complaint->comments->count() }} Comments">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                                    </svg>
-                                </span>
+                                @else
+                                <span class="text-gray-400 italic">Unassigned</span>
                                 @endif
-                                <button type="button"
-                                    class="delete-button p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-full transition-all duration-300 hover:scale-110"
-                                    title="Delete Complaint">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                        stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                            d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                    </svg>
-                                </button>
-                                <form class="delete-form" method="POST"
-                                    action="{{ route('complaints.destroy', $complaint) }}" style="display: none;">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-            <div class="px-6 py-4 bg-gray-50">
-                {{ $complaints->appends(request()->query())->links() }}
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ $complaint->source }}</span>
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                <div class="text-sm">{{ $complaint->created_at->format('M d, Y') }}</div>
+                                <div class="text-xs text-gray-500">{{ $complaint->created_at->diffForHumans() }}
+                                </div>
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                @if($complaint->sla_breached)
+                                <span class="text-red-600 font-semibold text-xs">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>Breached
+                                </span>
+                                @elseif($complaint->expected_resolution_date)
+                                <div class="text-xs">
+                                    <div class="text-gray-600">Due:</div>
+                                    <div
+                                        class="{{ $complaint->expected_resolution_date->isPast() ? 'text-red-600' : 'text-green-600' }}">
+                                        {{ $complaint->expected_resolution_date->format('M d') }}
+                                    </div>
+                                </div>
+                                @else
+                                <span class="text-gray-400">-</span>
+                                @endif
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                <div class="flex justify-center space-x-1">
+                                    <a href="{{ route('complaints.show', $complaint) }}"
+                                        class="p-2 text-blue-600 hover:text-white hover:bg-blue-600 rounded-full transition-all duration-300 hover:scale-110"
+                                        title="View Details">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        </svg>
+                                    </a>
+                                    <a href="{{ route('complaints.edit', $complaint) }}"
+                                        class="p-2 text-yellow-600 hover:text-white hover:bg-yellow-600 rounded-full transition-all duration-300 hover:scale-110"
+                                        title="Edit Complaint">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                                        </svg>
+                                    </a>
+                                    @if($complaint->attachments->count() > 0)
+                                    <span class="p-2 text-green-600"
+                                        title="{{ $complaint->attachments->count() }} Attachments">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13" />
+                                        </svg>
+                                    </span>
+                                    @endif
+                                    @if($complaint->comments->count() > 0)
+                                    <span class="p-2 text-purple-600"
+                                        title="{{ $complaint->comments->count() }} Comments">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                                        </svg>
+                                    </span>
+                                    @endif
+                                    <button type="button"
+                                        class="delete-button p-2 text-red-600 hover:text-white hover:bg-red-600 rounded-full transition-all duration-300 hover:scale-110"
+                                        title="Delete Complaint">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                        </svg>
+                                    </button>
+                                    <form class="delete-form" method="POST"
+                                        action="{{ route('complaints.destroy', $complaint) }}" style="display: none;">
+                                        @csrf
+                                        @method('DELETE')
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                <div class="px-6 py-4 bg-gray-50">
+                    {{ $complaints->appends(request()->query())->links() }}
+                </div>
             </div>
+            @else
+            <div class="p-8 text-center">
+                <div class="text-gray-400 mb-4">
+                    <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 48 48">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.713-3.714M14 40v-4c0-1.313.253-2.566.713-3.714m0 0A10.003 10.003 0 0124 26c4.21 0 7.813 2.602 9.288 6.286M30 14a6 6 0 11-12 0 6 6 0 0112 0zm12 6a4 4 0 11-8 0 4 4 0 018 0zm-28 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No complaints found</h3>
+                <p class="text-gray-600 mb-4">
+                    @if(request()->hasAny(['filter']))
+                    No complaints match your current filters.
+                    @else
+                    There are no complaints in the system yet.
+                    @endif
+                </p>
+                <div class="space-x-4">
+                    @if(request()->hasAny(['filter']))
+                    <a href="{{ route('complaints.index') }}"
+                        class="inline-flex items-center px-4 py-2 bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-600">
+                        Clear Filters
+                    </a>
+                    @endif
+                    <a href="{{ route('complaints.create') }}"
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700">
+                        Create First Complaint
+                    </a>
+                </div>
+            </div>
+            @endif
         </div>
-        @else
-        <div class="p-8 text-center">
-            <div class="text-gray-400 mb-4">
-                <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 48 48">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.713-3.714M14 40v-4c0-1.313.253-2.566.713-3.714m0 0A10.003 10.003 0 0124 26c4.21 0 7.813 2.602 9.288 6.286M30 14a6 6 0 11-12 0 6 6 0 0112 0zm12 6a4 4 0 11-8 0 4 4 0 018 0zm-28 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-            </div>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No complaints found</h3>
-            <p class="text-gray-600 mb-4">
-                @if(request()->hasAny(['filter']))
-                No complaints match your current filters.
-                @else
-                There are no complaints in the system yet.
-                @endif
-            </p>
-            <div class="space-x-4">
-                @if(request()->hasAny(['filter']))
-                <a href="{{ route('complaints.index') }}"
-                    class="inline-flex items-center px-4 py-2 bg-gray-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-600">
-                    Clear Filters
-                </a>
-                @endif
-                <a href="{{ route('complaints.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700">
-                    Create First Complaint
-                </a>
-            </div>
-        </div>
-        @endif
     </div>
 
 

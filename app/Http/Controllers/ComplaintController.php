@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreComplaintRequest;
+use App\Http\Requests\UpdateComplaintRequest;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Complaint;
@@ -134,9 +136,9 @@ class ComplaintController extends Controller
     public function create()
     {
         $branches = Branch::orderBy('name')->get();
-        $users = User::active()->orderBy('name')->get();
-        $categories = ComplaintCategory::active()->topLevel()->orderBy('category_name')->get();
-        $templates = ComplaintTemplate::active()->orderBy('template_name')->get();
+        $users = User::orderBy('name')->get();
+        $categories = ComplaintCategory::topLevel()->orderBy('category_name')->get();
+        $templates = ComplaintTemplate::orderBy('template_name')->get();
 
         return view('complaints.create', compact('branches', 'users', 'categories', 'templates'));
     }
@@ -148,30 +150,9 @@ class ComplaintController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function store(Request $request)
+    public function store(StoreComplaintRequest $request)
     {
-        // Validate request data
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'category' => 'nullable|string|max:255',
-            'priority' => 'required|in:Low,Medium,High,Critical',
-            'source' => 'required|in:Phone,Email,Portal,Walk-in,Other',
-            'complainant_name' => 'nullable|string|max:100',
-            'complainant_email' => 'nullable|email|max:100',
-            'complainant_phone' => 'nullable|string|max:20',
-            'complainant_account_number' => 'nullable|string|max:50',
-            'branch_id' => 'nullable|exists:branches,id',
-            'assigned_to' => 'nullable|exists:users,id',
-            'expected_resolution_date' => 'nullable|date|after:today',
-            'attachments.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,txt|max:10240', // 10MB max
-            'comments' => 'nullable|string',
-            'comment_type' => 'nullable|in:Internal,Customer,System',
-            'is_private' => 'nullable|boolean',
-            'category_id' => 'nullable|exists:complaint_categories,id',
-            'watchers' => 'nullable|array',
-            'watchers.*' => 'exists:users,id'
-        ]);
+        $validated = $request->validated();
 
         // Start database transaction
         DB::beginTransaction();
@@ -361,9 +342,9 @@ class ComplaintController extends Controller
         ]);
 
         // Get additional data for forms
-        $users = User::active()->orderBy('name')->get();
-        $statusTypes = ComplaintStatusType::active()->orderBy('name')->get();
-        $templates = ComplaintTemplate::active()->orderBy('template_name')->get();
+        $users = User::orderBy('name')->get();
+        $statusTypes = ComplaintStatusType::orderBy('name')->get();
+        $templates = ComplaintTemplate::orderBy('template_name')->get();
 
         return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates'));
     }
@@ -378,11 +359,12 @@ class ComplaintController extends Controller
     {
         $branches = Branch::orderBy('name')->get();
         $users = User::orderBy('name')->get();
-        $categories = ComplaintCategory::active()->topLevel()->orderBy('category_name')->get();
+        $categories = ComplaintCategory::topLevel()->orderBy('category_name')->get();
         $templates = ComplaintTemplate::active()->orderBy('template_name')->get();
         $divisions = \App\Models\Division::orderBy('name')->get();
+        $statuses = ComplaintStatusType::orderBy('name')->get();
 
-        return view('complaints.edit', compact('complaint', 'branches', 'users', 'categories', 'templates', 'divisions'));
+        return view('complaints.edit', compact('complaint', 'branches', 'users', 'categories', 'templates', 'divisions', 'statuses'));
     }
 
     /**
@@ -393,31 +375,10 @@ class ComplaintController extends Controller
      * @param Complaint $complaint
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, Complaint $complaint)
+    public function update(UpdateComplaintRequest $request, Complaint $complaint)
     {
         // Validate request data
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'category' => 'nullable|string|max:255',
-            'priority' => 'required|in:Low,Medium,High,Critical',
-            'status' => 'required|in:Open,In Progress,Pending,Resolved,Closed,Reopened',
-            'source' => 'required|in:Phone,Email,Portal,Walk-in,Other',
-            'complainant_name' => 'nullable|string|max:100',
-            'complainant_email' => 'nullable|email|max:100',
-            'complainant_phone' => 'nullable|string|max:20',
-            'complainant_account_number' => 'nullable|string|max:50',
-            'branch_id' => 'nullable|exists:branches,id',
-            'assigned_to' => 'nullable|exists:users,id',
-            'expected_resolution_date' => 'nullable|date',
-            'resolution' => 'nullable|string',
-            'resolved_by' => 'nullable|exists:users,id',
-            'resolved_at' => 'nullable|date',
-            'closed_at' => 'nullable|date',
-            'sla_breached' => 'nullable|boolean',
-            'attachments.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png,txt|max:10240',
-        ]);
-
+        $validated = $request->validated();
         // Start database transaction
         DB::beginTransaction();
 
