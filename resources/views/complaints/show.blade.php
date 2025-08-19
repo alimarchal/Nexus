@@ -945,67 +945,77 @@
                         </form>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Watchers Tab -->
-    <div id="watchers-tab" class="tab-content p-6" style="display:none;">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <h4 class="text-sm font-semibold text-gray-800 mb-3">Current Watchers</h4>
-                <div class="space-y-2">
-                    @forelse($complaint->watchers as $watcher)
-                    <div class="p-2 bg-white border border-gray-200 rounded flex items-center justify-between">
-                        <span class="text-sm text-gray-700">{{ $watcher->user->name }}</span>
+
+                <!-- Watchers Tab -->
+                <div id="watchers-tab" class="tab-content p-6" style="display:none;">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-800 mb-3">Current Watchers</h4>
+                            <div class="space-y-2">
+                                @forelse($complaint->watchers as $watcher)
+                                <div
+                                    class="p-2 bg-white border border-gray-200 rounded flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">{{ $watcher->user->name }}</span>
+                                </div>
+                                @empty
+                                <p class="text-xs text-gray-500">No watchers.</p>
+                                @endforelse
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-800 mb-3">Update Watchers</h4>
+                            <form method="POST" action="{{ route('complaints.update-watchers', $complaint) }}">
+                                @csrf
+                                <select name="watchers[]" multiple size="8" class="w-full border-gray-300 rounded-md">
+                                    @foreach($users as $user)
+                                    <option value="{{ $user->id }}" {{ $complaint->
+                                        watchers->pluck('user_id')->contains($user->id) ?
+                                        'selected' : '' }}>{{ $user->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="flex justify-end mt-3">
+                                    <button type="submit"
+                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Save
+                                        Watchers</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                    @empty
-                    <p class="text-xs text-gray-500">No watchers.</p>
-                    @endforelse
                 </div>
-            </div>
-            <div>
-                <h4 class="text-sm font-semibold text-gray-800 mb-3">Update Watchers</h4>
-                <form method="POST" action="{{ route('complaints.update-watchers', $complaint) }}">
-                    @csrf
-                    <select name="watchers[]" multiple size="8" class="w-full border-gray-300 rounded-md">
-                        @foreach($users as $user)
-                        <option value="{{ $user->id }}" {{ $complaint->watchers->pluck('user_id')->contains($user->id) ?
-                            'selected' : '' }}>{{ $user->name }}</option>
-                        @endforeach
-                    </select>
-                    <div class="flex justify-end mt-3">
-                        <button type="submit" class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Save
-                            Watchers</button>
+
+                <!-- Satisfaction Tab -->
+                <div id="satisfaction-tab" class="tab-content p-6" style="display:none;">
+                    <div class="max-w-lg space-y-6">
+                        <div class="bg-white p-4 border border-gray-200 rounded">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-3">Customer Satisfaction Score</h4>
+                            <p class="text-xs text-gray-500 mb-3">Set a score from 1 (lowest) to 5 (highest). Only for
+                                resolved/closed complaints.</p>
+                            <form method="POST" action="{{ route('complaints.update-satisfaction', $complaint) }}">
+                                @csrf
+                                <select name="customer_satisfaction_score"
+                                    class="w-full border-gray-300 rounded-md mb-3" required>
+                                    <option value="">Select score</option>
+                                    @for($i=1;$i<=5;$i++) <option value="{{ $i }}" {{ optional($complaint->
+                                        metrics)->customer_satisfaction_score == $i ? 'selected' : '' }}>{{ $i }}
+                                        </option>
+                                        @endfor
+                                </select>
+                                <div class="flex justify-end">
+                                    <button type="submit"
+                                        class="px-3 py-1 bg-yellow-600 text-white rounded text-sm">Update
+                                        Score</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-                </form>
+                </div>
+
             </div>
         </div>
     </div>
 
-    <!-- Satisfaction Tab -->
-    <div id="satisfaction-tab" class="tab-content p-6" style="display:none;">
-        <div class="max-w-lg space-y-6">
-            <div class="bg-white p-4 border border-gray-200 rounded">
-                <h4 class="text-sm font-semibold text-gray-800 mb-3">Customer Satisfaction Score</h4>
-                <p class="text-xs text-gray-500 mb-3">Set a score from 1 (lowest) to 5 (highest). Only for
-                    resolved/closed complaints.</p>
-                <form method="POST" action="{{ route('complaints.update-satisfaction', $complaint) }}">
-                    @csrf
-                    <select name="customer_satisfaction_score" class="w-full border-gray-300 rounded-md mb-3" required>
-                        <option value="">Select score</option>
-                        @for($i=1;$i<=5;$i++) <option value="{{ $i }}" {{ optional($complaint->
-                            metrics)->customer_satisfaction_score == $i ? 'selected' : '' }}>{{ $i }}</option>
-                            @endfor
-                    </select>
-                    <div class="flex justify-end">
-                        <button type="submit" class="px-3 py-1 bg-yellow-600 text-white rounded text-sm">Update
-                            Score</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Escalation Modal -->
     <div id="escalation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
