@@ -13,15 +13,6 @@
                 </svg>
                 Search & Filter
             </button>
-            <button id="toggle-bulk"
-                class="inline-flex items-center ml-2 px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 focus:bg-purple-800 active:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                </svg>
-                Bulk Actions
-            </button>
             <a href="{{ route('complaints.create') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -453,52 +444,6 @@
         </div>
     </div>
 
-    <!-- BULK ACTIONS SECTION -->
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg mb-4" id="bulk-actions"
-            style="display: none">
-            <div class="p-6">
-                <form method="POST" action="{{ route('complaints.bulk-update') }}" id="bulk-form">
-                    @csrf
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label for="operation_type"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Operation
-                                Type</label>
-                            <select name="operation_type" id="operation_type" required
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">Select Operation</option>
-                                <option value="status_update">Update Status</option>
-                                <option value="assignment">Assign to User</option>
-                                <option value="priority_change">Change Priority</option>
-                                <option value="branch_transfer">Transfer Branch</option>
-                                <option value="bulk_comment">Add Comment</option>
-                                <option value="bulk_delete">Delete Complaints</option>
-                            </select>
-                        </div>
-                        <div id="operation-fields" class="md:col-span-2">
-                            <!-- Dynamic fields will be inserted here based on operation type -->
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <div class="text-sm text-gray-600 mb-2">
-                            Selected complaints: <span id="selected-count">0</span>
-                        </div>
-                        <button type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-purple-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-purple-700 focus:bg-purple-700 active:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                            id="bulk-submit" disabled>
-                            Execute Bulk Operation
-                        </button>
-                    </div>
-                    <!-- Hidden input to store selected complaint IDs -->
-                    <input type="hidden" name="complaint_ids" id="bulk-complaint-ids" value="">
-
-                </form>
-            </div>
-        </div>
-    </div>
-
-
     <!-- TABLE SECTION -->
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-2 pb-16">
         <x-status-message />
@@ -509,9 +454,6 @@
                 <table class="min-w-max w-full table-auto text-sm">
                     <thead>
                         <tr class="bg-green-800 text-white uppercase text-sm">
-                            <th class="py-3 px-2 text-center">
-                                <input type="checkbox" id="select-all" class="rounded border-gray-300">
-                            </th>
                             <th class="py-3 px-2 text-center">#</th>
                             <th class="py-3 px-2 text-left">Complaint Details</th>
                             <th class="py-3 px-2 text-center">Status</th>
@@ -527,10 +469,6 @@
                         @foreach ($complaints as $index => $complaint)
                         <tr
                             class="border-b border-gray-200 hover:bg-gray-50 {{ $complaint->isOverdue() ? 'bg-red-50' : '' }}">
-                            <td class="py-3 px-2 text-center">
-                                <input type="checkbox" name="complaint_ids[]" value="{{ $complaint->id }}"
-                                    class="complaint-checkbox rounded border-gray-300">
-                            </td>
                             <td class="py-3 px-2 text-center font-semibold">{{ $index + 1 }}</td>
                             <td class="py-3 px-2">
                                 <div class="flex flex-col">
@@ -616,70 +554,9 @@
                                 @endif
                             </td>
                             <td class="py-3 px-2 text-center">
-                                <div class="flex justify-center space-x-1">
-                                    <a href="{{ route('complaints.show', $complaint) }}"
-                                        class="inline-flex items-center p-2 text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-all duration-200"
-                                        title="View Details">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                        </svg>
-                                    </a>
-
-                                    <a href="{{ route('complaints.edit', $complaint) }}"
-                                        class="inline-flex items-center p-2 text-white bg-yellow-600 hover:bg-yellow-700 rounded-md transition-all duration-200"
-                                        title="Edit Complaint">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                                        </svg>
-                                    </a>
-
-                                    @if($complaint->attachments->count() > 0)
-                                    <button type="button" onclick="showAttachments({{ $complaint->id }})"
-                                        class="inline-flex items-center p-2 text-white bg-green-600 hover:bg-green-700 rounded-md transition-all duration-200"
-                                        title="{{ $complaint->attachments->count() }} Attachments">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
-                                        </svg>
-                                        <span class="ml-1 text-xs">{{ $complaint->attachments->count() }}</span>
-                                    </button>
-                                    @endif
-
-                                    @if($complaint->comments->count() > 0)
-                                    <button type="button" onclick="showComments({{ $complaint->id }})"
-                                        class="inline-flex items-center p-2 text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-all duration-200"
-                                        title="{{ $complaint->comments->count() }} Comments">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
-                                        </svg>
-                                        <span class="ml-1 text-xs">{{ $complaint->comments->count() }}</span>
-                                    </button>
-                                    @endif
-
-                                    <button type="button"
-                                        class="delete-button inline-flex items-center p-2 text-white bg-red-600 hover:bg-red-700 rounded-md transition-all duration-200"
-                                        title="Delete Complaint">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244 2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                        </svg>
-                                    </button>
-                                    <form class="delete-form" method="POST"
-                                        action="{{ route('complaints.destroy', $complaint) }}" style="display: none;">
-                                        @csrf
-                                        @method('DELETE')
-                                    </form>
-                                </div>
+                                <a href="{{ route('complaints.show', $complaint) }}"
+                                    class="inline-flex items-center px-3 py-1 text-white bg-blue-600 hover:bg-blue-700 rounded-md text-xs font-semibold transition-all duration-200"
+                                    title="View Details">View</a>
                             </td>
                         </tr>
                         @endforeach
@@ -726,254 +603,7 @@
 
 
     @push('modals')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-    // Bulk actions toggle
-    const bulkActionsDiv = document.getElementById("bulk-actions");
-    const bulkToggleBtn = document.getElementById("toggle-bulk");
-    const operationTypeSelect = document.getElementById("operation_type");
-    const operationFields = document.getElementById("operation-fields");
-    const bulkSubmit = document.getElementById("bulk-submit");
-    const selectedCount = document.getElementById("selected-count");
-    const bulkComplaintIds = document.getElementById("bulk-complaint-ids");
-
-    // Show/hide bulk actions
-    function showBulkActions() {
-        bulkActionsDiv.style.display = 'block';
-        bulkActionsDiv.style.opacity = '0';
-        bulkActionsDiv.style.transform = 'translateY(-20px)';
-        setTimeout(() => {
-            bulkActionsDiv.style.opacity = '1';
-            bulkActionsDiv.style.transform = 'translateY(0)';
-        }, 10);
-    }
-
-    function hideBulkActions() {
-        bulkActionsDiv.style.opacity = '0';
-        bulkActionsDiv.style.transform = 'translateY(-20px)';
-        setTimeout(() => {
-            bulkActionsDiv.style.display = 'none';
-        }, 300);
-    }
-
-    bulkToggleBtn.onclick = function(event) {
-        event.stopPropagation();
-        if (bulkActionsDiv.style.display === "none" || bulkActionsDiv.style.display === "") {
-            showBulkActions();
-        } else {
-            hideBulkActions();
-        }
-    };
-
-    // Hide bulk actions when clicking outside
-    document.addEventListener('click', function(event) {
-        if (bulkActionsDiv.style.display === 'block' && !bulkActionsDiv.contains(event.target) && event.target !== bulkToggleBtn) {
-            hideBulkActions();
-        }
-    });
-
-    // Prevent clicks inside bulk actions from closing it
-    bulkActionsDiv.addEventListener('click', function(event) {
-        event.stopPropagation();
-    });
-
-    // Select all functionality
-    const selectAllCheckbox = document.getElementById('select-all');
-    const complaintCheckboxes = document.querySelectorAll('.complaint-checkbox');
-
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            complaintCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-            updateSelectedCount();
-        });
-    }
-
-    // Individual checkbox functionality
-    complaintCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const checkedBoxes = document.querySelectorAll('.complaint-checkbox:checked');
-            if (selectAllCheckbox) {
-                selectAllCheckbox.checked = checkedBoxes.length === complaintCheckboxes.length;
-                selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < complaintCheckboxes.length;
-            }
-            updateSelectedCount();
-        });
-    });
-
-    // Update selected count
-    function updateSelectedCount() {
-        const checkedBoxes = document.querySelectorAll('.complaint-checkbox:checked');
-        const count = checkedBoxes.length;
-        if (selectedCount) selectedCount.textContent = count;
-        
-    // Update hidden input with selected IDs (comma-separated, controller accepts CSV or array)
-    const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
-    if (bulkComplaintIds) bulkComplaintIds.value = selectedIds.join(',');
-        
-        // Enable/disable submit button
-        if (bulkSubmit) {
-            bulkSubmit.disabled = count === 0 || !operationTypeSelect.value;
-        }
-    }
-
-    // Operation type change handler
-    if (operationTypeSelect) {
-        operationTypeSelect.addEventListener('change', function() {
-            const operation = this.value;
-            operationFields.innerHTML = '';
-
-            switch(operation) {
-                case 'status_update':
-                    operationFields.innerHTML = `
-                        <div>
-                            <label for="new_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">New Status</label>
-                            <select name="new_status" id="new_status" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">Select Status</option>
-                                <option value="Open">Open</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Resolved">Resolved</option>
-                                <option value="Closed">Closed</option>
-                                <option value="Reopened">Reopened</option>
-                            </select>
-                        </div>
-                    `;
-                    break;
-                
-                case 'assignment':
-                    operationFields.innerHTML = `
-                        <div>
-                            <label for="assigned_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assign To</label>
-                            <select name="assigned_to" id="assigned_to" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">Select User</option>
-                                @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}">{{ $user->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    `;
-                    break;
-                
-                case 'priority_change':
-                    operationFields.innerHTML = `
-                        <div>
-                            <label for="new_priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300">New Priority</label>
-                            <select name="new_priority" id="new_priority" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">Select Priority</option>
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                                <option value="Critical">Critical</option>
-                            </select>
-                        </div>
-                    `;
-                    break;
-                
-                case 'branch_transfer':
-                    operationFields.innerHTML = `
-                        <div>
-                            <label for="new_branch" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Transfer to Branch</label>
-                            <select name="new_branch" id="new_branch" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">Select Branch</option>
-                                @foreach($branches ?? [] as $branch)
-                                <option value="{{ $branch->id }}">{{ $branch->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    `;
-                    break;
-                
-                case 'bulk_comment':
-                    operationFields.innerHTML = `
-                        <div>
-                            <label for="comment_text" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Comment</label>
-                            <textarea name="comment_text" id="comment_text" rows="3" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" placeholder="Enter comment to add to selected complaints"></textarea>
-                        </div>
-                    `;
-                    break;
-                
-                case 'bulk_delete':
-                    operationFields.innerHTML = `
-                        <div class="bg-red-50 border border-red-200 rounded-md p-4">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-red-800">Warning</h3>
-                                    <div class="mt-2 text-sm text-red-700">
-                                        <p>This action will permanently delete the selected complaints. This cannot be undone.</p>
-                                    </div>
-                                    <div class="mt-3">
-                                        <div class="flex items-center">
-                                            <input type="checkbox" name="confirm_delete" id="confirm_delete" required class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded">
-                                            <label for="confirm_delete" class="ml-2 block text-sm text-red-800">
-                                                I understand this action cannot be undone
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    break;
-            }
-
-            // Update submit button state
-            updateSelectedCount();
-        });
-    }
-
-    // Form submission with confirmation
-    if (document.getElementById('bulk-form')) {
-        document.getElementById('bulk-form').addEventListener('submit', function(e) {
-            const operation = operationTypeSelect.value;
-            const checkedBoxes = document.querySelectorAll('.complaint-checkbox:checked');
-            const selectedCount = checkedBoxes.length;
-
-            if (selectedCount === 0) {
-                e.preventDefault();
-                alert('Please select at least one complaint.');
-                return;
-            }
-
-            // Ensure form contains complaint_ids[] inputs for server-side array validation
-            // Remove any existing dynamic inputs first
-            const form = this;
-            form.querySelectorAll('input[name="complaint_ids[]"]').forEach(i => i.remove());
-
-            checkedBoxes.forEach(cb => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'complaint_ids[]';
-                input.value = cb.value;
-                form.appendChild(input);
-            });
-
-            // Also keep the CSV hidden field updated
-            const selectedIds = Array.from(checkedBoxes).map(cb => cb.value);
-            if (bulkComplaintIds) bulkComplaintIds.value = selectedIds.join(',');
-
-            let confirmMessage = '';
-            switch(operation) {
-                case 'bulk_delete':
-                    confirmMessage = `Are you sure you want to delete ${selectedCount} complaint(s)? This action cannot be undone.`;
-                    break;
-                default:
-                    confirmMessage = `Are you sure you want to perform this operation on ${selectedCount} complaint(s)?`;
-            }
-
-            if (!confirm(confirmMessage)) {
-                e.preventDefault();
-            }
-        });
-    }
-});
-    </script>
+    <!-- Bulk selection scripts removed -->
 
     <script>
         const targetDiv = document.getElementById("filters");
@@ -1066,60 +696,6 @@
             }
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        // Delete functionality
-document.querySelectorAll('.delete-button').forEach(button => {
-    button.addEventListener('click', function(e) {
-        e.preventDefault();
-        const form = this.nextElementSibling;
-
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc2626',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
-        });
-    });
-});
-
-// Comments modal function
-function showComments(complaintId) {
-    Swal.fire({
-        title: 'Comments',
-        html: '<div id="comments-loading">Loading comments...</div>',
-        width: '600px',
-        showCloseButton: true,
-        showConfirmButton: false,
-        didOpen: () => {
-            // You can load comments via AJAX here
-            document.getElementById('comments-loading').innerHTML = 'Comments feature will be implemented with AJAX call to load complaint comments.';
-        }
-    });
-}
-
-// Attachments modal function
-function showAttachments(complaintId) {
-    Swal.fire({
-        title: 'Attachments',
-        html: '<div id="attachments-loading">Loading attachments...</div>',
-        width: '600px',
-        showCloseButton: true,
-        showConfirmButton: false,
-        didOpen: () => {
-            // You can load attachments via AJAX here
-            document.getElementById('attachments-loading').innerHTML = 'Attachments feature will be implemented with AJAX call to load complaint files.';
-        }
-    });
-}
-    </script>
+    <!-- Action button scripts removed -->
     @endpush
 </x-app-layout>
