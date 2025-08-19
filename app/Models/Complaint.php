@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedInclude;
 use Spatie\QueryBuilder\AllowedSort;
+use Spatie\Activitylog\LogOptions; // ensure activity log options class is imported
 
 class Complaint extends Model
 {
@@ -38,6 +39,10 @@ class Complaint extends Model
         'closed_at',
         'expected_resolution_date',
         'sla_breached',
+        // Optional reasoning / audit fields used in UpdateComplaintRequest (ensure safe mass-assignment if present)
+        'reopen_reason',
+        'priority_change_reason',
+        'status_change_reason',
     ];
 
     protected $casts = [
