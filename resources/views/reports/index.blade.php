@@ -78,7 +78,7 @@
                             <div class="text-2xl font-bold leading-8">Reports</div>
                             <div class="mt-1 text-base font-extrabold text-black">Stationary</div>
                         </div>
-                        <img src="{{ url('icons-images/reportss.png') }}" alt="Report" class="h-16 w-16">
+                        <img src="{{ url('icons-images/reportstationary.png') }}" alt="Report" class="h-16 w-16">
                     </div>
                 </a>
 
