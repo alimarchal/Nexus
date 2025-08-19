@@ -152,6 +152,7 @@ class ComplaintController extends Controller
      */
     public function store(StoreComplaintRequest $request)
     {
+        // 
         $validated = $request->validated();
 
         // Start database transaction
@@ -183,13 +184,16 @@ class ComplaintController extends Controller
                             $file,
                             $folderName
                         );
+                        // Defensive MIME truncation (column originally 50, migrated to 150)
+                        $mime = (string) $file->getMimeType();
+                        $mime = substr($mime, 0, 150); // ensure max length safety
 
                         ComplaintAttachment::create([
                             'complaint_id' => $complaint->id,
                             'file_name' => $file->getClientOriginalName(),
                             'file_path' => $filePath,
                             'file_size' => $file->getSize(),
-                            'file_type' => $file->getMimeType(),
+                            'file_type' => $mime,
                         ]);
                     }
                 }
@@ -424,13 +428,15 @@ class ComplaintController extends Controller
                             $file,
                             $folderName
                         );
+                        $mime = (string) $file->getMimeType();
+                        $mime = substr($mime, 0, 150);
 
                         ComplaintAttachment::create([
                             'complaint_id' => $complaint->id,
                             'file_name' => $file->getClientOriginalName(),
                             'file_path' => $filePath,
                             'file_size' => $file->getSize(),
-                            'file_type' => $file->getMimeType(),
+                            'file_type' => $mime,
                         ]);
                     }
                 }
