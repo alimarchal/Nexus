@@ -1367,18 +1367,29 @@ class ComplaintController extends Controller
         ]);
 
         try {
-            $complaint->metrics()->update([
-                'customer_satisfaction_score' => $validated['customer_satisfaction_score']
-            ]);
+            // Only allow for resolved / closed complaints
+            if (!$complaint->isResolved()) {
+                return redirect()->back()->with('error', 'Satisfaction score can only be set for resolved or closed complaints.');
+            }
+
+            // Ensure metrics record exists
+            if ($complaint->metrics) {
+                $complaint->metrics->update([
+                    'customer_satisfaction_score' => $validated['customer_satisfaction_score']
+                ]);
+            } else {
+                $complaint->metrics()->create([
+                    'customer_satisfaction_score' => $validated['customer_satisfaction_score']
+                ]);
+            }
 
             // Create history record
-            $statusType = ComplaintStatusType::where('code', 'FEEDBACK')->first()
-                ?? ComplaintStatusType::first();
+            $statusType = ComplaintStatusType::where('code', 'FEEDBACK')->first() ?? ComplaintStatusType::first();
 
             if ($statusType) {
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
-                    'action_type' => 'Feedback',
+                    'action_type' => 'Feedback', // Added to enum via migration 2025_08_19_000001_*
                     'old_value' => null,
                     'new_value' => $validated['customer_satisfaction_score'] . '/5',
                     'comments' => 'Customer satisfaction score updated',
