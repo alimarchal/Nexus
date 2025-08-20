@@ -645,7 +645,44 @@
 
                 <!-- Attachments Tab -->
                 <div id="attachments-tab" class="tab-content p-6" style="display: none;">
-                    <div class="space-y-4">
+                    <div class="space-y-6">
+                        <!-- Upload New Attachments -->
+                        <div class="p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a4 4 0 00-5.656-5.656l-6.586 6.586a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                Add / Upload Attachments
+                            </h4>
+                            <p class="text-xs text-gray-600 mb-3">Attach additional supporting files (screenshots,
+                                documents, logs). Files are stored securely and appear in the list below after upload.
+                                You can select multiple files at once.</p>
+                            <form method="POST" action="{{ route('complaints.add-attachments', $complaint) }}"
+                                enctype="multipart/form-data" class="space-y-3">
+                                @csrf
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Choose Files</label>
+                                    <input type="file" name="attachments[]" multiple
+                                        class="w-full text-sm border-gray-300 rounded-md focus:border-indigo-500 focus:ring-indigo-200" />
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[11px] text-gray-500">Accepted any type. Large files may take
+                                        longer to process.</span>
+                                    <button type="submit"
+                                        class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded shadow-sm flex items-center">
+                                        <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Upload
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Existing Attachments List -->
                         @forelse($complaint->attachments as $attachment)
                         <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                             <div class="flex items-center space-x-3">
@@ -938,6 +975,14 @@
 
                 <!-- Watchers Tab -->
                 <div id="watchers-tab" class="tab-content p-6" style="display:none;">
+                    <div
+                        class="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg text-xs text-gray-700 leading-relaxed">
+                        <strong class="text-purple-700">What is a Watcher?</strong> A watcher is a user who is
+                        subscribed to this complaint for visibility and updates. Watchers are NOT responsible for
+                        resolving the issue (unlike the assignee) but they receive updates, can monitor progress, and
+                        provide input when necessary (e.g. managers, stakeholders, subject-matter experts). Use the list
+                        below to add or remove watchers without affecting assignment or workflow status.
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <h4 class="text-sm font-semibold text-gray-800 mb-3">Current Watchers</h4>

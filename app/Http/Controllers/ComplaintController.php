@@ -412,6 +412,7 @@ class ComplaintController extends Controller
         DB::beginTransaction();
 
         try {
+            $newAttachmentNames = [];
             // Store original values for history tracking
             $originalValues = $complaint->getOriginal();
 
@@ -448,20 +449,16 @@ class ComplaintController extends Controller
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $file) {
                     if ($file->isValid()) {
-                        $filePath = FileStorageHelper::storeSinglePrivateFile(
-                            $file,
-                            $folderName
-                        );
-                        $mime = (string) $file->getMimeType();
-                        $mime = substr($mime, 0, 150);
-
-                        ComplaintAttachment::create([
+                        $filePath = FileStorageHelper::storeSinglePrivateFile($file, $folderName);
+                        $mime = substr((string) $file->getMimeType(), 0, 150);
+                        $attachment = ComplaintAttachment::create([
                             'complaint_id' => $complaint->id,
                             'file_name' => $file->getClientOriginalName(),
                             'file_path' => $filePath,
                             'file_size' => $file->getSize(),
                             'file_type' => $mime,
                         ]);
+                        $newAttachmentNames[] = $attachment->file_name;
                     }
                 }
             }
@@ -497,9 +494,27 @@ class ComplaintController extends Controller
             // Commit transaction if update successful
             DB::commit();
 
-            return redirect()
-                ->route('complaints.show', $complaint)
-                ->with('success', "Complaint '{$complaint->title}' updated successfully.");
+            // Add history entry for newly attached files (single consolidated record)
+            if (!empty($newAttachmentNames)) {
+                $statusType = ComplaintStatusType::first();
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => 'File Attached',
+                    'old_value' => null,
+                    'new_value' => count($newAttachmentNames) . ' file(s)',
+                    'comments' => 'Attached: ' . implode(', ', array_slice($newAttachmentNames, 0, 5)) . (count($newAttachmentNames) > 5 ? '…' : ''),
+                    'status_id' => $statusType?->id ?? 1,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Internal',
+                ]);
+            }
+
+            $message = !empty($newAttachmentNames)
+                ? (count($newAttachmentNames) . ' attachment(s) uploaded successfully.')
+                : "Complaint '{$complaint->title}' updated successfully.";
+
+            return redirect()->route('complaints.show', $complaint)->with('success', $message);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
@@ -521,6 +536,70 @@ class ComplaintController extends Controller
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Failed to update complaint. Please try again.');
+        }
+    }
+
+    /**
+     * Add new attachments only (without other field validation)
+     *
+     * @param Request $request
+     * @param Complaint $complaint
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function addAttachments(Request $request, Complaint $complaint)
+    {
+        $request->validate([
+            'attachments' => 'required|array|max:10',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,txt,zip,rar|max:10240'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $folderName = 'Complaints/' . $complaint->complaint_number;
+            $newAttachmentNames = [];
+
+            foreach ($request->file('attachments', []) as $file) {
+                if ($file && $file->isValid()) {
+                    $filePath = FileStorageHelper::storeSinglePrivateFile($file, $folderName);
+                    $mime = substr((string) $file->getMimeType(), 0, 150);
+                    $attachment = ComplaintAttachment::create([
+                        'complaint_id' => $complaint->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $filePath,
+                        'file_size' => $file->getSize(),
+                        'file_type' => $mime,
+                    ]);
+                    $newAttachmentNames[] = $attachment->file_name;
+                }
+            }
+
+            if (!empty($newAttachmentNames)) {
+                $statusType = ComplaintStatusType::first();
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => 'File Attached',
+                    'old_value' => null,
+                    'new_value' => count($newAttachmentNames) . ' file(s)',
+                    'comments' => 'Attached: ' . implode(', ', array_slice($newAttachmentNames, 0, 5)) . (count($newAttachmentNames) > 5 ? '…' : ''),
+                    'status_id' => $statusType?->id ?? 1,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Internal',
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('complaints.show', $complaint)
+                ->with('success', count($newAttachmentNames) . ' attachment(s) uploaded successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Attachment upload failed', [
+                'complaint_id' => $complaint->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+            return redirect()->back()->with('error', 'Failed to upload attachments.');
         }
     }
 

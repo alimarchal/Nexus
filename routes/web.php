@@ -89,6 +89,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('{complaint}/escalate', [ComplaintController::class, 'escalate'])->name('escalate');
         // Watcher management
         Route::post('{complaint}/watchers', [ComplaintController::class, 'updateWatchers'])->name('update-watchers');
+        // Attachments (dedicated upload endpoint)
+        Route::post('{complaint}/attachments', [ComplaintController::class, 'addAttachments'])->name('add-attachments');
         // File attachment management
         Route::get('attachments/{attachment}/download', [ComplaintController::class, 'downloadAttachment'])->name('download-attachment');
         Route::delete('attachments/{attachment}', [ComplaintController::class, 'deleteAttachment'])->name('delete-attachment');
