@@ -100,7 +100,7 @@
                 </a>
 
 
-                <a href="{{ route('docs.index') }}"
+                <a href="{{ route('employee-resources.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
