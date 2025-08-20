@@ -116,7 +116,9 @@
                                     <h4 class="text-lg font-semibold text-gray-800">Description</h4>
                                 </div>
                                 <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                                    <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{{
+                                    <p
+                                        class="text-gray-700 leading-relaxed whitespace-pre-wrap break-all break-words overflow-hidden">
+                                        {{
                                         $complaint->description }}</p>
                                 </div>
                             </div>
@@ -468,93 +470,105 @@
 
                 <!-- History Tab -->
                 <div id="history-tab" class="tab-content p-6">
-                    <div class="space-y-4">
-                        @forelse($complaint->histories as $history)
-                        <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg border-l-4 
+                    <div class="relative">
+                        <div
+                            class="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-300 via-gray-200 to-transparent pointer-events-none">
+                        </div>
+                        <ul class="space-y-6">
+                            @forelse($complaint->histories as $history)
+                            <li class="relative pl-12 group">
+                                <span class="absolute left-0 flex items-center justify-center w-8 h-8 rounded-full ring-4 ring-white dark:ring-gray-800 shadow-sm
                                     @switch($history->action_type)
-                                        @case('Created') border-blue-400 @break
-                                        @case('Assigned') @case('Reassigned') border-green-400 @break
-                                        @case('Status Changed') border-yellow-400 @break
-                                        @case('Resolved') border-green-500 @break
-                                        @case('Escalated') border-red-400 @break
-                                        @default border-gray-400
+                                        @case('Created') bg-blue-600 text-white @break
+                                        @case('Assigned') @case('Reassigned') bg-green-600 text-white @break
+                                        @case('Status Changed') bg-yellow-500 text-white @break
+                                        @case('Resolved') bg-emerald-600 text-white @break
+                                        @case('Escalated') bg-red-600 text-white @break
+                                        @case('Priority Changed') bg-orange-500 text-white @break
+                                        @default bg-gray-500 text-white
                                     @endswitch">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center
-                                            @switch($history->action_type)
-                                                @case('Created') bg-blue-100 text-blue-600 @break
-                                                @case('Assigned') @case('Reassigned') bg-green-100 text-green-600 @break
-                                                @case('Status Changed') bg-yellow-100 text-yellow-600 @break
-                                                @case('Resolved') bg-green-200 text-green-700 @break
-                                                @case('Escalated') bg-red-100 text-red-600 @break
-                                                @default bg-gray-100 text-gray-600
-                                            @endswitch">
                                     @switch($history->action_type)
                                     @case('Created')
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                            d="M12 6v12m6-6H6" />
                                     </svg>
                                     @break
                                     @case('Assigned')
                                     @case('Reassigned')
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                     @break
                                     @case('Resolved')
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 13l4 4L19 7" />
                                     </svg>
                                     @break
+                                    @case('Escalated')
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                    @break
                                     @default
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     @endswitch
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between">
-                                    <h4 class="text-sm font-medium text-gray-900">{{ $history->action_type }}</h4>
-                                    <time class="text-xs text-gray-500">{{ $history->performed_at->format('M d, Y H:i')
-                                        }}</time>
-                                </div>
-                                @if($history->old_value || $history->new_value)
-                                <div class="mt-1 text-sm text-gray-600">
-                                    @if($history->old_value && $history->new_value)
-                                    Changed from <span class="font-medium">{{ $history->old_value }}</span> to <span
-                                        class="font-medium">{{ $history->new_value }}</span>
-                                    @elseif($history->new_value)
-                                    Set to <span class="font-medium">{{ $history->new_value }}</span>
+                                </span>
+                                <div
+                                    class="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{
+                                            $history->action_type }}</h4>
+                                        <time class="text-xs text-gray-500">{{ $history->performed_at->format('M d, Y
+                                            H:i') }}</time>
+                                    </div>
+                                    @if($history->old_value || $history->new_value)
+                                    <div class="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                                        @if($history->old_value && $history->new_value)
+                                        <span class="font-medium text-gray-700 dark:text-gray-200">{{
+                                            $history->old_value }}</span>
+                                        <span class="mx-1 text-gray-400">→</span>
+                                        <span class="font-medium text-gray-900 dark:text-white">{{ $history->new_value
+                                            }}</span>
+                                        @elseif($history->new_value)
+                                        <span class="font-medium text-gray-900 dark:text-white">{{ $history->new_value
+                                            }}</span>
+                                        @endif
+                                    </div>
                                     @endif
+                                    @if($history->comments)
+                                    <p class="mt-2 text-sm text-gray-700 dark:text-gray-300 leading-snug">{{
+                                        $history->comments }}</p>
+                                    @endif
+                                    <div
+                                        class="mt-3 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                                        <span>by {{ $history->performedBy->name }}</span>
+                                        <span
+                                            class="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">#{{
+                                            $history->id }}</span>
+                                    </div>
                                 </div>
-                                @endif
-                                @if($history->comments)
-                                <p class="mt-1 text-sm text-gray-700">{{ $history->comments }}</p>
-                                @endif
-                                <div class="mt-2 text-xs text-gray-500">
-                                    by {{ $history->performedBy->name }}
+                            </li>
+                            @empty
+                            <li class="text-center py-10">
+                                <div class="inline-flex flex-col items-center text-gray-500">
+                                    <svg class="h-12 w-12 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p class="mt-3 text-sm">No history records found</p>
                                 </div>
-                            </div>
-                        </div>
-                        @empty
-                        <div class="text-center py-8 text-gray-500">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p class="mt-2">No history records found</p>
-                        </div>
-                        @endforelse
+                            </li>
+                            @endforelse
+                        </ul>
                     </div>
                 </div>
 
