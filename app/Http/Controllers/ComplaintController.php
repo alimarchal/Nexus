@@ -311,9 +311,10 @@ class ComplaintController extends Controller
                 'request_data' => $request->except(['attachments'])
             ]);
 
+            $detail = app()->environment('local') ? (' Details: ' . $e->getMessage()) : '';
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Failed to create complaint. Please try again.');
+                ->with('error', 'Failed to create complaint. Please try again.' . $detail);
         }
     }
 
@@ -330,6 +331,8 @@ class ComplaintController extends Controller
         $complaint->load([
             // Basic user and branch relationships
             'branch',           // The branch where this complaint was logged
+            'region',           // Region reference
+            'division',         // Division reference
             'assignedTo',       // User currently assigned to handle this complaint
             'assignedBy',       // User who performed the assignment
             'resolvedBy',       // User who resolved this complaint
@@ -385,12 +388,14 @@ class ComplaintController extends Controller
         // Email/response templates for quick communication
         $templates = ComplaintTemplate::orderBy('template_name')->get();
 
-        // All branches for filtering and reference purposes
+        // All branches / regions / divisions for transfer operations
         $branches = Branch::orderBy('name')->get();
+        $regions = \App\Models\Region::orderBy('name')->get();
+        $divisions = \App\Models\Division::orderBy('short_name')->orderBy('name')->get();
 
         // Return the complaint detail view with all loaded data
         // The view will have access to the fully loaded complaint model and all reference data
-        return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates', 'branches'));
+        return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates', 'branches', 'regions', 'divisions'));
     }
 
     /**
@@ -975,7 +980,10 @@ class ComplaintController extends Controller
             'status' => 'Status Changed',
             'priority' => 'Priority Changed',
             'assigned_to' => 'Reassigned',
-            'category' => 'Category Changed'
+            'category' => 'Category Changed',
+            'branch_id' => 'Branch Transfer',
+            'region_id' => 'Region Transfer',
+            'division_id' => 'Division Transfer'
         ];
 
         foreach ($trackableFields as $field => $actionType) {
@@ -984,6 +992,22 @@ class ComplaintController extends Controller
             $oldVal = $originalValues[$field] ?? null;
             if (array_key_exists($field, $newValues) && $oldVal != $newValues[$field]) {
                 $newVal = $newValues[$field];
+
+                // For foreign keys, fetch readable names
+                if (in_array($field, ['branch_id', 'region_id', 'division_id'])) {
+                    $oldVal = match ($field) {
+                        'branch_id' => $oldVal ? optional(\App\Models\Branch::find($oldVal))->name : 'None',
+                        'region_id' => $oldVal ? optional(\App\Models\Region::find($oldVal))->name : 'None',
+                        'division_id' => $oldVal ? optional(\App\Models\Division::find($oldVal))->short_name ?? optional(\App\Models\Division::find($oldVal))->name : 'None',
+                        default => $oldVal,
+                    };
+                    $newVal = match ($field) {
+                        'branch_id' => $newVal ? optional(\App\Models\Branch::find($newVal))->name : 'None',
+                        'region_id' => $newVal ? optional(\App\Models\Region::find($newVal))->name : 'None',
+                        'division_id' => $newVal ? (optional(\App\Models\Division::find($newVal))->short_name ?? optional(\App\Models\Division::find($newVal))->name) : 'None',
+                        default => $newVal,
+                    };
+                }
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
                     'action_type' => $actionType,

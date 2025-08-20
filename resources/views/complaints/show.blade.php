@@ -222,6 +222,48 @@
                                         <span class="text-sm text-gray-800">{{ $complaint->branch->name }}</span>
                                     </div>
                                     @endif
+                                    @if($complaint->region)
+                                    <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                                        <span class="text-sm font-medium text-gray-600">Region</span>
+                                        <span class="text-sm text-gray-800">{{ $complaint->region->name }}</span>
+                                    </div>
+                                    @endif
+                                    @if($complaint->division)
+                                    <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                                        <span class="text-sm font-medium text-gray-600">Division</span>
+                                        <span class="text-sm text-gray-800">{{ $complaint->division->short_name ??
+                                            $complaint->division->name }}</span>
+                                    </div>
+                                    @endif
+                                    <div class="grid grid-cols-3 gap-2 pt-2">
+                                        <div
+                                            class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+                                            <div class="text-[10px] text-gray-500 uppercase tracking-wide">Same Branch
+                                            </div>
+                                            <div class="text-sm font-semibold text-indigo-600">
+                                                {{ \App\Models\Complaint::where('branch_id',
+                                                $complaint->branch_id)->count() }}
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+                                            <div class="text-[10px] text-gray-500 uppercase tracking-wide">Same Region
+                                            </div>
+                                            <div class="text-sm font-semibold text-indigo-600">
+                                                {{ $complaint->region_id ? \App\Models\Complaint::where('region_id',
+                                                $complaint->region_id)->count() : 0 }}
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+                                            <div class="text-[10px] text-gray-500 uppercase tracking-wide">Same Division
+                                            </div>
+                                            <div class="text-sm font-semibold text-indigo-600">
+                                                {{ $complaint->division_id ? \App\Models\Complaint::where('division_id',
+                                                $complaint->division_id)->count() : 0 }}
+                                            </div>
+                                        </div>
+                                    </div>
                                     @if($complaint->expected_resolution_date)
                                     <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
                                         <span class="text-sm font-medium text-gray-600">Expected Resolution</span>
@@ -932,7 +974,7 @@
                             </div>
 
                             <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                <h4 class="text-md font-medium mb-3">Priority / Branch Transfer</h4>
+                                <h4 class="text-md font-medium mb-3">Priority / Location Transfer</h4>
                                 <form method="POST" action="{{ route('complaints.update', $complaint) }}">
                                     @csrf
                                     @method('PATCH')
@@ -950,6 +992,21 @@
                                             @foreach($branches as $branch)
                                             <option value="{{ $branch->id }}" {{ $complaint->branch_id == $branch->id ?
                                                 'selected' : '' }}>{{ $branch->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        <select name="region_id" class="w-full border-gray-300 rounded-md">
+                                            <option value="">Transfer to region (optional)</option>
+                                            @foreach($regions as $region)
+                                            <option value="{{ $region->id }}" {{ $complaint->region_id == $region->id ?
+                                                'selected' : '' }}>{{ $region->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        <select name="division_id" class="w-full border-gray-300 rounded-md">
+                                            <option value="">Transfer to division (optional)</option>
+                                            @foreach($divisions as $division)
+                                            <option value="{{ $division->id }}" {{ $complaint->division_id ==
+                                                $division->id ? 'selected' : '' }}>{{ $division->short_name ??
+                                                $division->name }}</option>
                                             @endforeach
                                         </select>
 

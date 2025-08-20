@@ -38,7 +38,8 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div class="md:col-span-2">
-                                <label for="title" class="block text-gray-700">Complaint Title:</label>
+                                <label for="title" class="block text-gray-700">Complaint Title <span
+                                        class="text-red-600">*</span>:</label>
                                 <input type="text" name="title" id="title" value="{{ old('title') }}"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                     required>
@@ -49,7 +50,8 @@
                         </div>
 
                         <div class="mb-4">
-                            <label for="description" class="block text-gray-700">Description:</label>
+                            <label for="description" class="block text-gray-700">Description <span
+                                    class="text-red-600">*</span>:</label>
                             <textarea name="description" id="description" rows="4"
                                 class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                 required>{{ old('description') }}</textarea>
@@ -60,7 +62,8 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                             <div>
-                                <label for="priority" class="block text-gray-700">Priority:</label>
+                                <label for="priority" class="block text-gray-700">Priority <span
+                                        class="text-red-600">*</span>:</label>
                                 <select name="priority" id="priority"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                     required>
@@ -78,7 +81,8 @@
                             </div>
 
                             <div>
-                                <label for="source" class="block text-gray-700">Source:</label>
+                                <label for="source" class="block text-gray-700">Source <span
+                                        class="text-red-600">*</span>:</label>
                                 <select name="source" id="source"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                     required>
@@ -97,7 +101,8 @@
                             </div>
 
                             <div>
-                                <label for="category_id" class="block text-gray-700">Category:</label>
+                                <label for="category_id" class="block text-gray-700">Category <span
+                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <select name="category_id" id="category_id"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                     <option value="">Select Category</option>
@@ -114,7 +119,7 @@
                             </div>
                             <div>
                                 <label for="expected_resolution_date" class="block text-gray-700">Expected Resolution
-                                    Date:</label>
+                                    Date <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <input type="datetime-local" name="expected_resolution_date"
                                     id="expected_resolution_date" value="{{ old('expected_resolution_date') }}"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
@@ -126,7 +131,8 @@
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
-                                <label for="branch_id" class="block text-gray-700">Branch:</label>
+                                <label for="branch_id" class="block text-gray-700">Branch <span
+                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <select name="branch_id" id="branch_id"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                     <option value="">Not applicable</option>
@@ -142,7 +148,8 @@
                                 @enderror
                             </div>
                             <div>
-                                <label for="region_id" class="block text-gray-700">Region:</label>
+                                <label for="region_id" class="block text-gray-700">Region <span
+                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <select name="region_id" id="region_id"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                     <option value="">Not applicable</option>
@@ -158,7 +165,8 @@
                                 @enderror
                             </div>
                             <div>
-                                <label for="division_id" class="block text-gray-700">Division:</label>
+                                <label for="division_id" class="block text-gray-700">Division <span
+                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <select name="division_id" id="division_id"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                     <option value="">Not applicable</option>
@@ -181,7 +189,8 @@
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label for="complainant_name" class="block text-gray-700">Complainant Name:</label>
+                                    <label for="complainant_name" class="block text-gray-700">Complainant Name <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                     <input type="text" name="complainant_name" id="complainant_name"
                                         value="{{ old('complainant_name') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
@@ -191,7 +200,8 @@
                                 </div>
 
                                 <div>
-                                    <label for="complainant_email" class="block text-gray-700">Email:</label>
+                                    <label for="complainant_email" class="block text-gray-700">Email <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                     <input type="email" name="complainant_email" id="complainant_email"
                                         value="{{ old('complainant_email') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
@@ -201,7 +211,8 @@
                                 </div>
 
                                 <div>
-                                    <label for="complainant_phone" class="block text-gray-700">Phone:</label>
+                                    <label for="complainant_phone" class="block text-gray-700">Phone <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                     <input type="tel" name="complainant_phone" id="complainant_phone"
                                         value="{{ old('complainant_phone') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
@@ -212,7 +223,8 @@
 
                                 <div>
                                     <label for="complainant_account_number" class="block text-gray-700">Account
-                                        Number:</label>
+                                        Number <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                     <input type="text" name="complainant_account_number" id="complainant_account_number"
                                         value="{{ old('complainant_account_number') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
@@ -229,7 +241,8 @@
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label for="assigned_to" class="block text-gray-700">Assign To:</label>
+                                    <label for="assigned_to" class="block text-gray-700">Assign To <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                     <select name="assigned_to" id="assigned_to"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                         <option value="">Select User</option>
@@ -250,7 +263,8 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="watchers" class="block text-gray-700">Watchers:</label>
+                                <label for="watchers" class="block text-gray-700">Watchers <span
+                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <select name="watchers[]" id="watchers" multiple size="5"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                     @foreach ($users as $user)
@@ -268,7 +282,8 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="attachments" class="block text-gray-700">File Attachments:</label>
+                                <label for="attachments" class="block text-gray-700">File Attachments <span
+                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <input type="file" name="attachments[]" id="attachments" multiple
                                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt,.zip,.rar"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
@@ -284,7 +299,8 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="comments" class="block text-gray-700">Initial Comment:</label>
+                                <label for="comments" class="block text-gray-700">Initial Comment <span
+                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <textarea name="comments" id="comments" rows="3"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('comments') }}</textarea>
                                 @error('comments')
@@ -294,7 +310,8 @@
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label for="comment_type" class="block text-gray-700">Comment Type:</label>
+                                    <label for="comment_type" class="block text-gray-700">Comment Type <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                     <select name="comment_type" id="comment_type"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                         <option value="Internal" {{ old('comment_type')=='Internal' ? 'selected' : ''

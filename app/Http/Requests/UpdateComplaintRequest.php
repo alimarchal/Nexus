@@ -104,6 +104,14 @@ class UpdateComplaintRequest extends FormRequest
                 'nullable',
                 'exists:branches,id'
             ],
+            'region_id' => [
+                'nullable',
+                'exists:regions,id'
+            ],
+            'division_id' => [
+                'nullable',
+                'exists:divisions,id'
+            ],
             'assigned_to' => [
                 'nullable',
                 'exists:users,id'
