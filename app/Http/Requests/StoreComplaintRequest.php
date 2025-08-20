@@ -12,7 +12,7 @@ class StoreComplaintRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return auth()->check();
+        return true;
     }
 
     /**
@@ -61,7 +61,7 @@ class StoreComplaintRequest extends FormRequest
             ],
             'complainant_email' => [
                 'nullable',
-                'email:rfc,dns',
+                'email',
                 'max:100'
             ],
             'complainant_phone' => [

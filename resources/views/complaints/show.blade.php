@@ -448,6 +448,21 @@
                             data-tab="assignments">
                             Assignments ({{ $complaint->assignments->count() }})
                         </button>
+                        <button
+                            class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                            data-tab="watchers">
+                            Watchers ({{ $complaint->watchers->count() }})
+                        </button>
+                        <button
+                            class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                            data-tab="satisfaction">
+                            Satisfaction
+                        </button>
+                        <button
+                            class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                            data-tab="operations">
+                            Operations
+                        </button>
                     </nav>
                 </div>
 
@@ -548,8 +563,7 @@
                     <!-- Add Comment Form -->
                     <div class="mb-6 p-4 bg-gray-50 rounded-lg">
                         <h4 class="text-lg font-medium text-gray-900 mb-3">Add Comment</h4>
-                        <form method="POST" {{-- action="{{ route('complaints.add-comment', $complaint) }}" --}}
-                            action="#">
+                        <form method="POST" action="{{ route('complaints.add-comment', $complaint) }}">
                             @csrf
                             <div class="space-y-4">
                                 <div>
@@ -727,6 +741,41 @@
                             <p class="mt-2">No escalations</p>
                         </div>
                         @endforelse
+                        <!-- Inline Escalation Form -->
+                        <div class="mt-6 p-4 border border-red-200 rounded-lg bg-white">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-3">New Escalation</h4>
+                            <form method="POST" action="{{ route('complaints.escalate', $complaint) }}">
+                                @csrf
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Escalate To</label>
+                                        <select name="escalated_to" class="w-full border-gray-300 rounded-md" required>
+                                            <option value="">Select user</option>
+                                            @foreach($users as $user)
+                                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Level</label>
+                                        <select name="escalation_level" class="w-full border-gray-300 rounded-md"
+                                            required>
+                                            @for($i=1;$i<=5;$i++) <option value="{{ $i }}">Level {{ $i }}</option>
+                                                @endfor
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Reason</label>
+                                        <textarea name="escalation_reason" rows="2"
+                                            class="w-full border-gray-300 rounded-md" required></textarea>
+                                    </div>
+                                </div>
+                                <div class="flex justify-end mt-3">
+                                    <button type="submit"
+                                        class="px-3 py-1 bg-red-600 text-white rounded text-sm">Escalate</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
@@ -794,16 +843,186 @@
                         @endforelse
                     </div>
                 </div>
+
+                <!-- Operations Tab -->
+                <div id="operations-tab" class="tab-content p-6" style="display: none;">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Status Update -->
+                        <div class="bg-white rounded-lg p-4 border border-gray-200">
+                            <h4 class="text-md font-medium mb-3">Update Status</h4>
+                            <form method="POST" action="{{ route('complaints.update-status', $complaint) }}">
+                                @csrf
+                                @method('PATCH')
+                                <div class="space-y-3">
+                                    <select name="status" required class="w-full border-gray-300 rounded-md">
+                                        <option value="">Select status</option>
+                                        <option value="Open">Open</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Resolved">Resolved</option>
+                                        <option value="Closed">Closed</option>
+                                        <option value="Reopened">Reopened</option>
+                                    </select>
+                                    <input type="text" name="status_change_reason" placeholder="Reason (optional)"
+                                        class="w-full border-gray-300 rounded-md">
+                                    <div class="flex justify-end">
+                                        <button type="submit"
+                                            class="px-3 py-1 bg-yellow-600 text-white rounded">Update</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Assignment / Priority / Branch -->
+                        <div class="space-y-4">
+                            <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                <h4 class="text-md font-medium mb-3">Assign to User</h4>
+                                <form method="POST" action="{{ route('complaints.update', $complaint) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="space-y-3">
+                                        <select name="assigned_to" required class="w-full border-gray-300 rounded-md">
+                                            <option value="">Select user</option>
+                                            @foreach($users as $user)
+                                            <option value="{{ $user->id }}" {{ $complaint->assigned_to == $user->id ?
+                                                'selected' : '' }}>{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        <input type="text" name="assignment_reason" placeholder="Reason (optional)"
+                                            class="w-full border-gray-300 rounded-md">
+                                        <div class="flex justify-end">
+                                            <button type="submit"
+                                                class="px-3 py-1 bg-blue-600 text-white rounded">Assign</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                <h4 class="text-md font-medium mb-3">Priority / Branch Transfer</h4>
+                                <form method="POST" action="{{ route('complaints.update', $complaint) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="space-y-3">
+                                        <select name="priority" class="w-full border-gray-300 rounded-md">
+                                            <option value="">Select priority</option>
+                                            <option value="Low">Low</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="High">High</option>
+                                            <option value="Critical">Critical</option>
+                                        </select>
+
+                                        <select name="branch_id" class="w-full border-gray-300 rounded-md">
+                                            <option value="">Transfer to branch (optional)</option>
+                                            @foreach($branches as $branch)
+                                            <option value="{{ $branch->id }}" {{ $complaint->branch_id == $branch->id ?
+                                                'selected' : '' }}>{{ $branch->name }}</option>
+                                            @endforeach
+                                        </select>
+
+                                        <input type="text" name="priority_change_reason"
+                                            placeholder="Priority change reason (required if raising to Critical)"
+                                            class="w-full border-gray-300 rounded-md" />
+
+                                        <div class="flex justify-end space-x-2">
+                                            <button type="submit"
+                                                class="px-3 py-1 bg-green-600 text-white rounded">Save</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 bg-white rounded-lg p-4 border border-red-200">
+                        <h4 class="text-md font-medium mb-3">Danger Zone</h4>
+                        <form method="POST" action="{{ route('complaints.destroy', $complaint) }}"
+                            onsubmit="return confirm('Delete this complaint? This action is permanent.')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded">Delete
+                                Complaint</button>
+                        </form>
+                    </div>
+                </div>
+
+
+                <!-- Watchers Tab -->
+                <div id="watchers-tab" class="tab-content p-6" style="display:none;">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-800 mb-3">Current Watchers</h4>
+                            <div class="space-y-2">
+                                @forelse($complaint->watchers as $watcher)
+                                <div
+                                    class="p-2 bg-white border border-gray-200 rounded flex items-center justify-between">
+                                    <span class="text-sm text-gray-700">{{ $watcher->user->name }}</span>
+                                </div>
+                                @empty
+                                <p class="text-xs text-gray-500">No watchers.</p>
+                                @endforelse
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-800 mb-3">Update Watchers</h4>
+                            <form method="POST" action="{{ route('complaints.update-watchers', $complaint) }}">
+                                @csrf
+                                <select name="watchers[]" multiple size="8" class="w-full border-gray-300 rounded-md">
+                                    @foreach($users as $user)
+                                    <option value="{{ $user->id }}" {{ $complaint->
+                                        watchers->pluck('user_id')->contains($user->id) ?
+                                        'selected' : '' }}>{{ $user->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="flex justify-end mt-3">
+                                    <button type="submit"
+                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-sm">Save
+                                        Watchers</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Satisfaction Tab -->
+                <div id="satisfaction-tab" class="tab-content p-6" style="display:none;">
+                    <div class="max-w-lg space-y-6">
+                        <div class="bg-white p-4 border border-gray-200 rounded">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-3">Customer Satisfaction Score</h4>
+                            <p class="text-xs text-gray-500 mb-3">Set a score from 1 (lowest) to 5 (highest). Only for
+                                resolved/closed complaints.</p>
+                            <form method="POST" action="{{ route('complaints.update-satisfaction', $complaint) }}">
+                                @csrf
+                                <select name="customer_satisfaction_score"
+                                    class="w-full border-gray-300 rounded-md mb-3" required>
+                                    <option value="">Select score</option>
+                                    @for($i=1;$i<=5;$i++) <option value="{{ $i }}" {{ optional($complaint->
+                                        metrics)->customer_satisfaction_score == $i ? 'selected' : '' }}>{{ $i }}
+                                        </option>
+                                        @endfor
+                                </select>
+                                <div class="flex justify-end">
+                                    <button type="submit"
+                                        class="px-3 py-1 bg-yellow-600 text-white rounded text-sm">Update
+                                        Score</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
+
+
 
     <!-- Escalation Modal -->
     <div id="escalation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden">
         <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Escalate Complaint</h3>
-                <form method="POST" {{-- action="{{ route('complaints.escalate', $complaint) }}" --}} action="#">
+                <form method="POST" action="{{ route('complaints.escalate', $complaint) }}">
                     @csrf
                     <div class="space-y-4">
                         <div>
@@ -849,32 +1068,76 @@
 
     @push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        (function() {
+        function initTabs() {
+            console.log('Initializing tab functionality...');
+
             // Tab functionality
             const tabButtons = document.querySelectorAll('.tab-button');
             const tabContents = document.querySelectorAll('.tab-content');
 
-            tabButtons.forEach(button => {
-                button.addEventListener('click', function() {
+            console.log('Found tab buttons:', tabButtons.length);
+            console.log('Found tab contents:', tabContents.length);
+
+            if (tabButtons.length === 0) {
+                console.error('No tab buttons found! Check if elements have .tab-button class');
+                return;
+            }
+
+            // Initialize tabs - hide all then show history by default
+            if (tabContents.length > 0) {
+                tabContents.forEach(content => {
+                    content.style.display = 'none';
+                });
+
+                const historyTab = document.getElementById('history-tab');
+                if (historyTab) {
+                    historyTab.style.display = 'block';
+                }
+            }
+
+            // Add click/keyboard listeners, but avoid duplicate listeners
+            tabButtons.forEach((button, index) => {
+                if (button.dataset.tabInit) return; // already initialized
+                button.dataset.tabInit = '1';
+
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
                     const tabName = this.getAttribute('data-tab');
-                    
-                    // Remove active classes from all tabs
+                    if (!tabName) return;
+
+                    // Remove active classes from all tab buttons
                     tabButtons.forEach(btn => {
                         btn.classList.remove('border-indigo-500', 'text-indigo-600');
                         btn.classList.add('border-transparent', 'text-gray-500');
                     });
-                    
+
                     // Hide all tab contents
                     tabContents.forEach(content => {
                         content.style.display = 'none';
                     });
-                    
-                    // Add active classes to clicked tab
+
+                    // Activate clicked button
                     this.classList.remove('border-transparent', 'text-gray-500');
                     this.classList.add('border-indigo-500', 'text-indigo-600');
-                    
+
                     // Show corresponding tab content
-                    document.getElementById(tabName + '-tab').style.display = 'block';
+                    const targetTab = document.getElementById(tabName + '-tab');
+                    if (targetTab) {
+                        targetTab.style.display = 'block';
+                    } else {
+                        console.error('Target tab not found:', tabName + '-tab');
+                    }
+                });
+
+                // Keyboard support
+                button.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.click();
+                    }
                 });
             });
 
@@ -883,29 +1146,48 @@
             const escalationModal = document.getElementById('escalation-modal');
             const cancelEscalation = document.getElementById('cancel-escalation');
 
-            if (escalateBtn) {
-                escalateBtn.addEventListener('click', function() {
-                    escalationModal.classList.remove('hidden');
-                });
+            if (escalateBtn && escalationModal) {
+                if (!escalateBtn.dataset.modalInit) {
+                    escalateBtn.dataset.modalInit = '1';
+                    escalateBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        escalationModal.classList.remove('hidden');
+                    });
+                }
             }
 
-            if (cancelEscalation) {
-                cancelEscalation.addEventListener('click', function() {
-                    escalationModal.classList.add('hidden');
-                });
+            if (cancelEscalation && escalationModal) {
+                if (!cancelEscalation.dataset.modalInit) {
+                    cancelEscalation.dataset.modalInit = '1';
+                    cancelEscalation.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        escalationModal.classList.add('hidden');
+                    });
+                }
             }
 
-            // Close modal when clicking outside
-            if (escalationModal) {
+            if (escalationModal && !escalationModal.dataset.outsideInit) {
+                escalationModal.dataset.outsideInit = '1';
                 escalationModal.addEventListener('click', function(e) {
                     if (e.target === escalationModal) {
                         escalationModal.classList.add('hidden');
                     }
                 });
             }
-        });
+
+            console.log('Tab functionality initialized successfully');
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initTabs);
+        } else {
+            // Document is already loaded — initialize immediately
+            initTabs();
+        }
+    })();
     </script>
 
+    <!-- Load SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @endpush
 </x-app-layout>

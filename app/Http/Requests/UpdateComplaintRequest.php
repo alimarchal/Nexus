@@ -34,13 +34,17 @@ class UpdateComplaintRequest extends FormRequest
 
         return [
             // Core complaint details
+            // Use "sometimes" so PATCH/partial updates (from the show page operations) can submit
+            // only the fields they intend to change without failing validation for missing fields.
             'title' => [
+                'sometimes',
                 'required',
                 'string',
                 'max:255',
                 'min:5'
             ],
             'description' => [
+                'sometimes',
                 'required',
                 'string',
                 'min:10',
@@ -53,15 +57,19 @@ class UpdateComplaintRequest extends FormRequest
             ],
 
             // Business logic fields
+            // Business logic fields (allow sometimes for partial updates)
             'priority' => [
+                'sometimes',
                 'required',
                 Rule::in(['Low', 'Medium', 'High', 'Critical'])
             ],
             'status' => [
+                'sometimes',
                 'required',
                 Rule::in(['Open', 'In Progress', 'Pending', 'Resolved', 'Closed', 'Reopened'])
             ],
             'source' => [
+                'sometimes',
                 'required',
                 Rule::in(['Phone', 'Email', 'Portal', 'Walk-in', 'Other'])
             ],

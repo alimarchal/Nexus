@@ -152,6 +152,7 @@ class ComplaintController extends Controller
      */
     public function store(StoreComplaintRequest $request)
     {
+        // 
         $validated = $request->validated();
 
         // Start database transaction
@@ -183,13 +184,16 @@ class ComplaintController extends Controller
                             $file,
                             $folderName
                         );
+                        // Defensive MIME truncation (column originally 50, migrated to 150)
+                        $mime = (string) $file->getMimeType();
+                        $mime = substr($mime, 0, 150); // ensure max length safety
 
                         ComplaintAttachment::create([
                             'complaint_id' => $complaint->id,
                             'file_name' => $file->getClientOriginalName(),
                             'file_path' => $filePath,
                             'file_size' => $file->getSize(),
-                            'file_type' => $file->getMimeType(),
+                            'file_type' => $mime,
                         ]);
                     }
                 }
@@ -345,8 +349,9 @@ class ComplaintController extends Controller
         $users = User::orderBy('name')->get();
         $statusTypes = ComplaintStatusType::orderBy('name')->get();
         $templates = ComplaintTemplate::orderBy('template_name')->get();
+        $branches = Branch::orderBy('name')->get();
 
-        return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates'));
+        return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates', 'branches'));
     }
 
     /**
@@ -386,9 +391,9 @@ class ComplaintController extends Controller
             // Store original values for history tracking
             $originalValues = $complaint->getOriginal();
 
-            // Handle assignment changes
+            // Handle assignment changes (guard for partial updates)
             $assignmentChanged = false;
-            if ($complaint->assigned_to != $validated['assigned_to']) {
+            if (array_key_exists('assigned_to', $validated) && $complaint->assigned_to != $validated['assigned_to']) {
                 $assignmentChanged = true;
                 if ($validated['assigned_to']) {
                     $validated['assigned_by'] = auth()->id();
@@ -399,12 +404,14 @@ class ComplaintController extends Controller
                 }
             }
 
-            // Handle status changes
-            if ($validated['status'] === 'Resolved' && $complaint->status !== 'Resolved') {
-                $validated['resolved_by'] = auth()->id();
-                $validated['resolved_at'] = now();
-            } elseif ($validated['status'] === 'Closed' && $complaint->status !== 'Closed') {
-                $validated['closed_at'] = now();
+            // Handle status changes (guard for partial updates)
+            if (array_key_exists('status', $validated)) {
+                if ($validated['status'] === 'Resolved' && $complaint->status !== 'Resolved') {
+                    $validated['resolved_by'] = auth()->id();
+                    $validated['resolved_at'] = now();
+                } elseif ($validated['status'] === 'Closed' && $complaint->status !== 'Closed') {
+                    $validated['closed_at'] = now();
+                }
             }
 
             // Update complaint record
@@ -421,13 +428,15 @@ class ComplaintController extends Controller
                             $file,
                             $folderName
                         );
+                        $mime = (string) $file->getMimeType();
+                        $mime = substr($mime, 0, 150);
 
                         ComplaintAttachment::create([
                             'complaint_id' => $complaint->id,
                             'file_name' => $file->getClientOriginalName(),
                             'file_path' => $filePath,
                             'file_size' => $file->getSize(),
-                            'file_type' => $file->getMimeType(),
+                            'file_type' => $mime,
                         ]);
                     }
                 }
@@ -458,7 +467,7 @@ class ComplaintController extends Controller
             // Create history records for significant changes
             $this->createHistoryRecords($complaint, $originalValues, $validated);
 
-            // Update metrics based on status changes
+            // Update metrics based on status changes (pass arrays but function is defensive)
             $this->updateComplaintMetrics($complaint, $originalValues, $validated);
 
             // Commit transaction if update successful
@@ -488,6 +497,75 @@ class ComplaintController extends Controller
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Failed to update complaint. Please try again.');
+        }
+    }
+
+    /**
+     * Update only the status of a complaint (used by operations tab)
+     *
+     * @param Request $request
+     * @param Complaint $complaint
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateStatus(Request $request, Complaint $complaint)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:Open,In Progress,Pending,Resolved,Closed,Reopened',
+            'status_change_reason' => 'nullable|string|max:255'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $oldStatus = $complaint->status;
+
+            if ($oldStatus === $validated['status']) {
+                return redirect()->route('complaints.show', $complaint)->with('info', 'No status change detected.');
+            }
+
+            $updateData = ['status' => $validated['status']];
+
+            if ($validated['status'] === 'Resolved') {
+                $updateData['resolved_by'] = auth()->id();
+                $updateData['resolved_at'] = now();
+            } elseif ($validated['status'] === 'Closed') {
+                $updateData['closed_at'] = now();
+            }
+
+            $complaint->update($updateData);
+
+            // Create history record
+            $statusType = ComplaintStatusType::first();
+            if ($statusType) {
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => 'Status Changed',
+                    'old_value' => $oldStatus,
+                    'new_value' => $validated['status'],
+                    'comments' => $validated['status_change_reason'] ?? 'Status updated via operations',
+                    'status_id' => $statusType->id,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Internal',
+                ]);
+            }
+
+            // Update metrics if necessary
+            $this->updateComplaintMetrics($complaint, ['status' => $oldStatus], $updateData);
+
+            DB::commit();
+
+            return redirect()->route('complaints.show', $complaint)->with('success', 'Status updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating complaint status', [
+                'complaint_id' => $complaint->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return redirect()->back()->with('error', 'Failed to update status. Please try again.');
         }
     }
 
@@ -617,6 +695,18 @@ class ComplaintController extends Controller
         DB::beginTransaction();
 
         try {
+            // Ensure metrics record exists (in case it wasn't created at complaint creation)
+            $metrics = $complaint->metrics()->first();
+            if (!$metrics) {
+                $metrics = $complaint->metrics()->create([
+                    'time_to_first_response' => 0,
+                    'time_to_resolution' => 0,
+                    'reopened_count' => 0,
+                    'escalation_count' => 0,
+                    'assignment_count' => 0,
+                ]);
+            }
+
             // Create escalation record
             ComplaintEscalation::create([
                 'complaint_id' => $complaint->id,
@@ -634,12 +724,22 @@ class ComplaintController extends Controller
                 'assigned_at' => now(),
             ]);
 
-            // Update metrics
+            // Update metrics (safe increment)
             $complaint->metrics()->increment('escalation_count');
 
             // Create history record
-            $statusType = ComplaintStatusType::where('code', 'ESCALATED')->first()
-                ?? ComplaintStatusType::first();
+            $statusType = ComplaintStatusType::where('code', 'ESCALATED')->first();
+            if (!$statusType) {
+                // Create a dummy ESCALATED status type if it doesn't exist
+                $statusType = ComplaintStatusType::firstOrCreate(
+                    ['code' => 'ESCALATED'],
+                    [
+                        'name' => 'Escalated',
+                        'description' => 'Auto generated status for escalated complaints',
+                        'is_active' => true,
+                    ]
+                );
+            }
 
             if ($statusType) {
                 ComplaintHistory::create([
@@ -663,8 +763,13 @@ class ComplaintController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()
-                ->with('error', 'Failed to escalate complaint. Please try again.');
+            Log::error('Escalation failed', [
+                'complaint_id' => $complaint->id,
+                'error' => $e->getMessage(),
+                'trace' => substr($e->getTraceAsString(), 0, 1000),
+            ]);
+            $msg = app()->environment('local') ? ('Failed to escalate: ' . $e->getMessage()) : 'Failed to escalate complaint. Please try again.';
+            return redirect()->back()->with('error', $msg);
         }
     }
 
@@ -799,13 +904,17 @@ class ComplaintController extends Controller
         ];
 
         foreach ($trackableFields as $field => $actionType) {
-            if (isset($newValues[$field]) && $originalValues[$field] != $newValues[$field]) {
+            // Only create a history record when the incoming update explicitly contains the field
+            // and the value actually changed compared to the original.
+            $oldVal = $originalValues[$field] ?? null;
+            if (array_key_exists($field, $newValues) && $oldVal != $newValues[$field]) {
+                $newVal = $newValues[$field];
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
                     'action_type' => $actionType,
-                    'old_value' => $originalValues[$field] ?? 'None',
-                    'new_value' => $newValues[$field] ?? 'None',
-                    'comments' => "{$field} changed from '{$originalValues[$field]}' to '{$newValues[$field]}'",
+                    'old_value' => $oldVal ?? 'None',
+                    'new_value' => $newVal ?? 'None',
+                    'comments' => "{$field} changed from '" . ($oldVal ?? 'None') . "' to '" . ($newVal ?? 'None') . "'",
                     'status_id' => $statusType->id,
                     'performed_by' => auth()->id(),
                     'performed_at' => now(),
@@ -830,24 +939,28 @@ class ComplaintController extends Controller
             return;
         }
 
+        // Defensive retrieval of status values
+        $origStatus = $originalValues['status'] ?? null;
+        $newStatus = array_key_exists('status', $newValues) ? $newValues['status'] : $origStatus;
+
         // Calculate time to first response (if this is the first status change)
         if (
             !$metrics->time_to_first_response &&
-            $originalValues['status'] === 'Open' &&
-            $newValues['status'] !== 'Open'
+            $origStatus === 'Open' &&
+            $newStatus !== 'Open'
         ) {
             $timeToResponse = $complaint->created_at->diffInMinutes(now());
             $metrics->update(['time_to_first_response' => $timeToResponse]);
         }
 
         // Calculate time to resolution
-        if ($newValues['status'] === 'Resolved' && $originalValues['status'] !== 'Resolved') {
+        if ($newStatus === 'Resolved' && $origStatus !== 'Resolved') {
             $timeToResolution = $complaint->created_at->diffInMinutes(now());
             $metrics->update(['time_to_resolution' => $timeToResolution]);
         }
 
         // Track reopened count
-        if ($originalValues['status'] === 'Closed' && $newValues['status'] === 'Reopened') {
+        if ($origStatus === 'Closed' && $newStatus === 'Reopened') {
             $metrics->increment('reopened_count');
         }
     }
@@ -1123,15 +1236,31 @@ class ComplaintController extends Controller
      * Generate complaint analytics/dashboard data
      * 
      * @param Request $request
-     * @return \Illuminate\View\View
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
     public function analytics(Request $request)
     {
-
         try {
-            // Date range filter
-            $dateFrom = $request->input('date_from', now()->subMonth()->startOfDay());
-            $dateTo = $request->input('date_to', now()->endOfDay());
+            // Date range filter (ensure Carbon instances)
+            if ($request->filled('date_from')) {
+                try {
+                    $dateFrom = Carbon::parse($request->input('date_from'))->startOfDay();
+                } catch (\Exception $e) {
+                    $dateFrom = now()->subMonth()->startOfDay();
+                }
+            } else {
+                $dateFrom = now()->subMonth()->startOfDay();
+            }
+
+            if ($request->filled('date_to')) {
+                try {
+                    $dateTo = Carbon::parse($request->input('date_to'))->endOfDay();
+                } catch (\Exception $e) {
+                    $dateTo = now()->endOfDay();
+                }
+            } else {
+                $dateTo = now()->endOfDay();
+            }
 
             // Basic statistics
             $totalComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])->count();
@@ -1304,6 +1433,7 @@ class ComplaintController extends Controller
             'deletion_reason' => 'required_if:operation_type,bulk_delete|string',
             'confirm_deletion' => 'required_if:operation_type,bulk_delete|accepted',
         ]);
+
 
         DB::beginTransaction();
 

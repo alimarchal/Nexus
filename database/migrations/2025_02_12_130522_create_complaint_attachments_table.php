@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->string('file_name', 255);
             $table->string('file_path', 500);
             $table->integer('file_size')->nullable(); // Size in bytes
-            $table->string('file_type', 50)->nullable();
+            $table->string('file_type', length: 150)->nullable();
             $table->userTracking(); // Tracks who created/modified records
             $table->softDeletes(); // Soft delete for audit trail
             $table->timestamps();
