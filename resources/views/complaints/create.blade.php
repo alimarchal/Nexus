@@ -120,7 +120,7 @@
                             <div>
                                 <label for="expected_resolution_date" class="block text-gray-700">Expected Resolution
                                     Date <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                <input type="datetime-local" name="expected_resolution_date"
+                                <input type="datetime-local" name="expected_resolution_date" readonly
                                     id="expected_resolution_date" value="{{ old('expected_resolution_date') }}"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                 <small class="text-gray-500">Auto-filled from priority (you can adjust).</small>
