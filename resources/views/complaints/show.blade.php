@@ -359,13 +359,22 @@
                                         </div>
                                     </div>
                                     @endif
-                                    @if($complaint->metrics->time_to_resolution)
+                                    @php
+                                    $computedResolutionMinutes = null;
+                                    if(in_array($complaint->status, ['Resolved','Closed']) && $complaint->resolved_at) {
+                                    $computedResolutionMinutes =
+                                    $complaint->created_at->diffInMinutes($complaint->resolved_at);
+                                    }
+                                    @endphp
+                                    @if($complaint->metrics->time_to_resolution || $computedResolutionMinutes)
                                     <div
                                         class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border-l-4 border-blue-400">
                                         <div>
                                             <span class="text-sm font-medium text-gray-600">Resolution Time</span>
                                             <p class="text-lg font-bold text-blue-600">{{
-                                                $complaint->metrics->formatted_resolution_time }}</p>
+                                                $complaint->metrics->formatted_resolution_time ??
+                                                \Carbon\CarbonInterval::minutes($computedResolutionMinutes)->cascade()->forHumans(short:true)
+                                                }}</p>
                                         </div>
                                     </div>
                                     @endif

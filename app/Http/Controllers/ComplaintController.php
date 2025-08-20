@@ -172,6 +172,24 @@ class ComplaintController extends Controller
                 $validated['assigned_at'] = now();
             }
 
+            // Auto-set expected_resolution_date from SLA (priority mapping or category SLA hours) if not provided
+            if (empty($validated['expected_resolution_date'])) {
+                $priority = $validated['priority'] ?? 'Medium';
+                $prioritySlaDays = ['Critical' => 1, 'High' => 3, 'Medium' => 7, 'Low' => 14];
+                $targetDate = null;
+                if (!empty($validated['category_id'])) {
+                    $catForSla = ComplaintCategory::find($validated['category_id']);
+                    if ($catForSla && $catForSla->sla_hours) {
+                        $targetDate = now()->copy()->addHours($catForSla->sla_hours);
+                    }
+                }
+                if (!$targetDate) {
+                    $days = $prioritySlaDays[$priority] ?? 7;
+                    $targetDate = now()->copy()->addDays($days);
+                }
+                $validated['expected_resolution_date'] = $targetDate;
+            }
+
             // If category_id provided, also copy its name into legacy 'category' field for backward compatibility
             if (!empty($validated['category_id'])) {
                 $cat = ComplaintCategory::find($validated['category_id']);
@@ -1052,10 +1070,20 @@ class ComplaintController extends Controller
             $metrics->update(['time_to_first_response' => $timeToResponse]);
         }
 
-        // Calculate time to resolution
-        if ($newStatus === 'Resolved' && $origStatus !== 'Resolved') {
-            $timeToResolution = $complaint->created_at->diffInMinutes(now());
-            $metrics->update(['time_to_resolution' => $timeToResolution]);
+        // Calculate or refresh time to resolution when entering Resolved/Closed
+        if (in_array($newStatus, ['Resolved', 'Closed'])) {
+            $resolvedAt = $complaint->resolved_at ?? now();
+            $ttr = $complaint->created_at->diffInMinutes($resolvedAt);
+            if (!$metrics->time_to_resolution || $metrics->time_to_resolution != $ttr) {
+                $metrics->update(['time_to_resolution' => $ttr]);
+            }
+        }
+
+        // If reopened after resolution, clear resolution time so it can be recalculated
+        if ($newStatus === 'Reopened' && in_array($origStatus, ['Resolved', 'Closed'])) {
+            if ($metrics->time_to_resolution) {
+                $metrics->update(['time_to_resolution' => null]);
+            }
         }
 
         // Track reopened count
