@@ -17,6 +17,6 @@
         "vite": "^6.3.5"
     },
     "dependencies": {
-        "@rollup/rollup-darwin-arm64": "^4.46.2"
+        "@rollup/rollup-darwin-arm64": "^4.46.3"
     }
 }
