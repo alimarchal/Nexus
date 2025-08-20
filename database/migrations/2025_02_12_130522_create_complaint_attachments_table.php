@@ -12,7 +12,8 @@ return new class extends Migration {
     {
         Schema::create('complaint_attachments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('complaint_id')->constrained()->onDelete('cascade');
+            $table->uuid('complaint_id');
+            $table->foreign('complaint_id')->references('id')->on('complaints')->onDelete('cascade');
             $table->string('file_name', 255);
             $table->string('file_path', 500);
             $table->integer('file_size')->nullable(); // Size in bytes

@@ -12,7 +12,8 @@ return new class extends Migration {
     {
         Schema::create('complaint_histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('complaint_id')->constrained()->onDelete('cascade');
+            $table->uuid('complaint_id');
+            $table->foreign('complaint_id')->references('id')->on('complaints')->onDelete('cascade');
             $table->enum('action_type', [
                 'Created',
                 'Assigned',

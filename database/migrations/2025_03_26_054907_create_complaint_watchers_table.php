@@ -12,7 +12,8 @@ return new class extends Migration {
     {
         Schema::create('complaint_watchers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('complaint_id')->constrained()->onDelete('cascade');  // Reference to the complaint being watched
+            $table->uuid('complaint_id');  // Reference to the complaint being watched
+            $table->foreign('complaint_id')->references('id')->on('complaints')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users');  // User who wants to watch/follow this complaint for updates
 
             $table->userTracking(); // Tracks who created/modified records

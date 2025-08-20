@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('complaints', function (Blueprint $table) {
-            // Primary identifier - auto-incrementing ID
-            $table->id();
+            // Primary identifier - UUID
+            $table->uuid('id')->primary();
             // Business identifier - unique complaint reference for users/reports
             $table->string('complaint_number', 20)->unique()->nullable();
 

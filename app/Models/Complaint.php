@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedInclude;
 use Spatie\QueryBuilder\AllowedSort;
@@ -15,7 +16,7 @@ use Spatie\Activitylog\LogOptions; // ensure activity log options class is impor
 
 class Complaint extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     protected $fillable = [
         'complaint_number',
@@ -211,6 +212,10 @@ class Complaint extends Model
         });
 
     }
+
+    // Primary key is UUID
+    public $incrementing = false;
+    protected $keyType = 'string';
 
 
 
