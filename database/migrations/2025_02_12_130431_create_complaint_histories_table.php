@@ -27,7 +27,10 @@ return new class extends Migration {
                 'Priority Changed',
                 'Category Changed',
                 'Feedback',
-                'Escalated'
+                'Escalated',
+                'Branch Transfer',
+                'Region Transfer',
+                'Division Transfer'
             ]);
             $table->string('old_value', 255)->nullable();
             $table->string('new_value', 255)->nullable();

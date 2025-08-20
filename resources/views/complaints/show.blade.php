@@ -509,6 +509,9 @@
                                         @case('Resolved') bg-emerald-600 text-white @break
                                         @case('Escalated') bg-red-600 text-white @break
                                         @case('Priority Changed') bg-orange-500 text-white @break
+                                        @case('Branch Transfer') bg-teal-600 text-white @break
+                                        @case('Region Transfer') bg-indigo-600 text-white @break
+                                        @case('Division Transfer') bg-pink-600 text-white @break
                                         @default bg-gray-500 text-white
                                     @endswitch">
                                     @switch($history->action_type)
@@ -530,6 +533,14 @@
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    @break
+                                    @case('Branch Transfer')
+                                    @case('Region Transfer')
+                                    @case('Division Transfer')
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 7h10M7 12h10M7 17h10" />
                                     </svg>
                                     @break
                                     @case('Escalated')
@@ -986,37 +997,58 @@
                                             <option value="High">High</option>
                                             <option value="Critical">Critical</option>
                                         </select>
-
-                                        <select name="branch_id" class="w-full border-gray-300 rounded-md">
-                                            <option value="">Transfer to branch (optional)</option>
-                                            @foreach($branches as $branch)
-                                            <option value="{{ $branch->id }}" {{ $complaint->branch_id == $branch->id ?
-                                                'selected' : '' }}>{{ $branch->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        <select name="region_id" class="w-full border-gray-300 rounded-md">
-                                            <option value="">Transfer to region (optional)</option>
-                                            @foreach($regions as $region)
-                                            <option value="{{ $region->id }}" {{ $complaint->region_id == $region->id ?
-                                                'selected' : '' }}>{{ $region->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        <select name="division_id" class="w-full border-gray-300 rounded-md">
-                                            <option value="">Transfer to division (optional)</option>
-                                            @foreach($divisions as $division)
-                                            <option value="{{ $division->id }}" {{ $complaint->division_id ==
-                                                $division->id ? 'selected' : '' }}>{{ $division->short_name ??
-                                                $division->name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <div>
+                                                <select name="branch_id"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                                    <option value="">Branch: Not Applicable</option>
+                                                    @foreach($branches as $branch)
+                                                    <option value="{{ $branch->id }}" {{ $complaint->branch_id ==
+                                                        $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <select name="region_id"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                                    <option value="">Region: Not Applicable</option>
+                                                    @foreach($regions as $region)
+                                                    <option value="{{ $region->id }}" {{ $complaint->region_id ==
+                                                        $region->id ? 'selected' : '' }}>{{ $region->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <select name="division_id"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                                    <option value="">Division: Not Applicable</option>
+                                                    @foreach($divisions as $division)
+                                                    <option value="{{ $division->id }}" {{ $complaint->division_id ==
+                                                        $division->id ? 'selected' : '' }}>{{ $division->short_name ??
+                                                        $division->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
 
                                         <input type="text" name="priority_change_reason"
                                             placeholder="Priority change reason (required if raising to Critical)"
                                             class="w-full border-gray-300 rounded-md" />
-
-                                        <div class="flex justify-end space-x-2">
-                                            <button type="submit"
-                                                class="px-3 py-1 bg-green-600 text-white rounded">Save</button>
+                                        <div class="flex flex-wrap gap-2 justify-end text-xs">
+                                            <button type="submit" name="_transfer_scope" value="priority"
+                                                class="px-3 py-1 bg-indigo-600 text-white rounded">Update
+                                                Priority</button>
+                                            <button type="submit" name="_transfer_scope" value="branch"
+                                                class="px-3 py-1 bg-blue-600 text-white rounded">Transfer
+                                                Branch</button>
+                                            <button type="submit" name="_transfer_scope" value="region"
+                                                class="px-3 py-1 bg-purple-600 text-white rounded">Transfer
+                                                Region</button>
+                                            <button type="submit" name="_transfer_scope" value="division"
+                                                class="px-3 py-1 bg-pink-600 text-white rounded">Transfer
+                                                Division</button>
+                                            <button type="submit" name="_transfer_scope" value="all"
+                                                class="px-3 py-1 bg-green-600 text-white rounded">Save All</button>
                                         </div>
                                     </div>
                                 </form>
