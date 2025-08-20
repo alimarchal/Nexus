@@ -139,8 +139,10 @@ class ComplaintController extends Controller
         $users = User::orderBy('name')->get();
         $categories = ComplaintCategory::topLevel()->orderBy('category_name')->get();
         $templates = ComplaintTemplate::orderBy('template_name')->get();
+        $regions = \App\Models\Region::orderBy('name')->get();
+        $divisions = \App\Models\Division::orderBy('short_name')->orderBy('name')->get();
 
-        return view('complaints.create', compact('branches', 'users', 'categories', 'templates'));
+        return view('complaints.create', compact('branches', 'users', 'categories', 'templates', 'regions', 'divisions'));
     }
 
     /**
@@ -170,7 +172,15 @@ class ComplaintController extends Controller
                 $validated['assigned_at'] = now();
             }
 
-            // Create complaint record
+            // If category_id provided, also copy its name into legacy 'category' field for backward compatibility
+            if (!empty($validated['category_id'])) {
+                $cat = ComplaintCategory::find($validated['category_id']);
+                if ($cat) {
+                    $validated['category'] = $cat->category_name;
+                }
+            }
+
+            // Create complaint record (includes region_id / division_id / branch_id which are nullable)
             $complaint = Complaint::create($validated);
 
             // Create folder path for attachments

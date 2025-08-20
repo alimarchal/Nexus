@@ -31,6 +31,8 @@ class Complaint extends Model
         'complainant_phone',
         'complainant_account_number',
         'branch_id',
+        'region_id',
+        'division_id',
         'assigned_to',
         'assigned_by',
         'assigned_at',
