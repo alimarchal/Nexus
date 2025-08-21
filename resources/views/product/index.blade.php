@@ -100,14 +100,14 @@
                 </a>
 
 
-                <a href="{{ route('employee-resources.index') }}"
+                <a href={{ route('employee_resources.index') }}
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
                             <div class="text-3xl font-bold leading-8">{{ \App\Models\Doc::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">HRMD & Manuals</div>
+                            <div class="mt-1 text-base font-extrabold text-black">Employee Resources</div>
                         </div>
-                        <img src="{{ url('icons-images/hr1.png') }}" alt="Account" class="h-16 w-16">
+                        <img src="{{ url('icons-images/er.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
 

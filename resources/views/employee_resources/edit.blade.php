@@ -39,6 +39,22 @@
                                     <x-input id="title" type="text" name="title" class="mt-1 block w-full"
                                         :value="old('title', $employeeResource->title)" />
                                 </div>
+                                <div class="flex-1">
+    <x-label for="user_id" value="User" :required="true" />
+    <select id="user_id" name="user_id"
+        class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300
+               focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500
+               dark:focus:ring-indigo-600 rounded-md shadow-sm select2" required>
+        <option value="">Select User</option>
+        @foreach ($users as $user)
+            <option value="{{ $user->id }}"
+                {{ old('user_id', $employeeResource->user_id) == $user->id ? 'selected' : '' }}>
+                {{ $user->name }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
 
                                 <div class="flex-1">
                                     <x-label for="division_id" value="Division" :required="true" />

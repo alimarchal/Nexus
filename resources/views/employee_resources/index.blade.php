@@ -14,7 +14,7 @@
                 </svg>
                 Search
             </button>
-            <a href="{{ route('employee-resources.create') }}"
+            <a href="{{ route('employee_resources.create') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -46,7 +46,7 @@
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters"
             style="display: none">
             <div class="p-6">
-                <form method="GET" action="{{ route('employee-resources.index') }}">
+                <form method="GET" action="{{ route('employee_resources.index') }}">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- Filter by Division -->
                         <div>
@@ -90,7 +90,8 @@
                             <th class="py-2 px-2 text-center">Reference #</th>
                             <th class="py-2 px-2 text-left">Date</th>
                             <th class="py-2 px-2 text-left">Division</th>
-                            <th class="py-2 px-2 text-left">Category</th>
+                            <th class="py-2 px-2 text-left">Discription</th>
+                            {{-- <th class="py-2 px-2 text-left">Category</th> --}}
                             <th class="py-2 px-2 text-left">Title</th>
                             <th class="py-2 px-2 text-center">Attachment</th>
                             <th class="py-2 px-2 text-center print:hidden">Actions</th>
@@ -106,7 +107,10 @@
                                     {{ $resource->division->short_name ?? '-' }}
                                 </abbr>
                             </td>
-                            <td class="py-1 px-2 text-left">{{ $resource->category->name ?? '-' }}</td>
+                                <td class="py-1 px-2 text-left">
+                                {{ $resource->description }}</td>
+                            {{-- <td class="py-1 px-2 text-left">
+                                {{ $resource->category ?? '-' }}</td> --}}
                             <td class="py-1 px-2 text-left">
                                 <div class="w-96 break-words leading-relaxed">
                                     {{ $resource->title }}
@@ -132,7 +136,7 @@
                             </td>
                             <td class="py-1 px-2 text-center">
                                 <div class="flex justify-center space-x-2">
-                                    <a href="{{ route('employee-resources.edit', $resource) }}"
+                                    <a href="{{ route('employee_resources.edit', $resource) }}"
                                         class="inline-flex items-center px-3 py-1 bg-blue-800 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                         Edit
                                     </a>
@@ -149,7 +153,7 @@
             @else
             <p class="text-gray-700 dark:text-gray-300 text-center py-4">
                 No resources found.
-                <a href="{{ route('employee-resources.create') }}" class="text-blue-600 hover:underline">
+                <a href="{{ route('employee_resources.create') }}" class="text-blue-600 hover:underline">
                     Add a new resource
                 </a>.
             </p>

@@ -12,14 +12,8 @@ class EmployeeResource extends Model
 {
     use HasFactory, SoftDeletes, UserTracking;
 
-    /**
-     * The table associated with the model.
-     */
     protected $table = 'employee_resources';
-
-    /**
-     * The primary key type is UUID.
-     */
+    protected $primaryKey = 'id';
     protected $keyType = 'string';
     public $incrementing = false;
 
@@ -29,7 +23,7 @@ class EmployeeResource extends Model
     protected $fillable = [
         'id',
         'user_id',
-        'category_id',
+        'category',        // CHANGED: from 'category_id' to 'category'
         'division_id',
         'resource_no',
         'resource_number',
@@ -38,19 +32,16 @@ class EmployeeResource extends Model
         'attachment',
     ];
 
-    /**
-     * Boot function to assign UUID and auto-generate resource_number.
-     */
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($model) {
             if (empty($model->id)) {
-                $model->id = Str::uuid();
+                $model->id = (string) Str::uuid();
             }
             if (empty($model->resource_number)) {
-                $model->resource_number = strtoupper('RES-' . Str::random(8));
+                $model->resource_number = 'RES-' . strtoupper(Str::random(8));
             }
         });
     }
@@ -60,16 +51,16 @@ class EmployeeResource extends Model
      */
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
-
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
+// Change the category relationship to use 'category' as foreign key
+public function category()
+{
+    return $this->belongsTo(Category::class, 'category'); // Use 'category' instead of 'category_id'
+}
 
     public function division()
     {
-        return $this->belongsTo(Division::class);
+        return $this->belongsTo(Division::class, 'division_id');
     }
 }

@@ -129,7 +129,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
 
 // Employee Resources
-Route::resource('/products/employee-resources', EmployeeResourceController::class);
+Route::resource('products/employee-resources', EmployeeResourceController::class)
+    ->names('employee_resources');
+
 
 
     // ComplaintStatusType Routes

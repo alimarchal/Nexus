@@ -53,7 +53,8 @@ class EmployeeResourceController extends Controller
             $resource = new EmployeeResource();
             $resource->id = Str::uuid();
             $resource->user_id = $request->user_id;
-            $resource->category_id = $request->category_id;
+
+            $resource->category = $request->category_id;
             $resource->division_id = $request->division_id;
             $resource->resource_no = $request->resource_no;
             $resource->resource_number = strtoupper('RES-' . Str::random(8));
@@ -102,7 +103,8 @@ class EmployeeResourceController extends Controller
 
         try {
             $employeeResource->user_id = $request->user_id;
-            $employeeResource->category_id = $request->category_id;
+            $employeeResource->category = $request->category_id;
+
             $employeeResource->division_id = $request->division_id;
             $employeeResource->resource_no = $request->resource_no;
             $employeeResource->title = $request->title;

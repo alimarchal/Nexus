@@ -9,12 +9,17 @@ class Category extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     */
     protected $fillable = [
         'name',
         'type',
     ];
 
-    // Relation with employee resources
+    /**
+     * Relationship: A category can have many employee resources.
+     */
     public function employeeResources()
     {
         return $this->hasMany(EmployeeResource::class, 'category_id');
