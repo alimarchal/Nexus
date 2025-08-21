@@ -90,9 +90,9 @@
                             <th class="py-2 px-2 text-center">Reference #</th>
                             <th class="py-2 px-2 text-left">Date</th>
                             <th class="py-2 px-2 text-left">Division</th>
-                            <th class="py-2 px-2 text-left">Discription</th>
                             {{-- <th class="py-2 px-2 text-left">Category</th> --}}
                             <th class="py-2 px-2 text-left">Title</th>
+                            <th class="py-2 px-2 text-left">Discription</th>
                             <th class="py-2 px-2 text-center">Attachment</th>
                             <th class="py-2 px-2 text-center print:hidden">Actions</th>
                         </tr>
@@ -107,15 +107,16 @@
                                     {{ $resource->division->short_name ?? '-' }}
                                 </abbr>
                             </td>
-                                <td class="py-1 px-2 text-left">
-                                {{ $resource->description }}</td>
                             {{-- <td class="py-1 px-2 text-left">
                                 {{ $resource->category ?? '-' }}</td> --}}
                             <td class="py-1 px-2 text-left">
-                                <div class="w-96 break-words leading-relaxed">
                                     {{ $resource->title }}
-                                </div>
                             </td>
+                              <td class="py-1 px-2 text-left">
+                                 <div class="w-96 break-words leading-relaxed">
+                                    {{ $resource->description }}
+                                </div>
+                                </td>
                             <td class="py-1 px-2 text-center">
                                 @if ($resource->attachment)
                                 <div class="flex justify-center space-x-2">
