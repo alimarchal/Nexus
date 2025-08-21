@@ -92,7 +92,7 @@
                             <th class="py-2 px-2 text-left">Division</th>
                             {{-- <th class="py-2 px-2 text-left">Category</th> --}}
                             <th class="py-2 px-2 text-left">Title</th>
-                            <th class="py-2 px-2 text-left">Discription</th>
+                            <th class="py-2 px-2 text-left">Description</th>
                             <th class="py-2 px-2 text-center">Attachment</th>
                             <th class="py-2 px-2 text-center print:hidden">Actions</th>
                         </tr>
