@@ -54,7 +54,7 @@ class EmployeeResourceController extends Controller
             $resource->id = Str::uuid();
             $resource->user_id = $request->user_id;
 
-            $resource->category = $request->category_id;
+            $resource->category_id = $request->category_id;
             $resource->division_id = $request->division_id;
             $resource->resource_no = $request->resource_no;
             $resource->resource_number = strtoupper('RES-' . Str::random(8));
