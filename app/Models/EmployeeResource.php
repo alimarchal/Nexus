@@ -57,7 +57,6 @@ class EmployeeResource extends Model
 public function category()
 {
     return $this->belongsTo(Category::class, 'category'); // Use 'category' instead of 'category_id'
-}
 
     public function division()
     {
