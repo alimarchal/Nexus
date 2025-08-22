@@ -29,6 +29,7 @@ use App\Http\Controllers\ComplaintAttachmentController;
 use App\Http\Controllers\ComplaintStatusTypeController;
 use App\Http\Controllers\StationeryTransactionController;
 
+use App\Http\Controllers\ComplaintWitnessHarassmentController;
 
 
 
@@ -150,5 +151,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
             ->where('path', '.*')
             ->name('file.view');
     });
-
+Route::get('/harassment/create', [ComplaintWitnessHarassmentController::class, 'create'])->name('harassment.create');
+Route::post('/harassment', [ComplaintWitnessHarassmentController::class, 'store'])->name('harassment.store');
 });
