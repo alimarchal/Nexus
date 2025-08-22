@@ -67,6 +67,16 @@
                     </svg>
                     Raw JSON
                 </a>
+                <button id="structured-pdf-btn"
+                    class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
+                    title="Generate formatted PDF (excludes attachments)">
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v8m4-4H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Structured PDF
+                </button>
             </div>
         </div>
     </x-slot>
@@ -1641,6 +1651,203 @@
             } else {
                 setupPdfDownload();
             }
+        })();
+    </script>
+
+    <!-- AutoTable plugin (lazy loaded if missing) -->
+    <script>
+        (function(){
+            function loadScriptOnce(id, src){
+                return new Promise((res, rej)=>{
+                    if (document.getElementById(id)) return res(true);
+                    const s=document.createElement('script'); s.id=id; s.src=src; s.onload=()=>res(true); s.onerror=()=>rej(new Error('Failed '+src)); document.head.appendChild(s);
+                });
+            }
+
+            async function ensureLibs(){
+                if(!(window.jspdf && window.jspdf.jsPDF)){
+                    // rely on previously added dynamic loader
+                    if(window.ensurePdfLibs) await window.ensurePdfLibs();
+                }
+                if(!(window.jspdf && window.jspdf.jsPDF)) throw new Error('jsPDF not loaded');
+                if(!window.jspdf.jsPDF.API.autoTable){
+                    await loadScriptOnce('jspdf-autotable','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+                }
+            }
+
+            function fmtDate(dt){
+                if(!dt) return '-';
+                try { return new Date(dt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return dt; }
+            }
+
+            function textWrap(str){ return (str||'').toString(); }
+
+            function addSectionTitle(doc, title, y){
+                doc.setFontSize(13); doc.setTextColor(40); doc.text(title, 40, y); return y+6; }
+
+            async function buildStructuredPdf(){
+                const btn = document.getElementById('structured-pdf-btn');
+                if(!btn) return;
+                if(btn.dataset.init) return; btn.dataset.init='1';
+                btn.addEventListener('click', async ()=>{
+                    try {
+                        btn.disabled=true; btn.classList.add('opacity-50'); btn.textContent='Building...';
+                        await ensureLibs();
+                        const { jsPDF } = window.jspdf;
+                        const url = @json(route('complaints.full',$complaint));
+                        const res = await fetch(url,{headers:{'Accept':'application/json'}});
+                        if(!res.ok) throw new Error('Fetch failed');
+                        const data = await res.json();
+                        const c = data.complaint || {};
+                        const doc = new jsPDF('p','pt');
+
+                        // Header
+                        doc.setFontSize(18); doc.setTextColor(20); doc.text('Complaint Report', 40, 40);
+                        doc.setFontSize(10); doc.setTextColor(90); doc.text('Generated: '+fmtDate(data.exported_at)+'  ID: '+(c.complaint_number||'-'), 40, 55);
+
+                        let y = 75;
+                        // Summary table
+                        const summaryRows = [
+                            ['Number', c.complaint_number || '-','Status', c.status || '-'],
+                            ['Title', c.title || '-','Priority', c.priority || '-'],
+                            ['Category', c.category || '-','Source', c.source || '-'],
+                            ['Created', fmtDate(c.created_at),'Expected Due', fmtDate(c.expected_resolution_date)],
+                            ['Assigned To', c.assigned_to?.name || '-','Assigned At', fmtDate(c.assigned_at)],
+                            ['Branch', c.branch?.name || '-','Region', c.region?.name || '-'],
+                            ['Division', c.division?.short_name || c.division?.name || '-','SLA Breached', c.sla_breached? 'Yes':'No']
+                        ];
+                        doc.autoTable({ startY:y, head:[['Field','Value','Field','Value']], body:summaryRows, styles:{fontSize:8,cellPadding:4}, headStyles:{fillColor:[37,99,235]}, columnStyles:{0:{cellWidth:90},2:{cellWidth:90}} });
+                        y = doc.lastAutoTable.finalY + 15;
+
+                        // Complainant
+                        y = addSectionTitle(doc,'Complainant', y);
+                        doc.autoTable({ startY:y, body:[
+                            ['Name', c.complainant_name || '-'],
+                            ['Email', c.complainant_email || '-'],
+                            ['Phone', c.complainant_phone || '-'],
+                            ['Account #', c.complainant_account_number || '-']
+                        ], styles:{fontSize:8, cellPadding:4}, theme:'grid', head:[] });
+                        y = doc.lastAutoTable.finalY + 15;
+
+                        // Description
+                        y = addSectionTitle(doc,'Description', y);
+                        const desc = textWrap(c.description); const split = doc.splitTextToSize(desc || '-', 515); doc.setFontSize(9); doc.text(split, 40, y); y += (split.length*11)+10;
+
+                        // Harassment details (if category is Harassment)
+                        if((c.category||'').toLowerCase()==='harassment'){
+                            y = addSectionTitle(doc,'Harassment Details', y);
+                            const hRows = [
+                                ['Incident Date', fmtDate(c.harassment_incident_date), 'Location', c.harassment_location || '-'],
+                                ['Sub Category', c.harassment_sub_category || '-', 'Confidential', c.harassment_confidential? 'Yes':'No'],
+                                ['Victim Emp #', c.harassment_employee_number || '-', 'Victim Phone', c.harassment_employee_phone || '-'],
+                                ['Abuser Name', c.harassment_abuser_name || '-', 'Abuser Emp #', c.harassment_abuser_employee_number || '-'],
+                                ['Abuser Phone', c.harassment_abuser_phone || '-', 'Abuser Email', c.harassment_abuser_email || '-'],
+                                ['Relationship', c.harassment_abuser_relationship || '-', '', '']
+                            ];
+                            doc.autoTable({ startY:y, head:[['Field','Value','Field','Value']], body:hRows, styles:{fontSize:8}, headStyles:{fillColor:[190,24,93]}, columnStyles:{0:{cellWidth:90},2:{cellWidth:90}} });
+                            y = doc.lastAutoTable.finalY + 15;
+                            if(c.harassment_details){
+                                doc.setFontSize(9); doc.setTextColor(60); const hs = doc.splitTextToSize('Details: '+c.harassment_details, 515); doc.text(hs,40,y); y += hs.length*11 + 10;
+                            }
+                        }
+
+                        // Metrics
+                        if(c.metrics){
+                            y = addSectionTitle(doc,'Performance Metrics', y);
+                            const m = c.metrics;
+                            doc.autoTable({ startY:y, body:[
+                                ['Time to First Response (min)', m.time_to_first_response ?? '-'],
+                                ['Time to Resolution (min)', m.time_to_resolution ?? '-'],
+                                ['Reopened Count', m.reopened_count ?? 0],
+                                ['Escalation Count', m.escalation_count ?? 0],
+                                ['Assignment Count', m.assignment_count ?? 0],
+                                ['Customer Satisfaction', m.customer_satisfaction_score ?? '-']
+                            ], styles:{fontSize:8}, theme:'grid' });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Histories
+                        if(Array.isArray(c.histories) && c.histories.length){
+                            y = addSectionTitle(doc,'History', y);
+                            const historyRows = c.histories.slice(0,150).map(h=>[
+                                fmtDate(h.performed_at), h.action_type, h.performed_by?.name || '-', h.new_value || '-', (h.comments||'').substring(0,80)
+                            ]);
+                            doc.autoTable({ startY:y, head:[['When','Action','By','New','Comments']], body:historyRows, styles:{fontSize:7,cellPadding:2}, headStyles:{fillColor:[30,64,175]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Comments
+                        if(Array.isArray(c.comments) && c.comments.length){
+                            y = addSectionTitle(doc,'Comments', y);
+                            const commentRows = c.comments.slice(0,100).map(cm=>[
+                                fmtDate(cm.created_at), cm.creator?.name || '-', (cm.comment_type||'-'), (cm.comment_text||'').substring(0,120)
+                            ]);
+                            doc.autoTable({ startY:y, head:[['When','By','Type','Comment']], body:commentRows, styles:{fontSize:7,cellPadding:2}, headStyles:{fillColor:[67,56,202]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Assignments
+                        if(Array.isArray(c.assignments) && c.assignments.length){
+                            y = addSectionTitle(doc,'Assignments', y);
+                            const assignRows = c.assignments.map(a=>[
+                                fmtDate(a.assigned_at), a.assigned_to?.name || '-', a.assigned_by?.name || '-', a.assignment_type, a.is_active? 'Active':'Inactive'
+                            ]);
+                            doc.autoTable({ startY:y, head:[['When','To','By','Type','Active']], body:assignRows, styles:{fontSize:7}, headStyles:{fillColor:[6,95,70]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Escalations
+                        if(Array.isArray(c.escalations) && c.escalations.length){
+                            y = addSectionTitle(doc,'Escalations', y);
+                            const escRows = c.escalations.map(e=>[
+                                e.escalation_level, fmtDate(e.escalated_at), e.escalated_from?.name || '-', e.escalated_to?.name || '-', (e.escalation_reason||'').substring(0,60)
+                            ]);
+                            doc.autoTable({ startY:y, head:[['Level','When','From','To','Reason']], body:escRows, styles:{fontSize:7}, headStyles:{fillColor:[180,83,9]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Watchers
+                        if(Array.isArray(c.watchers) && c.watchers.length){
+                            y = addSectionTitle(doc,'Watchers', y);
+                            const wRows = c.watchers.map(w=>[ w.user?.name || '-', w.user?.email || '-' ]);
+                            doc.autoTable({ startY:y, head:[['Name','Email']], body:wRows, styles:{fontSize:8}, headStyles:{fillColor:[29,78,216]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Witnesses
+                        if(Array.isArray(c.witnesses) && c.witnesses.length){
+                            y = addSectionTitle(doc,'Witnesses', y);
+                            const witRows = c.witnesses.map(w=>[ w.name, w.employee_number||'-', w.phone||'-', w.email||'-', (w.statement||'').substring(0,50) ]);
+                            doc.autoTable({ startY:y, head:[['Name','Emp #','Phone','Email','Statement']], body:witRows, styles:{fontSize:7}, headStyles:{fillColor:[190,18,60]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Category Reference
+                        if(Array.isArray(data.categories) && data.categories.length){
+                            y = addSectionTitle(doc,'Category Reference', y);
+                            const catRows = data.categories.map(cat=>[cat.category_name, cat.default_priority, cat.sla_hours, cat.is_active?'Yes':'No']);
+                            doc.autoTable({ startY:y, head:[['Name','Default Priority','SLA Hours','Active']], body:catRows.slice(0,40), styles:{fontSize:7}, headStyles:{fillColor:[16,94,98]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Footer page numbers
+                        const pageCount = doc.getNumberOfPages();
+                        for (let i=1;i<=pageCount;i++){
+                            doc.setPage(i);
+                            doc.setFontSize(8); doc.setTextColor(120);
+                            doc.text('Page '+i+' of '+pageCount, doc.internal.pageSize.getWidth()-70, doc.internal.pageSize.getHeight()-10);
+                        }
+
+                        doc.save('complaint-structured-'+(c.complaint_number||c.id||'export')+'.pdf');
+                    } catch(e){
+                        console.error(e);
+                        alert('Failed to build structured PDF: '+e.message);
+                    } finally {
+                        btn.disabled=false; btn.classList.remove('opacity-50'); btn.textContent='Structured PDF';
+                    }
+                });
+            }
+            if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', buildStructuredPdf); } else { buildStructuredPdf(); }
         })();
     </script>
 
