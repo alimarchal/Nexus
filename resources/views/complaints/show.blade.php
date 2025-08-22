@@ -57,6 +57,16 @@
                     </svg>
                     Download PDF
                 </button>
+                <a href="{{ route('complaints.full', $complaint) }}" target="_blank"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
+                    title="Download Full JSON Data">
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4h16v4H4zM4 12h16v8H4z" />
+                    </svg>
+                    Raw JSON
+                </a>
             </div>
         </div>
     </x-slot>
@@ -1494,28 +1504,78 @@
                         return; 
                     }
 
-                    const target = document.querySelector('div.max-w-7xl'); // main content container
-                    if (!target) {
+                    const sourceContainer = document.querySelector('div.max-w-7xl'); // main content container
+                    if (!sourceContainer) {
                         alert('Content container not found.');
                         return;
                     }
+
+                    // Build a clone so we don't mutate on-screen layout
+                    const target = sourceContainer.cloneNode(true);
+                    target.id = 'pdf-export-clone';
+                    target.style.position = 'absolute';
+                    target.style.left = '-99999px';
+                    target.style.top = '0';
+                    target.style.width = sourceContainer.offsetWidth + 'px';
+                    document.body.appendChild(target);
+
+                    // Force all tab contents visible in clone
+                    target.querySelectorAll('.tab-content').forEach(el => { el.style.display = 'block'; });
+                    // Highlight active tab maybe? (optional) Remove active classes from nav.
+
+                    // Replace external avatar images (ui-avatars) to avoid CORS issues with html2canvas
+                    const placeholders = [];
+                    target.querySelectorAll('img').forEach(img => {
+                        try {
+                            if (img.src.includes('ui-avatars.com')) {
+                                // Create simple SVG data URI with initials (parse from query string if present)
+                                const url = new URL(img.src);
+                                const nameParam = url.searchParams.get('name') || '';
+                                const initials = nameParam.split('+').map(p=>p[0]||'').join('').substring(0,3) || 'U';
+                                const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#EBF4FF'/><text x='50%' y='50%' font-size='24' font-family='Arial' dy='.35em' text-anchor='middle' fill='#1E3A8A'>${initials}</text></svg>`;
+                                img.setAttribute('data-orig-src', img.src);
+                                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+                                placeholders.push(img);
+                            }
+                        } catch(e) { /* ignore */ }
+                    });
 
                     btn.disabled = true;
                     btn.classList.add('opacity-50');
                     btn.textContent = 'Generating...';
 
-                    // Expand any collapsed tab contents temporarily if needed
-                    const hiddenTabs = Array.from(target.querySelectorAll('.tab-content'))
-                        .filter(el => el.style && el.style.display === 'none');
-                    hiddenTabs.forEach(el => el.dataset._prevDisplay = el.style.display);
-                    hiddenTabs.forEach(el => el.style.display = 'block');
+                    // Add metadata section at top (complaint snapshot) if not already present
+                    if (!target.querySelector('#pdf-meta-summary')) {
+                        const meta = document.createElement('div');
+                        meta.id = 'pdf-meta-summary';
+                        meta.style.marginBottom = '16px';
+                        meta.innerHTML = `<div style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+                            <h2 style='font-size:18px;margin:0 0 8px 0;font-weight:600;color:#1f2937;'>Complaint Export (Full)</h2>
+                            <div style='display:flex;flex-wrap:wrap;font-size:12px;line-height:1.4;color:#374151;'>
+                                <div style='margin-right:16px;'><strong>Number:</strong> {{ $complaint->complaint_number }}</div>
+                                <div style='margin-right:16px;'><strong>Status:</strong> {{ $complaint->status }}</div>
+                                <div style='margin-right:16px;'><strong>Priority:</strong> {{ $complaint->priority }}</div>
+                                <div style='margin-right:16px;'><strong>Category:</strong> {{ $complaint->category }}</div>
+                                @if($complaint->branch)<div style='margin-right:16px;'><strong>Branch:</strong> {{ $complaint->branch->name }}</div>@endif
+                                @if($complaint->region)<div style='margin-right:16px;'><strong>Region:</strong> {{ $complaint->region->name }}</div>@endif
+                                @if($complaint->division)<div style='margin-right:16px;'><strong>Division:</strong> {{ $complaint->division->name }}</div>@endif
+                                <div style='margin-right:16px;'><strong>Created:</strong> {{ $complaint->created_at->format('d M Y H:i') }}</div>
+                                @if($complaint->expected_resolution_date)<div style='margin-right:16px;'><strong>Due:</strong> {{ $complaint->expected_resolution_date->format('d M Y') }}</div>@endif
+                                @if($complaint->resolved_at)<div style='margin-right:16px;'><strong>Resolved:</strong> {{ optional($complaint->resolved_at)->format('d M Y H:i') }}</div>@endif
+                                <div style='margin-right:16px;'><strong>SLA Breached:</strong> {{ $complaint->sla_breached ? 'Yes' : 'No' }}</div>
+                            </div>
+                        </div>`;
+                        target.insertBefore(meta, target.firstChild);
+                    }
 
                     try {
                         // Use html2canvas at higher scale for clarity
                         const canvas = await html2canvas(target, {
                             scale: 2,
                             useCORS: true,
-                            scrollY: -window.scrollY
+                            allowTaint: true,
+                            scrollY: -window.scrollY,
+                            logging: false
                         });
                         const imgData = canvas.toDataURL('image/png');
                         const pdf = new jsPDF('p', 'pt', 'a4');
@@ -1567,8 +1627,8 @@
                         console.error(e);
                         alert('PDF generation failed. Try again or use browser Print > Save as PDF.');
                     } finally {
-                        // Restore hidden tabs
-                        hiddenTabs.forEach(el => el.style.display = el.dataset._prevDisplay || 'none');
+                        // Clean up clone
+                        if (target && target.parentNode) target.parentNode.removeChild(target);
                         btn.disabled = false;
                         btn.classList.remove('opacity-50');
                         btn.textContent = 'Download PDF';

@@ -469,6 +469,48 @@ class ComplaintController extends Controller
     }
 
     /**
+     * Return a full JSON snapshot of a complaint with ALL related entities (assignments, escalations,
+     * histories, comments, attachments, watchers, metrics, witnesses, status types mapping, category tree, templates)
+     * for offline analysis / export. Intended for admin/internal use.
+     */
+    public function fullData(Complaint $complaint)
+    {
+        $complaint->load([
+            'branch',
+            'region',
+            'division',
+            'assignedTo',
+            'assignedBy',
+            'resolvedBy',
+            'histories.status',
+            'histories.performedBy',
+            'comments.creator',
+            'attachments.creator',
+            'assignments.assignedTo',
+            'assignments.assignedBy',
+            'escalations.escalatedFrom',
+            'escalations.escalatedTo',
+            'watchers.user',
+            'metrics',
+            'witnesses'
+        ]);
+
+        // Optionally include reference lookups
+        $statusTypes = ComplaintStatusType::select('id', 'name', 'code')->get();
+        $templates = ComplaintTemplate::select('id', 'template_name', 'template_subject', 'category_id')->get();
+        $categories = ComplaintCategory::select('id', 'category_name', 'parent_category_id', 'sla_hours', 'default_priority', 'is_active')->get();
+
+        return response()->json([
+            'complaint' => $complaint,
+            'status_types' => $statusTypes,
+            'templates' => $templates,
+            'categories' => $categories,
+            'exported_at' => now()->toIso8601String(),
+            'version' => '1.0'
+        ]);
+    }
+
+    /**
      * Show form to edit existing complaint
      * 
      * @param Complaint $complaint

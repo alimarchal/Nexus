@@ -82,6 +82,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('analytics-data', [ComplaintController::class, 'analyticsData'])->name('analytics-data');
         // Export functionality
         Route::get('export', [ComplaintController::class, 'export'])->name('export');
+        // Full JSON data snapshot for a single complaint (all related tables)
+        Route::get('{complaint}/full', [ComplaintController::class, 'fullData'])->name('full');
         // Bulk operations
         Route::post('bulk-update-status', [ComplaintController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
         Route::post('bulk-assign', [ComplaintController::class, 'bulkAssign'])->name('bulk-assign');
