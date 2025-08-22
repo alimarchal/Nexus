@@ -132,6 +132,138 @@
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
                             </div>
+                            <!-- Harassment supplemental fields (hidden unless Harassment selected) -->
+                            <div id="harassment-section" class="md:col-span-4 hidden border rounded p-4 bg-red-50">
+                                <h4 class="font-semibold text-red-700 mb-2">Harassment Details (Required)</h4>
+                                <p class="text-xs text-red-700 mb-4">This category escalates automatically to senior
+                                    management. Provide factual, objective details and attach any supporting evidence
+                                    (screenshots, emails, logs). Sensitive handling is enforced.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                    <div>
+                                        <label for="harassment_sub_category" class="block text-gray-700">Sub Category
+                                            <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                        <input type="text" name="harassment_sub_category" id="harassment_sub_category"
+                                            value="{{ old('harassment_sub_category') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                            placeholder="e.g. Verbal, Physical, Online">
+                                        @error('harassment_sub_category')<span class="text-red-500 text-sm">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label for="harassment_incident_date" class="block text-gray-700">Incident Date
+                                            & Time <span class="text-red-600">*</span>:</label>
+                                        <input type="datetime-local" name="harassment_incident_date"
+                                            id="harassment_incident_date" value="{{ old('harassment_incident_date') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        @error('harassment_incident_date')<span class="text-red-500 text-sm">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label for="harassment_location" class="block text-gray-700">Location <span
+                                                class="text-red-600">*</span>:</label>
+                                        <input type="text" name="harassment_location" id="harassment_location"
+                                            value="{{ old('harassment_location') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        @error('harassment_location')<span class="text-red-500 text-sm">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label for="harassment_employee_number" class="block text-gray-700">Employee No
+                                            (Victim) <span
+                                                class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                        <input type="text" name="harassment_employee_number"
+                                            id="harassment_employee_number"
+                                            value="{{ old('harassment_employee_number') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        @error('harassment_employee_number')<span class="text-red-500 text-sm">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                    <div class="md:col-span-3">
+                                        <label for="harassment_details" class="block text-gray-700">Incident Details /
+                                            Evidence Summary <span class="text-red-600">*</span>:</label>
+                                        <textarea name="harassment_details" id="harassment_details" rows="5"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('harassment_details') }}</textarea>
+                                        @error('harassment_details')<span class="text-red-500 text-sm">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label for="harassment_employee_phone" class="block text-gray-700">Victim Phone
+                                            <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                        <input type="text" name="harassment_employee_phone"
+                                            id="harassment_employee_phone"
+                                            value="{{ old('harassment_employee_phone') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 mb-4">
+                                        @error('harassment_employee_phone')<span class="text-red-500 text-sm">{{
+                                            $message }}</span>@enderror
+                                        <label for="harassment_reported_to" class="block text-gray-700">Reported To
+                                            <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                        <input type="text" name="harassment_reported_to" id="harassment_reported_to"
+                                            value="{{ old('harassment_reported_to') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        @error('harassment_reported_to')<span class="text-red-500 text-sm">{{ $message
+                                            }}</span>@enderror
+                                        <label class="flex items-center mt-4">
+                                            <input type="checkbox" name="harassment_confidential" value="1" {{
+                                                old('harassment_confidential') ? 'checked' : '' }}
+                                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200">
+                                            <span class="ml-2 text-gray-700 text-sm">Mark as Confidential</span>
+                                        </label>
+                                        @error('harassment_confidential')<span class="text-red-500 text-sm">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                </div>
+                                <!-- Dynamic Witnesses -->
+                                <div class="mb-4">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h5 class="font-semibold text-gray-700">Witnesses <span
+                                                class="text-gray-500 text-xs font-normal">(Up to 10)</span></h5>
+                                        <button type="button" id="add-witness-btn"
+                                            class="px-3 py-1 bg-indigo-600 text-white text-xs rounded">Add
+                                            Witness</button>
+                                    </div>
+                                    <div id="witnesses-wrapper" class="space-y-4">
+                                        <!-- Witness templates inserted here -->
+                                    </div>
+                                    <template id="witness-template">
+                                        <div class="witness-item border rounded p-3 bg-white relative">
+                                            <button type="button"
+                                                class="remove-witness absolute top-1 right-1 text-red-500 text-xs">✕</button>
+                                            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                                <div>
+                                                    <label class="block text-gray-700 text-xs">Employee No
+                                                        (Optional)</label>
+                                                    <input type="text" data-field="employee_number"
+                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-gray-700 text-xs">Name <span
+                                                            class="text-red-600">*</span></label>
+                                                    <input type="text" data-field="name" required
+                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-gray-700 text-xs">Phone (Optional)</label>
+                                                    <input type="text" data-field="phone"
+                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-gray-700 text-xs">Email (Optional)</label>
+                                                    <input type="email" data-field="email"
+                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                                </div>
+                                                <div>
+                                                    <label class="block text-gray-700 text-xs">Statement
+                                                        (Optional)</label>
+                                                    <textarea rows="1" data-field="statement"
+                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
                             <div>
                                 <label for="expected_resolution_date" class="block text-gray-700">Expected Resolution
                                     Date <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
@@ -143,6 +275,132 @@
                                 @error('expected_resolution_date')
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
+                            </div>
+                        </div>
+                        <!-- Harassment supplemental fields (hidden unless Harassment selected) moved below grid to avoid layout shift -->
+                        <div id="harassment-section" class="hidden border rounded p-4 bg-red-50 mb-6">
+                            <h4 class="font-semibold text-red-700 mb-2">Harassment Details (Required)</h4>
+                            <p class="text-xs text-red-700 mb-4">This category escalates automatically to senior
+                                management. Provide factual, objective details and attach any supporting evidence
+                                (screenshots, emails, logs). Sensitive handling is enforced.</p>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                <div>
+                                    <label for="harassment_sub_category" class="block text-gray-700">Sub Category <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                    <input type="text" name="harassment_sub_category" id="harassment_sub_category"
+                                        value="{{ old('harassment_sub_category') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                        placeholder="e.g. Verbal, Physical, Online">
+                                    @error('harassment_sub_category')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="harassment_incident_date" class="block text-gray-700">Incident Date &
+                                        Time <span class="text-red-600">*</span>:</label>
+                                    <input type="datetime-local" name="harassment_incident_date"
+                                        id="harassment_incident_date" value="{{ old('harassment_incident_date') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                    @error('harassment_incident_date')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="harassment_location" class="block text-gray-700">Location <span
+                                            class="text-red-600">*</span>:</label>
+                                    <input type="text" name="harassment_location" id="harassment_location"
+                                        value="{{ old('harassment_location') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                    @error('harassment_location')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="harassment_employee_number" class="block text-gray-700">Employee No
+                                        (Victim) <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                    <input type="text" name="harassment_employee_number" id="harassment_employee_number"
+                                        value="{{ old('harassment_employee_number') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                    @error('harassment_employee_number')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                <div class="md:col-span-3">
+                                    <label for="harassment_details" class="block text-gray-700">Incident Details /
+                                        Evidence Summary <span class="text-red-600">*</span>:</label>
+                                    <textarea name="harassment_details" id="harassment_details" rows="5"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('harassment_details') }}</textarea>
+                                    @error('harassment_details')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="harassment_employee_phone" class="block text-gray-700">Victim Phone
+                                        <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                    <input type="text" name="harassment_employee_phone" id="harassment_employee_phone"
+                                        value="{{ old('harassment_employee_phone') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 mb-4">
+                                    @error('harassment_employee_phone')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
+                                    <label for="harassment_reported_to" class="block text-gray-700">Reported To <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                    <input type="text" name="harassment_reported_to" id="harassment_reported_to"
+                                        value="{{ old('harassment_reported_to') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                    @error('harassment_reported_to')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
+                                    <label class="flex items-center mt-4">
+                                        <input type="checkbox" name="harassment_confidential" value="1" {{
+                                            old('harassment_confidential') ? 'checked' : '' }}
+                                            class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200">
+                                        <span class="ml-2 text-gray-700 text-sm">Mark as Confidential</span>
+                                    </label>
+                                    @error('harassment_confidential')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
+                                </div>
+                            </div>
+                            <!-- Dynamic Witnesses -->
+                            <div class="mb-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h5 class="font-semibold text-gray-700">Witnesses <span
+                                            class="text-gray-500 text-xs font-normal">(Up to 10)</span></h5>
+                                    <button type="button" id="add-witness-btn"
+                                        class="px-3 py-1 bg-indigo-600 text-white text-xs rounded">Add Witness</button>
+                                </div>
+                                <div id="witnesses-wrapper" class="space-y-4"></div>
+                                <template id="witness-template">
+                                    <div class="witness-item border rounded p-3 bg-white relative">
+                                        <button type="button"
+                                            class="remove-witness absolute top-1 right-1 text-red-500 text-xs">✕</button>
+                                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                            <div>
+                                                <label class="block text-gray-700 text-xs">Employee No
+                                                    (Optional)</label>
+                                                <input type="text" data-field="employee_number"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-gray-700 text-xs">Name <span
+                                                        class="text-red-600">*</span></label>
+                                                <input type="text" data-field="name" required
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-gray-700 text-xs">Phone (Optional)</label>
+                                                <input type="text" data-field="phone"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-gray-700 text-xs">Email (Optional)</label>
+                                                <input type="email" data-field="email"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                            </div>
+                                            <div>
+                                                <label class="block text-gray-700 text-xs">Statement (Optional)</label>
+                                                <textarea rows="1" data-field="statement"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -375,6 +633,55 @@
             const priorityField = document.getElementById('priority');
             const expectedField = document.getElementById('expected_resolution_date');
             const categoryField = document.getElementById('category_id');
+            const harassmentSection = document.getElementById('harassment-section');
+            const harassmentRequiredFields = ['harassment_incident_date','harassment_location','harassment_details'];
+            const witnessWrapper = document.getElementById('witnesses-wrapper');
+            const witnessTemplate = document.getElementById('witness-template');
+            const addWitnessBtn = document.getElementById('add-witness-btn');
+            let witnessCount = 0;
+
+            function addWitness(data={}){
+                if(!witnessWrapper || !witnessTemplate) return;
+                if(witnessCount >= 10) return;
+                const clone = witnessTemplate.content.cloneNode(true);
+                const container = clone.querySelector('.witness-item');
+                container.querySelectorAll('[data-field]').forEach(el => {
+                    const field = el.getAttribute('data-field');
+                    const name = `witnesses[${witnessCount}][${field}]`;
+                    el.name = name;
+                    if(data[field]) el.value = data[field];
+                });
+                container.querySelector('.remove-witness').addEventListener('click', () => {
+                    container.remove();
+                });
+                witnessWrapper.appendChild(clone);
+                witnessCount++;
+            }
+
+            if(addWitnessBtn){
+                addWitnessBtn.addEventListener('click', () => addWitness());
+            }
+
+            // Rehydrate old witness inputs if validation failed
+            @if(is_array(old('witnesses')))
+                @foreach(old('witnesses') as $idx => $w)
+                    addWitness(@json($w));
+                @endforeach
+            @endif
+
+            function toggleHarassmentSection(){
+                if(!categoryField) return;
+                const opt = categoryField.options[categoryField.selectedIndex];
+                const name = opt ? (opt.text || '').toLowerCase() : '';
+                const isHarassment = name.startsWith('harassment');
+                if(isHarassment){
+                    harassmentSection.classList.remove('hidden');
+                    harassmentRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.setAttribute('required','required'); }});
+                } else {
+                    harassmentSection.classList.add('hidden');
+                    harassmentRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.removeAttribute('required'); }});
+                }
+            }
 
             // Utility: format a future datetime-local value from hours offset
             function futureDateTimeLocal(hoursAhead){
@@ -427,6 +734,7 @@
                 categoryField.addEventListener('change', () => {
                     maybeAdoptDefaultPriority();
                     // Do NOT auto-change expected date here; only priority drives it now.
+                    toggleHarassmentSection();
                 });
             }
 
@@ -439,6 +747,7 @@
             if(categoryField && categoryField.value){
                 maybeAdoptDefaultPriority();
             }
+            toggleHarassmentSection();
             if(priorityField && priorityField.value){
                 recalcFromPriority(false); // initial fill if empty / allowed
             }

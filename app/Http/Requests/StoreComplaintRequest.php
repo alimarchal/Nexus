@@ -165,7 +165,66 @@ class StoreComplaintRequest extends FormRequest
             'business_impact' => [
                 'nullable',
                 Rule::in(['Low', 'Medium', 'High', 'Critical'])
-            ]
+            ],
+
+            // Harassment specific (conditionally required when category is Harassment)
+            'harassment_incident_date' => [
+                'nullable',
+                'date',
+                'before_or_equal:today'
+            ],
+            'harassment_location' => [
+                'nullable',
+                'string',
+                'max:150'
+            ],
+            'harassment_witnesses' => [
+                'nullable',
+                'string',
+                'max:255'
+            ],
+            'harassment_reported_to' => [
+                'nullable',
+                'string',
+                'max:150'
+            ],
+            'harassment_details' => [
+                'nullable',
+                'string',
+                'min:10',
+                'max:5000'
+            ],
+            'harassment_confidential' => [
+                'nullable',
+                'boolean'
+            ],
+
+            // Sub-category for harassment
+            'harassment_sub_category' => [
+                'nullable',
+                'string',
+                'max:150'
+            ],
+
+            // Harassment employee (complainant or victim) extra identifiers
+            'harassment_employee_number' => [
+                'nullable',
+                'string',
+                'max:50'
+            ],
+            'harassment_employee_phone' => [
+                'nullable',
+                'string',
+                'max:50'
+            ],
+
+            // Witnesses dynamic arrays
+            'witnesses' => ['nullable', 'array', 'max:10'],
+            'witnesses.*.employee_number' => ['nullable', 'string', 'max:50'],
+            'witnesses.*.name' => ['required_with:witnesses', 'string', 'max:150'],
+            'witnesses.*.phone' => ['nullable', 'string', 'max:50'],
+            'witnesses.*.email' => ['nullable', 'email', 'max:150'],
+            'witnesses.*.statement' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -250,6 +309,19 @@ class StoreComplaintRequest extends FormRequest
 
             'customer_impact.in' => 'The selected customer impact level is invalid.',
             'business_impact.in' => 'The selected business impact level is invalid.'
+            ,
+
+            // Harassment
+            'harassment_incident_date.before_or_equal' => 'Incident date cannot be in the future.',
+            'harassment_details.min' => 'Harassment details must be at least 10 characters.',
+            'harassment_details.max' => 'Harassment details may not exceed 5000 characters.'
+            ,
+            'harassment_sub_category.max' => 'Harassment sub-category may not exceed 150 characters.',
+            'harassment_employee_number.max' => 'Employee number may not exceed 50 characters.',
+            'harassment_employee_phone.max' => 'Employee phone may not exceed 50 characters.',
+            'witnesses.max' => 'No more than 10 witnesses may be added.',
+            'witnesses.*.name.required_with' => 'Each witness requires a name.',
+            'witnesses.*.email.email' => 'Witness email must be valid.'
         ];
     }
 
@@ -352,6 +424,28 @@ class StoreComplaintRequest extends FormRequest
                         'expected_resolution_date',
                         "For {$priority} priority complaints, expected resolution should be within {$maxDays[$priority]} day(s)."
                     );
+                }
+            }
+
+            // Conditional harassment field requirements
+            $isHarassment = false;
+            if ($this->filled('category_id')) {
+                $cat = \App\Models\ComplaintCategory::find($this->input('category_id'));
+                if ($cat && strcasecmp($cat->category_name, 'Harassment') === 0) {
+                    $isHarassment = true;
+                }
+            }
+
+            if ($isHarassment) {
+                $requiredFields = [
+                    'harassment_incident_date' => 'Incident date is required for harassment complaints.',
+                    'harassment_location' => 'Location is required for harassment complaints.',
+                    'harassment_details' => 'Details/evidence summary is required for harassment complaints.'
+                ];
+                foreach ($requiredFields as $field => $message) {
+                    if (!$this->filled($field)) {
+                        $validator->errors()->add($field, $message);
+                    }
                 }
             }
         });
