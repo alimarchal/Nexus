@@ -548,6 +548,7 @@
                         <tr class="bg-green-800 text-white uppercase text-sm">
                             <th class="py-3 px-2 text-center">#</th>
                             <th class="py-3 px-2 text-left">Complaint Details</th>
+                            <th class="py-3 px-2 text-center">Category</th>
                             <th class="py-3 px-2 text-center">Status</th>
                             <th class="py-3 px-2 text-center">Priority</th>
                             <th class="py-3 px-2 text-center">Assigned To</th>
@@ -583,6 +584,15 @@
                                     </div>
                                     @endif
                                 </div>
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                @if($complaint->category)
+                                <span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                    {{ Str::limit($complaint->category, 22) }}
+                                </span>
+                                @else
+                                <span class="text-gray-400 text-xs">-</span>
+                                @endif
                             </td>
                             <td class="py-3 px-2 text-center">
                                 <span class="px-2 py-1 rounded-full text-xs font-semibold
