@@ -122,7 +122,9 @@
                                     <option value="{{ $category->id }}"
                                         data-default-priority="{{ $category->default_priority ?? '' }}" {{
                                         old('category_id')==$category->id ? 'selected' : '' }}>
-                                        {{ $category->category_name }}
+                                        {{ $category->category_name
+                                        }}@if(strtolower($category->category_name)==='harassment') (Escalates to senior
+                                        management – provide evidence & factual details)@endif
                                     </option>
                                     @endforeach
                                 </select>

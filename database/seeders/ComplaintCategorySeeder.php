@@ -50,7 +50,7 @@ class ComplaintCategorySeeder extends Seeder
             ],
             [
                 'category_name' => 'Harassment',
-                'description' => 'Reports related to harassment, abuse, or inappropriate conduct requiring sensitive handling.',
+                'description' => 'Reports related to harassment, abuse, or inappropriate conduct requiring sensitive handling. Escalates to senior management; ensure clear supporting evidence (screenshots, emails, logs) is attached and incident details are documented professionally.',
                 'default_priority' => 'High',
                 'sla_hours' => 12, // escalate faster than standard service issues
                 'is_active' => true,
