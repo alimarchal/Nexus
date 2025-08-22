@@ -48,6 +48,13 @@ class ComplaintCategorySeeder extends Seeder
                 'sla_hours' => 72,
                 'is_active' => true,
             ],
+            [
+                'category_name' => 'Harassment',
+                'description' => 'Reports related to harassment, abuse, or inappropriate conduct requiring sensitive handling.',
+                'default_priority' => 'High',
+                'sla_hours' => 12, // escalate faster than standard service issues
+                'is_active' => true,
+            ],
         ];
 
         foreach ($categories as $data) {
