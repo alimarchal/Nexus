@@ -82,6 +82,14 @@ class StoreComplaintRequest extends FormRequest
                 'nullable',
                 'exists:branches,id'
             ],
+            'region_id' => [
+                'nullable',
+                'exists:regions,id'
+            ],
+            'division_id' => [
+                'nullable',
+                'exists:divisions,id'
+            ],
             'assigned_to' => [
                 'nullable',
                 'exists:users,id',
@@ -176,6 +184,8 @@ class StoreComplaintRequest extends FormRequest
             'complainant_phone' => 'complainant phone',
             'complainant_account_number' => 'account number',
             'branch_id' => 'branch',
+            'region_id' => 'region',
+            'division_id' => 'division',
             'assigned_to' => 'assigned user',
             'expected_resolution_date' => 'expected resolution date',
             'attachments.*' => 'attachment file',

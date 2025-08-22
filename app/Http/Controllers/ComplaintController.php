@@ -139,8 +139,10 @@ class ComplaintController extends Controller
         $users = User::orderBy('name')->get();
         $categories = ComplaintCategory::topLevel()->orderBy('category_name')->get();
         $templates = ComplaintTemplate::orderBy('template_name')->get();
+        $regions = \App\Models\Region::orderBy('name')->get();
+        $divisions = \App\Models\Division::orderBy('short_name')->orderBy('name')->get();
 
-        return view('complaints.create', compact('branches', 'users', 'categories', 'templates'));
+        return view('complaints.create', compact('branches', 'users', 'categories', 'templates', 'regions', 'divisions'));
     }
 
     /**
@@ -170,7 +172,33 @@ class ComplaintController extends Controller
                 $validated['assigned_at'] = now();
             }
 
-            // Create complaint record
+            // Auto-set expected_resolution_date from SLA (priority mapping or category SLA hours) if not provided
+            if (empty($validated['expected_resolution_date'])) {
+                $priority = $validated['priority'] ?? 'Medium';
+                $prioritySlaDays = ['Critical' => 1, 'High' => 3, 'Medium' => 7, 'Low' => 14];
+                $targetDate = null;
+                if (!empty($validated['category_id'])) {
+                    $catForSla = ComplaintCategory::find($validated['category_id']);
+                    if ($catForSla && $catForSla->sla_hours) {
+                        $targetDate = now()->copy()->addHours($catForSla->sla_hours);
+                    }
+                }
+                if (!$targetDate) {
+                    $days = $prioritySlaDays[$priority] ?? 7;
+                    $targetDate = now()->copy()->addDays($days);
+                }
+                $validated['expected_resolution_date'] = $targetDate;
+            }
+
+            // If category_id provided, also copy its name into legacy 'category' field for backward compatibility
+            if (!empty($validated['category_id'])) {
+                $cat = ComplaintCategory::find($validated['category_id']);
+                if ($cat) {
+                    $validated['category'] = $cat->category_name;
+                }
+            }
+
+            // Create complaint record (includes region_id / division_id / branch_id which are nullable)
             $complaint = Complaint::create($validated);
 
             // Create folder path for attachments
@@ -301,9 +329,10 @@ class ComplaintController extends Controller
                 'request_data' => $request->except(['attachments'])
             ]);
 
+            $detail = app()->environment('local') ? (' Details: ' . $e->getMessage()) : '';
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Failed to create complaint. Please try again.');
+                ->with('error', 'Failed to create complaint. Please try again.' . $detail);
         }
     }
 
@@ -320,6 +349,8 @@ class ComplaintController extends Controller
         $complaint->load([
             // Basic user and branch relationships
             'branch',           // The branch where this complaint was logged
+            'region',           // Region reference
+            'division',         // Division reference
             'assignedTo',       // User currently assigned to handle this complaint
             'assignedBy',       // User who performed the assignment
             'resolvedBy',       // User who resolved this complaint
@@ -375,12 +406,14 @@ class ComplaintController extends Controller
         // Email/response templates for quick communication
         $templates = ComplaintTemplate::orderBy('template_name')->get();
 
-        // All branches for filtering and reference purposes
+        // All branches / regions / divisions for transfer operations
         $branches = Branch::orderBy('name')->get();
+        $regions = \App\Models\Region::orderBy('name')->get();
+        $divisions = \App\Models\Division::orderBy('short_name')->orderBy('name')->get();
 
         // Return the complaint detail view with all loaded data
         // The view will have access to the fully loaded complaint model and all reference data
-        return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates', 'branches'));
+        return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates', 'branches', 'regions', 'divisions'));
     }
 
     /**
@@ -412,6 +445,7 @@ class ComplaintController extends Controller
         DB::beginTransaction();
 
         try {
+            $newAttachmentNames = [];
             // Store original values for history tracking
             $originalValues = $complaint->getOriginal();
 
@@ -448,20 +482,16 @@ class ComplaintController extends Controller
             if ($request->hasFile('attachments')) {
                 foreach ($request->file('attachments') as $file) {
                     if ($file->isValid()) {
-                        $filePath = FileStorageHelper::storeSinglePrivateFile(
-                            $file,
-                            $folderName
-                        );
-                        $mime = (string) $file->getMimeType();
-                        $mime = substr($mime, 0, 150);
-
-                        ComplaintAttachment::create([
+                        $filePath = FileStorageHelper::storeSinglePrivateFile($file, $folderName);
+                        $mime = substr((string) $file->getMimeType(), 0, 150);
+                        $attachment = ComplaintAttachment::create([
                             'complaint_id' => $complaint->id,
                             'file_name' => $file->getClientOriginalName(),
                             'file_path' => $filePath,
                             'file_size' => $file->getSize(),
                             'file_type' => $mime,
                         ]);
+                        $newAttachmentNames[] = $attachment->file_name;
                     }
                 }
             }
@@ -497,9 +527,27 @@ class ComplaintController extends Controller
             // Commit transaction if update successful
             DB::commit();
 
-            return redirect()
-                ->route('complaints.show', $complaint)
-                ->with('success', "Complaint '{$complaint->title}' updated successfully.");
+            // Add history entry for newly attached files (single consolidated record)
+            if (!empty($newAttachmentNames)) {
+                $statusType = ComplaintStatusType::first();
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => 'File Attached',
+                    'old_value' => null,
+                    'new_value' => count($newAttachmentNames) . ' file(s)',
+                    'comments' => 'Attached: ' . implode(', ', array_slice($newAttachmentNames, 0, 5)) . (count($newAttachmentNames) > 5 ? '…' : ''),
+                    'status_id' => $statusType?->id ?? 1,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Internal',
+                ]);
+            }
+
+            $message = !empty($newAttachmentNames)
+                ? (count($newAttachmentNames) . ' attachment(s) uploaded successfully.')
+                : "Complaint '{$complaint->title}' updated successfully.";
+
+            return redirect()->route('complaints.show', $complaint)->with('success', $message);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
@@ -521,6 +569,70 @@ class ComplaintController extends Controller
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Failed to update complaint. Please try again.');
+        }
+    }
+
+    /**
+     * Add new attachments only (without other field validation)
+     *
+     * @param Request $request
+     * @param Complaint $complaint
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function addAttachments(Request $request, Complaint $complaint)
+    {
+        $request->validate([
+            'attachments' => 'required|array|max:10',
+            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,txt,zip,rar|max:10240'
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $folderName = 'Complaints/' . $complaint->complaint_number;
+            $newAttachmentNames = [];
+
+            foreach ($request->file('attachments', []) as $file) {
+                if ($file && $file->isValid()) {
+                    $filePath = FileStorageHelper::storeSinglePrivateFile($file, $folderName);
+                    $mime = substr((string) $file->getMimeType(), 0, 150);
+                    $attachment = ComplaintAttachment::create([
+                        'complaint_id' => $complaint->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $filePath,
+                        'file_size' => $file->getSize(),
+                        'file_type' => $mime,
+                    ]);
+                    $newAttachmentNames[] = $attachment->file_name;
+                }
+            }
+
+            if (!empty($newAttachmentNames)) {
+                $statusType = ComplaintStatusType::first();
+                ComplaintHistory::create([
+                    'complaint_id' => $complaint->id,
+                    'action_type' => 'File Attached',
+                    'old_value' => null,
+                    'new_value' => count($newAttachmentNames) . ' file(s)',
+                    'comments' => 'Attached: ' . implode(', ', array_slice($newAttachmentNames, 0, 5)) . (count($newAttachmentNames) > 5 ? '…' : ''),
+                    'status_id' => $statusType?->id ?? 1,
+                    'performed_by' => auth()->id(),
+                    'performed_at' => now(),
+                    'complaint_type' => 'Internal',
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('complaints.show', $complaint)
+                ->with('success', count($newAttachmentNames) . ' attachment(s) uploaded successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Attachment upload failed', [
+                'complaint_id' => $complaint->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+            return redirect()->back()->with('error', 'Failed to upload attachments.');
         }
     }
 
@@ -886,7 +998,10 @@ class ComplaintController extends Controller
             'status' => 'Status Changed',
             'priority' => 'Priority Changed',
             'assigned_to' => 'Reassigned',
-            'category' => 'Category Changed'
+            'category' => 'Category Changed',
+            'branch_id' => 'Branch Transfer',
+            'region_id' => 'Region Transfer',
+            'division_id' => 'Division Transfer'
         ];
 
         foreach ($trackableFields as $field => $actionType) {
@@ -895,6 +1010,22 @@ class ComplaintController extends Controller
             $oldVal = $originalValues[$field] ?? null;
             if (array_key_exists($field, $newValues) && $oldVal != $newValues[$field]) {
                 $newVal = $newValues[$field];
+
+                // For foreign keys, fetch readable names
+                if (in_array($field, ['branch_id', 'region_id', 'division_id'])) {
+                    $oldVal = match ($field) {
+                        'branch_id' => $oldVal ? optional(\App\Models\Branch::find($oldVal))->name : 'None',
+                        'region_id' => $oldVal ? optional(\App\Models\Region::find($oldVal))->name : 'None',
+                        'division_id' => $oldVal ? optional(\App\Models\Division::find($oldVal))->short_name ?? optional(\App\Models\Division::find($oldVal))->name : 'None',
+                        default => $oldVal,
+                    };
+                    $newVal = match ($field) {
+                        'branch_id' => $newVal ? optional(\App\Models\Branch::find($newVal))->name : 'None',
+                        'region_id' => $newVal ? optional(\App\Models\Region::find($newVal))->name : 'None',
+                        'division_id' => $newVal ? (optional(\App\Models\Division::find($newVal))->short_name ?? optional(\App\Models\Division::find($newVal))->name) : 'None',
+                        default => $newVal,
+                    };
+                }
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
                     'action_type' => $actionType,
@@ -939,10 +1070,20 @@ class ComplaintController extends Controller
             $metrics->update(['time_to_first_response' => $timeToResponse]);
         }
 
-        // Calculate time to resolution
-        if ($newStatus === 'Resolved' && $origStatus !== 'Resolved') {
-            $timeToResolution = $complaint->created_at->diffInMinutes(now());
-            $metrics->update(['time_to_resolution' => $timeToResolution]);
+        // Calculate or refresh time to resolution when entering Resolved/Closed
+        if (in_array($newStatus, ['Resolved', 'Closed'])) {
+            $resolvedAt = $complaint->resolved_at ?? now();
+            $ttr = $complaint->created_at->diffInMinutes($resolvedAt);
+            if (!$metrics->time_to_resolution || $metrics->time_to_resolution != $ttr) {
+                $metrics->update(['time_to_resolution' => $ttr]);
+            }
+        }
+
+        // If reopened after resolution, clear resolution time so it can be recalculated
+        if ($newStatus === 'Reopened' && in_array($origStatus, ['Resolved', 'Closed'])) {
+            if ($metrics->time_to_resolution) {
+                $metrics->update(['time_to_resolution' => null]);
+            }
         }
 
         // Track reopened count

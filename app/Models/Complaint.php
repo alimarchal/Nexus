@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedInclude;
 use Spatie\QueryBuilder\AllowedSort;
@@ -15,7 +16,7 @@ use Spatie\Activitylog\LogOptions; // ensure activity log options class is impor
 
 class Complaint extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasUuids;
 
     protected $fillable = [
         'complaint_number',
@@ -30,6 +31,8 @@ class Complaint extends Model
         'complainant_phone',
         'complainant_account_number',
         'branch_id',
+        'region_id',
+        'division_id',
         'assigned_to',
         'assigned_by',
         'assigned_at',
@@ -57,6 +60,16 @@ class Complaint extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
+    }
+
+    public function division(): BelongsTo
+    {
+        return $this->belongsTo(Division::class);
     }
 
     public function assignedTo(): BelongsTo
@@ -211,6 +224,10 @@ class Complaint extends Model
         });
 
     }
+
+    // Primary key is UUID
+    public $incrementing = false;
+    protected $keyType = 'string';
 
 
 

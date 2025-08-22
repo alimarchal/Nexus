@@ -104,6 +104,14 @@ class UpdateComplaintRequest extends FormRequest
                 'nullable',
                 'exists:branches,id'
             ],
+            'region_id' => [
+                'nullable',
+                'exists:regions,id'
+            ],
+            'division_id' => [
+                'nullable',
+                'exists:divisions,id'
+            ],
             'assigned_to' => [
                 'nullable',
                 'exists:users,id'
@@ -407,6 +415,13 @@ class UpdateComplaintRequest extends FormRequest
             ]);
         }
 
+        // Normalize empty location selects to null so 'exists' rule is skipped
+        foreach (['branch_id', 'region_id', 'division_id'] as $locField) {
+            if ($this->has($locField) && $this->input($locField) === '') {
+                $this->merge([$locField => null]);
+            }
+        }
+
         // Check if assignment is being changed
         if ($this->has('assigned_to') && $complaint->assigned_to != $this->input('assigned_to')) {
             $this->merge(['assignment_changed' => true]);
@@ -646,8 +661,18 @@ class UpdateComplaintRequest extends FormRequest
 
         // Add any additional processing of validated data here
         if (is_null($key)) {
-            // Remove empty optional fields
+            // Normalize empty strings for location fields to null (so we can clear them)
+            foreach (['branch_id', 'region_id', 'division_id'] as $locField) {
+                if (array_key_exists($locField, $validated) && $validated[$locField] === '') {
+                    $validated[$locField] = null; // explicit clear
+                }
+            }
+
+            // Remove empty optional fields (but keep location fields even if null to allow clearing)
             $validated = array_filter($validated, function ($value, $key) {
+                if (in_array($key, ['branch_id', 'region_id', 'division_id'])) {
+                    return true; // always keep to detect clears
+                }
                 if (in_array($key, ['complainant_name', 'complainant_email', 'complainant_phone', 'complainant_account_number'])) {
                     return !empty($value);
                 }

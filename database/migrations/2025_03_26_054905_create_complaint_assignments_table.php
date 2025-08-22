@@ -12,7 +12,8 @@ return new class extends Migration {
     {
         Schema::create('complaint_assignments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('complaint_id')->constrained()->onDelete('cascade');
+            $table->uuid('complaint_id');
+            $table->foreign('complaint_id')->references('id')->on('complaints')->onDelete('cascade');
             $table->foreignId('assigned_to')->constrained('users');
             $table->foreignId('assigned_by')->constrained('users');
             $table->enum('assignment_type', ['Primary', 'Secondary', 'Observer'])->default('Primary');

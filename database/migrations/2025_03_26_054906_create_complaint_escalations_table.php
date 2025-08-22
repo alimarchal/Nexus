@@ -14,7 +14,8 @@ return new class extends Migration {
 
 
             $table->id();
-            $table->foreignId('complaint_id')->constrained()->onDelete('cascade'); // Reference to the complaint being escalated
+            $table->uuid('complaint_id'); // Reference to the complaint being escalated
+            $table->foreign('complaint_id')->references('id')->on('complaints')->onDelete('cascade');
             $table->foreignId('escalated_from')->constrained('users'); // User who escalated the complaint
             $table->foreignId('escalated_to')->constrained('users');   // User/role the complaint was escalated to
             $table->integer('escalation_level')->default(1); // Level of escalation (1, 2, 3 for different hierarchy levels)

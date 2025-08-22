@@ -12,7 +12,8 @@ return new class extends Migration {
     {
         Schema::create('complaint_metrics', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('complaint_id')->constrained()->onDelete('cascade'); // Reference to the complaint these metrics belong to
+            $table->uuid('complaint_id'); // Reference to the complaint these metrics belong to
+            $table->foreign('complaint_id')->references('id')->on('complaints')->onDelete('cascade');
             $table->integer('time_to_first_response')->nullable(); // Time from complaint creation to first response (in minutes) - Example: 45 minutes
             $table->integer('time_to_resolution')->nullable(); // Time from complaint creation to resolution (in minutes) - Example: 1440 minutes (24 hours)
             $table->integer('reopened_count')->default(0); // Number of times complaint was reopened - Example: 0 (never reopened), 2 (reopened twice)

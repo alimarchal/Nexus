@@ -12,7 +12,8 @@ return new class extends Migration {
     {
         Schema::create('complaint_categories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('complaint_id')->nullable()->constrained()->onDelete('cascade');
+            $table->uuid('complaint_id')->nullable();
+            $table->foreign('complaint_id')->references('id')->on('complaints')->onDelete('cascade');
             $table->string('category_name', 100); // Name/title of the complaint category (e.g., "Product Quality", "Customer Service")
             $table->unsignedBigInteger('parent_category_id')->nullable(); // For subcategories
             $table->text('description')->nullable();

@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('complaints', function (Blueprint $table) {
-            // Primary identifier - auto-incrementing ID
-            $table->id();
+            // Primary identifier - UUID
+            $table->uuid('id')->primary();
             // Business identifier - unique complaint reference for users/reports
             $table->string('complaint_number', 20)->unique()->nullable();
 
@@ -34,6 +34,9 @@ return new class extends Migration {
 
             // Location/branch association - using modern foreign key syntax
             $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
+            // Region / Division (complaint may originate at higher organizational level)
+            $table->foreignId('region_id')->nullable()->constrained('regions')->nullOnDelete();
+            $table->foreignId('division_id')->nullable()->constrained('divisions')->nullOnDelete();
 
             // Assignment tracking - who handles what and when
             $table->foreignId('assigned_to')->nullable()->constrained('users')->nullOnDelete();
@@ -65,6 +68,8 @@ return new class extends Migration {
             $table->index(['status', 'priority']); // Common filtering
             $table->index('complaint_number'); // Lookup optimization
             $table->index('assigned_to'); // Assignment queries
+            $table->index('region_id');
+            $table->index('division_id');
             $table->index(['created_at', 'status']); // Timeline reports
             $table->index('sla_breached'); // Performance monitoring
         });

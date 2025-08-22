@@ -12,7 +12,8 @@ return new class extends Migration {
     {
         Schema::create('complaint_histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('complaint_id')->constrained()->onDelete('cascade');
+            $table->uuid('complaint_id');
+            $table->foreign('complaint_id')->references('id')->on('complaints')->onDelete('cascade');
             $table->enum('action_type', [
                 'Created',
                 'Assigned',
@@ -26,7 +27,10 @@ return new class extends Migration {
                 'Priority Changed',
                 'Category Changed',
                 'Feedback',
-                'Escalated'
+                'Escalated',
+                'Branch Transfer',
+                'Region Transfer',
+                'Division Transfer'
             ]);
             $table->string('old_value', 255)->nullable();
             $table->string('new_value', 255)->nullable();

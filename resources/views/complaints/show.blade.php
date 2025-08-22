@@ -39,24 +39,6 @@
                 @endif
             </div>
             <div class="flex items-center space-x-3">
-                <a href="{{ route('complaints.edit', $complaint) }}"
-                    class="inline-flex items-center px-4 py-2 bg-yellow-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit
-                </a>
-                <button id="escalate-btn"
-                    class="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                    Escalate
-                </button>
                 <a href="{{ route('complaints.index') }}"
                     class="inline-flex items-center px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
                     <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -116,7 +98,9 @@
                                     <h4 class="text-lg font-semibold text-gray-800">Description</h4>
                                 </div>
                                 <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                                    <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">{{
+                                    <p
+                                        class="text-gray-700 leading-relaxed whitespace-pre-wrap break-all break-words overflow-hidden">
+                                        {{
                                         $complaint->description }}</p>
                                 </div>
                             </div>
@@ -238,6 +222,48 @@
                                         <span class="text-sm text-gray-800">{{ $complaint->branch->name }}</span>
                                     </div>
                                     @endif
+                                    @if($complaint->region)
+                                    <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                                        <span class="text-sm font-medium text-gray-600">Region</span>
+                                        <span class="text-sm text-gray-800">{{ $complaint->region->name }}</span>
+                                    </div>
+                                    @endif
+                                    @if($complaint->division)
+                                    <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+                                        <span class="text-sm font-medium text-gray-600">Division</span>
+                                        <span class="text-sm text-gray-800">{{ $complaint->division->short_name ??
+                                            $complaint->division->name }}</span>
+                                    </div>
+                                    @endif
+                                    <div class="grid grid-cols-3 gap-2 pt-2">
+                                        <div
+                                            class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+                                            <div class="text-[10px] text-gray-500 uppercase tracking-wide">Same Branch
+                                            </div>
+                                            <div class="text-sm font-semibold text-indigo-600">
+                                                {{ \App\Models\Complaint::where('branch_id',
+                                                $complaint->branch_id)->count() }}
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+                                            <div class="text-[10px] text-gray-500 uppercase tracking-wide">Same Region
+                                            </div>
+                                            <div class="text-sm font-semibold text-indigo-600">
+                                                {{ $complaint->region_id ? \App\Models\Complaint::where('region_id',
+                                                $complaint->region_id)->count() : 0 }}
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="bg-white rounded-lg p-2 text-center shadow-sm border border-gray-100">
+                                            <div class="text-[10px] text-gray-500 uppercase tracking-wide">Same Division
+                                            </div>
+                                            <div class="text-sm font-semibold text-indigo-600">
+                                                {{ $complaint->division_id ? \App\Models\Complaint::where('division_id',
+                                                $complaint->division_id)->count() : 0 }}
+                                            </div>
+                                        </div>
+                                    </div>
                                     @if($complaint->expected_resolution_date)
                                     <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
                                         <span class="text-sm font-medium text-gray-600">Expected Resolution</span>
@@ -333,13 +359,22 @@
                                         </div>
                                     </div>
                                     @endif
-                                    @if($complaint->metrics->time_to_resolution)
+                                    @php
+                                    $computedResolutionMinutes = null;
+                                    if(in_array($complaint->status, ['Resolved','Closed']) && $complaint->resolved_at) {
+                                    $computedResolutionMinutes =
+                                    $complaint->created_at->diffInMinutes($complaint->resolved_at);
+                                    }
+                                    @endphp
+                                    @if($complaint->metrics->time_to_resolution || $computedResolutionMinutes)
                                     <div
                                         class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border-l-4 border-blue-400">
                                         <div>
                                             <span class="text-sm font-medium text-gray-600">Resolution Time</span>
                                             <p class="text-lg font-bold text-blue-600">{{
-                                                $complaint->metrics->formatted_resolution_time }}</p>
+                                                $complaint->metrics->formatted_resolution_time ??
+                                                \Carbon\CarbonInterval::minutes($computedResolutionMinutes)->cascade()->forHumans(short:true)
+                                                }}</p>
                                         </div>
                                     </div>
                                     @endif
@@ -468,93 +503,116 @@
 
                 <!-- History Tab -->
                 <div id="history-tab" class="tab-content p-6">
-                    <div class="space-y-4">
-                        @forelse($complaint->histories as $history)
-                        <div class="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg border-l-4 
+                    <div class="relative">
+                        <div
+                            class="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-300 via-gray-200 to-transparent pointer-events-none">
+                        </div>
+                        <ul class="space-y-6">
+                            @forelse($complaint->histories as $history)
+                            <li class="relative pl-12 group">
+                                <span class="absolute left-0 flex items-center justify-center w-8 h-8 rounded-full ring-4 ring-white dark:ring-gray-800 shadow-sm
                                     @switch($history->action_type)
-                                        @case('Created') border-blue-400 @break
-                                        @case('Assigned') @case('Reassigned') border-green-400 @break
-                                        @case('Status Changed') border-yellow-400 @break
-                                        @case('Resolved') border-green-500 @break
-                                        @case('Escalated') border-red-400 @break
-                                        @default border-gray-400
+                                        @case('Created') bg-blue-600 text-white @break
+                                        @case('Assigned') @case('Reassigned') bg-green-600 text-white @break
+                                        @case('Status Changed') bg-yellow-500 text-white @break
+                                        @case('Resolved') bg-emerald-600 text-white @break
+                                        @case('Escalated') bg-red-600 text-white @break
+                                        @case('Priority Changed') bg-orange-500 text-white @break
+                                        @case('Branch Transfer') bg-teal-600 text-white @break
+                                        @case('Region Transfer') bg-indigo-600 text-white @break
+                                        @case('Division Transfer') bg-pink-600 text-white @break
+                                        @default bg-gray-500 text-white
                                     @endswitch">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center
-                                            @switch($history->action_type)
-                                                @case('Created') bg-blue-100 text-blue-600 @break
-                                                @case('Assigned') @case('Reassigned') bg-green-100 text-green-600 @break
-                                                @case('Status Changed') bg-yellow-100 text-yellow-600 @break
-                                                @case('Resolved') bg-green-200 text-green-700 @break
-                                                @case('Escalated') bg-red-100 text-red-600 @break
-                                                @default bg-gray-100 text-gray-600
-                                            @endswitch">
                                     @switch($history->action_type)
                                     @case('Created')
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                            d="M12 6v12m6-6H6" />
                                     </svg>
                                     @break
                                     @case('Assigned')
                                     @case('Reassigned')
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                     </svg>
                                     @break
                                     @case('Resolved')
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 13l4 4L19 7" />
                                     </svg>
                                     @break
+                                    @case('Branch Transfer')
+                                    @case('Region Transfer')
+                                    @case('Division Transfer')
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M7 7h10M7 12h10M7 17h10" />
+                                    </svg>
+                                    @break
+                                    @case('Escalated')
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                    @break
                                     @default
-                                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                        viewBox="0 0 24 24" stroke="currentColor">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                     @endswitch
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex items-center justify-between">
-                                    <h4 class="text-sm font-medium text-gray-900">{{ $history->action_type }}</h4>
-                                    <time class="text-xs text-gray-500">{{ $history->performed_at->format('M d, Y H:i')
-                                        }}</time>
-                                </div>
-                                @if($history->old_value || $history->new_value)
-                                <div class="mt-1 text-sm text-gray-600">
-                                    @if($history->old_value && $history->new_value)
-                                    Changed from <span class="font-medium">{{ $history->old_value }}</span> to <span
-                                        class="font-medium">{{ $history->new_value }}</span>
-                                    @elseif($history->new_value)
-                                    Set to <span class="font-medium">{{ $history->new_value }}</span>
+                                </span>
+                                <div
+                                    class="bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl p-4 shadow-sm hover:shadow-md transition">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{
+                                            $history->action_type }}</h4>
+                                        <time class="text-xs text-gray-500">{{ $history->performed_at->format('M d, Y
+                                            H:i') }}</time>
+                                    </div>
+                                    @if($history->old_value || $history->new_value)
+                                    <div class="mt-2 text-xs text-gray-600 dark:text-gray-300">
+                                        @if($history->old_value && $history->new_value)
+                                        <span class="font-medium text-gray-700 dark:text-gray-200">{{
+                                            $history->old_value }}</span>
+                                        <span class="mx-1 text-gray-400">→</span>
+                                        <span class="font-medium text-gray-900 dark:text-white">{{ $history->new_value
+                                            }}</span>
+                                        @elseif($history->new_value)
+                                        <span class="font-medium text-gray-900 dark:text-white">{{ $history->new_value
+                                            }}</span>
+                                        @endif
+                                    </div>
                                     @endif
+                                    @if($history->comments)
+                                    <p class="mt-2 text-sm text-gray-700 dark:text-gray-300 leading-snug">{{
+                                        $history->comments }}</p>
+                                    @endif
+                                    <div
+                                        class="mt-3 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                                        <span>by {{ $history->performedBy->name }}</span>
+                                        <span
+                                            class="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">#{{
+                                            $history->id }}</span>
+                                    </div>
                                 </div>
-                                @endif
-                                @if($history->comments)
-                                <p class="mt-1 text-sm text-gray-700">{{ $history->comments }}</p>
-                                @endif
-                                <div class="mt-2 text-xs text-gray-500">
-                                    by {{ $history->performedBy->name }}
+                            </li>
+                            @empty
+                            <li class="text-center py-10">
+                                <div class="inline-flex flex-col items-center text-gray-500">
+                                    <svg class="h-12 w-12 text-gray-300" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <p class="mt-3 text-sm">No history records found</p>
                                 </div>
-                            </div>
-                        </div>
-                        @empty
-                        <div class="text-center py-8 text-gray-500">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p class="mt-2">No history records found</p>
-                        </div>
-                        @endforelse
+                            </li>
+                            @endforelse
+                        </ul>
                     </div>
                 </div>
 
@@ -645,7 +703,44 @@
 
                 <!-- Attachments Tab -->
                 <div id="attachments-tab" class="tab-content p-6" style="display: none;">
-                    <div class="space-y-4">
+                    <div class="space-y-6">
+                        <!-- Upload New Attachments -->
+                        <div class="p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-2 flex items-center">
+                                <svg class="w-4 h-4 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a4 4 0 00-5.656-5.656l-6.586 6.586a6 6 0 108.486 8.486L20.5 13" />
+                                </svg>
+                                Add / Upload Attachments
+                            </h4>
+                            <p class="text-xs text-gray-600 mb-3">Attach additional supporting files (screenshots,
+                                documents, logs). Files are stored securely and appear in the list below after upload.
+                                You can select multiple files at once.</p>
+                            <form method="POST" action="{{ route('complaints.add-attachments', $complaint) }}"
+                                enctype="multipart/form-data" class="space-y-3">
+                                @csrf
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Choose Files</label>
+                                    <input type="file" name="attachments[]" multiple
+                                        class="w-full text-sm border-gray-300 rounded-md focus:border-indigo-500 focus:ring-indigo-200" />
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[11px] text-gray-500">Accepted any type. Large files may take
+                                        longer to process.</span>
+                                    <button type="submit"
+                                        class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded shadow-sm flex items-center">
+                                        <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Upload
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <!-- Existing Attachments List -->
                         @forelse($complaint->attachments as $attachment)
                         <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                             <div class="flex items-center space-x-3">
@@ -899,7 +994,7 @@
                             </div>
 
                             <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                <h4 class="text-md font-medium mb-3">Priority / Branch Transfer</h4>
+                                <h4 class="text-md font-medium mb-3">Priority / Location Transfer</h4>
                                 <form method="POST" action="{{ route('complaints.update', $complaint) }}">
                                     @csrf
                                     @method('PATCH')
@@ -911,22 +1006,58 @@
                                             <option value="High">High</option>
                                             <option value="Critical">Critical</option>
                                         </select>
-
-                                        <select name="branch_id" class="w-full border-gray-300 rounded-md">
-                                            <option value="">Transfer to branch (optional)</option>
-                                            @foreach($branches as $branch)
-                                            <option value="{{ $branch->id }}" {{ $complaint->branch_id == $branch->id ?
-                                                'selected' : '' }}>{{ $branch->name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                            <div>
+                                                <select name="branch_id"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                                    <option value="">Branch: Not Applicable</option>
+                                                    @foreach($branches as $branch)
+                                                    <option value="{{ $branch->id }}" {{ $complaint->branch_id ==
+                                                        $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <select name="region_id"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                                    <option value="">Region: Not Applicable</option>
+                                                    @foreach($regions as $region)
+                                                    <option value="{{ $region->id }}" {{ $complaint->region_id ==
+                                                        $region->id ? 'selected' : '' }}>{{ $region->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <select name="division_id"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                                    <option value="">Division: Not Applicable</option>
+                                                    @foreach($divisions as $division)
+                                                    <option value="{{ $division->id }}" {{ $complaint->division_id ==
+                                                        $division->id ? 'selected' : '' }}>{{ $division->short_name ??
+                                                        $division->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                        </div>
 
                                         <input type="text" name="priority_change_reason"
                                             placeholder="Priority change reason (required if raising to Critical)"
                                             class="w-full border-gray-300 rounded-md" />
-
-                                        <div class="flex justify-end space-x-2">
-                                            <button type="submit"
-                                                class="px-3 py-1 bg-green-600 text-white rounded">Save</button>
+                                        <div class="flex flex-wrap gap-2 justify-end text-xs">
+                                            <button type="submit" name="_transfer_scope" value="priority"
+                                                class="px-3 py-1 bg-indigo-600 text-white rounded">Update
+                                                Priority</button>
+                                            <button type="submit" name="_transfer_scope" value="branch"
+                                                class="px-3 py-1 bg-blue-600 text-white rounded">Transfer
+                                                Branch</button>
+                                            <button type="submit" name="_transfer_scope" value="region"
+                                                class="px-3 py-1 bg-purple-600 text-white rounded">Transfer
+                                                Region</button>
+                                            <button type="submit" name="_transfer_scope" value="division"
+                                                class="px-3 py-1 bg-pink-600 text-white rounded">Transfer
+                                                Division</button>
+                                            <button type="submit" name="_transfer_scope" value="all"
+                                                class="px-3 py-1 bg-green-600 text-white rounded">Save All</button>
                                         </div>
                                     </div>
                                 </form>
@@ -938,6 +1069,14 @@
 
                 <!-- Watchers Tab -->
                 <div id="watchers-tab" class="tab-content p-6" style="display:none;">
+                    <div
+                        class="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg text-xs text-gray-700 leading-relaxed">
+                        <strong class="text-purple-700">What is a Watcher?</strong> A watcher is a user who is
+                        subscribed to this complaint for visibility and updates. Watchers are NOT responsible for
+                        resolving the issue (unlike the assignee) but they receive updates, can monitor progress, and
+                        provide input when necessary (e.g. managers, stakeholders, subject-matter experts). Use the list
+                        below to add or remove watchers without affecting assignment or workflow status.
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <h4 class="text-sm font-semibold text-gray-800 mb-3">Current Watchers</h4>

@@ -462,6 +462,7 @@
                             <th class="py-3 px-2 text-center">Source</th>
                             <th class="py-3 px-2 text-center">Created</th>
                             <th class="py-3 px-2 text-center">SLA</th>
+                            <th class="py-3 px-2 text-center">Esc</th>
                             <th class="py-3 px-2 text-center">Actions</th>
                         </tr>
                     </thead>
@@ -552,6 +553,12 @@
                                 @else
                                 <span class="text-gray-400">-</span>
                                 @endif
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                <span
+                                    class="text-xs font-semibold {{ ($complaint->metrics->escalation_count ?? $complaint->escalations->count()) > 0 ? 'text-red-600' : 'text-gray-500' }}">
+                                    {{ $complaint->metrics->escalation_count ?? $complaint->escalations->count() }}
+                                </span>
                             </td>
                             <td class="py-3 px-2 text-center">
                                 <a href="{{ route('complaints.show', $complaint) }}"
