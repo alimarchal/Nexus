@@ -111,7 +111,7 @@
                         <h3 class="font-semibold text-gray-800 dark:text-gray-100">Monthly Trend</h3>
                         <span class="text-xs text-gray-500" id="trend-date-range"></span>
                     </div>
-                    <div class="h-64"><canvas id="monthlyTrendChart"></canvas></div>
+                    <div class="h-64" id="monthlyTrendChart"></div>
                 </div>
                 <div class="space-y-4">
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
@@ -147,7 +147,7 @@
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <canvas id="categoryDistributionChart" height="160"></canvas>
+                                <div id="categoryDistributionChart" class="h-56"></div>
                             </div>
                             <div>
                                 <ul id="categoryDistributionList" class="text-xs space-y-1"></ul>
@@ -161,7 +161,7 @@
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <canvas id="harassmentSubCategoryChart" height="160"></canvas>
+                                <div id="harassmentSubCategoryChart" class="h-56"></div>
                             </div>
                             <div>
                                 <ul id="harassmentSubCategoryList" class="text-xs space-y-1"></ul>
@@ -174,7 +174,7 @@
                         <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
                                 class="w-2 h-2 bg-emerald-500 rounded-full"></span> Top Resolvers</h3>
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
-                            <canvas id="topResolversChart" height="220"></canvas>
+                            <div id="topResolversChart" class="h-64"></div>
                             <ul id="topResolversList" class="text-xs space-y-1 mt-4"></ul>
                         </div>
                     </div>
@@ -182,7 +182,7 @@
                         <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
                                 class="w-2 h-2 bg-amber-500 rounded-full"></span> Top Watchers</h3>
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
-                            <canvas id="topWatchersChart" height="220"></canvas>
+                            <div id="topWatchersChart" class="h-64"></div>
                             <ul id="topWatchersList" class="text-xs space-y-1 mt-4"></ul>
                         </div>
                     </div>
@@ -191,7 +191,7 @@
                     <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
                             class="w-2 h-2 bg-indigo-500 rounded-full"></span> Category Resolution Rates</h3>
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
-                        <canvas id="categoryResolutionRateChart" height="200"></canvas>
+                        <div id="categoryResolutionRateChart" class="h-60"></div>
                         <table class="mt-4 w-full text-xs">
                             <thead class="text-gray-600 dark:text-gray-300">
                                 <tr>
@@ -210,7 +210,8 @@
     </div>
 
     @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {{-- ApexCharts already loaded globally in layout via local asset; removed duplicate CDN include to prevent version
+    conflicts --}}
     <script>
         const initialPayload = @json($initialPayload);
         const initialMonthlyTrend = @json($monthlyTrend);
@@ -228,8 +229,7 @@
             { key:'resolved', label:'Resolved', color:'bg-green-50 text-green-700 border-green-200', filter:{'filter[status]':'Resolved'}, tooltip:'Resolved / Closed aggregated', aggregate:true },
         ];
 
-    let monthlyChart = null;
-    let categoryDistributionChart, harassmentSubCategoryChart, topResolversChart, topWatchersChart, categoryResolutionRateChart;
+    let charts = {};
 
         function renderCards(metrics){
             const container = document.getElementById('metrics-cards');
@@ -268,14 +268,18 @@
         }
 
         function renderMonthlyTrend(trend){
-            const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
             const labels = trend.map(t=> new Date(t.year, t.month-1).toLocaleDateString('en-US',{month:'short', year:'2-digit'}));
             const counts = trend.map(t=> t.count);
-            if(monthlyChart){ monthlyChart.destroy(); }
-            monthlyChart = new Chart(ctx, {
-                type:'line',
-                data:{ labels, datasets:[{ label:'Complaints', data:counts, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,0.15)', tension:.35, fill:true }]},
-                options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 }}}}
+            renderApex('monthlyTrendChart', {
+                chart: { type: 'area', height: 250, toolbar:{show:false}, animations:{easing:'easeinout', speed:500}},
+                stroke: { curve: 'smooth', width: 3 },
+                dataLabels: { enabled: false },
+                series: [{ name: 'Complaints', data: counts }],
+                fill: { type:'gradient', gradient:{ shadeIntensity:.5, opacityFrom:.45, opacityTo:.05, stops:[0,95,100]}},
+                xaxis: { categories: labels, labels:{ rotate:0 } },
+                yaxis: { labels:{ formatter:v=> Math.round(v) } },
+                grid: { borderColor: 'rgba(0,0,0,0.08)' },
+                tooltip: { theme: document.documentElement.classList.contains('dark') ? 'dark':'light' }
             });
         }
 
@@ -289,28 +293,40 @@
             renderDistributions(@json($sourceDistribution), 'source-distribution', 'source');
         }
 
-        function makeChart(ctxId, config){
-            const canvas = document.getElementById(ctxId);
-            if(!canvas) return null;
-            if(canvas._chartInstance){ canvas._chartInstance.destroy(); }
-            canvas._chartInstance = new Chart(canvas.getContext('2d'), config);
-            return canvas._chartInstance;
+        function renderApex(id, options){
+            const el = document.getElementById(id);
+            if(!el) return;
+            if(charts[id]) { charts[id].updateOptions(options, true, true); return; }
+            charts[id] = new ApexCharts(el, options);
+            charts[id].render();
         }
 
-        function doughnutConfig(labels, data, colors){
-            return {
-                type:'doughnut',
-                data:{ labels, datasets:[{ data, backgroundColor: colors, borderWidth:1 }]},
-                options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
-            };
+        function donutChart(id, labels, data){
+            const palette = labels.map((_,i)=> `hsl(${(i*67)%360} 70% 50%)`);
+            renderApex(id, {
+                chart:{ type:'donut', height:220, toolbar:{show:false}},
+                series:data,
+                labels:labels,
+                legend:{ position:'bottom' },
+                stroke:{ width:0 },
+                dataLabels:{ enabled:true, formatter:(val,opts)=> data[opts.seriesIndex] },
+                colors:palette,
+                tooltip:{ y:{ formatter:v=> v } }
+            });
         }
 
-        function barConfig(labels, data, label, color){
-            return {
-                type:'bar',
-                data:{ labels, datasets:[{ label, data, backgroundColor: color, borderRadius:6 }]},
-                options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
-            };
+        function barChart(id, categories, data, color='#2563eb', horizontal=false, suffix=''){ 
+            renderApex(id, {
+                chart:{ type:'bar', height: categories.length>5? (categories.length*28):220, toolbar:{show:false}, animations:{ easing:'easeinout', speed:500 }},
+                plotOptions:{ bar:{ horizontal, borderRadius:6, distributed: horizontal }},
+                dataLabels:{ enabled:false },
+                series:[{ name:'Value', data }],
+                colors: horizontal ? categories.map((_,i)=>`hsl(${(i*55)%360} 65% 50%)`) : [color],
+                xaxis:{ categories },
+                yaxis:{ labels:{ formatter:v=> Math.round(v)+suffix }},
+                tooltip:{ y:{ formatter:v=> v+suffix }},
+                grid:{ borderColor:'rgba(0,0,0,0.08)' }
+            });
         }
 
         async function fetchAndUpdate(){
@@ -329,42 +345,34 @@
 
             // Extended datasets
             const cat = json.categoryDistribution || [];
-            const catColors = cat.map((_,i)=>`hsl(${(i*65)%360} 70% 55%)`);
             if(cat.length){
-                categoryDistributionChart = makeChart('categoryDistributionChart', doughnutConfig(cat.map(c=>c.category || '—'), cat.map(c=>c.count), catColors));
+                donutChart('categoryDistributionChart', cat.map(c=>c.category||'—'), cat.map(c=>c.count));
                 document.getElementById('categoryDistributionList').innerHTML = cat.map(c=>`<li class='flex justify-between'><span>${c.category||'—'}</span><span class='font-semibold'>${c.count}</span></li>`).join('');
-            } else {
-                document.getElementById('categoryDistributionList').innerHTML = '<li class="text-gray-500">No data</li>';
-            }
+            } else { document.getElementById('categoryDistributionList').innerHTML='<li class="text-gray-500">No data</li>'; }
+
             const hs = json.harassmentSubCategoryDistribution || [];
-            const hsColors = hs.map((_,i)=>`hsl(${(i*47)%360} 60% 55%)`);
             if(hs.length){
-                harassmentSubCategoryChart = makeChart('harassmentSubCategoryChart', doughnutConfig(hs.map(c=>c.sub_category||'—'), hs.map(c=>c.count), hsColors));
+                donutChart('harassmentSubCategoryChart', hs.map(c=>c.sub_category||'—'), hs.map(c=>c.count));
                 document.getElementById('harassmentSubCategoryList').innerHTML = hs.map(c=>`<li class='flex justify-between'><span>${c.sub_category||'—'}</span><span class='font-semibold'>${c.count}</span></li>`).join('');
-            } else {
-                document.getElementById('harassmentSubCategoryList').innerHTML = '<li class="text-gray-500">No data</li>';
-            }
+            } else { document.getElementById('harassmentSubCategoryList').innerHTML='<li class="text-gray-500">No data</li>'; }
+
             const tr = json.topResolvers || [];
             if(tr.length){
-                topResolversChart = makeChart('topResolversChart', barConfig(tr.map(r=>r.user_name), tr.map(r=>r.resolved_count), 'Resolved', 'rgba(16,185,129,0.7)'));
+                barChart('topResolversChart', tr.map(r=>r.user_name), tr.map(r=>r.resolved_count), '#10b981', true);
                 document.getElementById('topResolversList').innerHTML = tr.map(r=>`<li class='flex justify-between'><span>${r.user_name}</span><span class='font-semibold'>${r.resolved_count}</span></li>`).join('');
-            } else {
-                document.getElementById('topResolversList').innerHTML = '<li class="text-gray-500">No data</li>';
-            }
+            } else { document.getElementById('topResolversList').innerHTML='<li class="text-gray-500">No data</li>'; }
+
             const tw = json.topWatchers || [];
             if(tw.length){
-                topWatchersChart = makeChart('topWatchersChart', barConfig(tw.map(r=>r.user_name), tw.map(r=>r.watched_complaints), 'Watched', 'rgba(245,158,11,0.7)'));
+                barChart('topWatchersChart', tw.map(r=>r.user_name), tw.map(r=>r.watched_complaints), '#f59e0b', true);
                 document.getElementById('topWatchersList').innerHTML = tw.map(r=>`<li class='flex justify-between'><span>${r.user_name}</span><span class='font-semibold'>${r.watched_complaints}</span></li>`).join('');
-            } else {
-                document.getElementById('topWatchersList').innerHTML = '<li class="text-gray-500">No data</li>';
-            }
+            } else { document.getElementById('topWatchersList').innerHTML='<li class="text-gray-500">No data</li>'; }
+
             const cr = json.categoryResolutionRates || [];
             if(cr.length){
-                categoryResolutionRateChart = makeChart('categoryResolutionRateChart', barConfig(cr.map(c=>c.category||'—'), cr.map(c=>c.resolution_rate), 'Rate %', 'rgba(99,102,241,0.7)'));
+                barChart('categoryResolutionRateChart', cr.map(c=>c.category||'—'), cr.map(c=>c.resolution_rate), '#6366f1', false, '%');
                 document.getElementById('categoryResolutionRateTable').innerHTML = cr.map(c=>`<tr class='border-t border-gray-200 dark:border-gray-700'><td>${c.category||'—'}</td><td class='text-right'>${c.resolved}</td><td class='text-right'>${c.total}</td><td class='text-right font-semibold'>${c.resolution_rate}</td></tr>`).join('');
-            } else {
-                document.getElementById('categoryResolutionRateTable').innerHTML = '<tr><td colspan="4" class="text-center text-gray-500">No data</td></tr>';
-            }
+            } else { document.getElementById('categoryResolutionRateTable').innerHTML='<tr><td colspan="4" class="text-center text-gray-500">No data</td></tr>'; }
         }
 
         document.getElementById('analytics-filters').addEventListener('submit', function(e){ e.preventDefault(); fetchAndUpdate(); });

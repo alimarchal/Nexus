@@ -172,10 +172,6 @@
                         </div>
 
                         <!-- Filter by Region -->
-
-
-
-
                         <div>
                             <label for="filter[region_id]"
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Region</label>
@@ -732,15 +728,16 @@
         </div>
     </div>
 
-
-
-
     @push('modals')
-    <!-- Bulk selection scripts removed -->
-
     <script>
-        const targetDiv = document.getElementById("filters");
+        document.addEventListener('DOMContentLoaded', function() {
+            const targetDiv = document.getElementById("filters");
             const btn = document.getElementById("toggle");
+
+            // Add CSS for smooth transitions
+            const style = document.createElement('style');
+            style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`;
+            document.head.appendChild(style);
 
             function showFilters() {
                 targetDiv.style.display = 'block';
@@ -760,75 +757,64 @@
                 }, 300);
             }
 
-            btn.onclick = function(event) {
+            // Toggle filter visibility
+            btn.addEventListener('click', function(event) {
                 event.stopPropagation();
-                if (targetDiv.style.display === "none") {
+                if (targetDiv.style.display === "none" || !targetDiv.style.display) {
                     showFilters();
                 } else {
                     hideFilters();
                 }
-            };
+            });
 
             // Hide filters when clicking outside
             document.addEventListener('click', function(event) {
-                if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
+                if (targetDiv.style.display === 'block' && 
+                    !targetDiv.contains(event.target) && 
+                    !btn.contains(event.target)) {
                     hideFilters();
                 }
             });
-            // Function to open the modal and show the full description
-            function openModal(description) {
-                // Set the description content in the modal
-                document.getElementById('modalDescription').innerText = description;
 
-                // Show the modal
-                document.getElementById('descriptionModal').classList.remove('hidden');
-            }
-
-            // Function to close the modal
-            function closeModal() {
-                // Hide the modal
-                document.getElementById('descriptionModal').classList.add('hidden');
-            }
-
-
-            // Prevent clicks inside the filter from closing it
+            // Prevent clicks inside filter from closing it
             targetDiv.addEventListener('click', function(event) {
                 event.stopPropagation();
             });
+        });
 
-            // Add CSS for smooth transitions
-            const style = document.createElement('style');
-            style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`;
-            document.head.appendChild(style);
-    </script>
-    <script>
-        function toggleDescription(link) {
-                var preview = link.previousElementSibling.previousElementSibling;
-                var fullDescription = link.previousElementSibling;
-
-                preview.style.display = 'none';
-                fullDescription.style.display = 'inline';
-                link.style.display = 'none';
+        // Modal functions for description display
+        function openModal(description) {
+            const modal = document.getElementById('descriptionModal');
+            if (modal) {
+                document.getElementById('modalDescription').innerText = description;
+                modal.classList.remove('hidden');
             }
-    </script>
-    <script>
-        function toggleDescription(link) {
-                const fullText = link.previousElementSibling; // Get the full description span
-                const previewText = fullText.previousElementSibling; // Get the preview text span
+        }
 
-                // Toggle the visibility of the full text and preview text
-                if (fullText.style.display !== "none") {
-                    fullText.style.display = "none"; // Hide full text
-                    previewText.style.display = "block"; // Show preview text
-                    link.innerText = "Read more"; // Change link text
-                } else {
-                    fullText.style.display = "block"; // Show full text
-                    previewText.style.display = "none"; // Hide preview text
-                    link.innerText = "Read less"; // Change link text
-                }
+        function closeModal() {
+            const modal = document.getElementById('descriptionModal');
+            if (modal) {
+                modal.classList.add('hidden');
             }
-    </script>
+        }
 
-    <!-- Action button scripts removed -->
+        // Toggle description function (unified version)
+        function toggleDescription(link) {
+            const fullText = link.previousElementSibling;
+            const previewText = fullText ? fullText.previousElementSibling : null;
+            
+            if (!fullText || !previewText) return;
+
+            if (fullText.style.display !== "none") {
+                fullText.style.display = "none";
+                previewText.style.display = "block";
+                link.innerText = "Read more";
+            } else {
+                fullText.style.display = "block";
+                previewText.style.display = "none";
+                link.innerText = "Read less";
+            }
+        }
+    </script>
     @endpush
 </x-app-layout>
