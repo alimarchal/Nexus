@@ -48,6 +48,15 @@
                     </svg>
                     Back to List
                 </a>
+                <button id="download-pdf-btn"
+                    class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4v12m0 0l-3.5-3.5M12 16l3.5-3.5M6 20h12" />
+                    </svg>
+                    Download PDF
+                </button>
             </div>
         </div>
     </x-slot>
@@ -1435,6 +1444,118 @@
             initTabs();
         }
     })();
+    </script>
+
+    <!-- Client-side PDF generation libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+        integrity="sha512-BNa5Hq/bIu1eJ8vkQ+g0ezdGDbVS9/6IKxhpcJn/qdNqxabWWMwBLT0R59ZC4MZt1VY8h1N5DPKySx1j0DscEw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+        integrity="sha512-/F2nSdzEYwH14r2raXIiQunlslqY5T2r8j04YfGLwRoTSesFiNUFDXL9uBeb5GsyhQOdE31E4n4t4tPcTUMlPw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        (function() {
+            function setupPdfDownload() {
+                const btn = document.getElementById('download-pdf-btn');
+                if (!btn) return;
+                if (btn.dataset.pdfInit) return;
+                btn.dataset.pdfInit = '1';
+
+                btn.addEventListener('click', async function() {
+                    const { jsPDF } = window.jspdf || {};
+                    if (!jsPDF || !window.html2canvas) {
+                        alert('PDF libraries failed to load. Please try again or use your browser\'s Print > Save as PDF.');
+                        return;
+                    }
+
+                    const target = document.querySelector('div.max-w-7xl'); // main content container
+                    if (!target) {
+                        alert('Content container not found.');
+                        return;
+                    }
+
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50');
+                    btn.textContent = 'Generating...';
+
+                    // Expand any collapsed tab contents temporarily if needed
+                    const hiddenTabs = Array.from(target.querySelectorAll('.tab-content'))
+                        .filter(el => el.style && el.style.display === 'none');
+                    hiddenTabs.forEach(el => el.dataset._prevDisplay = el.style.display);
+                    hiddenTabs.forEach(el => el.style.display = 'block');
+
+                    try {
+                        // Use html2canvas at higher scale for clarity
+                        const canvas = await html2canvas(target, {
+                            scale: 2,
+                            useCORS: true,
+                            scrollY: -window.scrollY
+                        });
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdf = new jsPDF('p', 'pt', 'a4');
+                        const pageWidth = pdf.internal.pageSize.getWidth();
+                        const pageHeight = pdf.internal.pageSize.getHeight();
+                        const imgWidth = pageWidth - 40; // margins
+                        const imgHeight = canvas.height * imgWidth / canvas.width;
+
+                        let position = 20;
+                        let heightLeft = imgHeight;
+                        let y = position;
+
+                        pdf.setProperties({
+                            title: 'Complaint ' + @json($complaint->complaint_number),
+                            subject: 'Complaint Details Export',
+                            creator: 'System'
+                        });
+
+                        let page = 1;
+                        const totalPages = Math.ceil(imgHeight / pageHeight);
+
+                        // Split image across pages if needed
+                        let canvasPos = 0;
+                        while (heightLeft > 0) {
+                            if (page > 1) pdf.addPage();
+
+                            // Create a page slice via temporary canvas
+                            const pageCanvas = document.createElement('canvas');
+                            const pageCtx = pageCanvas.getContext('2d');
+                            pageCanvas.width = canvas.width;
+                            pageCanvas.height = Math.min(canvas.height - canvasPos, canvas.width * (pageHeight - 40) / imgWidth);
+                            pageCtx.drawImage(canvas, 0, canvasPos, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
+                            const pageImgData = pageCanvas.toDataURL('image/png');
+                            const pageImgHeight = pageCanvas.height * imgWidth / canvas.width;
+
+                            pdf.addImage(pageImgData, 'PNG', 20, 20, imgWidth, pageImgHeight, undefined, 'FAST');
+                            pdf.setFontSize(8);
+                            pdf.setTextColor(120);
+                            pdf.text('Complaint: ' + @json($complaint->complaint_number) + ' | Page ' + page + ' of ' + totalPages, 20, pageHeight - 10);
+
+                            heightLeft -= pageCanvas.height * imgWidth / canvas.width;
+                            canvasPos += pageCanvas.height;
+                            page++;
+                        }
+
+                        const filename = 'complaint-' + @json($complaint->complaint_number) + '.pdf';
+                        pdf.save(filename);
+                    } catch (e) {
+                        console.error(e);
+                        alert('Failed to generate PDF. You can use your browser\'s Print > Save as PDF as a fallback.');
+                    } finally {
+                        // Restore hidden tabs
+                        hiddenTabs.forEach(el => el.style.display = el.dataset._prevDisplay || 'none');
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-50');
+                        btn.textContent = 'Download PDF';
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', setupPdfDownload);
+            } else {
+                setupPdfDownload();
+            }
+        })();
     </script>
 
     <!-- Load SweetAlert2 -->

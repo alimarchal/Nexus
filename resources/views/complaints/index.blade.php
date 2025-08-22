@@ -574,7 +574,7 @@
                             <th class="py-3 px-2 text-center">Assigned To</th>
                             <th class="py-3 px-2 text-center">Source</th>
                             <th class="py-3 px-2 text-center">Created</th>
-                            <th class="py-3 px-2 text-center">SLA</th>
+                            <th class="py-3 px-2 text-center">SLA (DUE)</th>
                             <th class="py-3 px-2 text-center">Esc</th>
                             <th class="py-3 px-2 text-center">Actions</th>
                         </tr>
@@ -655,7 +655,7 @@
                                 <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ $complaint->source }}</span>
                             </td>
                             <td class="py-3 px-2 text-center">
-                                <div class="text-sm">{{ $complaint->created_at->format('M d, Y') }}</div>
+                                <div class="text-sm">{{ $complaint->created_at->format('d M Y') }}</div>
                                 <div class="text-xs text-gray-500">{{ $complaint->created_at->diffForHumans() }}
                                 </div>
                             </td>
@@ -666,10 +666,9 @@
                                 </span>
                                 @elseif($complaint->expected_resolution_date)
                                 <div class="text-xs">
-                                    <div class="text-gray-600">Due:</div>
                                     <div
                                         class="{{ $complaint->expected_resolution_date->isPast() ? 'text-red-600' : 'text-green-600' }}">
-                                        {{ $complaint->expected_resolution_date->format('M d') }}
+                                        {{ $complaint->expected_resolution_date->format('d M Y') }}
                                     </div>
                                 </div>
                                 @else
