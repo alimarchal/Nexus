@@ -1443,7 +1443,17 @@
                             ['Branch', c.branch?.name || '-','Region', c.region?.name || '-'],
                             ['Division', c.division?.short_name || c.division?.name || '-','SLA Breached', c.sla_breached? 'Yes':'No']
                         ];
-                        doc.autoTable({ startY:y, head:[['FIELD','VALUE','FIELD','VALUE']], body:summaryRows, styles:{fontSize:8,cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255], fontStyle:'bold', halign:'left'}, columnStyles:{0:{cellWidth:95},1:{cellWidth:175},2:{cellWidth:95},3:{cellWidth:150}}, theme:'grid' });
+                        // Summary table (slightly reduced total width to avoid fractional overflow warnings)
+                        doc.autoTable({
+                            startY:y,
+                            head:[['FIELD','VALUE','FIELD','VALUE']],
+                            body:summaryRows,
+                            styles:{fontSize:8,cellPadding:3, lineColor:[0,0,0], lineWidth:0.1, overflow:'linebreak'},
+                            headStyles:{fillColor:[0,0,0], textColor:[255,255,255], fontStyle:'bold', halign:'left'},
+                            columnStyles:{0:{cellWidth:94},1:{cellWidth:172},2:{cellWidth:94},3:{cellWidth:146}},
+                            tableWidth:510,
+                            theme:'grid'
+                        });
                         y = doc.lastAutoTable.finalY + 15;
 
                         // Complainant
@@ -1471,7 +1481,16 @@
                                 ['Abuser Phone', c.harassment_abuser_phone || '-', 'Abuser Email', c.harassment_abuser_email || '-'],
                                 ['Relationship', c.harassment_abuser_relationship || '-', '', '']
                             ];
-                            doc.autoTable({ startY:y, head:[['FIELD','VALUE','FIELD','VALUE']], body:hRows, styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]}, columnStyles:{0:{cellWidth:95},1:{cellWidth:175},2:{cellWidth:95},3:{cellWidth:150}}, theme:'grid' });
+                            doc.autoTable({
+                                startY:y,
+                                head:[['FIELD','VALUE','FIELD','VALUE']],
+                                body:hRows,
+                                styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1, overflow:'linebreak'},
+                                headStyles:{fillColor:[0,0,0], textColor:[255,255,255]},
+                                columnStyles:{0:{cellWidth:94},1:{cellWidth:172},2:{cellWidth:94},3:{cellWidth:146}},
+                                tableWidth:510,
+                                theme:'grid'
+                            });
                             y = doc.lastAutoTable.finalY + 15;
                             if(c.harassment_details){
                                 doc.setFontSize(9); doc.setTextColor(60); const hs = doc.splitTextToSize('Details: '+c.harassment_details, 515); doc.text(hs,40,y); y += hs.length*11 + 10;
