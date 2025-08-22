@@ -48,34 +48,15 @@
                     </svg>
                     Back to List
                 </a>
-                <button id="download-pdf-btn"
-                    class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm">
+                <button id="structured-pdf-btn"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-700 hover:bg-indigo-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
+                    title="Generate printable PDF (excludes binary attachments)">
                     <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 4v12m0 0l-3.5-3.5M12 16l3.5-3.5M6 20h12" />
                     </svg>
-                    Download PDF
-                </button>
-                <a href="{{ route('complaints.full', $complaint) }}" target="_blank"
-                    class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
-                    title="Download Full JSON Data">
-                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 4h16v4H4zM4 12h16v8H4z" />
-                    </svg>
-                    Raw JSON
-                </a>
-                <button id="structured-pdf-btn"
-                    class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
-                    title="Generate formatted PDF (excludes attachments)">
-                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                        stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v8m4-4H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Structured PDF
+                    Download Structured PDF
                 </button>
             </div>
         </div>
@@ -1347,314 +1328,35 @@
 
     @push('scripts')
     <script>
-        (function() {
-        function initTabs() {
-            console.log('Initializing tab functionality...');
-
-            // Tab functionality
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            console.log('Found tab buttons:', tabButtons.length);
-            console.log('Found tab contents:', tabContents.length);
-
-            if (tabButtons.length === 0) {
-                console.error('No tab buttons found! Check if elements have .tab-button class');
-                return;
-            }
-
-            // Initialize tabs - hide all then show history by default
-            if (tabContents.length > 0) {
-                tabContents.forEach(content => {
-                    content.style.display = 'none';
-                });
-
+        // Clean tab initialization (legacy snapshot PDF code removed)
+        (function(){
+            function initTabs(){
+                const tabButtons = document.querySelectorAll('.tab-button');
+                const tabContents = document.querySelectorAll('.tab-content');
+                if(!tabButtons.length) return;
+                tabContents.forEach(c=>c.style.display='none');
                 const historyTab = document.getElementById('history-tab');
-                if (historyTab) {
-                    historyTab.style.display = 'block';
-                }
-            }
-
-            // Add click/keyboard listeners, but avoid duplicate listeners
-            tabButtons.forEach((button, index) => {
-                if (button.dataset.tabInit) return; // already initialized
-                button.dataset.tabInit = '1';
-
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    const tabName = this.getAttribute('data-tab');
-                    if (!tabName) return;
-
-                    // Remove active classes from all tab buttons
-                    tabButtons.forEach(btn => {
-                        btn.classList.remove('border-indigo-500', 'text-indigo-600');
-                        btn.classList.add('border-transparent', 'text-gray-500');
-                    });
-
-                    // Hide all tab contents
-                    tabContents.forEach(content => {
-                        content.style.display = 'none';
-                    });
-
-                    // Activate clicked button
-                    this.classList.remove('border-transparent', 'text-gray-500');
-                    this.classList.add('border-indigo-500', 'text-indigo-600');
-
-                    // Show corresponding tab content
-                    const targetTab = document.getElementById(tabName + '-tab');
-                    if (targetTab) {
-                        targetTab.style.display = 'block';
-                    } else {
-                        console.error('Target tab not found:', tabName + '-tab');
-                    }
-                });
-
-                // Keyboard support
-                button.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === ' ') {
+                if(historyTab) historyTab.style.display='block';
+                tabButtons.forEach(btn=>{
+                    if(btn.dataset.tabInit) return; btn.dataset.tabInit='1';
+                    btn.addEventListener('click', e=>{
                         e.preventDefault();
-                        this.click();
-                    }
-                });
-            });
-
-            // Escalation modal functionality
-            const escalateBtn = document.getElementById('escalate-btn');
-            const escalationModal = document.getElementById('escalation-modal');
-            const cancelEscalation = document.getElementById('cancel-escalation');
-
-            if (escalateBtn && escalationModal) {
-                if (!escalateBtn.dataset.modalInit) {
-                    escalateBtn.dataset.modalInit = '1';
-                    escalateBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        escalationModal.classList.remove('hidden');
+                        const tabName = btn.getAttribute('data-tab');
+                        tabButtons.forEach(b=>{ b.classList.remove('border-indigo-500','text-indigo-600'); b.classList.add('border-transparent','text-gray-500'); });
+                        tabContents.forEach(tc=>tc.style.display='none');
+                        btn.classList.add('border-indigo-500','text-indigo-600');
+                        btn.classList.remove('border-transparent','text-gray-500');
+                        const tgt = document.getElementById(tabName+'-tab');
+                        if(tgt) tgt.style.display='block';
                     });
-                }
-            }
-
-            if (cancelEscalation && escalationModal) {
-                if (!cancelEscalation.dataset.modalInit) {
-                    cancelEscalation.dataset.modalInit = '1';
-                    cancelEscalation.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        escalationModal.classList.add('hidden');
-                    });
-                }
-            }
-
-            if (escalationModal && !escalationModal.dataset.outsideInit) {
-                escalationModal.dataset.outsideInit = '1';
-                escalationModal.addEventListener('click', function(e) {
-                    if (e.target === escalationModal) {
-                        escalationModal.classList.add('hidden');
-                    }
+                    btn.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); }});
                 });
             }
-
-            console.log('Tab functionality initialized successfully');
-        }
-
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initTabs);
-        } else {
-            // Document is already loaded — initialize immediately
-            initTabs();
-        }
-    })();
-    </script>
-
-    <!-- Client-side PDF generation libraries (primary CDN) -->
-    <script id="html2canvas-cdn" src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
-        referrerpolicy="no-referrer"></script>
-    <script id="jspdf-cdn" src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
-        referrerpolicy="no-referrer"></script>
-    <script>
-        (function() {
-            // Dynamic loader with fallback CDNs
-            async function ensurePdfLibs() {
-                function loaded() { return window.html2canvas && window.jspdf && window.jspdf.jsPDF; }
-                if (loaded()) return true;
-
-                const fallbacks = [
-                    { h:"https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js", j:"https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js" },
-                    { h:"https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", j:"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" }
-                ];
-
-                function inject(src) { return new Promise((res, rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=()=>res(true); s.onerror=()=>rej(new Error('fail '+src)); document.head.appendChild(s); }); }
-
-                for (const set of fallbacks) {
-                    try {
-                        if (!window.html2canvas) await inject(set.h);
-                        if (!window.jspdf || !window.jspdf.jsPDF) await inject(set.j);
-                        if (loaded()) return true;
-                    } catch(e) { console.warn('PDF lib fallback failed', e); }
-                }
-                return loaded();
-            }
-            function setupPdfDownload() {
-                const btn = document.getElementById('download-pdf-btn');
-                if (!btn) return;
-                if (btn.dataset.pdfInit) return;
-                btn.dataset.pdfInit = '1';
-
-                btn.addEventListener('click', async function() {
-                    // Try to ensure libs (with fallbacks) before proceeding
-                    if (!(window.jspdf && window.jspdf.jsPDF && window.html2canvas)) {
-                        btn.textContent = 'Loading Libs...';
-                        await ensurePdfLibs();
-                    }
-
-                    const { jsPDF } = window.jspdf || {};
-                    if (!jsPDF || !window.html2canvas) {
-                        alert('PDF libraries could not be loaded (network/CSP). Use browser Print > Save as PDF.');
-                        btn.textContent = 'Download PDF';
-                        return; 
-                    }
-
-                    const sourceContainer = document.querySelector('div.max-w-7xl'); // main content container
-                    if (!sourceContainer) {
-                        alert('Content container not found.');
-                        return;
-                    }
-
-                    // Build a clone so we don't mutate on-screen layout
-                    const target = sourceContainer.cloneNode(true);
-                    target.id = 'pdf-export-clone';
-                    target.style.position = 'absolute';
-                    target.style.left = '-99999px';
-                    target.style.top = '0';
-                    target.style.width = sourceContainer.offsetWidth + 'px';
-                    document.body.appendChild(target);
-
-                    // Force all tab contents visible in clone
-                    target.querySelectorAll('.tab-content').forEach(el => { el.style.display = 'block'; });
-                    // Highlight active tab maybe? (optional) Remove active classes from nav.
-
-                    // Replace external avatar images (ui-avatars) to avoid CORS issues with html2canvas
-                    const placeholders = [];
-                    target.querySelectorAll('img').forEach(img => {
-                        try {
-                            if (img.src.includes('ui-avatars.com')) {
-                                // Create simple SVG data URI with initials (parse from query string if present)
-                                const url = new URL(img.src);
-                                const nameParam = url.searchParams.get('name') || '';
-                                const initials = nameParam.split('+').map(p=>p[0]||'').join('').substring(0,3) || 'U';
-                                const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%' height='100%' fill='#EBF4FF'/><text x='50%' y='50%' font-size='24' font-family='Arial' dy='.35em' text-anchor='middle' fill='#1E3A8A'>${initials}</text></svg>`;
-                                img.setAttribute('data-orig-src', img.src);
-                                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-                                placeholders.push(img);
-                            }
-                        } catch(e) { /* ignore */ }
-                    });
-
-                    btn.disabled = true;
-                    btn.classList.add('opacity-50');
-                    btn.textContent = 'Generating...';
-
-                    // Add metadata section at top (complaint snapshot) if not already present
-                    if (!target.querySelector('#pdf-meta-summary')) {
-                        const meta = document.createElement('div');
-                        meta.id = 'pdf-meta-summary';
-                        meta.style.marginBottom = '16px';
-                        meta.innerHTML = `<div style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#f8fafc;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
-                            <h2 style='font-size:18px;margin:0 0 8px 0;font-weight:600;color:#1f2937;'>Complaint Export (Full)</h2>
-                            <div style='display:flex;flex-wrap:wrap;font-size:12px;line-height:1.4;color:#374151;'>
-                                <div style='margin-right:16px;'><strong>Number:</strong> {{ $complaint->complaint_number }}</div>
-                                <div style='margin-right:16px;'><strong>Status:</strong> {{ $complaint->status }}</div>
-                                <div style='margin-right:16px;'><strong>Priority:</strong> {{ $complaint->priority }}</div>
-                                <div style='margin-right:16px;'><strong>Category:</strong> {{ $complaint->category }}</div>
-                                @if($complaint->branch)<div style='margin-right:16px;'><strong>Branch:</strong> {{ $complaint->branch->name }}</div>@endif
-                                @if($complaint->region)<div style='margin-right:16px;'><strong>Region:</strong> {{ $complaint->region->name }}</div>@endif
-                                @if($complaint->division)<div style='margin-right:16px;'><strong>Division:</strong> {{ $complaint->division->name }}</div>@endif
-                                <div style='margin-right:16px;'><strong>Created:</strong> {{ $complaint->created_at->format('d M Y H:i') }}</div>
-                                @if($complaint->expected_resolution_date)<div style='margin-right:16px;'><strong>Due:</strong> {{ $complaint->expected_resolution_date->format('d M Y') }}</div>@endif
-                                @if($complaint->resolved_at)<div style='margin-right:16px;'><strong>Resolved:</strong> {{ optional($complaint->resolved_at)->format('d M Y H:i') }}</div>@endif
-                                <div style='margin-right:16px;'><strong>SLA Breached:</strong> {{ $complaint->sla_breached ? 'Yes' : 'No' }}</div>
-                            </div>
-                        </div>`;
-                        target.insertBefore(meta, target.firstChild);
-                    }
-
-                    try {
-                        // Use html2canvas at higher scale for clarity
-                        const canvas = await html2canvas(target, {
-                            scale: 2,
-                            useCORS: true,
-                            allowTaint: true,
-                            scrollY: -window.scrollY,
-                            logging: false
-                        });
-                        const imgData = canvas.toDataURL('image/png');
-                        const pdf = new jsPDF('p', 'pt', 'a4');
-                        const pageWidth = pdf.internal.pageSize.getWidth();
-                        const pageHeight = pdf.internal.pageSize.getHeight();
-                        const imgWidth = pageWidth - 40; // margins
-                        const imgHeight = canvas.height * imgWidth / canvas.width;
-
-                        let position = 20;
-                        let heightLeft = imgHeight;
-                        let y = position;
-
-                        pdf.setProperties({
-                            title: 'Complaint ' + @json($complaint->complaint_number),
-                            subject: 'Complaint Details Export',
-                            creator: 'System'
-                        });
-
-                        let page = 1;
-                        const totalPages = Math.ceil(imgHeight / pageHeight);
-
-                        // Split image across pages if needed
-                        let canvasPos = 0;
-                        while (heightLeft > 0) {
-                            if (page > 1) pdf.addPage();
-
-                            // Create a page slice via temporary canvas
-                            const pageCanvas = document.createElement('canvas');
-                            const pageCtx = pageCanvas.getContext('2d');
-                            pageCanvas.width = canvas.width;
-                            pageCanvas.height = Math.min(canvas.height - canvasPos, canvas.width * (pageHeight - 40) / imgWidth);
-                            pageCtx.drawImage(canvas, 0, canvasPos, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
-                            const pageImgData = pageCanvas.toDataURL('image/png');
-                            const pageImgHeight = pageCanvas.height * imgWidth / canvas.width;
-
-                            pdf.addImage(pageImgData, 'PNG', 20, 20, imgWidth, pageImgHeight, undefined, 'FAST');
-                            pdf.setFontSize(8);
-                            pdf.setTextColor(120);
-                            pdf.text('Complaint: ' + @json($complaint->complaint_number) + ' | Page ' + page + ' of ' + totalPages, 20, pageHeight - 10);
-
-                            heightLeft -= pageCanvas.height * imgWidth / canvas.width;
-                            canvasPos += pageCanvas.height;
-                            page++;
-                        }
-
-                        const filename = 'complaint-' + @json($complaint->complaint_number) + '.pdf';
-                        pdf.save(filename);
-                    } catch (e) {
-                        console.error(e);
-                        alert('PDF generation failed. Try again or use browser Print > Save as PDF.');
-                    } finally {
-                        // Clean up clone
-                        if (target && target.parentNode) target.parentNode.removeChild(target);
-                        btn.disabled = false;
-                        btn.classList.remove('opacity-50');
-                        btn.textContent = 'Download PDF';
-                    }
-                });
-            }
-
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', setupPdfDownload);
-            } else {
-                setupPdfDownload();
-            }
+            if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initTabs); else initTabs();
         })();
     </script>
 
-    <!-- AutoTable plugin (lazy loaded if missing) -->
+    <!-- Structured PDF generator (black & white, bank branding) -->
     <script>
         (function(){
             function loadScriptOnce(id, src){
@@ -1665,13 +1367,16 @@
             }
 
             async function ensureLibs(){
+                // Load jsPDF (with fallback) & autotable if missing
+                async function attemptLoad(id, primary, fallback){
+                    try { await loadScriptOnce(id, primary);} catch(e){ if(fallback){ await loadScriptOnce(id+'-fallback', fallback);} else throw e; }
+                }
                 if(!(window.jspdf && window.jspdf.jsPDF)){
-                    // rely on previously added dynamic loader
-                    if(window.ensurePdfLibs) await window.ensurePdfLibs();
+                    await attemptLoad('jspdf-core','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js');
                 }
                 if(!(window.jspdf && window.jspdf.jsPDF)) throw new Error('jsPDF not loaded');
                 if(!window.jspdf.jsPDF.API.autoTable){
-                    await loadScriptOnce('jspdf-autotable','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+                    await attemptLoad('jspdf-autotable','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js','https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
                 }
             }
 
@@ -1683,7 +1388,19 @@
             function textWrap(str){ return (str||'').toString(); }
 
             function addSectionTitle(doc, title, y){
-                doc.setFontSize(13); doc.setTextColor(40); doc.text(title, 40, y); return y+6; }
+                doc.setFontSize(12); doc.setTextColor(30); doc.setFont('helvetica','bold'); doc.text(title.toUpperCase(), 40, y); doc.setFont('helvetica','normal'); return y+8; }
+
+            function footer(doc, complaint){
+                const pageCount = doc.getNumberOfPages();
+                for (let i=1;i<=pageCount;i++){
+                    doc.setPage(i);
+                    const txt = `Complaint # ${complaint.complaint_number || '-'} | ID ${complaint.id || '-'} | Page ${i} of ${pageCount}`;
+                    doc.setFontSize(8); doc.setTextColor(90);
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const textWidth = doc.getTextWidth(txt);
+                    doc.text(txt, (pageWidth/2)-(textWidth/2), doc.internal.pageSize.getHeight()-12);
+                }
+            }
 
             async function buildStructuredPdf(){
                 const btn = document.getElementById('structured-pdf-btn');
@@ -1702,10 +1419,20 @@
                         const doc = new jsPDF('p','pt');
 
                         // Header
-                        doc.setFontSize(18); doc.setTextColor(20); doc.text('Complaint Report', 40, 40);
-                        doc.setFontSize(10); doc.setTextColor(90); doc.text('Generated: '+fmtDate(data.exported_at)+'  ID: '+(c.complaint_number||'-'), 40, 55);
+                        // Header / Branding
+                        doc.setFont('helvetica','bold');
+                        doc.setFontSize(16); doc.setTextColor(20); doc.text('THE BANK OF AZAD JAMMU AND KASHMIR', 40, 40);
+                        doc.setFontSize(13); doc.text('COMPLAINT REPORT', 40, 60);
+                        doc.setFont('helvetica','normal');
+                        doc.setFontSize(9); doc.setTextColor(70);
+                        doc.text('Generated: '+fmtDate(data.exported_at), 40, 74);
+                        doc.text('Complaint #: '+(c.complaint_number||'-'), 300, 74);
+                        doc.text('Status: '+(c.status||'-'), 480, 74);
 
-                        let y = 75;
+                        // Divider line
+                        doc.setDrawColor(0); doc.setLineWidth(0.5); doc.line(40, 78, 555, 78);
+
+                        let y = 95;
                         // Summary table
                         const summaryRows = [
                             ['Number', c.complaint_number || '-','Status', c.status || '-'],
@@ -1716,7 +1443,7 @@
                             ['Branch', c.branch?.name || '-','Region', c.region?.name || '-'],
                             ['Division', c.division?.short_name || c.division?.name || '-','SLA Breached', c.sla_breached? 'Yes':'No']
                         ];
-                        doc.autoTable({ startY:y, head:[['Field','Value','Field','Value']], body:summaryRows, styles:{fontSize:8,cellPadding:4}, headStyles:{fillColor:[37,99,235]}, columnStyles:{0:{cellWidth:90},2:{cellWidth:90}} });
+                        doc.autoTable({ startY:y, head:[['FIELD','VALUE','FIELD','VALUE']], body:summaryRows, styles:{fontSize:8,cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255], fontStyle:'bold', halign:'left'}, columnStyles:{0:{cellWidth:95},1:{cellWidth:175},2:{cellWidth:95},3:{cellWidth:150}}, theme:'grid' });
                         y = doc.lastAutoTable.finalY + 15;
 
                         // Complainant
@@ -1726,7 +1453,7 @@
                             ['Email', c.complainant_email || '-'],
                             ['Phone', c.complainant_phone || '-'],
                             ['Account #', c.complainant_account_number || '-']
-                        ], styles:{fontSize:8, cellPadding:4}, theme:'grid', head:[] });
+                        ], styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, theme:'grid', headStyles:{fillColor:[0,0,0]}, head:[] });
                         y = doc.lastAutoTable.finalY + 15;
 
                         // Description
@@ -1744,7 +1471,7 @@
                                 ['Abuser Phone', c.harassment_abuser_phone || '-', 'Abuser Email', c.harassment_abuser_email || '-'],
                                 ['Relationship', c.harassment_abuser_relationship || '-', '', '']
                             ];
-                            doc.autoTable({ startY:y, head:[['Field','Value','Field','Value']], body:hRows, styles:{fontSize:8}, headStyles:{fillColor:[190,24,93]}, columnStyles:{0:{cellWidth:90},2:{cellWidth:90}} });
+                            doc.autoTable({ startY:y, head:[['FIELD','VALUE','FIELD','VALUE']], body:hRows, styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]}, columnStyles:{0:{cellWidth:95},1:{cellWidth:175},2:{cellWidth:95},3:{cellWidth:150}}, theme:'grid' });
                             y = doc.lastAutoTable.finalY + 15;
                             if(c.harassment_details){
                                 doc.setFontSize(9); doc.setTextColor(60); const hs = doc.splitTextToSize('Details: '+c.harassment_details, 515); doc.text(hs,40,y); y += hs.length*11 + 10;
@@ -1762,7 +1489,7 @@
                                 ['Escalation Count', m.escalation_count ?? 0],
                                 ['Assignment Count', m.assignment_count ?? 0],
                                 ['Customer Satisfaction', m.customer_satisfaction_score ?? '-']
-                            ], styles:{fontSize:8}, theme:'grid' });
+                            ], styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, theme:'grid' });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
@@ -1772,7 +1499,7 @@
                             const historyRows = c.histories.slice(0,150).map(h=>[
                                 fmtDate(h.performed_at), h.action_type, h.performed_by?.name || '-', h.new_value || '-', (h.comments||'').substring(0,80)
                             ]);
-                            doc.autoTable({ startY:y, head:[['When','Action','By','New','Comments']], body:historyRows, styles:{fontSize:7,cellPadding:2}, headStyles:{fillColor:[30,64,175]} });
+                            doc.autoTable({ startY:y, head:[['WHEN','ACTION','BY','NEW','COMMENTS']], body:historyRows, styles:{fontSize:7,cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
@@ -1782,7 +1509,7 @@
                             const commentRows = c.comments.slice(0,100).map(cm=>[
                                 fmtDate(cm.created_at), cm.creator?.name || '-', (cm.comment_type||'-'), (cm.comment_text||'').substring(0,120)
                             ]);
-                            doc.autoTable({ startY:y, head:[['When','By','Type','Comment']], body:commentRows, styles:{fontSize:7,cellPadding:2}, headStyles:{fillColor:[67,56,202]} });
+                            doc.autoTable({ startY:y, head:[['WHEN','BY','TYPE','COMMENT']], body:commentRows, styles:{fontSize:7,cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
@@ -1792,7 +1519,7 @@
                             const assignRows = c.assignments.map(a=>[
                                 fmtDate(a.assigned_at), a.assigned_to?.name || '-', a.assigned_by?.name || '-', a.assignment_type, a.is_active? 'Active':'Inactive'
                             ]);
-                            doc.autoTable({ startY:y, head:[['When','To','By','Type','Active']], body:assignRows, styles:{fontSize:7}, headStyles:{fillColor:[6,95,70]} });
+                            doc.autoTable({ startY:y, head:[['WHEN','TO','BY','TYPE','ACTIVE']], body:assignRows, styles:{fontSize:7, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
@@ -1802,7 +1529,7 @@
                             const escRows = c.escalations.map(e=>[
                                 e.escalation_level, fmtDate(e.escalated_at), e.escalated_from?.name || '-', e.escalated_to?.name || '-', (e.escalation_reason||'').substring(0,60)
                             ]);
-                            doc.autoTable({ startY:y, head:[['Level','When','From','To','Reason']], body:escRows, styles:{fontSize:7}, headStyles:{fillColor:[180,83,9]} });
+                            doc.autoTable({ startY:y, head:[['LEVEL','WHEN','FROM','TO','REASON']], body:escRows, styles:{fontSize:7, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
@@ -1810,7 +1537,7 @@
                         if(Array.isArray(c.watchers) && c.watchers.length){
                             y = addSectionTitle(doc,'Watchers', y);
                             const wRows = c.watchers.map(w=>[ w.user?.name || '-', w.user?.email || '-' ]);
-                            doc.autoTable({ startY:y, head:[['Name','Email']], body:wRows, styles:{fontSize:8}, headStyles:{fillColor:[29,78,216]} });
+                            doc.autoTable({ startY:y, head:[['NAME','EMAIL']], body:wRows, styles:{fontSize:8, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
@@ -1818,7 +1545,7 @@
                         if(Array.isArray(c.witnesses) && c.witnesses.length){
                             y = addSectionTitle(doc,'Witnesses', y);
                             const witRows = c.witnesses.map(w=>[ w.name, w.employee_number||'-', w.phone||'-', w.email||'-', (w.statement||'').substring(0,50) ]);
-                            doc.autoTable({ startY:y, head:[['Name','Emp #','Phone','Email','Statement']], body:witRows, styles:{fontSize:7}, headStyles:{fillColor:[190,18,60]} });
+                            doc.autoTable({ startY:y, head:[['NAME','EMP #','PHONE','EMAIL','STATEMENT']], body:witRows, styles:{fontSize:7, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
@@ -1826,24 +1553,19 @@
                         if(Array.isArray(data.categories) && data.categories.length){
                             y = addSectionTitle(doc,'Category Reference', y);
                             const catRows = data.categories.map(cat=>[cat.category_name, cat.default_priority, cat.sla_hours, cat.is_active?'Yes':'No']);
-                            doc.autoTable({ startY:y, head:[['Name','Default Priority','SLA Hours','Active']], body:catRows.slice(0,40), styles:{fontSize:7}, headStyles:{fillColor:[16,94,98]} });
+                            doc.autoTable({ startY:y, head:[['NAME','DEFAULT PRIORITY','SLA HOURS','ACTIVE']], body:catRows.slice(0,40), styles:{fontSize:7, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
                         // Footer page numbers
-                        const pageCount = doc.getNumberOfPages();
-                        for (let i=1;i<=pageCount;i++){
-                            doc.setPage(i);
-                            doc.setFontSize(8); doc.setTextColor(120);
-                            doc.text('Page '+i+' of '+pageCount, doc.internal.pageSize.getWidth()-70, doc.internal.pageSize.getHeight()-10);
-                        }
+                        footer(doc, c);
 
-                        doc.save('complaint-structured-'+(c.complaint_number||c.id||'export')+'.pdf');
+                        doc.save('complaint-'+(c.complaint_number||c.id||'export')+'.pdf');
                     } catch(e){
                         console.error(e);
                         alert('Failed to build structured PDF: '+e.message);
                     } finally {
-                        btn.disabled=false; btn.classList.remove('opacity-50'); btn.textContent='Structured PDF';
+                        btn.disabled=false; btn.classList.remove('opacity-50'); btn.textContent='Download Structured PDF';
                     }
                 });
             }
