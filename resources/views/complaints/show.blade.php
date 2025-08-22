@@ -719,7 +719,7 @@
                                     </div>
                                     @php
                                     // Map any lingering numeric user IDs in historical records (pre-change) to names
-                                    for reassignment histories
+                                    // for reassignment histories
                                     $oldDisplay = $history->old_value;
                                     $newDisplay = $history->new_value;
                                     if ($history->action_type === 'Reassigned') {

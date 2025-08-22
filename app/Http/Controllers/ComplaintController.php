@@ -465,6 +465,26 @@ class ComplaintController extends Controller
 
         // Return the complaint detail view with all loaded data
         // The view will have access to the fully loaded complaint model and all reference data
+        // Preprocess history display values (avoid Blade inline PHP that caused parse issues previously)
+        if ($complaint->histories && $complaint->histories->count()) {
+            // Build a simple id->name map once
+            $userNameMap = User::pluck('name', 'id');
+            foreach ($complaint->histories as $h) {
+                $oldVal = $h->old_value;
+                $newVal = $h->new_value;
+                if ($h->action_type === 'Reassigned') {
+                    if (is_numeric($oldVal)) {
+                        $oldVal = $userNameMap[$oldVal] ?? ('User #' . $oldVal);
+                    }
+                    if (is_numeric($newVal)) {
+                        $newVal = $userNameMap[$newVal] ?? ('User #' . $newVal);
+                    }
+                }
+                // Attach non-persistent attributes for Blade rendering
+                $h->display_old_value = $oldVal;
+                $h->display_new_value = $newVal;
+            }
+        }
         return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates', 'branches', 'regions', 'divisions'));
     }
 
