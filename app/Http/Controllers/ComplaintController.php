@@ -1420,116 +1420,348 @@ class ComplaintController extends Controller
     public function analytics(Request $request)
     {
         try {
-            // Date range filter (ensure Carbon instances)
-            if ($request->filled('date_from')) {
-                try {
-                    $dateFrom = Carbon::parse($request->input('date_from'))->startOfDay();
-                } catch (\Exception $e) {
-                    $dateFrom = now()->subMonth()->startOfDay();
-                }
-            } else {
-                $dateFrom = now()->subMonth()->startOfDay();
-            }
+            [$dateFrom, $dateTo] = $this->resolveDateRange($request);
 
-            if ($request->filled('date_to')) {
-                try {
-                    $dateTo = Carbon::parse($request->input('date_to'))->endOfDay();
-                } catch (\Exception $e) {
-                    $dateTo = now()->endOfDay();
-                }
-            } else {
-                $dateTo = now()->endOfDay();
-            }
+            // Build a base filtered query (re-usable clone per aggregation)
+            $baseQuery = Complaint::query();
+            $this->applyAnalyticsFilters($baseQuery, $request, $dateFrom, $dateTo);
 
-            // Basic statistics
-            $totalComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])->count();
-            $resolvedComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
-                ->whereIn('status', ['Resolved', 'Closed'])->count();
-            $openComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
-                ->whereIn('status', ['Open', 'In Progress', 'Pending'])->count();
-            $overdueComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $totalComplaints = (clone $baseQuery)->count();
+            $resolvedComplaints = (clone $baseQuery)->whereIn('status', ['Resolved', 'Closed'])->count();
+            $openComplaints = (clone $baseQuery)->whereIn('status', ['Open', 'In Progress', 'Pending'])->count();
+            $overdueComplaints = (clone $baseQuery)
                 ->where('expected_resolution_date', '<', now())
-                ->whereNotIn('status', ['Resolved', 'Closed'])->count();
+                ->whereNotIn('status', ['Resolved', 'Closed'])
+                ->count();
 
-            // Status distribution
-            $statusDistribution = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $unassignedComplaints = (clone $baseQuery)->whereNull('assigned_to')->count();
+            $escalatedComplaints = (clone $baseQuery)->whereHas('escalations')->count();
+            $harassmentComplaints = (clone $baseQuery)->whereRaw('LOWER(category) = ?', ['harassment'])->count();
+            $harassmentConfidential = (clone $baseQuery)->where('harassment_confidential', true)->count();
+            $withWitnesses = (clone $baseQuery)->whereHas('witnesses')->count();
+            $slaBreached = (clone $baseQuery)->where('sla_breached', true)->count();
+
+            $statusDistribution = (clone $baseQuery)
                 ->selectRaw('status, COUNT(*) as count')
                 ->groupBy('status')
                 ->get();
 
-            // Priority distribution
-            $priorityDistribution = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $priorityDistribution = (clone $baseQuery)
                 ->selectRaw('priority, COUNT(*) as count')
                 ->groupBy('priority')
                 ->get();
 
-            // Source distribution
-            $sourceDistribution = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $sourceDistribution = (clone $baseQuery)
                 ->selectRaw('source, COUNT(*) as count')
                 ->groupBy('source')
                 ->get();
 
-            // Branch performance
-            $branchPerformance = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $branchPerformance = (clone $baseQuery)
                 ->join('branches', 'complaints.branch_id', '=', 'branches.id')
                 ->selectRaw('branches.name as branch_name, COUNT(*) as total_complaints,
                     SUM(CASE WHEN complaints.status IN ("Resolved", "Closed") THEN 1 ELSE 0 END) as resolved_complaints')
                 ->groupBy('branches.id', 'branches.name')
                 ->get();
 
-            // User performance
-            $userPerformance = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $userPerformance = (clone $baseQuery)
                 ->join('users', 'complaints.assigned_to', '=', 'users.id')
                 ->selectRaw('users.name as user_name, COUNT(*) as assigned_complaints,
                     SUM(CASE WHEN complaints.status IN ("Resolved", "Closed") THEN 1 ELSE 0 END) as resolved_complaints')
                 ->groupBy('users.id', 'users.name')
                 ->get();
 
-            // Average resolution time
             $avgResolutionTime = ComplaintMetric::join('complaints', 'complaint_metrics.complaint_id', '=', 'complaints.id')
                 ->whereBetween('complaints.created_at', [$dateFrom, $dateTo])
                 ->whereNotNull('time_to_resolution')
+                ->when($request->filled('filter.category'), function ($q) use ($request) {
+                    $q->where('complaints.category', 'like', '%' . $request->input('filter.category') . '%');
+                })
                 ->avg('time_to_resolution');
 
-            // SLA performance
-            $slaBreached = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
-                ->where('sla_breached', true)->count();
             $slaCompliance = $totalComplaints > 0 ? (($totalComplaints - $slaBreached) / $totalComplaints) * 100 : 100;
 
-            // Monthly trend (last 12 months)
-            $monthlyTrend = Complaint::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
-                ->where('created_at', '>=', now()->subYear())
+            // Monthly trend constrained within selected date range (group by month)
+            $monthlyTrend = Complaint::query()
+                ->when($dateFrom, fn($q) => $q->where('created_at', '>=', $dateFrom))
+                ->when($dateTo, fn($q) => $q->where('created_at', '<=', $dateTo))
+                ->tap(function ($q) use ($request) {
+                    // Apply the same non-date filters for consistency
+                    $this->applyAnalyticsFilters($q, $request, null, null, true); // skip date in second pass
+                })
+                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
                 ->groupBy('year', 'month')
                 ->orderBy('year')
                 ->orderBy('month')
                 ->get();
 
-            return view('complaints.analytics', compact(
-                'totalComplaints',
-                'resolvedComplaints',
-                'openComplaints',
-                'overdueComplaints',
-                'statusDistribution',
-                'priorityDistribution',
-                'sourceDistribution',
-                'branchPerformance',
-                'userPerformance',
-                'avgResolutionTime',
-                'slaCompliance',
-                'monthlyTrend',
-                'dateFrom',
-                'dateTo'
-            ));
+            // Provide initial payload to Blade (JS will enhance later)
+            $initialPayload = [
+                'total' => $totalComplaints,
+                'resolved' => $resolvedComplaints,
+                'open' => $openComplaints,
+                'overdue' => $overdueComplaints,
+                'unassigned' => $unassignedComplaints,
+                'escalated' => $escalatedComplaints,
+                'harassment' => $harassmentComplaints,
+                'harassment_confidential' => $harassmentConfidential,
+                'with_witnesses' => $withWitnesses,
+                'sla_breached' => $slaBreached,
+                'avg_resolution_time_minutes' => $avgResolutionTime,
+                'sla_compliance' => $slaCompliance,
+            ];
 
+            return view('complaints.analytics', [
+                'totalComplaints' => $totalComplaints,
+                'resolvedComplaints' => $resolvedComplaints,
+                'openComplaints' => $openComplaints,
+                'overdueComplaints' => $overdueComplaints,
+                'statusDistribution' => $statusDistribution,
+                'priorityDistribution' => $priorityDistribution,
+                'sourceDistribution' => $sourceDistribution,
+                'branchPerformance' => $branchPerformance,
+                'userPerformance' => $userPerformance,
+                'avgResolutionTime' => $avgResolutionTime,
+                'slaCompliance' => $slaCompliance,
+                'monthlyTrend' => $monthlyTrend,
+                'dateFrom' => $dateFrom,
+                'dateTo' => $dateTo,
+                'initialPayload' => $initialPayload,
+            ]);
         } catch (\Exception $e) {
             Log::error('Error generating complaint analytics', [
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id()
             ]);
-
-            return redirect()->back()
-                ->with('error', 'Failed to generate analytics. Please try again.');
+            return redirect()->back()->with('error', 'Failed to generate analytics. Please try again.');
         }
+    }
+
+    /**
+     * JSON endpoint for dynamic analytics dashboard updates
+     */
+    public function analyticsData(Request $request)
+    {
+        try {
+            [$dateFrom, $dateTo] = $this->resolveDateRange($request);
+            $baseQuery = Complaint::query();
+            $this->applyAnalyticsFilters($baseQuery, $request, $dateFrom, $dateTo);
+
+            $total = (clone $baseQuery)->count();
+            $resolved = (clone $baseQuery)->whereIn('status', ['Resolved', 'Closed'])->count();
+            $open = (clone $baseQuery)->whereIn('status', ['Open', 'In Progress', 'Pending'])->count();
+            $overdue = (clone $baseQuery)->where('expected_resolution_date', '<', now())
+                ->whereNotIn('status', ['Resolved', 'Closed'])->count();
+            $unassigned = (clone $baseQuery)->whereNull('assigned_to')->count();
+            $escalated = (clone $baseQuery)->whereHas('escalations')->count();
+            $harassment = (clone $baseQuery)->whereRaw('LOWER(category) = ?', ['harassment'])->count();
+            $harassment_confidential = (clone $baseQuery)->where('harassment_confidential', true)->count();
+            $with_witnesses = (clone $baseQuery)->whereHas('witnesses')->count();
+            $sla_breached = (clone $baseQuery)->where('sla_breached', true)->count();
+
+            $avgResolutionTime = ComplaintMetric::join('complaints', 'complaint_metrics.complaint_id', '=', 'complaints.id')
+                ->whereBetween('complaints.created_at', [$dateFrom, $dateTo])
+                ->whereNotNull('time_to_resolution')
+                ->avg('time_to_resolution');
+
+            $sla_compliance = $total > 0 ? (($total - $sla_breached) / $total) * 100 : 100;
+
+            $statusDistribution = (clone $baseQuery)
+                ->selectRaw('status, COUNT(*) as count')
+                ->groupBy('status')->get();
+            $priorityDistribution = (clone $baseQuery)
+                ->selectRaw('priority, COUNT(*) as count')
+                ->groupBy('priority')->get();
+            $sourceDistribution = (clone $baseQuery)
+                ->selectRaw('source, COUNT(*) as count')
+                ->groupBy('source')->get();
+
+            $monthlyTrend = Complaint::query()
+                ->when($dateFrom, fn($q) => $q->where('created_at', '>=', $dateFrom))
+                ->when($dateTo, fn($q) => $q->where('created_at', '<=', $dateTo))
+                ->tap(function ($q) use ($request) {
+                    $this->applyAnalyticsFilters($q, $request, null, null, true);
+                })
+                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
+                ->groupBy('year', 'month')
+                ->orderBy('year')
+                ->orderBy('month')
+                ->get();
+
+            return response()->json([
+                'metrics' => compact(
+                    'total',
+                    'resolved',
+                    'open',
+                    'overdue',
+                    'unassigned',
+                    'escalated',
+                    'harassment',
+                    'harassment_confidential',
+                    'with_witnesses',
+                    'sla_breached',
+                    'avgResolutionTime',
+                    'sla_compliance'
+                ),
+                'statusDistribution' => $statusDistribution,
+                'priorityDistribution' => $priorityDistribution,
+                'sourceDistribution' => $sourceDistribution,
+                'monthlyTrend' => $monthlyTrend,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('analyticsData failure', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Analytics generation failed'], 500);
+        }
+    }
+
+    /**
+     * Apply analytics filters to a query (shared by view + JSON endpoint)
+     * $dateFrom/$dateTo can be null to skip date filters (when building monthly trend second pass)
+     */
+    protected function applyAnalyticsFilters($query, Request $request, $dateFrom = null, $dateTo = null, $skipDate = false)
+    {
+        if (!$skipDate && $dateFrom && $dateTo) {
+            $query->whereBetween('created_at', [$dateFrom, $dateTo]);
+        }
+        $filter = $request->input('filter', []);
+        if (!is_array($filter))
+            return;
+
+        $like = function ($value) {
+            return '%' . $value . '%'; };
+
+        foreach ($filter as $key => $value) {
+            if ($value === '' || $value === null)
+                continue;
+            switch ($key) {
+                case 'id':
+                    $query->where('id', $value);
+                    break;
+                case 'complaint_number':
+                    $query->where('complaint_number', 'like', $like($value));
+                    break;
+                case 'title':
+                    $query->where('title', 'like', $like($value));
+                    break;
+                case 'status':
+                    $query->where('status', $value);
+                    break;
+                case 'priority':
+                    $query->where('priority', $value);
+                    break;
+                case 'source':
+                    $query->where('source', $value);
+                    break;
+                case 'category':
+                    $query->where('category', 'like', $like($value));
+                    break;
+                case 'branch_id':
+                    $query->where('branch_id', $value);
+                    break;
+                case 'assigned_to':
+                    if ($value === 'unassigned') {
+                        $query->whereNull('assigned_to');
+                    } elseif (is_numeric($value)) {
+                        $query->where('assigned_to', $value);
+                    }
+                    break;
+                case 'assigned_by':
+                    $query->where('assigned_by', $value);
+                    break;
+                case 'resolved_by':
+                    $query->where('resolved_by', $value);
+                    break;
+                case 'sla_breached':
+                    $query->where('sla_breached', (bool) $value);
+                    break;
+                case 'region_id':
+                    $query->where('region_id', $value);
+                    break;
+                case 'division_id':
+                    $query->where('division_id', $value);
+                    break;
+                case 'complainant_name':
+                    $query->where('complainant_name', 'like', $like($value));
+                    break;
+                case 'complainant_email':
+                    $query->where('complainant_email', 'like', $like($value));
+                    break;
+                case 'escalated':
+                    if ($value === '1') {
+                        $query->whereHas('escalations');
+                    } elseif ($value === '0') {
+                        $query->whereDoesntHave('escalations');
+                    }
+                    break;
+                case 'harassment_only':
+                    if (in_array($value, ['1', 'true', 1, true], true)) {
+                        $query->whereRaw('LOWER(category) = ?', ['harassment']);
+                    }
+                    break;
+                case 'has_witnesses':
+                    if ($value === '1') {
+                        $query->whereHas('witnesses');
+                    } elseif ($value === '0') {
+                        $query->whereDoesntHave('witnesses');
+                    }
+                    break;
+                case 'harassment_confidential':
+                    if ($value === '1') {
+                        $query->where('harassment_confidential', true);
+                    } elseif ($value === '0') {
+                        $query->where(function ($q) {
+                            $q->where('harassment_confidential', false)->orWhereNull('harassment_confidential'); });
+                    }
+                    break;
+                case 'harassment_sub_category':
+                    $query->where('harassment_sub_category', 'like', $like($value));
+                    break;
+                case 'date_from':
+                    $query->whereDate('created_at', '>=', $value);
+                    break; // individual overrides (if provided outside main range)
+                case 'date_to':
+                    $query->whereDate('created_at', '<=', $value);
+                    break;
+                case 'assigned_date_from':
+                    $query->whereDate('assigned_at', '>=', $value);
+                    break;
+                case 'assigned_date_to':
+                    $query->whereDate('assigned_at', '<=', $value);
+                    break;
+                case 'resolved_date_from':
+                    $query->whereDate('resolved_at', '>=', $value);
+                    break;
+                case 'resolved_date_to':
+                    $query->whereDate('resolved_at', '<=', $value);
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Resolve date range with sane defaults
+     */
+    protected function resolveDateRange(Request $request): array
+    {
+        if ($request->filled('date_from')) {
+            try {
+                $dateFrom = Carbon::parse($request->input('date_from'))->startOfDay();
+            } catch (\Exception $e) {
+                $dateFrom = now()->subMonth()->startOfDay();
+            }
+        } else {
+            $dateFrom = now()->subMonth()->startOfDay();
+        }
+
+        if ($request->filled('date_to')) {
+            try {
+                $dateTo = Carbon::parse($request->input('date_to'))->endOfDay();
+            } catch (\Exception $e) {
+                $dateTo = now()->endOfDay();
+            }
+        } else {
+            $dateTo = now()->endOfDay();
+        }
+        return [$dateFrom, $dateTo];
     }
 
     /**

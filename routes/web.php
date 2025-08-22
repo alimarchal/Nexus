@@ -104,6 +104,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('export', [ComplaintController::class, 'export'])->name('export');
         // Analytics and reporting
         Route::get('analytics', [ComplaintController::class, 'analytics'])->name('analytics');
+        // Analytics dynamic data (AJAX)
+        Route::get('analytics-data', [ComplaintController::class, 'analyticsData'])->name('analytics-data');
         // Customer satisfaction
         Route::post('{complaint}/satisfaction', [ComplaintController::class, 'updateSatisfactionScore'])->name('update-satisfaction');
     });
@@ -128,9 +130,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('product/dispatch-registers', DispatchRegisterController::class);
 
 
-// Employee Resources
-Route::resource('products/employee-resources', EmployeeResourceController::class)
-    ->names('employee_resources');
+    // Employee Resources
+    Route::resource('products/employee-resources', EmployeeResourceController::class)
+        ->names('employee_resources');
 
 
 
