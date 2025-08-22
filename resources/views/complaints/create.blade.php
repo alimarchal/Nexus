@@ -68,12 +68,24 @@
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                     required>
                                     <option value="">Select Priority</option>
-                                    <option value="Low" {{ old('priority')=='Low' ? 'selected' : '' }}>Low</option>
-                                    <option value="Medium" {{ old('priority')=='Medium' ? 'selected' : '' }}>Medium
+                                    @php
+                                    // Central mapping (hours)
+                                    $priorityHours = [
+                                    'Critical' => 24,
+                                    'High' => 72,
+                                    'Medium' => 168,
+                                    'Low' => 336,
+                                    ];
+                                    @endphp
+                                    @foreach($priorityHours as $pKey => $hrs)
+                                    @php
+                                    $display = ($hrs % 24 === 0 && $hrs >= 24) ? ($hrs/24).'d' : $hrs.'h';
+                                    @endphp
+                                    <option value="{{ $pKey }}" data-sla-hours="{{ $hrs }}" {{ old('priority')==$pKey
+                                        ? 'selected' : '' }}>
+                                        {{ $pKey }} ({{ $display }} SLA)
                                     </option>
-                                    <option value="High" {{ old('priority')=='High' ? 'selected' : '' }}>High</option>
-                                    <option value="Critical" {{ old('priority')=='Critical' ? 'selected' : '' }}>
-                                        Critical</option>
+                                    @endforeach
                                 </select>
                                 @error('priority')
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
@@ -107,8 +119,9 @@
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                     <option value="">Select Category</option>
                                     @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}" {{ old('category_id')==$category->id ?
-                                        'selected' : '' }}>
+                                    <option value="{{ $category->id }}"
+                                        data-default-priority="{{ $category->default_priority ?? '' }}" {{
+                                        old('category_id')==$category->id ? 'selected' : '' }}>
                                         {{ $category->category_name }}
                                     </option>
                                     @endforeach
@@ -120,10 +133,11 @@
                             <div>
                                 <label for="expected_resolution_date" class="block text-gray-700">Expected Resolution
                                     Date <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                <input type="datetime-local" name="expected_resolution_date" readonly
+                                <input type="datetime-local" name="expected_resolution_date"
                                     id="expected_resolution_date" value="{{ old('expected_resolution_date') }}"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                <small class="text-gray-500">Auto-filled from priority (you can adjust).</small>
+                                <small class="text-gray-500">Auto-filled from priority. Change priority to recalc; you
+                                    can also manually adjust.</small>
                                 @error('expected_resolution_date')
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
@@ -353,36 +367,77 @@
     @push('scripts')
     <script>
         (function() {
-        const priorityField = document.getElementById('priority');
-        const expectedField = document.getElementById('expected_resolution_date');
-        const map = { 'Critical': 1, 'High': 3, 'Medium': 7, 'Low': 14 };
+            const priorityField = document.getElementById('priority');
+            const expectedField = document.getElementById('expected_resolution_date');
+            const categoryField = document.getElementById('category_id');
 
-        function pad(n){ return n.toString().padStart(2,'0'); }
+            // Utility: format a future datetime-local value from hours offset
+            function futureDateTimeLocal(hoursAhead){
+                const base = new Date();
+                base.setHours(base.getHours() + hoursAhead);
+                // Adjust for local timezone for datetime-local input (expects local time w/o TZ)
+                const local = new Date(base.getTime() - base.getTimezoneOffset()*60000);
+                return local.toISOString().slice(0,16);
+            }
 
-        function setExpected() {
-            const val = priorityField.value;
-            if(!val || !map[val]) return; // do nothing if empty
-            // Only auto-set if user hasn't typed anything yet or field empty
-            if(expectedField && (!expectedField.value || expectedField.dataset.autofill==='true')) {
-                const now = new Date();
-                now.setDate(now.getDate() + map[val]);
-                // Default target time 17:00 local
-                now.setHours(17,0,0,0);
-                const local = new Date(now.getTime() - (now.getTimezoneOffset()*60000));
-                const iso = local.toISOString().slice(0,16); // YYYY-MM-DDTHH:MM
-                expectedField.value = iso;
+            function applyExpectedFromHours(hours, force=false){
+                if(!expectedField) return;
+                if(!hours || isNaN(hours)) return;
+                const canOverwrite = force || !expectedField.value || expectedField.dataset.autofill === 'true';
+                if(!canOverwrite) return;
+                expectedField.value = futureDateTimeLocal(Number(hours));
                 expectedField.dataset.autofill = 'true';
             }
-        }
-        if(priorityField){
-            priorityField.addEventListener('change', setExpected);
-            // initial run if priority pre-selected
-            if(priorityField.value) setExpected();
-        }
-        if(expectedField){
-            expectedField.addEventListener('input', ()=>{ expectedField.dataset.autofill='false'; });
-        }
-    })();
+
+            function recalcFromPriority(force=false){
+                if(!priorityField) return;
+                const opt = priorityField.selectedIndex >= 0 ? priorityField.options[priorityField.selectedIndex] : null;
+                if(!opt) return;
+                const hrs = opt.getAttribute('data-sla-hours');
+                applyExpectedFromHours(Number(hrs), force);
+            }
+
+            function maybeAdoptDefaultPriority(){
+                if(!categoryField) return;
+                const opt = categoryField.selectedIndex >= 0 ? categoryField.options[categoryField.selectedIndex] : null;
+                if(!opt) return;
+                const defPri = opt.getAttribute('data-default-priority');
+                if(!defPri || !priorityField) return;
+                if(!priorityField.dataset.userSet && !priorityField.value){
+                    priorityField.value = defPri;
+                }
+            }
+
+            // Event wiring
+            if(priorityField){
+                priorityField.addEventListener('change', () => {
+                    priorityField.dataset.userSet = 'true';
+                    // Recalculate whenever user explicitly changes priority
+                    expectedField && (expectedField.dataset.autofill = 'true');
+                    recalcFromPriority(true);
+                });
+            }
+
+            if(categoryField){
+                categoryField.addEventListener('change', () => {
+                    maybeAdoptDefaultPriority();
+                    // Do NOT auto-change expected date here; only priority drives it now.
+                });
+            }
+
+            if(expectedField){
+                // Mark as manual if user edits value
+                expectedField.addEventListener('input', () => { expectedField.dataset.autofill = 'false'; });
+            }
+
+            // Initialisation
+            if(categoryField && categoryField.value){
+                maybeAdoptDefaultPriority();
+            }
+            if(priorityField && priorityField.value){
+                recalcFromPriority(false); // initial fill if empty / allowed
+            }
+        })();
     </script>
     @endpush
 </x-app-layout>
