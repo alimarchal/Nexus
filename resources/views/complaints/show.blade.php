@@ -1446,15 +1446,34 @@
     })();
     </script>
 
-    <!-- Client-side PDF generation libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-        integrity="sha512-BNa5Hq/bIu1eJ8vkQ+g0ezdGDbVS9/6IKxhpcJn/qdNqxabWWMwBLT0R59ZC4MZt1VY8h1N5DPKySx1j0DscEw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-        integrity="sha512-/F2nSdzEYwH14r2raXIiQunlslqY5T2r8j04YfGLwRoTSesFiNUFDXL9uBeb5GsyhQOdE31E4n4t4tPcTUMlPw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Client-side PDF generation libraries (primary CDN) -->
+    <script id="html2canvas-cdn" src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+        referrerpolicy="no-referrer"></script>
+    <script id="jspdf-cdn" src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
+        referrerpolicy="no-referrer"></script>
     <script>
         (function() {
+            // Dynamic loader with fallback CDNs
+            async function ensurePdfLibs() {
+                function loaded() { return window.html2canvas && window.jspdf && window.jspdf.jsPDF; }
+                if (loaded()) return true;
+
+                const fallbacks = [
+                    { h:"https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js", j:"https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js" },
+                    { h:"https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", j:"https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" }
+                ];
+
+                function inject(src) { return new Promise((res, rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=()=>res(true); s.onerror=()=>rej(new Error('fail '+src)); document.head.appendChild(s); }); }
+
+                for (const set of fallbacks) {
+                    try {
+                        if (!window.html2canvas) await inject(set.h);
+                        if (!window.jspdf || !window.jspdf.jsPDF) await inject(set.j);
+                        if (loaded()) return true;
+                    } catch(e) { console.warn('PDF lib fallback failed', e); }
+                }
+                return loaded();
+            }
             function setupPdfDownload() {
                 const btn = document.getElementById('download-pdf-btn');
                 if (!btn) return;
@@ -1462,10 +1481,17 @@
                 btn.dataset.pdfInit = '1';
 
                 btn.addEventListener('click', async function() {
+                    // Try to ensure libs (with fallbacks) before proceeding
+                    if (!(window.jspdf && window.jspdf.jsPDF && window.html2canvas)) {
+                        btn.textContent = 'Loading Libs...';
+                        await ensurePdfLibs();
+                    }
+
                     const { jsPDF } = window.jspdf || {};
                     if (!jsPDF || !window.html2canvas) {
-                        alert('PDF libraries failed to load. Please try again or use your browser\'s Print > Save as PDF.');
-                        return;
+                        alert('PDF libraries could not be loaded (network/CSP). Use browser Print > Save as PDF.');
+                        btn.textContent = 'Download PDF';
+                        return; 
                     }
 
                     const target = document.querySelector('div.max-w-7xl'); // main content container
@@ -1539,7 +1565,7 @@
                         pdf.save(filename);
                     } catch (e) {
                         console.error(e);
-                        alert('Failed to generate PDF. You can use your browser\'s Print > Save as PDF as a fallback.');
+                        alert('PDF generation failed. Try again or use browser Print > Save as PDF.');
                     } finally {
                         // Restore hidden tabs
                         hiddenTabs.forEach(el => el.style.display = el.dataset._prevDisplay || 'none');
