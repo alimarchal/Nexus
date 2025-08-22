@@ -55,12 +55,55 @@ class ComplaintController extends Controller
                 AllowedFilter::exact('source'),
                 AllowedFilter::partial('category'),
                 AllowedFilter::exact('branch_id'),
-                AllowedFilter::exact('assigned_to'),
+                // Assigned to (supports special 'unassigned' token)
+                AllowedFilter::callback('assigned_to', function ($query, $value) {
+                    if ($value === 'unassigned') {
+                        $query->whereNull('assigned_to');
+                    } elseif (is_numeric($value)) {
+                        $query->where('assigned_to', $value);
+                    }
+                }),
                 AllowedFilter::exact('assigned_by'),
                 AllowedFilter::exact('resolved_by'),
                 AllowedFilter::exact('sla_breached'),
+                AllowedFilter::exact('region_id'),
+                AllowedFilter::exact('division_id'),
                 AllowedFilter::partial('complainant_name'),
                 AllowedFilter::partial('complainant_email'),
+                // Escalated filter: 1 => has escalations, 0 => none
+                AllowedFilter::callback('escalated', function ($query, $value) {
+                    if ($value === '1') {
+                        $query->whereHas('escalations');
+                    } elseif ($value === '0') {
+                        $query->whereDoesntHave('escalations');
+                    }
+                }),
+                // Harassment only (category = Harassment)
+                AllowedFilter::callback('harassment_only', function ($query, $value) {
+                    if (in_array($value, ['1', 'true', 1, true], true)) {
+                        $query->whereRaw('LOWER(category) = ?', ['harassment']);
+                    }
+                }),
+                // Has witnesses
+                AllowedFilter::callback('has_witnesses', function ($query, $value) {
+                    if ($value === '1') {
+                        $query->whereHas('witnesses');
+                    } elseif ($value === '0') {
+                        $query->whereDoesntHave('witnesses');
+                    }
+                }),
+                // Harassment confidentiality flag
+                AllowedFilter::callback('harassment_confidential', function ($query, $value) {
+                    if ($value === '1') {
+                        $query->where('harassment_confidential', true);
+                    } elseif ($value === '0') {
+                        $query->where(function ($q) {
+                            $q->where('harassment_confidential', false)->orWhereNull('harassment_confidential');
+                        });
+                    }
+                }),
+                // Harassment sub category
+                AllowedFilter::partial('harassment_sub_category'),
                 AllowedFilter::callback('date_from', function ($query, $value) {
                     $query->whereDate('created_at', '>=', $value);
                 }),

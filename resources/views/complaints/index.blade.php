@@ -171,6 +171,34 @@
                             </select>
                         </div>
 
+                        <!-- Filter by Region -->
+                        <div>
+                            <label for="filter[region_id]"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Region</label>
+                            <select name="filter[region_id]" id="filter[region_id]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">All Regions</option>
+                                @foreach($regions ?? [] as $region)
+                                <option value="{{ $region->id }}" {{ request('filter.region_id')==$region->id ?
+                                    'selected' : '' }}>{{ $region->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Filter by Division -->
+                        <div>
+                            <label for="filter[division_id]"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Division</label>
+                            <select name="filter[division_id]" id="filter[division_id]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">All Divisions</option>
+                                @foreach($divisions ?? [] as $division)
+                                <option value="{{ $division->id }}" {{ request('filter.division_id')==$division->id ?
+                                    'selected' : '' }}>{{ $division->short_name ?? $division->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <!-- Filter by Assigned To -->
                         <div>
                             <label for="filter[assigned_to]"
@@ -236,6 +264,70 @@
                                 <option value="0" {{ request('filter.sla_breached')==='0' ? 'selected' : '' }}>Within
                                     SLA</option>
                             </select>
+                        </div>
+
+                        <!-- Filter: Escalated -->
+                        <div>
+                            <label for="filter[escalated]"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Escalated</label>
+                            <select name="filter[escalated]" id="filter[escalated]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">All</option>
+                                <option value="1" {{ request('filter.escalated')==='1' ? 'selected' : '' }}>Yes</option>
+                                <option value="0" {{ request('filter.escalated')==='0' ? 'selected' : '' }}>No</option>
+                            </select>
+                        </div>
+
+                        <!-- Filter: Harassment Only -->
+                        <div>
+                            <label for="filter[harassment_only]"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harassment</label>
+                            <select name="filter[harassment_only]" id="filter[harassment_only]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">All</option>
+                                <option value="1" {{ request('filter.harassment_only')==='1' ? 'selected' : '' }}>Only
+                                    Harassment</option>
+                            </select>
+                        </div>
+
+                        <!-- Filter: Has Witnesses -->
+                        <div>
+                            <label for="filter[has_witnesses]"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Witnesses</label>
+                            <select name="filter[has_witnesses]" id="filter[has_witnesses]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">All</option>
+                                <option value="1" {{ request('filter.has_witnesses')==='1' ? 'selected' : '' }}>Has
+                                </option>
+                                <option value="0" {{ request('filter.has_witnesses')==='0' ? 'selected' : '' }}>None
+                                </option>
+                            </select>
+                        </div>
+
+                        <!-- Filter: Confidential -->
+                        <div>
+                            <label for="filter[harassment_confidential]"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Confidential</label>
+                            <select name="filter[harassment_confidential]" id="filter[harassment_confidential]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">All</option>
+                                <option value="1" {{ request('filter.harassment_confidential')==='1' ? 'selected' : ''
+                                    }}>Yes</option>
+                                <option value="0" {{ request('filter.harassment_confidential')==='0' ? 'selected' : ''
+                                    }}>No</option>
+                            </select>
+                        </div>
+
+                        <!-- Filter: Harassment Sub Category -->
+                        <div>
+                            <label for="filter[harassment_sub_category]"
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harassment Sub
+                                Category</label>
+                            <input type="text" name="filter[harassment_sub_category]"
+                                id="filter[harassment_sub_category]"
+                                value="{{ request('filter.harassment_sub_category') }}"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
+                                placeholder="e.g. Verbal" />
                         </div>
 
                         <!-- Filter by Complainant Name -->
