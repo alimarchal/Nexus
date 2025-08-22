@@ -136,7 +136,7 @@ class EmployeeResourceController extends Controller
 
         try {
             $employeeResource->user_id = $request->user_id;
-            $employeeResource->category = $request->category_id;
+            $employeeResource->category_id = $request->category_id;
             $employeeResource->division_id = $request->division_id;
             $employeeResource->title = $request->title;
             $employeeResource->description = $request->description;
