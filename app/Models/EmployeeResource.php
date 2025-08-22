@@ -23,7 +23,7 @@ class EmployeeResource extends Model
     protected $fillable = [
         'id',
         'user_id',
-        'category',        // CHANGED: from 'category_id' to 'category'
+        'category',     // ✅ fixed
         'division_id',
         'resource_no',
         'resource_number',
@@ -53,11 +53,11 @@ class EmployeeResource extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-// Change the category relationship to use 'category' as foreign key
-public function category()
-{
-    return $this->belongsTo(Category::class, 'category'); // Use 'category' instead of 'category_id'
-}
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id'); // ✅ fixed
+    }
 
     public function division()
     {

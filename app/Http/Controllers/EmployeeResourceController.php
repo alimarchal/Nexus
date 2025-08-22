@@ -20,35 +20,34 @@ class EmployeeResourceController extends Controller
     /**
      * Display paginated list of employee resources with advanced filters
      */
+    public function index(Request $request)
+    {
+        $query = QueryBuilder::for(EmployeeResource::class)
+            ->allowedFilters([
+                AllowedFilter::exact('id'),
+                AllowedFilter::partial('resource_number'),
+                AllowedFilter::partial('title'),
+                AllowedFilter::exact('user_id'),
+                AllowedFilter::exact('category_id'),
+                AllowedFilter::exact('division_id'),
+                // Add custom callback filters for date range
+                AllowedFilter::callback('date_from', function ($query, $value) {
+                    $query->whereDate('created_at', '>=', $value);
+                }),
+                AllowedFilter::callback('date_to', function ($query, $value) {
+                    $query->whereDate('created_at', '<=', $value);
+                }),
+                // Alias: allow filtering via resource_no -> resource_number
+                AllowedFilter::partial('resource_no', 'resource_number'),
+            ])
+            ->allowedIncludes(['attachments', 'histories'])
+            ->with(['user', 'category', 'division'])
+            ->latest();
 
-public function index(Request $request)
-{
-    $query = QueryBuilder::for(EmployeeResource::class)
-        ->allowedFilters([
-            AllowedFilter::exact('id'),
-            AllowedFilter::partial('resource_number'),
-            AllowedFilter::partial('title'),
-            AllowedFilter::exact('user_id'),
-            AllowedFilter::exact('category_id'),
-            AllowedFilter::exact('division_id'),
-            // Add custom callback filters for date range
-            AllowedFilter::callback('date_from', function ($query, $value) {
-                $query->whereDate('created_at', '>=', $value);
-            }),
-            AllowedFilter::callback('date_to', function ($query, $value) {
-                $query->whereDate('created_at', '<=', $value);
-            }),
-            // Map 'resource_no' to 'resource_number' column
-            AllowedFilter::partial('resource_no', 'resource_number'),
-        ])
-        ->allowedIncludes(['attachments', 'histories'])
-        ->with(['user', 'category', 'division'])
-        ->latest();
+        $resources = $query->paginate(15)->withQueryString();
 
-    $resources = $query->paginate(15)->withQueryString();
-
-    return view('employee_resources.index', compact('resources'));
-}
+        return view('employee_resources.index', compact('resources'));
+    }
 
     /**
      * Show form for creating a new resource
@@ -95,7 +94,6 @@ public function index(Request $request)
 
             $resource->save();
 
-
             DB::commit();
 
             return redirect()->route('employee_resources.index')
@@ -137,8 +135,6 @@ public function index(Request $request)
         DB::beginTransaction();
 
         try {
-            $oldData = $employeeResource->toArray();
-
             $employeeResource->user_id = $request->user_id;
             $employeeResource->category = $request->category_id;
             $employeeResource->division_id = $request->division_id;
@@ -154,8 +150,6 @@ public function index(Request $request)
             }
 
             $employeeResource->save();
-
-
 
             DB::commit();
 
@@ -182,8 +176,6 @@ public function index(Request $request)
             }
 
             $employeeResource->delete();
-
-
 
             DB::commit();
 
