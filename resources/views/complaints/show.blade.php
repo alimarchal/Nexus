@@ -933,17 +933,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <div class="mt-6 bg-white rounded-lg p-4 border border-red-200">
-                        <h4 class="text-md font-medium mb-3">Danger Zone</h4>
-                        <form method="POST" action="{{ route('complaints.destroy', $complaint) }}"
-                            onsubmit="return confirm('Delete this complaint? This action is permanent.')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="px-3 py-1 bg-red-600 text-white rounded">Delete
-                                Complaint</button>
-                        </form>
-                    </div>
                 </div>
 
 

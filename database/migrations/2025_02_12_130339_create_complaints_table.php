@@ -51,6 +51,9 @@ return new class extends Migration {
             // SLA (Service Level Agreement) monitoring
             $table->timestamp('expected_resolution_date')->nullable(); // Target deadline
             $table->boolean('sla_breached')->default(false); // Performance tracking
+            $table->text('reopen_reason')->nullable();
+            $table->string('priority_change_reason', 500)->nullable();
+            $table->string('status_change_reason', 500)->nullable();
 
             // Soft deletes - preserve data integrity while allowing "deletion"
             $table->softDeletes();

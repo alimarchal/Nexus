@@ -24,7 +24,9 @@ return new class extends Migration {
                 'Reopened',
                 'Closed',
                 'Priority Changed',
-                'Category Changed'
+                'Category Changed',
+                'Feedback',
+                'Escalated'
             ]);
             $table->string('old_value', 255)->nullable();
             $table->string('new_value', 255)->nullable();

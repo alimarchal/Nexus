@@ -315,42 +315,71 @@ class ComplaintController extends Controller
      */
     public function show(Complaint $complaint)
     {
-        // Load all relationships
+        // Eager load all complaint relationships to avoid N+1 queries
+        // This loads related data in a single query per relationship instead of multiple queries
         $complaint->load([
-            'branch',
-            'assignedTo',
-            'assignedBy',
-            'resolvedBy',
+            // Basic user and branch relationships
+            'branch',           // The branch where this complaint was logged
+            'assignedTo',       // User currently assigned to handle this complaint
+            'assignedBy',       // User who performed the assignment
+            'resolvedBy',       // User who resolved this complaint
+
+            // History tracking with nested relationships, ordered by most recent first
             'histories' => function ($query) {
                 $query->with(['status', 'performedBy'])->latest();
             },
+
+            // Comments with their creators, ordered by most recent first
             'comments' => function ($query) {
                 $query->with('creator')->latest();
             },
+
+            // File attachments with their uploaders, ordered by most recent first
             'attachments' => function ($query) {
                 $query->with('creator')->latest();
             },
+
+            // Complaint categories with parent category and creator info, ordered by most recent first
             'categories' => function ($query) {
                 $query->with(['parent', 'creator'])->latest();
             },
+
+            // Assignment history with assignment details, ordered by most recent first
             'assignments' => function ($query) {
                 $query->with(['assignedTo', 'assignedBy'])->latest();
             },
+
+            // Escalation records with escalation path details, ordered by most recent first
             'escalations' => function ($query) {
                 $query->with(['escalatedFrom', 'escalatedTo'])->latest();
             },
+
+            // Users watching this complaint for notifications
             'watchers' => function ($query) {
                 $query->with('user');
             },
+
+            // Performance metrics and SLA tracking data
             'metrics'
         ]);
 
-        // Get additional data for forms
+        // Fetch additional reference data needed for complaint management forms
+        // These provide dropdown options and reference data for various actions
+
+        // All active users for assignment, escalation, and watcher operations
         $users = User::orderBy('name')->get();
+
+        // Available status types for status change operations
         $statusTypes = ComplaintStatusType::orderBy('name')->get();
+
+        // Email/response templates for quick communication
         $templates = ComplaintTemplate::orderBy('template_name')->get();
+
+        // All branches for filtering and reference purposes
         $branches = Branch::orderBy('name')->get();
 
+        // Return the complaint detail view with all loaded data
+        // The view will have access to the fully loaded complaint model and all reference data
         return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates', 'branches'));
     }
 
@@ -362,14 +391,9 @@ class ComplaintController extends Controller
      */
     public function edit(Complaint $complaint)
     {
-        $branches = Branch::orderBy('name')->get();
-        $users = User::orderBy('name')->get();
-        $categories = ComplaintCategory::topLevel()->orderBy('category_name')->get();
-        $templates = ComplaintTemplate::active()->orderBy('template_name')->get();
-        $divisions = \App\Models\Division::orderBy('name')->get();
-        $statuses = ComplaintStatusType::orderBy('name')->get();
-
-        return view('complaints.edit', compact('complaint', 'branches', 'users', 'categories', 'templates', 'divisions', 'statuses'));
+        return redirect()
+            ->route('complaints.show', $complaint)
+            ->with('error', "Complaint '{$complaint->title}' is not allowed to be edit number: {$complaint->complaint_number}");
     }
 
     /**
@@ -577,48 +601,10 @@ class ComplaintController extends Controller
      */
     public function destroy(Complaint $complaint)
     {
-        DB::beginTransaction();
 
-        try {
-            // Create history record for deletion
-            $statusType = ComplaintStatusType::where('code', 'DELETED')->first()
-                ?? ComplaintStatusType::first();
-
-            if ($statusType) {
-                ComplaintHistory::create([
-                    'complaint_id' => $complaint->id,
-                    'action_type' => 'Closed',
-                    'old_value' => $complaint->status,
-                    'new_value' => 'Deleted',
-                    'comments' => 'Complaint deleted by user',
-                    'status_id' => $statusType->id,
-                    'performed_by' => auth()->id(),
-                    'performed_at' => now(),
-                    'complaint_type' => 'System',
-                ]);
-            }
-
-            // Soft delete the complaint (this will cascade to related records due to SoftDeletes)
-            $complaint->delete();
-
-            DB::commit();
-
-            return redirect()
-                ->route('complaints.index')
-                ->with('success', "Complaint '{$complaint->title}' has been deleted successfully.");
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-
-            Log::error('Error deleting complaint', [
-                'complaint_id' => $complaint->id,
-                'error' => $e->getMessage(),
-                'user_id' => auth()->id()
-            ]);
-
-            return redirect()->back()
-                ->with('error', 'Failed to delete complaint. Please try again.');
-        }
+        return redirect()
+            ->route('complaints.show', $complaint)
+            ->with('error', "Complaint '{$complaint->title}' cannot be deleted. Complaint number: {$complaint->complaint_number} is protected from deletion.");
     }
 
     /**
@@ -1367,18 +1353,29 @@ class ComplaintController extends Controller
         ]);
 
         try {
-            $complaint->metrics()->update([
-                'customer_satisfaction_score' => $validated['customer_satisfaction_score']
-            ]);
+            // Only allow for resolved / closed complaints
+            if (!$complaint->isResolved()) {
+                return redirect()->back()->with('error', 'Satisfaction score can only be set for resolved or closed complaints.');
+            }
+
+            // Ensure metrics record exists
+            if ($complaint->metrics) {
+                $complaint->metrics->update([
+                    'customer_satisfaction_score' => $validated['customer_satisfaction_score']
+                ]);
+            } else {
+                $complaint->metrics()->create([
+                    'customer_satisfaction_score' => $validated['customer_satisfaction_score']
+                ]);
+            }
 
             // Create history record
-            $statusType = ComplaintStatusType::where('code', 'FEEDBACK')->first()
-                ?? ComplaintStatusType::first();
+            $statusType = ComplaintStatusType::where('code', 'FEEDBACK')->first() ?? ComplaintStatusType::first();
 
             if ($statusType) {
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
-                    'action_type' => 'Feedback',
+                    'action_type' => 'Feedback', // Added to enum via migration 2025_08_19_000001_*
                     'old_value' => null,
                     'new_value' => $validated['customer_satisfaction_score'] . '/5',
                     'comments' => 'Customer satisfaction score updated',
