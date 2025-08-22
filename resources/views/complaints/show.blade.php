@@ -508,6 +508,255 @@
                                                 \Carbon\CarbonInterval::minutes($computedResolutionMinutes)->cascade()->forHumans(short:true)
                                                 }}</p>
                                         </div>
+
+                                        @if(strcasecmp($complaint->category,'Grievance')===0)
+                                        <!-- Grievance Details -->
+                                        <div
+                                            class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-6 border border-amber-100 shadow-sm">
+                                            <div class="flex items-center mb-4">
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="h-5 w-5 text-amber-600 mr-2" fill="none" viewBox="0 0 24 24"
+                                                    stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                                                </svg>
+                                                <h4 class="text-lg font-semibold text-gray-800">Grievance Details</h4>
+                                                @if($complaint->grievance_acknowledgment)
+                                                <span
+                                                    class="ml-3 px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700 font-medium">Acknowledged</span>
+                                                @endif
+                                            </div>
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                @if($complaint->grievance_employee_id)
+                                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                                    <label class="text-xs font-medium text-gray-500 block mb-1">Employee
+                                                        ID</label>
+                                                    <p class="text-gray-900 font-semibold">{{
+                                                        $complaint->grievance_employee_id }}</p>
+                                                </div>
+                                                @endif
+                                                @if($complaint->grievance_employment_start_date)
+                                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                                    <label
+                                                        class="text-xs font-medium text-gray-500 block mb-1">Employment
+                                                        Start Date</label>
+                                                    <p class="text-gray-900 font-semibold">{{
+                                                        optional($complaint->grievance_employment_start_date)->format('M
+                                                        d, Y') }}</p>
+                                                </div>
+                                                @endif
+                                                @if($complaint->grievance_department_position)
+                                                <div
+                                                    class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                                    <label
+                                                        class="text-xs font-medium text-gray-500 block mb-1">Department
+                                                        / Position</label>
+                                                    <p class="text-gray-900">{{
+                                                        $complaint->grievance_department_position }}</p>
+                                                </div>
+                                                @endif
+                                                @if($complaint->grievance_supervisor_name)
+                                                <div
+                                                    class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                                    <label
+                                                        class="text-xs font-medium text-gray-500 block mb-1">Immediate
+                                                        Supervisor Name</label>
+                                                    <p class="text-gray-900">{{ $complaint->grievance_supervisor_name }}
+                                                    </p>
+                                                </div>
+                                                @endif
+
+                                                @if($complaint->grievance_type)
+                                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                                    <label
+                                                        class="text-xs font-medium text-gray-500 block mb-1">Grievance
+                                                        Type</label>
+                                                    <p class="text-gray-900 font-semibold">{{ $complaint->grievance_type
+                                                        }}</p>
+                                                </div>
+                                                @endif
+                                                @if($complaint->grievance_policy_violated)
+                                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                                    <label class="text-xs font-medium text-gray-500 block mb-1">Policy
+                                                        Violated</label>
+                                                    <p class="text-gray-900 font-semibold">{{
+                                                        $complaint->grievance_policy_violated }}</p>
+                                                </div>
+                                                @endif
+                                                @if(!is_null($complaint->grievance_previous_attempts))
+                                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                                    <label class="text-xs font-medium text-gray-500 block mb-1">Previous
+                                                        Attempts to Resolve</label>
+                                                    <p class="text-gray-900 font-semibold">{{
+                                                        $complaint->grievance_previous_attempts ? 'Yes' : 'No' }}</p>
+                                                </div>
+                                                @endif
+                                                @if($complaint->grievance_previous_attempts_details)
+                                                <div
+                                                    class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                                    <label class="text-xs font-medium text-gray-500 block mb-1">Previous
+                                                        Attempts Details</label>
+                                                    <p
+                                                        class="text-gray-900 whitespace-pre-wrap text-sm leading-relaxed">
+                                                        {{ $complaint->grievance_previous_attempts_details }}</p>
+                                                </div>
+                                                @endif
+                                                @if($complaint->grievance_desired_outcome)
+                                                <div
+                                                    class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                                    <label class="text-xs font-medium text-gray-500 block mb-1">Desired
+                                                        Outcome / Remedy</label>
+                                                    <p
+                                                        class="text-gray-900 whitespace-pre-wrap text-sm leading-relaxed">
+                                                        {{ $complaint->grievance_desired_outcome }}</p>
+                                                </div>
+                                                @endif
+
+                                                @if($complaint->grievance_subject_name ||
+                                                $complaint->grievance_subject_position)
+                                                <div
+                                                    class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                                    <label class="text-xs font-medium text-gray-500 block mb-1">Subject
+                                                        / Respondent</label>
+                                                    <p class="text-gray-900 text-sm">Name: <span
+                                                            class="font-semibold">{{ $complaint->grievance_subject_name
+                                                            ?? 'N/A' }}</span></p>
+                                                    @if($complaint->grievance_subject_position)
+                                                    <p class="text-gray-900 text-sm">Position: <span
+                                                            class="font-semibold">{{
+                                                            $complaint->grievance_subject_position }}</span></p>
+                                                    @endif
+                                                    @if($complaint->grievance_subject_relationship)
+                                                    <p class="text-gray-700 text-xs mt-1">Relationship: {{
+                                                        $complaint->grievance_subject_relationship }}</p>
+                                                    @endif
+                                                </div>
+                                                @endif
+
+                                                @if(!is_null($complaint->grievance_union_representation) ||
+                                                !is_null($complaint->grievance_anonymous) ||
+                                                !is_null($complaint->grievance_acknowledgment))
+                                                <div
+                                                    class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                                    <label class="text-xs font-medium text-gray-500 block mb-2">Process
+                                                        Flags</label>
+                                                    <div class="flex flex-wrap gap-2">
+                                                        @if(!is_null($complaint->grievance_union_representation))
+                                                        <span
+                                                            class="px-2 py-1 text-xs rounded-full {{ $complaint->grievance_union_representation ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-700' }}">Union
+                                                            Representation: {{
+                                                            $complaint->grievance_union_representation ? 'Yes' : 'No'
+                                                            }}</span>
+                                                        @endif
+                                                        @if(!is_null($complaint->grievance_anonymous))
+                                                        <span
+                                                            class="px-2 py-1 text-xs rounded-full {{ $complaint->grievance_anonymous ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-700' }}">Anonymous:
+                                                            {{ $complaint->grievance_anonymous ? 'Yes' : 'No' }}</span>
+                                                        @endif
+                                                        @if(!is_null($complaint->grievance_acknowledgment))
+                                                        <span
+                                                            class="px-2 py-1 text-xs rounded-full {{ $complaint->grievance_acknowledgment ? 'bg-amber-600 text-white' : 'bg-gray-200 text-gray-700' }}">Acknowledgment:
+                                                            {{ $complaint->grievance_acknowledgment ? 'Yes' : 'No'
+                                                            }}</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                @endif
+
+                                                @if($complaint->grievance_first_occurred_date ||
+                                                $complaint->grievance_most_recent_date ||
+                                                $complaint->grievance_pattern_frequency)
+                                                <div
+                                                    class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                                    <label class="text-xs font-medium text-gray-500 block mb-1">Timeline
+                                                        / Pattern</label>
+                                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                                        @if($complaint->grievance_first_occurred_date)
+                                                        <div>
+                                                            <p class="text-gray-500 text-xs">First Occurred</p>
+                                                            <p class="text-gray-900 font-medium">{{
+                                                                optional($complaint->grievance_first_occurred_date)->format('M
+                                                                d, Y') }}</p>
+                                                        </div>
+                                                        @endif
+                                                        @if($complaint->grievance_most_recent_date)
+                                                        <div>
+                                                            <p class="text-gray-500 text-xs">Most Recent</p>
+                                                            <p class="text-gray-900 font-medium">{{
+                                                                optional($complaint->grievance_most_recent_date)->format('M
+                                                                d, Y') }}</p>
+                                                        </div>
+                                                        @endif
+                                                        @if($complaint->grievance_pattern_frequency)
+                                                        <div>
+                                                            <p class="text-gray-500 text-xs">Pattern/Frequency</p>
+                                                            <p class="text-gray-900 font-medium">{{
+                                                                $complaint->grievance_pattern_frequency }}</p>
+                                                        </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                                @endif
+
+                                                @if($complaint->grievance_performance_effect)
+                                                <div
+                                                    class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                                    <label class="text-xs font-medium text-gray-500 block mb-1">Impact
+                                                        on Performance / Well-being</label>
+                                                    <p
+                                                        class="text-gray-900 whitespace-pre-wrap text-sm leading-relaxed">
+                                                        {{ $complaint->grievance_performance_effect }}</p>
+                                                </div>
+                                                @endif
+
+                                                @php $grievanceWitnesses = $complaint->witnesses; @endphp
+                                                @if($grievanceWitnesses->count())
+                                                <div
+                                                    class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                                    <label
+                                                        class="text-xs font-medium text-gray-500 mb-3 flex items-center">Witnesses
+                                                        ({{ $grievanceWitnesses->count() }})</label>
+                                                    <div class="space-y-3 max-h-80 overflow-y-auto pr-2">
+                                                        @foreach($grievanceWitnesses as $w)
+                                                        <div class="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                                                            <div class="flex items-start justify-between">
+                                                                <div>
+                                                                    <p
+                                                                        class="text-gray-900 text-sm font-semibold flex items-center">
+                                                                        <span
+                                                                            class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-600 text-white text-xs mr-2">{{
+                                                                            $loop->iteration }}</span>
+                                                                        {{ $w->name }}
+                                                                    </p>
+                                                                    <div
+                                                                        class="grid grid-cols-2 gap-2 text-xs text-gray-600 mt-1">
+                                                                        @if($w->employee_number)<p><span
+                                                                                class="font-medium">Emp #:</span> {{
+                                                                            $w->employee_number }}</p>@endif
+                                                                        @if($w->phone)<p><span
+                                                                                class="font-medium">Phone:</span> {{
+                                                                            $w->phone }}</p>@endif
+                                                                        @if($w->email)<p class="col-span-2"><span
+                                                                                class="font-medium">Email:</span> {{
+                                                                            $w->email }}</p>@endif
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            @if($w->statement)
+                                                            <p class="mt-2 text-xs text-gray-700 whitespace-pre-wrap">
+                                                                <span
+                                                                    class="font-medium text-gray-600">Statement:</span>
+                                                                {{ $w->statement }}</p>
+                                                            @endif
+                                                        </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        @endif
                                     </div>
                                     @endif
                                     @if($complaint->metrics->time_to_first_response &&
@@ -1521,6 +1770,40 @@
                             y = doc.lastAutoTable.finalY + 15;
                             if(c.harassment_details){
                                 doc.setFontSize(9); doc.setTextColor(60); const hs = doc.splitTextToSize('Details: '+c.harassment_details, 515); doc.text(hs,40,y); y += hs.length*11 + 10;
+                            }
+                        }
+
+                        // Grievance details (if category is Grievance)
+                        if((c.category||'').toLowerCase()==='grievance'){
+                            y = addSectionTitle(doc,'Grievance Details', y);
+                            const gRows = [
+                                ['Employee ID', c.grievance_employee_id || '-', 'Type', c.grievance_type || '-'],
+                                ['Employment Start', fmtDate(c.grievance_employment_start_date), 'Policy Violated', c.grievance_policy_violated || '-'],
+                                ['Prev Attempts', c.grievance_previous_attempts==null?'-':(c.grievance_previous_attempts? 'Yes':'No'), 'Subject Name', c.grievance_subject_name || '-'],
+                                ['Subject Position', c.grievance_subject_position || '-', 'Relationship', c.grievance_subject_relationship || '-'],
+                                ['Union Representation', c.grievance_union_representation==null?'-':(c.grievance_union_representation?'Yes':'No'), 'Anonymous', c.grievance_anonymous==null?'-':(c.grievance_anonymous?'Yes':'No')],
+                                ['Acknowledgment', c.grievance_acknowledgment==null?'-':(c.grievance_acknowledgment?'Yes':'No'), 'First Occurred', fmtDate(c.grievance_first_occurred_date)],
+                                ['Most Recent', fmtDate(c.grievance_most_recent_date), 'Pattern/Frequency', c.grievance_pattern_frequency || '-']
+                            ];
+                            doc.autoTable({
+                                startY:y,
+                                head:[['FIELD','VALUE','FIELD','VALUE']],
+                                body:gRows,
+                                styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1, overflow:'linebreak'},
+                                headStyles:{fillColor:[0,0,0], textColor:[255,255,255]},
+                                columnStyles:{0:{cellWidth:94},1:{cellWidth:172},2:{cellWidth:94},3:{cellWidth:146}},
+                                tableWidth:510,
+                                theme:'grid'
+                            });
+                            y = doc.lastAutoTable.finalY + 15;
+                            if(c.grievance_previous_attempts_details){
+                                const pa = doc.splitTextToSize('Previous Attempts Details: '+c.grievance_previous_attempts_details, 515); doc.setFontSize(9); doc.text(pa,40,y); y += pa.length*11 + 8;
+                            }
+                            if(c.grievance_desired_outcome){
+                                const dox = doc.splitTextToSize('Desired Outcome: '+c.grievance_desired_outcome, 515); doc.setFontSize(9); doc.text(dox,40,y); y += dox.length*11 + 8;
+                            }
+                            if(c.grievance_performance_effect){
+                                const pe = doc.splitTextToSize('Performance Impact: '+c.grievance_performance_effect, 515); doc.setFontSize(9); doc.text(pe,40,y); y += pe.length*11 + 10;
                             }
                         }
 

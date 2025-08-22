@@ -245,23 +245,27 @@ class ComplaintController extends Controller
             // Create complaint record (includes region_id / division_id / branch_id which are nullable)
             $complaint = Complaint::create($validated);
 
-            // Persist witnesses if harassment category and witnesses provided
+            // Persist witnesses if harassment or grievance category and witnesses provided
             if (!empty($validated['category_id'])) {
                 $cat = ComplaintCategory::find($validated['category_id']);
-                if ($cat && strcasecmp($cat->category_name, 'Harassment') === 0) {
-                    // Structured witnesses from request (validated via StoreComplaintRequest)
-                    $witnesses = $request->input('witnesses', []);
-                    if (is_array($witnesses)) {
-                        foreach ($witnesses as $w) {
-                            if (!empty($w['name'])) {
-                                ComplaintWitness::create([
-                                    'complaint_id' => $complaint->id,
-                                    'employee_number' => $w['employee_number'] ?? null,
-                                    'name' => $w['name'],
-                                    'phone' => $w['phone'] ?? null,
-                                    'email' => $w['email'] ?? null,
-                                    'statement' => $w['statement'] ?? null,
-                                ]);
+                if ($cat && (strcasecmp($cat->category_name, 'Harassment') === 0 || strcasecmp($cat->category_name, 'Grievance') === 0)) {
+                    $groupedSets = [
+                        $request->input('witnesses', []), // harassment witness fields
+                        $request->input('grievance_witnesses', []) // grievance witness fields
+                    ];
+                    foreach ($groupedSets as $witnesses) {
+                        if (is_array($witnesses)) {
+                            foreach ($witnesses as $w) {
+                                if (!empty($w['name'])) {
+                                    ComplaintWitness::create([
+                                        'complaint_id' => $complaint->id,
+                                        'employee_number' => $w['employee_number'] ?? null,
+                                        'name' => $w['name'],
+                                        'phone' => $w['phone'] ?? null,
+                                        'email' => $w['email'] ?? null,
+                                        'statement' => $w['statement'] ?? null,
+                                    ]);
+                                }
                             }
                         }
                     }
