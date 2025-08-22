@@ -206,10 +206,11 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label for="complainant_name" class="block text-gray-700">Complainant Name <span
-                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                            class="text-red-600">*</span>:</label>
                                     <input type="text" name="complainant_name" id="complainant_name"
-                                        value="{{ old('complainant_name') }}"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        value="{{ old('complainant_name', auth()->user()->name ?? '') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                        required>
                                     @error('complainant_name')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                     @enderror
@@ -217,10 +218,11 @@
 
                                 <div>
                                     <label for="complainant_email" class="block text-gray-700">Email <span
-                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                            class="text-red-600">*</span>:</label>
                                     <input type="email" name="complainant_email" id="complainant_email"
-                                        value="{{ old('complainant_email') }}"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        value="{{ old('complainant_email', auth()->user()->email ?? '') }}"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                        required>
                                     @error('complainant_email')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                     @enderror
@@ -228,10 +230,11 @@
 
                                 <div>
                                     <label for="complainant_phone" class="block text-gray-700">Phone <span
-                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                            class="text-red-600">*</span>:</label>
                                     <input type="tel" name="complainant_phone" id="complainant_phone"
                                         value="{{ old('complainant_phone') }}"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                        required>
                                     @error('complainant_phone')
                                     <span class="text-red-500 text-sm">{{ $message }}</span>
                                     @enderror
