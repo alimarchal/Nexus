@@ -510,6 +510,18 @@
                                         </div>
                                     </div>
                                     @endif
+                                    @if($complaint->metrics->time_to_first_response &&
+                                    $complaint->metrics->time_to_resolution)
+                                    <div
+                                        class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border-l-4 border-indigo-400">
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-600">Handling Duration (Post
+                                                First Response)</span>
+                                            <p class="text-lg font-bold text-indigo-600">{{
+                                                $complaint->metrics->formatted_handling_duration }}</p>
+                                        </div>
+                                    </div>
+                                    @endif
                                     <div class="grid grid-cols-3 gap-3">
                                         <div class="p-3 bg-white rounded-lg shadow-sm text-center">
                                             <div class="text-lg font-bold text-purple-600">{{
@@ -705,16 +717,31 @@
                                         <time class="text-xs text-gray-500">{{ $history->performed_at->format('M d, Y
                                             H:i') }}</time>
                                     </div>
-                                    @if($history->old_value || $history->new_value)
+                                    @php
+                                    // Map any lingering numeric user IDs in historical records (pre-change) to names
+                                    for reassignment histories
+                                    $oldDisplay = $history->old_value;
+                                    $newDisplay = $history->new_value;
+                                    if ($history->action_type === 'Reassigned') {
+                                    $userMap = $users->keyBy('id');
+                                    if (is_numeric($oldDisplay)) {
+                                    $oldDisplay = ($userMap[$oldDisplay]->name ?? ('User #'.$oldDisplay));
+                                    }
+                                    if (is_numeric($newDisplay)) {
+                                    $newDisplay = ($userMap[$newDisplay]->name ?? ('User #'.$newDisplay));
+                                    }
+                                    }
+                                    @endphp
+                                    @if($oldDisplay || $newDisplay)
                                     <div class="mt-2 text-xs text-gray-600 dark:text-gray-300">
-                                        @if($history->old_value && $history->new_value)
+                                        @if($oldDisplay && $newDisplay)
                                         <span class="font-medium text-gray-700 dark:text-gray-200">{{
-                                            $history->old_value }}</span>
+                                            $oldDisplay }}</span>
                                         <span class="mx-1 text-gray-400">→</span>
-                                        <span class="font-medium text-gray-900 dark:text-white">{{ $history->new_value
+                                        <span class="font-medium text-gray-900 dark:text-white">{{ $newDisplay
                                             }}</span>
-                                        @elseif($history->new_value)
-                                        <span class="font-medium text-gray-900 dark:text-white">{{ $history->new_value
+                                        @elseif($newDisplay)
+                                        <span class="font-medium text-gray-900 dark:text-white">{{ $newDisplay
                                             }}</span>
                                         @endif
                                     </div>

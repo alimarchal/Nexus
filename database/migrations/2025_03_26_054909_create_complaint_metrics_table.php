@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->uuid('complaint_id'); // Reference to the complaint these metrics belong to
             $table->foreign('complaint_id')->references('id')->on('complaints')->onDelete('cascade');
             $table->integer('time_to_first_response')->nullable(); // Time from complaint creation to first response (in minutes) - Example: 45 minutes
+            $table->timestamp('first_response_at')->nullable();
             $table->integer('time_to_resolution')->nullable(); // Time from complaint creation to resolution (in minutes) - Example: 1440 minutes (24 hours)
             $table->integer('reopened_count')->default(0); // Number of times complaint was reopened - Example: 0 (never reopened), 2 (reopened twice)
             $table->integer('escalation_count')->default(0); // Number of times complaint was escalated - Example: 1 (escalated once to manager)

@@ -1120,6 +1120,12 @@ class ComplaintController extends Controller
                         default => $newVal,
                     };
                 }
+
+                // For user assignment changes convert IDs to human readable names (avoid leaking raw IDs in history)
+                if ($field === 'assigned_to') {
+                    $oldVal = $oldVal ? (User::find($oldVal)?->name ?? "User #{$oldVal}") : 'Unassigned';
+                    $newVal = $newVal ? (User::find($newVal)?->name ?? "User #{$newVal}") : 'Unassigned';
+                }
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
                     'action_type' => $actionType,
@@ -1160,14 +1166,25 @@ class ComplaintController extends Controller
             $origStatus === 'Open' &&
             $newStatus !== 'Open'
         ) {
-            $timeToResponse = $complaint->created_at->diffInMinutes(now());
-            $metrics->update(['time_to_first_response' => $timeToResponse]);
+            $firstResponseAt = now();
+            $timeToResponse = $complaint->created_at->diffInMinutes($firstResponseAt);
+            $metrics->update([
+                'time_to_first_response' => $timeToResponse,
+                'first_response_at' => $firstResponseAt,
+            ]);
+        }
+
+        // Lazy backfill first_response_at if historical data exists without timestamp
+        if ($metrics->time_to_first_response && !$metrics->first_response_at) {
+            $backfill = $complaint->created_at->copy()->addMinutes($metrics->time_to_first_response);
+            $metrics->update(['first_response_at' => $backfill]);
         }
 
         // Calculate or refresh time to resolution when entering Resolved/Closed
         if (in_array($newStatus, ['Resolved', 'Closed'])) {
             $resolvedAt = $complaint->resolved_at ?? now();
             $ttr = $complaint->created_at->diffInMinutes($resolvedAt);
+            // Optionally compute handling duration separately if a definition change is desired.
             if (!$metrics->time_to_resolution || $metrics->time_to_resolution != $ttr) {
                 $metrics->update(['time_to_resolution' => $ttr]);
             }
@@ -1448,8 +1465,17 @@ class ComplaintController extends Controller
                 'user_id' => auth()->id()
             ]);
 
-            return redirect()->back()
-                ->with('error', 'Failed to export complaints. Please try again.');
+            $filename = 'complaints_export_error_' . now()->format('Y_m_d_H_i_s') . '.csv';
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            ];
+            return response()->stream(function () use ($e) {
+                $handle = fopen('php://output', 'w');
+                fputcsv($handle, ['Export Failed']);
+                fputcsv($handle, ['Message', app()->environment('local') ? $e->getMessage() : 'An error occurred generating the export']);
+                fclose($handle);
+            }, 200, $headers);
         }
     }
 
