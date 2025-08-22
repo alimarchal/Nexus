@@ -1510,6 +1510,44 @@ class ComplaintController extends Controller
                 'sla_compliance' => $slaCompliance,
             ];
 
+            // Extended distributions & rankings
+            $categoryDistribution = (clone $baseQuery)
+                ->selectRaw('category, COUNT(*) as count')
+                ->groupBy('category')
+                ->orderByDesc('count')
+                ->get();
+            $harassmentSubCategoryDistribution = (clone $baseQuery)
+                ->whereRaw('LOWER(category) = ?', ['harassment'])
+                ->whereNotNull('harassment_sub_category')
+                ->selectRaw('harassment_sub_category as sub_category, COUNT(*) as count')
+                ->groupBy('harassment_sub_category')
+                ->orderByDesc('count')
+                ->get();
+            $topResolvers = (clone $baseQuery)
+                ->whereIn('status', ["Resolved", "Closed"])
+                ->whereNotNull('resolved_by')
+                ->join('users as resolver', 'complaints.resolved_by', '=', 'resolver.id')
+                ->selectRaw('resolver.name as user_name, COUNT(*) as resolved_count')
+                ->groupBy('resolver.id', 'resolver.name')
+                ->orderByDesc('resolved_count')
+                ->limit(5)
+                ->get();
+            $topWatchers = (clone $baseQuery)
+                ->join('complaint_watchers', 'complaint_watchers.complaint_id', '=', 'complaints.id')
+                ->join('users as watcher', 'complaint_watchers.user_id', '=', 'watcher.id')
+                ->selectRaw('watcher.name as user_name, COUNT(DISTINCT complaints.id) as watched_complaints')
+                ->groupBy('watcher.id', 'watcher.name')
+                ->orderByDesc('watched_complaints')
+                ->limit(5)
+                ->get();
+            $categoryResolutionRates = (clone $baseQuery)
+                ->selectRaw('category, COUNT(*) as total, SUM(CASE WHEN status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved')
+                ->groupBy('category')
+                ->get()
+                ->map(function ($r) {
+                    $r->resolution_rate = $r->total > 0 ? round(($r->resolved / $r->total) * 100, 1) : 0;
+                    return $r; });
+
             return view('complaints.analytics', [
                 'totalComplaints' => $totalComplaints,
                 'resolvedComplaints' => $resolvedComplaints,
@@ -1526,6 +1564,11 @@ class ComplaintController extends Controller
                 'dateFrom' => $dateFrom,
                 'dateTo' => $dateTo,
                 'initialPayload' => $initialPayload,
+                'categoryDistribution' => $categoryDistribution,
+                'harassmentSubCategoryDistribution' => $harassmentSubCategoryDistribution,
+                'topResolvers' => $topResolvers,
+                'topWatchers' => $topWatchers,
+                'categoryResolutionRates' => $categoryResolutionRates,
             ]);
         } catch (\Exception $e) {
             Log::error('Error generating complaint analytics', [
@@ -1587,6 +1630,44 @@ class ComplaintController extends Controller
                 ->orderBy('month')
                 ->get();
 
+            // Extended datasets for JSON
+            $categoryDistribution = (clone $baseQuery)
+                ->selectRaw('category, COUNT(*) as count')
+                ->groupBy('category')
+                ->orderByDesc('count')
+                ->get();
+            $harassmentSubCategoryDistribution = (clone $baseQuery)
+                ->whereRaw('LOWER(category) = ?', ['harassment'])
+                ->whereNotNull('harassment_sub_category')
+                ->selectRaw('harassment_sub_category as sub_category, COUNT(*) as count')
+                ->groupBy('harassment_sub_category')
+                ->orderByDesc('count')
+                ->get();
+            $topResolvers = (clone $baseQuery)
+                ->whereIn('status', ["Resolved", "Closed"])
+                ->whereNotNull('resolved_by')
+                ->join('users as resolver', 'complaints.resolved_by', '=', 'resolver.id')
+                ->selectRaw('resolver.name as user_name, COUNT(*) as resolved_count')
+                ->groupBy('resolver.id', 'resolver.name')
+                ->orderByDesc('resolved_count')
+                ->limit(5)
+                ->get();
+            $topWatchers = (clone $baseQuery)
+                ->join('complaint_watchers', 'complaint_watchers.complaint_id', '=', 'complaints.id')
+                ->join('users as watcher', 'complaint_watchers.user_id', '=', 'watcher.id')
+                ->selectRaw('watcher.name as user_name, COUNT(DISTINCT complaints.id) as watched_complaints')
+                ->groupBy('watcher.id', 'watcher.name')
+                ->orderByDesc('watched_complaints')
+                ->limit(5)
+                ->get();
+            $categoryResolutionRates = (clone $baseQuery)
+                ->selectRaw('category, COUNT(*) as total, SUM(CASE WHEN status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved')
+                ->groupBy('category')
+                ->get()
+                ->map(function ($r) {
+                    $r->resolution_rate = $r->total > 0 ? round(($r->resolved / $r->total) * 100, 1) : 0;
+                    return $r; });
+
             return response()->json([
                 'metrics' => compact(
                     'total',
@@ -1606,6 +1687,11 @@ class ComplaintController extends Controller
                 'priorityDistribution' => $priorityDistribution,
                 'sourceDistribution' => $sourceDistribution,
                 'monthlyTrend' => $monthlyTrend,
+                'categoryDistribution' => $categoryDistribution,
+                'harassmentSubCategoryDistribution' => $harassmentSubCategoryDistribution,
+                'topResolvers' => $topResolvers,
+                'topWatchers' => $topWatchers,
+                'categoryResolutionRates' => $categoryResolutionRates,
             ]);
         } catch (\Exception $e) {
             Log::error('analyticsData failure', ['error' => $e->getMessage()]);

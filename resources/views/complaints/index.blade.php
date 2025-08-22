@@ -172,6 +172,10 @@
                         </div>
 
                         <!-- Filter by Region -->
+
+
+
+
                         <div>
                             <label for="filter[region_id]"
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Region</label>
@@ -193,7 +197,8 @@
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                 <option value="">All Divisions</option>
                                 @foreach($divisions ?? [] as $division)
-                                <option value="{{ $division->id }}" {{ request('filter.division_id')==$division->id ?
+                                <option value="{{ $division->id }}" {{ request('filter.division_id')==$division->id
+                                    ?
                                     'selected' : '' }}>{{ $division->short_name ?? $division->name }}</option>
                                 @endforeach
                             </select>
@@ -202,14 +207,16 @@
                         <!-- Filter by Assigned To -->
                         <div>
                             <label for="filter[assigned_to]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assigned To</label>
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assigned
+                                To</label>
                             <select name="filter[assigned_to]" id="filter[assigned_to]"
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                 <option value="">All Users</option>
                                 <option value="unassigned" {{ request('filter.assigned_to')==='unassigned' ? 'selected'
                                     : '' }}>Unassigned</option>
                                 @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}" {{ request('filter.assigned_to')==$user->id ? 'selected'
+                                <option value="{{ $user->id }}" {{ request('filter.assigned_to')==$user->id ?
+                                    'selected'
                                     : ''
                                     }}>
                                     {{ $user->name }}
@@ -221,12 +228,14 @@
                         <!-- Filter by Assigned By -->
                         <div>
                             <label for="filter[assigned_by]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assigned By</label>
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assigned
+                                By</label>
                             <select name="filter[assigned_by]" id="filter[assigned_by]"
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                 <option value="">All Users</option>
                                 @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}" {{ request('filter.assigned_by')==$user->id ? 'selected'
+                                <option value="{{ $user->id }}" {{ request('filter.assigned_by')==$user->id ?
+                                    'selected'
                                     : ''
                                     }}>
                                     {{ $user->name }}
@@ -238,12 +247,14 @@
                         <!-- Filter by Resolved By -->
                         <div>
                             <label for="filter[resolved_by]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Resolved By</label>
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Resolved
+                                By</label>
                             <select name="filter[resolved_by]" id="filter[resolved_by]"
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                 <option value="">All Users</option>
                                 @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}" {{ request('filter.resolved_by')==$user->id ? 'selected'
+                                <option value="{{ $user->id }}" {{ request('filter.resolved_by')==$user->id ?
+                                    'selected'
                                     : ''
                                     }}>
                                     {{ $user->name }}
@@ -255,13 +266,15 @@
                         <!-- Filter by SLA Breached -->
                         <div>
                             <label for="filter[sla_breached]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">SLA Status</label>
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">SLA
+                                Status</label>
                             <select name="filter[sla_breached]" id="filter[sla_breached]"
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                 <option value="">All SLA Status</option>
                                 <option value="1" {{ request('filter.sla_breached')==='1' ? 'selected' : '' }}>SLA
                                     Breached</option>
-                                <option value="0" {{ request('filter.sla_breached')==='0' ? 'selected' : '' }}>Within
+                                <option value="0" {{ request('filter.sla_breached')==='0' ? 'selected' : '' }}>
+                                    Within
                                     SLA</option>
                             </select>
                         </div>
@@ -273,8 +286,10 @@
                             <select name="filter[escalated]" id="filter[escalated]"
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                 <option value="">All</option>
-                                <option value="1" {{ request('filter.escalated')==='1' ? 'selected' : '' }}>Yes</option>
-                                <option value="0" {{ request('filter.escalated')==='0' ? 'selected' : '' }}>No</option>
+                                <option value="1" {{ request('filter.escalated')==='1' ? 'selected' : '' }}>Yes
+                                </option>
+                                <option value="0" {{ request('filter.escalated')==='0' ? 'selected' : '' }}>No
+                                </option>
                             </select>
                         </div>
 
@@ -285,7 +300,8 @@
                             <select name="filter[harassment_only]" id="filter[harassment_only]"
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                 <option value="">All</option>
-                                <option value="1" {{ request('filter.harassment_only')==='1' ? 'selected' : '' }}>Only
+                                <option value="1" {{ request('filter.harassment_only')==='1' ? 'selected' : '' }}>
+                                    Only
                                     Harassment</option>
                             </select>
                         </div>
@@ -312,9 +328,11 @@
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                                 <option value="">All</option>
                                 <option value="1" {{ request('filter.harassment_confidential')==='1' ? 'selected' : ''
-                                    }}>Yes</option>
+                                    }}>
+                                    Yes</option>
                                 <option value="0" {{ request('filter.harassment_confidential')==='0' ? 'selected' : ''
-                                    }}>No</option>
+                                    }}>No
+                                </option>
                             </select>
                         </div>
 
@@ -429,15 +447,20 @@
                                     : '' }}>Complaint Number (Z-A)</option>
                                 <option value="title" {{ request('sort')==='title' ? 'selected' : '' }}>Title (A-Z)
                                 </option>
-                                <option value="-title" {{ request('sort')==='-title' ? 'selected' : '' }}>Title (Z-A)
+                                <option value="-title" {{ request('sort')==='-title' ? 'selected' : '' }}>Title
+                                    (Z-A)
                                 </option>
-                                <option value="status" {{ request('sort')==='status' ? 'selected' : '' }}>Status (A-Z)
+                                <option value="status" {{ request('sort')==='status' ? 'selected' : '' }}>Status
+                                    (A-Z)
                                 </option>
-                                <option value="-status" {{ request('sort')==='-status' ? 'selected' : '' }}>Status (Z-A)
+                                <option value="-status" {{ request('sort')==='-status' ? 'selected' : '' }}>Status
+                                    (Z-A)
                                 </option>
-                                <option value="priority" {{ request('sort')==='priority' ? 'selected' : '' }}>Priority
+                                <option value="priority" {{ request('sort')==='priority' ? 'selected' : '' }}>
+                                    Priority
                                     (A-Z)</option>
-                                <option value="-priority" {{ request('sort')==='-priority' ? 'selected' : '' }}>Priority
+                                <option value="-priority" {{ request('sort')==='-priority' ? 'selected' : '' }}>
+                                    Priority
                                     (Z-A)</option>
                                 <option value="created_at" {{ request('sort')==='created_at' ? 'selected' : '' }}>
                                     Created (Oldest)</option>
@@ -456,7 +479,8 @@
                                 <option value="-resolved_at" {{ request('sort')==='-resolved_at' ? 'selected' : '' }}>
                                     Resolved (Latest)</option>
                                 <option value="expected_resolution_date" {{ request('sort')==='expected_resolution_date'
-                                    ? 'selected' : '' }}>Expected Resolution (Earliest)</option>
+                                    ? 'selected' : '' }}>Expected
+                                    Resolution (Earliest)</option>
                                 <option value="-expected_resolution_date" {{
                                     request('sort')==='-expected_resolution_date' ? 'selected' : '' }}>Expected
                                     Resolution (Latest)</option>

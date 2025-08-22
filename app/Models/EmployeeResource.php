@@ -56,12 +56,8 @@ class EmployeeResource extends Model
 
     public function category()
     {
-    // Change the category relationship to use 'category' as foreign key
-    public function category()
-    {
+        // Change the category relationship to use 'category' as foreign key
         return $this->belongsTo(Category::class, 'category'); // Use 'category' instead of 'category_id'
-
-
     }
 
     public function division()

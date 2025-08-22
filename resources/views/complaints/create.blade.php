@@ -219,6 +219,7 @@
                                         Time <span class="text-red-600">*</span>:</label>
                                     <input type="datetime-local" name="harassment_incident_date"
                                         id="harassment_incident_date" value="{{ old('harassment_incident_date') }}"
+                                        max="{{ now()->format('Y-m-d\TH:i') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                         required>
                                     @error('harassment_incident_date')<span class="text-red-500 text-sm">{{ $message
@@ -526,6 +527,7 @@
             const categoryField = document.getElementById('category_id');
             const harassmentSection = document.getElementById('harassment-section');
             const harassmentRequiredFields = ['harassment_sub_category','harassment_incident_date','harassment_location','harassment_details'];
+            const incidentDateField = document.getElementById('harassment_incident_date');
             const witnessWrapper = document.getElementById('witnesses-wrapper');
             const witnessTemplate = document.getElementById('witness-template');
             const addWitnessBtn = document.getElementById('add-witness-btn');
@@ -656,6 +658,23 @@
             toggleHarassmentSection();
             if(priorityField && priorityField.value){
                 recalcFromPriority(false); // initial fill if empty / allowed
+            }
+
+            // Enforce no-future incident date (defensive client-side)
+            if(incidentDateField){
+                function clampIncident(){
+                    const max = new Date();
+                    const val = incidentDateField.value ? new Date(incidentDateField.value) : null;
+                    if(val && val.getTime() > max.getTime()){
+                        // Set to current local datetime (truncate seconds)
+                        const now = new Date();
+                        now.setSeconds(0,0);
+                        const local = new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+                        incidentDateField.value = local;
+                    }
+                }
+                incidentDateField.addEventListener('change', clampIncident);
+                incidentDateField.addEventListener('blur', clampIncident);
             }
         })();
     </script>
