@@ -495,6 +495,40 @@ class ComplaintController extends Controller
             'witnesses'
         ]);
 
+        // Compute handling duration (post first response) on-the-fly for export
+        if ($complaint->metrics && $complaint->metrics->time_to_first_response !== null && $complaint->metrics->time_to_resolution !== null) {
+            $handling = max(0, $complaint->metrics->time_to_resolution - $complaint->metrics->time_to_first_response);
+            $complaint->metrics->setAttribute('handling_duration', $handling);
+        }
+
+        // Map any legacy numeric user IDs in reassignment histories to user names (server-side for PDF consistency)
+        if ($complaint->histories && $complaint->histories->count()) {
+            $numericUserIds = [];
+            foreach ($complaint->histories as $h) {
+                if ($h->action_type === 'Reassigned') {
+                    if (is_numeric($h->old_value)) {
+                        $numericUserIds[] = (int) $h->old_value;
+                    }
+                    if (is_numeric($h->new_value)) {
+                        $numericUserIds[] = (int) $h->new_value;
+                    }
+                }
+            }
+            if ($numericUserIds) {
+                $userNameMap = User::whereIn('id', array_unique($numericUserIds))->pluck('name', 'id');
+                foreach ($complaint->histories as $h) {
+                    if ($h->action_type === 'Reassigned') {
+                        if (is_numeric($h->old_value)) {
+                            $h->old_value = $userNameMap[(int) $h->old_value] ?? ('User #' . $h->old_value);
+                        }
+                        if (is_numeric($h->new_value)) {
+                            $h->new_value = $userNameMap[(int) $h->new_value] ?? ('User #' . $h->new_value);
+                        }
+                    }
+                }
+            }
+        }
+
         // Optionally include reference lookups
         $statusTypes = ComplaintStatusType::select('id', 'name', 'code')->get();
         $templates = ComplaintTemplate::select('id', 'template_name', 'template_subject', 'category_id')->get();
@@ -506,7 +540,7 @@ class ComplaintController extends Controller
             'templates' => $templates,
             'categories' => $categories,
             'exported_at' => now()->toIso8601String(),
-            'version' => '1.0'
+            'version' => '1.1'
         ]);
     }
 

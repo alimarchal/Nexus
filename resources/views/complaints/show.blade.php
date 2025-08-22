@@ -1528,14 +1528,18 @@
                         if(c.metrics){
                             y = addSectionTitle(doc,'Performance Metrics', y);
                             const m = c.metrics;
-                            doc.autoTable({ startY:y, body:[
+                            const metricRows = [
                                 ['Time to First Response (min)', m.time_to_first_response ?? '-'],
-                                ['Time to Resolution (min)', m.time_to_resolution ?? '-'],
-                                ['Reopened Count', m.reopened_count ?? 0],
-                                ['Escalation Count', m.escalation_count ?? 0],
-                                ['Assignment Count', m.assignment_count ?? 0],
-                                ['Customer Satisfaction', m.customer_satisfaction_score ?? '-']
-                            ], styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, theme:'grid' });
+                                ['Time to Resolution (min)', m.time_to_resolution ?? '-']
+                            ];
+                            if(m.handling_duration !== undefined && m.handling_duration !== null){
+                                metricRows.push(['Handling Duration (min)', m.handling_duration]);
+                            }
+                            metricRows.push(['Reopened Count', m.reopened_count ?? 0]);
+                            metricRows.push(['Escalation Count', m.escalation_count ?? 0]);
+                            metricRows.push(['Assignment Count', m.assignment_count ?? 0]);
+                            metricRows.push(['Customer Satisfaction', m.customer_satisfaction_score ?? '-']);
+                            doc.autoTable({ startY:y, body:metricRows, styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, theme:'grid' });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
@@ -1543,9 +1547,9 @@
                         if(Array.isArray(c.histories) && c.histories.length){
                             y = addSectionTitle(doc,'History', y);
                             const historyRows = c.histories.slice(0,150).map(h=>[
-                                fmtDate(h.performed_at), h.action_type, h.performed_by?.name || '-', h.new_value || '-', (h.comments||'').substring(0,80)
+                                fmtDate(h.performed_at), h.action_type, h.performed_by?.name || '-', h.old_value || '-', h.new_value || '-', (h.comments||'').substring(0,80)
                             ]);
-                            doc.autoTable({ startY:y, head:[['WHEN','ACTION','BY','NEW','COMMENTS']], body:historyRows, styles:{fontSize:7,cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
+                            doc.autoTable({ startY:y, head:[['WHEN','ACTION','BY','OLD','NEW','COMMENTS']], body:historyRows, styles:{fontSize:7,cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
                             y = doc.lastAutoTable.finalY + 15;
                         }
 
