@@ -44,11 +44,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/daily-positions', [DashboardController::class, 'daily_position'])->name('dashboard.daily-positions');
-
-
     Route::get('product', [ProductController::class, 'product'])->name('product.index');
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-
 
     Route::resource('/product/daily-positions', DailyPositionController::class);
     Route::get('daily-positions/{id}', [DailyPositionController::class, 'show'])->name('daily-positions.view');
@@ -78,37 +75,33 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('reports/accounts-regionwise-reports', [ReportController::class, 'accountsregionwisePositionReport'])->name('reports.accounts-regionwise-reports');
     Route::resource('/products/circulars', CircularController::class)->except(['destroy']);
     // Route::resource('/products/complaints', ComplaintController::class);
-
-
-
-    Route::resource('products/complaints', ComplaintController::class);
-
-    // Additional complaint-specific routes
+    // Additional complaint-specific routes (placed BEFORE resource to avoid conflicts with {complaint} wildcard)
     Route::prefix('products/complaints')->name('complaints.')->group(function () {
+        // Analytics and reporting (must come before resource show route so 'analytics' isn't treated as an ID)
+        Route::get('analytics', [ComplaintController::class, 'analytics'])->name('analytics');
+        Route::get('analytics-data', [ComplaintController::class, 'analyticsData'])->name('analytics-data');
+        // Export functionality
+        Route::get('export', [ComplaintController::class, 'export'])->name('export');
+        // Bulk operations
+        Route::post('bulk-update-status', [ComplaintController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
+        Route::post('bulk-assign', [ComplaintController::class, 'bulkAssign'])->name('bulk-assign');
+        Route::post('bulk-update', [ComplaintController::class, 'bulkUpdate'])->name('bulk-update');
+        // Attachments (dedicated upload endpoint)
+        Route::post('{complaint}/attachments', [ComplaintController::class, 'addAttachments'])->name('add-attachments');
+        Route::get('attachments/{attachment}/download', [ComplaintController::class, 'downloadAttachment'])->name('download-attachment');
+        Route::delete('attachments/{attachment}', [ComplaintController::class, 'deleteAttachment'])->name('delete-attachment');
         // Comment management
         Route::post('{complaint}/comments', [ComplaintController::class, 'addComment'])->name('add-comment');
         // Escalation management
         Route::post('{complaint}/escalate', [ComplaintController::class, 'escalate'])->name('escalate');
         // Watcher management
         Route::post('{complaint}/watchers', [ComplaintController::class, 'updateWatchers'])->name('update-watchers');
-        // Attachments (dedicated upload endpoint)
-        Route::post('{complaint}/attachments', [ComplaintController::class, 'addAttachments'])->name('add-attachments');
-        // File attachment management
-        Route::get('attachments/{attachment}/download', [ComplaintController::class, 'downloadAttachment'])->name('download-attachment');
-        Route::delete('attachments/{attachment}', [ComplaintController::class, 'deleteAttachment'])->name('delete-attachment');
-        // Bulk operations
-        Route::post('bulk-update-status', [ComplaintController::class, 'bulkUpdateStatus'])->name('bulk-update-status');
-        Route::post('bulk-assign', [ComplaintController::class, 'bulkAssign'])->name('bulk-assign');
-        Route::post('bulk-update', [ComplaintController::class, 'bulkUpdate'])->name('bulk-update');
-        // Export functionality
-        Route::get('export', [ComplaintController::class, 'export'])->name('export');
-        // Analytics and reporting
-        Route::get('analytics', [ComplaintController::class, 'analytics'])->name('analytics');
-        // Analytics dynamic data (AJAX)
-        Route::get('analytics-data', [ComplaintController::class, 'analyticsData'])->name('analytics-data');
         // Customer satisfaction
         Route::post('{complaint}/satisfaction', [ComplaintController::class, 'updateSatisfactionScore'])->name('update-satisfaction');
     });
+
+    // Core complaints resource with numeric constraint to prevent capturing 'analytics'
+    Route::resource('products/complaints', ComplaintController::class); // allow UUIDs
 
 
     Route::patch('/complaints/{complaint}/status', [ComplaintController::class, 'updateStatus'])->name('complaints.update-status');
@@ -116,10 +109,6 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('settings/user-module/managers', ManagerController::class);
 
     Route::resource('/settings/categories', CategoryController::class);
-
-    Route::resource('/products/docs', DocController::class);
-
-
 
     Route::resource('product/printed-stationeries', PrintedStationeryController::class);
     Route::resource('product/stationery-transactions', StationeryTransactionController::class);
@@ -131,8 +120,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
 
     // Employee Resources
-    Route::resource('products/employee-resources', EmployeeResourceController::class)
-        ->names('employee_resources');
+    Route::resource('products/employee-resources', EmployeeResourceController::class)->names('employee_resources');
 
 
 
@@ -149,14 +137,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::middleware('auth')->group(function () {
         // Download private files by path
-        Route::get('/download/{path}', [DownloadController::class, 'download'])
-            ->where('path', '.*')
-            ->name('file.download');
-
+        Route::get('/download/{path}', [DownloadController::class, 'download'])->where('path', '.*')->name('file.download');
         // Stream/view files inline
-        Route::get('/view/{path}', [DownloadController::class, 'view'])
-            ->where('path', '.*')
-            ->name('file.view');
+        Route::get('/view/{path}', [DownloadController::class, 'view'])->where('path', '.*')->name('file.view');
     });
 
 });

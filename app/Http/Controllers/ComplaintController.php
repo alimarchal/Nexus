@@ -1620,14 +1620,15 @@ class ComplaintController extends Controller
     protected function applyAnalyticsFilters($query, Request $request, $dateFrom = null, $dateTo = null, $skipDate = false)
     {
         if (!$skipDate && $dateFrom && $dateTo) {
-            $query->whereBetween('created_at', [$dateFrom, $dateTo]);
+            $query->whereBetween('complaints.created_at', [$dateFrom, $dateTo]);
         }
         $filter = $request->input('filter', []);
         if (!is_array($filter))
             return;
 
         $like = function ($value) {
-            return '%' . $value . '%'; };
+            return '%' . $value . '%';
+        };
 
         foreach ($filter as $key => $value) {
             if ($value === '' || $value === null)
@@ -1709,29 +1710,30 @@ class ComplaintController extends Controller
                         $query->where('harassment_confidential', true);
                     } elseif ($value === '0') {
                         $query->where(function ($q) {
-                            $q->where('harassment_confidential', false)->orWhereNull('harassment_confidential'); });
+                            $q->where('harassment_confidential', false)->orWhereNull('harassment_confidential');
+                        });
                     }
                     break;
                 case 'harassment_sub_category':
                     $query->where('harassment_sub_category', 'like', $like($value));
                     break;
                 case 'date_from':
-                    $query->whereDate('created_at', '>=', $value);
+                    $query->whereDate('complaints.created_at', '>=', $value);
                     break; // individual overrides (if provided outside main range)
                 case 'date_to':
-                    $query->whereDate('created_at', '<=', $value);
+                    $query->whereDate('complaints.created_at', '<=', $value);
                     break;
                 case 'assigned_date_from':
-                    $query->whereDate('assigned_at', '>=', $value);
+                    $query->whereDate('complaints.assigned_at', '>=', $value);
                     break;
                 case 'assigned_date_to':
-                    $query->whereDate('assigned_at', '<=', $value);
+                    $query->whereDate('complaints.assigned_at', '<=', $value);
                     break;
                 case 'resolved_date_from':
-                    $query->whereDate('resolved_at', '>=', $value);
+                    $query->whereDate('complaints.resolved_at', '>=', $value);
                     break;
                 case 'resolved_date_to':
-                    $query->whereDate('resolved_at', '<=', $value);
+                    $query->whereDate('complaints.resolved_at', '<=', $value);
                     break;
             }
         }
