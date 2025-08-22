@@ -56,6 +56,11 @@ class Complaint extends Model
         'harassment_sub_category',
         'harassment_employee_number',
         'harassment_employee_phone',
+        'harassment_abuser_employee_number',
+        'harassment_abuser_name',
+        'harassment_abuser_phone',
+        'harassment_abuser_email',
+        'harassment_abuser_relationship',
     ];
 
     protected $casts = [

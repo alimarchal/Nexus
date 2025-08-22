@@ -132,146 +132,12 @@
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
                             </div>
-                            <!-- Harassment supplemental fields (hidden unless Harassment selected) -->
-                            <div id="harassment-section" class="md:col-span-4 hidden border rounded p-4 bg-red-50">
-                                <h4 class="font-semibold text-red-700 mb-2">Harassment Details (Required)</h4>
-                                <p class="text-xs text-red-700 mb-4">This category escalates automatically to senior
-                                    management. Provide factual, objective details and attach any supporting evidence
-                                    (screenshots, emails, logs). Sensitive handling is enforced.</p>
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                    <div>
-                                        <label for="harassment_sub_category" class="block text-gray-700">Sub Category
-                                            <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                        <input type="text" name="harassment_sub_category" id="harassment_sub_category"
-                                            value="{{ old('harassment_sub_category') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                                            placeholder="e.g. Verbal, Physical, Online">
-                                        @error('harassment_sub_category')<span class="text-red-500 text-sm">{{ $message
-                                            }}</span>@enderror
-                                    </div>
-                                    <div>
-                                        <label for="harassment_incident_date" class="block text-gray-700">Incident Date
-                                            & Time <span class="text-red-600">*</span>:</label>
-                                        <input type="datetime-local" name="harassment_incident_date"
-                                            id="harassment_incident_date" value="{{ old('harassment_incident_date') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                        @error('harassment_incident_date')<span class="text-red-500 text-sm">{{ $message
-                                            }}</span>@enderror
-                                    </div>
-                                    <div>
-                                        <label for="harassment_location" class="block text-gray-700">Location <span
-                                                class="text-red-600">*</span>:</label>
-                                        <input type="text" name="harassment_location" id="harassment_location"
-                                            value="{{ old('harassment_location') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                        @error('harassment_location')<span class="text-red-500 text-sm">{{ $message
-                                            }}</span>@enderror
-                                    </div>
-                                    <div>
-                                        <label for="harassment_employee_number" class="block text-gray-700">Employee No
-                                            (Victim) <span
-                                                class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                        <input type="text" name="harassment_employee_number"
-                                            id="harassment_employee_number"
-                                            value="{{ old('harassment_employee_number') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                        @error('harassment_employee_number')<span class="text-red-500 text-sm">{{
-                                            $message }}</span>@enderror
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                                    <div class="md:col-span-3">
-                                        <label for="harassment_details" class="block text-gray-700">Incident Details /
-                                            Evidence Summary <span class="text-red-600">*</span>:</label>
-                                        <textarea name="harassment_details" id="harassment_details" rows="5"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('harassment_details') }}</textarea>
-                                        @error('harassment_details')<span class="text-red-500 text-sm">{{ $message
-                                            }}</span>@enderror
-                                    </div>
-                                    <div>
-                                        <label for="harassment_employee_phone" class="block text-gray-700">Victim Phone
-                                            <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                        <input type="text" name="harassment_employee_phone"
-                                            id="harassment_employee_phone"
-                                            value="{{ old('harassment_employee_phone') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 mb-4">
-                                        @error('harassment_employee_phone')<span class="text-red-500 text-sm">{{
-                                            $message }}</span>@enderror
-                                        <label for="harassment_reported_to" class="block text-gray-700">Reported To
-                                            <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                        <input type="text" name="harassment_reported_to" id="harassment_reported_to"
-                                            value="{{ old('harassment_reported_to') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                        @error('harassment_reported_to')<span class="text-red-500 text-sm">{{ $message
-                                            }}</span>@enderror
-                                        <label class="flex items-center mt-4">
-                                            <input type="checkbox" name="harassment_confidential" value="1" {{
-                                                old('harassment_confidential') ? 'checked' : '' }}
-                                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200">
-                                            <span class="ml-2 text-gray-700 text-sm">Mark as Confidential</span>
-                                        </label>
-                                        @error('harassment_confidential')<span class="text-red-500 text-sm">{{ $message
-                                            }}</span>@enderror
-                                    </div>
-                                </div>
-                                <!-- Dynamic Witnesses -->
-                                <div class="mb-4">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <h5 class="font-semibold text-gray-700">Witnesses <span
-                                                class="text-gray-500 text-xs font-normal">(Up to 10)</span></h5>
-                                        <button type="button" id="add-witness-btn"
-                                            class="px-3 py-1 bg-indigo-600 text-white text-xs rounded">Add
-                                            Witness</button>
-                                    </div>
-                                    <div id="witnesses-wrapper" class="space-y-4">
-                                        <!-- Witness templates inserted here -->
-                                    </div>
-                                    <template id="witness-template">
-                                        <div class="witness-item border rounded p-3 bg-white relative">
-                                            <button type="button"
-                                                class="remove-witness absolute top-1 right-1 text-red-500 text-xs">✕</button>
-                                            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-                                                <div>
-                                                    <label class="block text-gray-700 text-xs">Employee No
-                                                        (Optional)</label>
-                                                    <input type="text" data-field="employee_number"
-                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                                </div>
-                                                <div>
-                                                    <label class="block text-gray-700 text-xs">Name <span
-                                                            class="text-red-600">*</span></label>
-                                                    <input type="text" data-field="name" required
-                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                                </div>
-                                                <div>
-                                                    <label class="block text-gray-700 text-xs">Phone (Optional)</label>
-                                                    <input type="text" data-field="phone"
-                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                                </div>
-                                                <div>
-                                                    <label class="block text-gray-700 text-xs">Email (Optional)</label>
-                                                    <input type="email" data-field="email"
-                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                                </div>
-                                                <div>
-                                                    <label class="block text-gray-700 text-xs">Statement
-                                                        (Optional)</label>
-                                                    <textarea rows="1" data-field="statement"
-                                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"></textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
                             <div>
                                 <label for="expected_resolution_date" class="block text-gray-700">Expected Resolution
                                     Date <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <input type="datetime-local" name="expected_resolution_date"
                                     id="expected_resolution_date" value="{{ old('expected_resolution_date') }}"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                <small class="text-gray-500">Auto-filled from priority. Change priority to recalc; you
-                                    can also manually adjust.</small>
                                 @error('expected_resolution_date')
                                 <span class="text-red-500 text-sm">{{ $message }}</span>
                                 @enderror
@@ -283,14 +149,68 @@
                             <p class="text-xs text-red-700 mb-4">This category escalates automatically to senior
                                 management. Provide factual, objective details and attach any supporting evidence
                                 (screenshots, emails, logs). Sensitive handling is enforced.</p>
+                            <!-- Alleged Abuser Details (optional) placed at top inside harassment section -->
+                            <div class="mb-6 border rounded p-3 bg-white/60">
+                                <h5 class="font-semibold text-gray-700 mb-3 text-sm">Alleged Abuser Details <span
+                                        class="text-gray-500 text-xs font-normal">(Optional)</span></h5>
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Employee No (Optional)</label>
+                                        <input type="text" name="harassment_abuser_employee_number"
+                                            value="{{ old('harassment_abuser_employee_number') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('harassment_abuser_employee_number')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Name (Optional)</label>
+                                        <input type="text" name="harassment_abuser_name"
+                                            value="{{ old('harassment_abuser_name') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('harassment_abuser_name')<span class="text-red-500 text-xs">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Phone (Optional)</label>
+                                        <input type="text" name="harassment_abuser_phone"
+                                            value="{{ old('harassment_abuser_phone') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('harassment_abuser_phone')<span class="text-red-500 text-xs">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Email (Optional)</label>
+                                        <input type="email" name="harassment_abuser_email"
+                                            value="{{ old('harassment_abuser_email') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('harassment_abuser_email')<span class="text-red-500 text-xs">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Relationship (Optional)</label>
+                                        <input type="text" name="harassment_abuser_relationship"
+                                            value="{{ old('harassment_abuser_relationship') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                            placeholder="e.g. Supervisor, Colleague" />
+                                        @error('harassment_abuser_relationship')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                </div>
+                            </div>
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                                 <div>
                                     <label for="harassment_sub_category" class="block text-gray-700">Sub Category <span
-                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                    <input type="text" name="harassment_sub_category" id="harassment_sub_category"
-                                        value="{{ old('harassment_sub_category') }}"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                                        placeholder="e.g. Verbal, Physical, Online">
+                                            class="text-red-600">*</span>:</label>
+                                    @php($harassmentSubCategories =
+                                    ['Verbal','Physical','Sexual','Discriminatory','Bullying','Cyber','Retaliation','Other'])
+                                    <select name="harassment_sub_category" id="harassment_sub_category" required
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        <option value="">Select Sub Category</option>
+                                        @foreach($harassmentSubCategories as $sub)
+                                        <option value="{{ $sub }}" {{ old('harassment_sub_category')==$sub ? 'selected'
+                                            : '' }}>{{ $sub }}</option>
+                                        @endforeach
+                                    </select>
                                     @error('harassment_sub_category')<span class="text-red-500 text-sm">{{ $message
                                         }}</span>@enderror
                                 </div>
@@ -299,7 +219,8 @@
                                         Time <span class="text-red-600">*</span>:</label>
                                     <input type="datetime-local" name="harassment_incident_date"
                                         id="harassment_incident_date" value="{{ old('harassment_incident_date') }}"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                        required>
                                     @error('harassment_incident_date')<span class="text-red-500 text-sm">{{ $message
                                         }}</span>@enderror
                                 </div>
@@ -308,7 +229,8 @@
                                             class="text-red-600">*</span>:</label>
                                     <input type="text" name="harassment_location" id="harassment_location"
                                         value="{{ old('harassment_location') }}"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                        required>
                                     @error('harassment_location')<span class="text-red-500 text-sm">{{ $message
                                         }}</span>@enderror
                                 </div>
@@ -328,7 +250,8 @@
                                     <label for="harassment_details" class="block text-gray-700">Incident Details /
                                         Evidence Summary <span class="text-red-600">*</span>:</label>
                                     <textarea name="harassment_details" id="harassment_details" rows="5"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('harassment_details') }}</textarea>
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                        required>{{ old('harassment_details') }}</textarea>
                                     @error('harassment_details')<span class="text-red-500 text-sm">{{ $message
                                         }}</span>@enderror
                                 </div>
@@ -340,13 +263,6 @@
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 mb-4">
                                     @error('harassment_employee_phone')<span class="text-red-500 text-sm">{{ $message
                                         }}</span>@enderror
-                                    <label for="harassment_reported_to" class="block text-gray-700">Reported To <span
-                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                    <input type="text" name="harassment_reported_to" id="harassment_reported_to"
-                                        value="{{ old('harassment_reported_to') }}"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                    @error('harassment_reported_to')<span class="text-red-500 text-sm">{{ $message
-                                        }}</span>@enderror
                                     <label class="flex items-center mt-4">
                                         <input type="checkbox" name="harassment_confidential" value="1" {{
                                             old('harassment_confidential') ? 'checked' : '' }}
@@ -357,110 +273,80 @@
                                         }}</span>@enderror
                                 </div>
                             </div>
-                            <!-- Dynamic Witnesses -->
-                            <div class="mb-4">
-                                <div class="flex items-center justify-between mb-2">
-                                    <h5 class="font-semibold text-gray-700">Witnesses <span
-                                            class="text-gray-500 text-xs font-normal">(Up to 10)</span></h5>
+                            <!-- Witnesses -->
+                            <div class="mb-6">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="font-semibold text-gray-700 flex items-center gap-2">Witnesses <span
+                                            class="text-gray-500 text-xs font-normal">(<span id="witness-count">0</span>
+                                            / 10)</span></h5>
                                     <button type="button" id="add-witness-btn"
-                                        class="px-3 py-1 bg-indigo-600 text-white text-xs rounded">Add Witness</button>
+                                        class="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded shadow">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Add Witness
+                                    </button>
                                 </div>
                                 <div id="witnesses-wrapper" class="space-y-4"></div>
                                 <template id="witness-template">
-                                    <div class="witness-item border rounded p-3 bg-white relative">
-                                        <button type="button"
-                                            class="remove-witness absolute top-1 right-1 text-red-500 text-xs">✕</button>
-                                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                    <div class="witness-item border rounded bg-white shadow-sm">
+                                        <div
+                                            class="flex items-center justify-between px-3 py-2 border-b bg-gray-50 rounded-t">
+                                            <span class="text-xs font-semibold text-gray-700">Witness <span
+                                                    class="witness-number"></span></span>
+                                            <div class="flex items-center gap-2">
+                                                <button type="button"
+                                                    class="toggle-witness text-gray-500 hover:text-gray-700 text-xs"
+                                                    title="Collapse">−</button>
+                                                <button type="button"
+                                                    class="remove-witness text-red-500 hover:text-red-600 text-xs"
+                                                    title="Remove">✕</button>
+                                            </div>
+                                        </div>
+                                        <div class="witness-body p-3 grid grid-cols-1 md:grid-cols-5 gap-3">
                                             <div>
-                                                <label class="block text-gray-700 text-xs">Employee No
-                                                    (Optional)</label>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Employee
+                                                    No</label>
                                                 <input type="text" data-field="employee_number"
-                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs" />
                                             </div>
                                             <div>
-                                                <label class="block text-gray-700 text-xs">Name <span
-                                                        class="text-red-600">*</span></label>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Name
+                                                    <span class="text-red-600">*</span></label>
                                                 <input type="text" data-field="name" required
-                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs" />
                                             </div>
                                             <div>
-                                                <label class="block text-gray-700 text-xs">Phone (Optional)</label>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Phone</label>
                                                 <input type="text" data-field="phone"
-                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs" />
                                             </div>
                                             <div>
-                                                <label class="block text-gray-700 text-xs">Email (Optional)</label>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Email</label>
                                                 <input type="email" data-field="email"
-                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs" />
                                             </div>
                                             <div>
-                                                <label class="block text-gray-700 text-xs">Statement (Optional)</label>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Statement</label>
                                                 <textarea rows="1" data-field="statement"
-                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"></textarea>
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs"></textarea>
                                             </div>
                                         </div>
                                     </div>
                                 </template>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div>
-                                <label for="branch_id" class="block text-gray-700">Branch <span
-                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                <select name="branch_id" id="branch_id"
-                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                    <option value="">Not applicable</option>
-                                    @foreach ($branches as $branch)
-                                    <option value="{{ $branch->id }}" {{ old('branch_id')==$branch->id ? 'selected' : ''
-                                        }}>
-                                        {{ $branch->name }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                @error('branch_id')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
-                            <div>
-                                <label for="region_id" class="block text-gray-700">Region <span
-                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                <select name="region_id" id="region_id"
-                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                    <option value="">Not applicable</option>
-                                    @foreach ($regions as $region)
-                                    <option value="{{ $region->id }}" {{ old('region_id')==$region->id ? 'selected' : ''
-                                        }}>
-                                        {{ $region->name }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                @error('region_id')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
-                            <div>
-                                <label for="division_id" class="block text-gray-700">Division <span
-                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                <select name="division_id" id="division_id"
-                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                    <option value="">Not applicable</option>
-                                    @foreach ($divisions as $division)
-                                    <option value="{{ $division->id }}" {{ old('division_id')==$division->id ?
-                                        'selected' : '' }}>
-                                        {{ $division->short_name ?? $division->name }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                @error('division_id')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                            </div>
-                        </div>
                         <!-- Complainant Information Section -->
                         <div class="mb-8">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Complainant Information
                             </h3>
-
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label for="complainant_name" class="block text-gray-700">Complainant Name <span
@@ -469,11 +355,9 @@
                                         value="{{ old('complainant_name', auth()->user()->name ?? '') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                         required>
-                                    @error('complainant_name')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                    @enderror
+                                    @error('complainant_name')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
                                 </div>
-
                                 <div>
                                     <label for="complainant_email" class="block text-gray-700">Email <span
                                             class="text-red-600">*</span>:</label>
@@ -481,11 +365,9 @@
                                         value="{{ old('complainant_email', auth()->user()->email ?? '') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                         required>
-                                    @error('complainant_email')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                    @enderror
+                                    @error('complainant_email')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
                                 </div>
-
                                 <div>
                                     <label for="complainant_phone" class="block text-gray-700">Phone <span
                                             class="text-red-600">*</span>:</label>
@@ -493,29 +375,23 @@
                                         value="{{ old('complainant_phone') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                         required>
-                                    @error('complainant_phone')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                    @enderror
+                                    @error('complainant_phone')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
                                 </div>
-
                                 <div>
-                                    <label for="complainant_account_number" class="block text-gray-700">Account
-                                        Number <span
-                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                    <label for="complainant_account_number" class="block text-gray-700">Account Number
+                                        <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                     <input type="text" name="complainant_account_number" id="complainant_account_number"
                                         value="{{ old('complainant_account_number') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                    @error('complainant_account_number')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                    @enderror
+                                    @error('complainant_account_number')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Assignment and Files Section -->
+                        <!-- Assignment & Files Section -->
                         <div class="mb-8">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">Assignment & Files</h3>
-
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label for="assigned_to" class="block text-gray-700">Assign To <span
@@ -525,66 +401,86 @@
                                         <option value="">Select User</option>
                                         @foreach ($users as $user)
                                         <option value="{{ $user->id }}" {{ old('assigned_to')==$user->id ? 'selected' :
-                                            ''
-                                            }}>
-                                            {{ $user->name }}
-                                        </option>
+                                            '' }}>{{ $user->name }}</option>
                                         @endforeach
                                     </select>
-                                    @error('assigned_to')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                    @enderror
+                                    @error('assigned_to')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
                                 </div>
-
-
+                                <div>
+                                    <label for="branch_id" class="block text-gray-700">Branch <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                    <select name="branch_id" id="branch_id"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        <option value="">Not applicable</option>
+                                        @foreach ($branches as $branch)
+                                        <option value="{{ $branch->id }}" {{ old('branch_id')==$branch->id ? 'selected'
+                                            : '' }}>{{ $branch->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('branch_id')<span class="text-red-500 text-sm">{{ $message }}</span>@enderror
+                                </div>
                             </div>
-
-                            <div class="mb-4">
-                                <label for="watchers" class="block text-gray-700">Watchers <span
-                                        class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                <select name="watchers[]" id="watchers" multiple size="5"
-                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                    @foreach ($users as $user)
-                                    <option value="{{ $user->id }}" {{ in_array($user->id, old('watchers', [])) ?
-                                        'selected'
-                                        : '' }}>
-                                        {{ $user->name }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                <small class="text-gray-600">Hold Ctrl/Cmd to select multiple users</small>
-                                @error('watchers')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label for="region_id" class="block text-gray-700">Region <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                    <select name="region_id" id="region_id"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        <option value="">Not applicable</option>
+                                        @foreach ($regions as $region)
+                                        <option value="{{ $region->id }}" {{ old('region_id')==$region->id ? 'selected'
+                                            : '' }}>{{ $region->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('region_id')<span class="text-red-500 text-sm">{{ $message }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="division_id" class="block text-gray-700">Division <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                    <select name="division_id" id="division_id"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        <option value="">Not applicable</option>
+                                        @foreach ($divisions as $division)
+                                        <option value="{{ $division->id }}" {{ old('division_id')==$division->id ?
+                                            'selected' : '' }}>{{ $division->short_name ?? $division->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('division_id')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
+                                </div>
+                                <div>
+                                    <label for="watchers" class="block text-gray-700">Watchers <span
+                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
+                                    <select name="watchers[]" id="watchers" multiple size="5"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        @foreach ($users as $user)
+                                        <option value="{{ $user->id }}" {{ in_array($user->id, old('watchers', [])) ?
+                                            'selected' : '' }}>{{ $user->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <small class="text-gray-600">Hold Ctrl/Cmd to select multiple users</small>
+                                    @error('watchers')<span class="text-red-500 text-sm">{{ $message }}</span>@enderror
+                                </div>
                             </div>
-
                             <div class="mb-4">
                                 <label for="attachments" class="block text-gray-700">File Attachments <span
                                         class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <input type="file" name="attachments[]" id="attachments" multiple
-                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt,.zip,.rar"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.txt,.zip,.rar"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                <small class="text-gray-600">Allowed: PDF, DOC, DOCX, JPG, PNG, TXT, ZIP (max 10MB each,
-                                    max
-                                    10 files)</small>
-                                @error('attachments')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
-                                @error('attachments.*')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
+                                <small class="text-gray-600">Allowed: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, JPEG,
+                                    PNG, TXT, ZIP, RAR (10MB each, max 10 files)</small>
+                                @error('attachments')<span class="text-red-500 text-sm">{{ $message }}</span>@enderror
+                                @error('attachments.*')<span class="text-red-500 text-sm">{{ $message }}</span>@enderror
                             </div>
-
                             <div class="mb-4">
                                 <label for="comments" class="block text-gray-700">Initial Comment <span
                                         class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <textarea name="comments" id="comments" rows="3"
                                     class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('comments') }}</textarea>
-                                @error('comments')
-                                <span class="text-red-500 text-sm">{{ $message }}</span>
-                                @enderror
+                                @error('comments')<span class="text-red-500 text-sm">{{ $message }}</span>@enderror
                             </div>
-
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label for="comment_type" class="block text-gray-700">Comment Type <span
@@ -592,20 +488,15 @@
                                     <select name="comment_type" id="comment_type"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
                                         <option value="Internal" {{ old('comment_type')=='Internal' ? 'selected' : ''
-                                            }}>
-                                            Internal</option>
+                                            }}>Internal</option>
                                         <option value="Customer" {{ old('comment_type')=='Customer' ? 'selected' : ''
-                                            }}>
-                                            Customer</option>
+                                            }}>Customer</option>
                                         <option value="System" {{ old('comment_type')=='System' ? 'selected' : '' }}>
-                                            System
-                                        </option>
+                                            System</option>
                                     </select>
-                                    @error('comment_type')
-                                    <span class="text-red-500 text-sm">{{ $message }}</span>
-                                    @enderror
+                                    @error('comment_type')<span class="text-red-500 text-sm">{{ $message
+                                        }}</span>@enderror
                                 </div>
-
                                 <div class="flex items-center">
                                     <label class="flex items-center">
                                         <input type="checkbox" name="is_private" value="1" {{ old('is_private')
@@ -616,11 +507,11 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="flex justify-end">
                             <button type="submit" class="px-6 py-2 bg-blue-800 text-white rounded-md">Create
                                 Complaint</button>
                         </div>
+                    </div>
                 </form>
             </div>
         </div>
@@ -634,28 +525,43 @@
             const expectedField = document.getElementById('expected_resolution_date');
             const categoryField = document.getElementById('category_id');
             const harassmentSection = document.getElementById('harassment-section');
-            const harassmentRequiredFields = ['harassment_incident_date','harassment_location','harassment_details'];
+            const harassmentRequiredFields = ['harassment_sub_category','harassment_incident_date','harassment_location','harassment_details'];
             const witnessWrapper = document.getElementById('witnesses-wrapper');
             const witnessTemplate = document.getElementById('witness-template');
             const addWitnessBtn = document.getElementById('add-witness-btn');
             let witnessCount = 0;
+            const witnessCountEl = document.getElementById('witness-count');
+
+            function updateWitnessNumbers(){
+                const items = witnessWrapper ? witnessWrapper.querySelectorAll('.witness-item') : [];
+                items.forEach((item, idx) => {
+                    const numSpan = item.querySelector('.witness-number');
+                    if(numSpan) numSpan.textContent = idx+1;
+                    item.querySelectorAll('[data-field]').forEach(el => {
+                        const field = el.getAttribute('data-field');
+                        el.name = `witnesses[${idx}][${field}]`;
+                    });
+                });
+                witnessCount = items.length;
+                if(witnessCountEl) witnessCountEl.textContent = witnessCount;
+            }
 
             function addWitness(data={}){
                 if(!witnessWrapper || !witnessTemplate) return;
                 if(witnessCount >= 10) return;
                 const clone = witnessTemplate.content.cloneNode(true);
                 const container = clone.querySelector('.witness-item');
-                container.querySelectorAll('[data-field]').forEach(el => {
-                    const field = el.getAttribute('data-field');
-                    const name = `witnesses[${witnessCount}][${field}]`;
-                    el.name = name;
-                    if(data[field]) el.value = data[field];
-                });
-                container.querySelector('.remove-witness').addEventListener('click', () => {
-                    container.remove();
+                container.querySelectorAll('[data-field]').forEach(el => { const field = el.getAttribute('data-field'); if(data[field]) el.value = data[field]; });
+                const removeBtn = container.querySelector('.remove-witness');
+                removeBtn && removeBtn.addEventListener('click', () => { container.remove(); updateWitnessNumbers(); });
+                const toggleBtn = container.querySelector('.toggle-witness');
+                const body = container.querySelector('.witness-body');
+                toggleBtn && toggleBtn.addEventListener('click', () => {
+                    if(body.classList.contains('hidden')){ body.classList.remove('hidden'); toggleBtn.textContent='−'; }
+                    else { body.classList.add('hidden'); toggleBtn.textContent='+'; }
                 });
                 witnessWrapper.appendChild(clone);
-                witnessCount++;
+                updateWitnessNumbers();
             }
 
             if(addWitnessBtn){

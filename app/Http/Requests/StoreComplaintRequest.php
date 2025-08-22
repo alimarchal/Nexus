@@ -218,6 +218,13 @@ class StoreComplaintRequest extends FormRequest
                 'max:50'
             ],
 
+            // Abuser details (for harassment cases)
+            'harassment_abuser_employee_number' => ['nullable', 'string', 'max:50'],
+            'harassment_abuser_name' => ['nullable', 'string', 'max:150'],
+            'harassment_abuser_phone' => ['nullable', 'string', 'max:50'],
+            'harassment_abuser_email' => ['nullable', 'email', 'max:150'],
+            'harassment_abuser_relationship' => ['nullable', 'string', 'max:100'],
+
             // Witnesses dynamic arrays
             'witnesses' => ['nullable', 'array', 'max:10'],
             'witnesses.*.employee_number' => ['nullable', 'string', 'max:50'],
@@ -317,11 +324,19 @@ class StoreComplaintRequest extends FormRequest
             'harassment_details.max' => 'Harassment details may not exceed 5000 characters.'
             ,
             'harassment_sub_category.max' => 'Harassment sub-category may not exceed 150 characters.',
+            'harassment_sub_category.required' => 'Sub category is required for harassment complaints.',
             'harassment_employee_number.max' => 'Employee number may not exceed 50 characters.',
             'harassment_employee_phone.max' => 'Employee phone may not exceed 50 characters.',
             'witnesses.max' => 'No more than 10 witnesses may be added.',
             'witnesses.*.name.required_with' => 'Each witness requires a name.',
             'witnesses.*.email.email' => 'Witness email must be valid.'
+            ,
+            'harassment_abuser_employee_number.max' => 'Abuser employee number may not exceed 50 characters.',
+            'harassment_abuser_name.max' => 'Abuser name may not exceed 150 characters.',
+            'harassment_abuser_phone.max' => 'Abuser phone may not exceed 50 characters.',
+            'harassment_abuser_email.email' => 'Abuser email must be valid.',
+            'harassment_abuser_email.max' => 'Abuser email may not exceed 150 characters.',
+            'harassment_abuser_relationship.max' => 'Abuser relationship may not exceed 100 characters.'
         ];
     }
 
@@ -438,6 +453,7 @@ class StoreComplaintRequest extends FormRequest
 
             if ($isHarassment) {
                 $requiredFields = [
+                    'harassment_sub_category' => 'Sub category is required for harassment complaints.',
                     'harassment_incident_date' => 'Incident date is required for harassment complaints.',
                     'harassment_location' => 'Location is required for harassment complaints.',
                     'harassment_details' => 'Details/evidence summary is required for harassment complaints.'
