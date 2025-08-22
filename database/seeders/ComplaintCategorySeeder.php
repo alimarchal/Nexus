@@ -59,8 +59,8 @@ class ComplaintCategorySeeder extends Seeder
 
         foreach ($categories as $data) {
             ComplaintCategory::firstOrCreate(
-                ['category_name' => $data['category_name'], 'complaint_id' => null],
-                array_merge($data, ['complaint_id' => null])
+                ['category_name' => $data['category_name']],
+                array_merge($data)
             );
         }
     }

@@ -17,7 +17,6 @@ class ComplaintCategory extends Model
     use HasFactory, SoftDeletes, UserTracking;
 
     protected $fillable = [
-        'complaint_id',
         'category_name',
         'parent_category_id',
         'description',
@@ -32,10 +31,7 @@ class ComplaintCategory extends Model
     ];
 
     // Relationships
-    public function complaint(): BelongsTo
-    {
-        return $this->belongsTo(Complaint::class);
-    }
+
 
     public function parent(): BelongsTo
     {
@@ -51,7 +47,6 @@ class ComplaintCategory extends Model
     public static function getAllowedFilters(): array
     {
         return [
-            AllowedFilter::exact('complaint_id'),
             AllowedFilter::partial('category_name'),
             AllowedFilter::exact('parent_category_id'),
             AllowedFilter::exact('default_priority'),
@@ -72,7 +67,6 @@ class ComplaintCategory extends Model
     public static function getAllowedIncludes(): array
     {
         return [
-            AllowedInclude::relationship('complaint'),
             AllowedInclude::relationship('parent'),
             AllowedInclude::relationship('children'),
             AllowedInclude::relationship('creator'),

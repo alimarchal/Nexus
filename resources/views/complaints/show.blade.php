@@ -105,6 +105,128 @@
                                 </div>
                             </div>
 
+                            @if(strcasecmp($complaint->category,'Harassment')===0)
+                            <!-- Harassment Details -->
+                            <div
+                                class="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-6 border border-rose-100 shadow-sm">
+                                <div class="flex items-center mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-600 mr-2"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8c-1.1 0-2 .9-2 2m2-2a2 2 0 110 4m0-4v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <h4 class="text-lg font-semibold text-gray-800">Harassment Details</h4>
+                                    @if($complaint->harassment_confidential)
+                                    <span
+                                        class="ml-3 px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-medium">Confidential</span>
+                                    @endif
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    @if($complaint->harassment_sub_category)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Sub Category</label>
+                                        <p class="text-gray-900 font-semibold">{{ $complaint->harassment_sub_category }}
+                                        </p>
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_incident_date)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Incident Date &
+                                            Time</label>
+                                        <p class="text-gray-900 font-semibold">{{
+                                            $complaint->harassment_incident_date?->format('M d, Y H:i') }}</p>
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_location)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Location</label>
+                                        <p class="text-gray-900">{{ $complaint->harassment_location }}</p>
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_employee_number || $complaint->harassment_employee_phone)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Victim
+                                            Employee</label>
+                                        <p class="text-gray-900 text-sm">Number: <span class="font-semibold">{{
+                                                $complaint->harassment_employee_number ?? 'N/A' }}</span></p>
+                                        @if($complaint->harassment_employee_phone)
+                                        <p class="text-gray-900 text-sm">Phone: <span class="font-semibold">{{
+                                                $complaint->harassment_employee_phone }}</span></p>
+                                        @endif
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_abuser_name ||
+                                    $complaint->harassment_abuser_employee_number)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Alleged
+                                            Abuser</label>
+                                        @if($complaint->harassment_abuser_name)
+                                        <p class="text-gray-900 font-semibold">{{ $complaint->harassment_abuser_name }}
+                                        </p>
+                                        @endif
+                                        <p class="text-gray-900 text-sm">Emp #: <span class="font-semibold">{{
+                                                $complaint->harassment_abuser_employee_number ?? 'N/A' }}</span></p>
+                                        @if($complaint->harassment_abuser_relationship)
+                                        <p class="text-gray-700 text-xs mt-1">Relationship: {{
+                                            $complaint->harassment_abuser_relationship }}</p>
+                                        @endif
+                                        @if($complaint->harassment_abuser_email)
+                                        <p class="text-gray-700 text-xs">Email: {{ $complaint->harassment_abuser_email
+                                            }}</p>
+                                        @endif
+                                        @if($complaint->harassment_abuser_phone)
+                                        <p class="text-gray-700 text-xs">Phone: {{ $complaint->harassment_abuser_phone
+                                            }}</p>
+                                        @endif
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_details)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Incident
+                                            Details</label>
+                                        <p class="text-gray-900 whitespace-pre-wrap text-sm leading-relaxed">{{
+                                            $complaint->harassment_details }}</p>
+                                    </div>
+                                    @endif
+                                </div>
+                                @php $witnesses = $complaint->witnesses; @endphp
+                                @if($witnesses->count())
+                                <div class="mt-6">
+                                    <h5 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                                        <svg class="w-4 h-4 text-rose-500 mr-1" xmlns="http://www.w3.org/2000/svg"
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14v7m-5-3h10" />
+                                        </svg>
+                                        Witnesses ({{ $witnesses->count() }})
+                                    </h5>
+                                    <div class="space-y-3">
+                                        @foreach($witnesses as $w)
+                                        <div class="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
+                                            <div class="flex flex-wrap justify-between text-sm">
+                                                <div class="font-medium text-gray-800">{{ $w->name }}</div>
+                                                @if($w->employee_number)
+                                                <div class="text-xs text-gray-500">Emp #: {{ $w->employee_number }}
+                                                </div>
+                                                @endif
+                                            </div>
+                                            <div
+                                                class="mt-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-600">
+                                                @if($w->email)<div>Email: {{ $w->email }}</div>@endif
+                                                @if($w->phone)<div>Phone: {{ $w->phone }}</div>@endif
+                                            </div>
+                                            @if($w->statement)
+                                            <div class="mt-2 text-xs text-gray-700 whitespace-pre-wrap">{{ $w->statement
+                                                }}</div>
+                                            @endif
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                            @endif
+
                             <!-- Complainant Information -->
                             @if($complaint->complainant_name || $complaint->complainant_email ||
                             $complaint->complainant_phone)

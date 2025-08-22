@@ -119,10 +119,6 @@ class Complaint extends Model
         return $this->hasMany(ComplaintAttachment::class);
     }
 
-    public function categories(): HasMany
-    {
-        return $this->hasMany(ComplaintCategory::class);
-    }
 
     public function assignments(): HasMany
     {
@@ -197,7 +193,6 @@ class Complaint extends Model
             AllowedInclude::relationship('histories'),
             AllowedInclude::relationship('comments'),
             AllowedInclude::relationship('attachments'),
-            AllowedInclude::relationship('categories'),
             AllowedInclude::relationship('assignments'),
             AllowedInclude::relationship('escalations'),
             AllowedInclude::relationship('watchers'),

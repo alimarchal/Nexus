@@ -261,21 +261,7 @@ class ComplaintController extends Controller
                 ]);
             }
 
-            // Create complaint category if provided
-            if ($request->filled('category_id')) {
-                $categoryData = ComplaintCategory::find($request->category_id);
-                if ($categoryData) {
-                    ComplaintCategory::create([
-                        'complaint_id' => $complaint->id,
-                        'category_name' => $categoryData->category_name,
-                        'parent_category_id' => $categoryData->parent_category_id,
-                        'description' => $categoryData->description,
-                        'default_priority' => $categoryData->default_priority,
-                        'sla_hours' => $categoryData->sla_hours,
-                        'is_active' => true,
-                    ]);
-                }
-            }
+            // (Removed) Previously duplicated complaint category row tied to complaint.
 
             // Create assignment record if assigned
             if ($complaint->assigned_to) {
@@ -394,10 +380,7 @@ class ComplaintController extends Controller
                 $query->with('creator')->latest();
             },
 
-            // Complaint categories with parent category and creator info, ordered by most recent first
-            'categories' => function ($query) {
-                $query->with(['parent', 'creator'])->latest();
-            },
+            // (Removed categories relationship after decoupling)
 
             // Assignment history with assignment details, ordered by most recent first
             'assignments' => function ($query) {
@@ -415,7 +398,9 @@ class ComplaintController extends Controller
             },
 
             // Performance metrics and SLA tracking data
-            'metrics'
+            'metrics',
+            // Witnesses for harassment complaints
+            'witnesses'
         ]);
 
         // Fetch additional reference data needed for complaint management forms
