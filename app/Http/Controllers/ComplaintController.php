@@ -1546,7 +1546,8 @@ class ComplaintController extends Controller
                 ->get()
                 ->map(function ($r) {
                     $r->resolution_rate = $r->total > 0 ? round(($r->resolved / $r->total) * 100, 1) : 0;
-                    return $r; });
+                    return $r;
+                });
 
             return view('complaints.analytics', [
                 'totalComplaints' => $totalComplaints,
@@ -1624,7 +1625,7 @@ class ComplaintController extends Controller
                 ->tap(function ($q) use ($request) {
                     $this->applyAnalyticsFilters($q, $request, null, null, true);
                 })
-                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
+                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count, SUM(CASE WHEN status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved_count')
                 ->groupBy('year', 'month')
                 ->orderBy('year')
                 ->orderBy('month')
@@ -1666,7 +1667,23 @@ class ComplaintController extends Controller
                 ->get()
                 ->map(function ($r) {
                     $r->resolution_rate = $r->total > 0 ? round(($r->resolved / $r->total) * 100, 1) : 0;
-                    return $r; });
+                    return $r;
+                });
+
+            $branchPerformance = (clone $baseQuery)
+                ->leftJoin('branches', 'complaints.branch_id', '=', 'branches.id')
+                ->selectRaw('COALESCE(branches.name, "(None)") as branch_name, COUNT(*) as total_complaints, SUM(CASE WHEN complaints.status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved_complaints')
+                ->groupBy('branch_name')
+                ->orderByDesc('total_complaints')
+                ->limit(10)
+                ->get();
+            $userPerformance = (clone $baseQuery)
+                ->leftJoin('users', 'complaints.assigned_to', '=', 'users.id')
+                ->selectRaw('COALESCE(users.name, "(Unassigned)") as user_name, COUNT(*) as assigned_complaints, SUM(CASE WHEN complaints.status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved_complaints')
+                ->groupBy('user_name')
+                ->orderByDesc('assigned_complaints')
+                ->limit(10)
+                ->get();
 
             return response()->json([
                 'metrics' => compact(
@@ -1692,6 +1709,8 @@ class ComplaintController extends Controller
                 'topResolvers' => $topResolvers,
                 'topWatchers' => $topWatchers,
                 'categoryResolutionRates' => $categoryResolutionRates,
+                'branchPerformance' => $branchPerformance,
+                'userPerformance' => $userPerformance,
             ]);
         } catch (\Exception $e) {
             Log::error('analyticsData failure', ['error' => $e->getMessage()]);

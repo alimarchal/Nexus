@@ -17,7 +17,7 @@
             <!-- FILTERS -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200">
                 <div class="p-5">
-                    <form id="analytics-filters" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                    <form id="analytics-filters" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
                         <div>
                             <label class="block text-gray-600 mb-1">Date From</label>
                             <input type="date" name="date_from"
@@ -91,7 +91,28 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="lg:col-span-4 flex space-x-3 pt-2">
+                        <div>
+                            <label class="block text-gray-600 mb-1">Branch</label>
+                            <input type="text" name="filter[branch_id]"
+                                class="w-full border-gray-300 dark:bg-gray-900 rounded" placeholder="Branch ID" />
+                        </div>
+                        <div>
+                            <label class="block text-gray-600 mb-1">Region</label>
+                            <input type="text" name="filter[region_id]"
+                                class="w-full border-gray-300 dark:bg-gray-900 rounded" placeholder="Region ID" />
+                        </div>
+                        <div>
+                            <label class="block text-gray-600 mb-1">Division</label>
+                            <input type="text" name="filter[division_id]"
+                                class="w-full border-gray-300 dark:bg-gray-900 rounded" placeholder="Division ID" />
+                        </div>
+                        <div>
+                            <label class="block text-gray-600 mb-1">Assignee</label>
+                            <input type="text" name="filter[assigned_to]"
+                                class="w-full border-gray-300 dark:bg-gray-900 rounded"
+                                placeholder="User ID/unassigned" />
+                        </div>
+                        <div class="lg:col-span-5 flex space-x-3 pt-2">
                             <button type="submit"
                                 class="px-4 py-2 bg-blue-600 text-white rounded text-xs font-semibold">Apply</button>
                             <button type="button" id="reset-filters"
@@ -141,68 +162,87 @@
 
             <!-- EXTENDED INSIGHTS -->
             <div id="extended-insights" class="space-y-10">
-                <div>
-                    <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
-                            class="w-2 h-2 bg-blue-500 rounded-full"></span> Category Distribution</h3>
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <div id="categoryDistributionChart" class="h-56"></div>
-                            </div>
-                            <div>
-                                <ul id="categoryDistributionList" class="text-xs space-y-1"></ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
-                            class="w-2 h-2 bg-pink-500 rounded-full"></span> Harassment Sub-Categories</h3>
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <div id="harassmentSubCategoryChart" class="h-56"></div>
-                            </div>
-                            <div>
-                                <ul id="harassmentSubCategoryList" class="text-xs space-y-1"></ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-10">
                     <div>
                         <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
-                                class="w-2 h-2 bg-emerald-500 rounded-full"></span> Top Resolvers</h3>
+                                class="w-2 h-2 bg-blue-500 rounded-full"></span> Category Distribution</h3>
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
-                            <div id="topResolversChart" class="h-64"></div>
-                            <ul id="topResolversList" class="text-xs space-y-1 mt-4"></ul>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <div id="categoryDistributionChart" class="h-56"></div>
+                                </div>
+                                <div>
+                                    <ul id="categoryDistributionList" class="text-xs space-y-1"></ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div>
                         <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
-                                class="w-2 h-2 bg-amber-500 rounded-full"></span> Top Watchers</h3>
+                                class="w-2 h-2 bg-pink-500 rounded-full"></span> Harassment Sub-Categories</h3>
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
-                            <div id="topWatchersChart" class="h-64"></div>
-                            <ul id="topWatchersList" class="text-xs space-y-1 mt-4"></ul>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <div id="harassmentSubCategoryChart" class="h-56"></div>
+                                </div>
+                                <div>
+                                    <ul id="harassmentSubCategoryList" class="text-xs space-y-1"></ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
-                            class="w-2 h-2 bg-indigo-500 rounded-full"></span> Category Resolution Rates</h3>
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
-                        <div id="categoryResolutionRateChart" class="h-60"></div>
-                        <table class="mt-4 w-full text-xs">
-                            <thead class="text-gray-600 dark:text-gray-300">
-                                <tr>
-                                    <th class="text-left">Category</th>
-                                    <th class="text-right">Resolved</th>
-                                    <th class="text-right">Total</th>
-                                    <th class="text-right">Rate%</th>
-                                </tr>
-                            </thead>
-                            <tbody id="categoryResolutionRateTable"></tbody>
-                        </table>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 xl:col-span-2">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
+                                    class="w-2 h-2 bg-emerald-500 rounded-full"></span> Top Resolvers</h3>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
+                                <div id="topResolversChart" class="h-64"></div>
+                                <ul id="topResolversList" class="text-xs space-y-1 mt-4"></ul>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
+                                    class="w-2 h-2 bg-amber-500 rounded-full"></span> Top Watchers</h3>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
+                                <div id="topWatchersChart" class="h-64"></div>
+                                <ul id="topWatchersList" class="text-xs space-y-1 mt-4"></ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="xl:col-span-2">
+                        <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
+                                class="w-2 h-2 bg-indigo-500 rounded-full"></span> Category Resolution Rates</h3>
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
+                            <div id="categoryResolutionRateChart" class="h-60"></div>
+                            <table class="mt-4 w-full text-xs">
+                                <thead class="text-gray-600 dark:text-gray-300">
+                                    <tr>
+                                        <th class="text-left">Category</th>
+                                        <th class="text-right">Resolved</th>
+                                        <th class="text-right">Total</th>
+                                        <th class="text-right">Rate%</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="categoryResolutionRateTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Additional Performance -->
+                    <div class="xl:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
+                                    class="w-2 h-2 bg-teal-500 rounded-full"></span> Branch Performance</h3>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
+                                <div id="branchPerformanceChart" class="h-64"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold mb-3 flex items-center gap-2"><span
+                                    class="w-2 h-2 bg-fuchsia-500 rounded-full"></span> User Performance</h3>
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow border p-5">
+                                <div id="userPerformanceChart" class="h-64"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -291,6 +331,14 @@
             renderDistributions(@json($statusDistribution), 'status-distribution', 'status');
             renderDistributions(@json($priorityDistribution), 'priority-distribution', 'priority');
             renderDistributions(@json($sourceDistribution), 'source-distribution', 'source');
+            // Initial extended charts
+            donutChart('categoryDistributionChart', @json($categoryDistribution->pluck('category')), @json($categoryDistribution->pluck('count')));
+            donutChart('harassmentSubCategoryChart', @json($harassmentSubCategoryDistribution->pluck('sub_category')), @json($harassmentSubCategoryDistribution->pluck('count')));
+            barChart('topResolversChart', @json($topResolvers->pluck('user_name')), @json($topResolvers->pluck('resolved_count')), '#10b981', true);
+            barChart('topWatchersChart', @json($topWatchers->pluck('user_name')), @json($topWatchers->pluck('watched_complaints')), '#f59e0b', true);
+            barChart('categoryResolutionRateChart', @json($categoryResolutionRates->pluck('category')), @json($categoryResolutionRates->pluck('resolution_rate')), '#6366f1', false, '%');
+            barChart('branchPerformanceChart', @json($branchPerformance->pluck('branch_name')), @json($branchPerformance->pluck('total_complaints')), '#14b8a6', true);
+            barChart('userPerformanceChart', @json($userPerformance->pluck('user_name')), @json($userPerformance->pluck('assigned_complaints')), '#d946ef', true);
         }
 
         function renderApex(id, options){
@@ -373,6 +421,15 @@
                 barChart('categoryResolutionRateChart', cr.map(c=>c.category||'—'), cr.map(c=>c.resolution_rate), '#6366f1', false, '%');
                 document.getElementById('categoryResolutionRateTable').innerHTML = cr.map(c=>`<tr class='border-t border-gray-200 dark:border-gray-700'><td>${c.category||'—'}</td><td class='text-right'>${c.resolved}</td><td class='text-right'>${c.total}</td><td class='text-right font-semibold'>${c.resolution_rate}</td></tr>`).join('');
             } else { document.getElementById('categoryResolutionRateTable').innerHTML='<tr><td colspan="4" class="text-center text-gray-500">No data</td></tr>'; }
+
+            const bp = json.branchPerformance || [];
+            if(bp.length){
+                barChart('branchPerformanceChart', bp.map(b=>b.branch_name), bp.map(b=>b.total_complaints), '#14b8a6', true);
+            }
+            const up = json.userPerformance || [];
+            if(up.length){
+                barChart('userPerformanceChart', up.map(u=>u.user_name), up.map(u=>u.assigned_complaints), '#d946ef', true);
+            }
         }
 
         document.getElementById('analytics-filters').addEventListener('submit', function(e){ e.preventDefault(); fetchAndUpdate(); });
