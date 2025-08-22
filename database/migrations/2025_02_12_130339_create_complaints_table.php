@@ -53,6 +53,22 @@ return new class extends Migration {
 
             // SLA (Service Level Agreement) monitoring
             $table->timestamp('expected_resolution_date')->nullable(); // Target deadline
+            $table->dateTime('harassment_incident_date')->nullable();
+            $table->string('harassment_location', 150)->nullable();
+            $table->string('harassment_witnesses', 255)->nullable();
+            $table->string('harassment_reported_to', 150)->nullable();
+            $table->text('harassment_details')->nullable();
+            $table->boolean('harassment_confidential')->default(false);
+            $table->string('harassment_sub_category', 150)->nullable();
+            $table->string('harassment_employee_number', 50)->nullable();
+            $table->string('harassment_employee_phone', 50)->nullable();
+            $table->string('harassment_abuser_employee_number', 50)->nullable();
+            $table->string('harassment_abuser_name', 150)->nullable();
+            $table->string('harassment_abuser_phone', 50)->nullable();
+            $table->string('harassment_abuser_email', 150)->nullable();
+            $table->string('harassment_abuser_relationship', 100)->nullable();
+
+
             $table->boolean('sla_breached')->default(false); // Performance tracking
             $table->text('reopen_reason')->nullable();
             $table->string('priority_change_reason', 500)->nullable();
