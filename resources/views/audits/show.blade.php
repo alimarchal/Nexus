@@ -278,7 +278,7 @@
                             class="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-300 via-gray-200 to-transparent pointer-events-none">
                         </div>
                         <ul class="space-y-6">
-                            @php $__seq = 1; @endphp
+                            @php $__seq = $statusHistory->count(); @endphp
                             @forelse($statusHistory as $h)
                             <li class="relative pl-12 group">
                                 <span class="absolute left-0 flex items-center justify-center w-8 h-8 rounded-full ring-4 ring-white shadow-sm
@@ -299,8 +299,13 @@
                                 <div
                                     class="bg-white/70 backdrop-blur-sm border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition">
                                     <div class="flex flex-wrap items-center justify-between gap-2">
-                                        <h4 class="text-sm font-semibold text-gray-900">{{ Str::headline($h->from_status
-                                            ?? '—') }} → {{ Str::headline($h->to_status) }}</h4>
+                                        <h4 class="text-sm font-semibold text-gray-900">
+                                            @if($h->from_status && $h->from_status !== $h->to_status)
+                                            {{ Str::headline($h->from_status) }} → {{ Str::headline($h->to_status) }}
+                                            @else
+                                            {{ Str::headline($h->to_status) }}
+                                            @endif
+                                        </h4>
                                         <time class="text-xs text-gray-500">{{ optional($h->changed_at)->format('M d, Y
                                             H:i') }}</time>
                                     </div>
@@ -314,7 +319,7 @@
                                     </div>
                                 </div>
                             </li>
-                            @php $__seq++; @endphp
+                            @php $__seq--; @endphp
                             @empty
                             <li class="text-center py-10">
                                 <div class="inline-flex flex-col items-center text-gray-500">
