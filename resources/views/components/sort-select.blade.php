@@ -1,7 +1,7 @@
 <div>
     <x-label for="sort" value="Sort By" />
     @php($options = [
-    '' => 'Default (Latest)',
+    '' => '-- Select Sort --',
     'id' => 'ID (Ascending)', '-id' => 'ID (Descending)',
     'complaint_number' => 'Complaint Number (A-Z)', '-complaint_number' => 'Complaint Number (Z-A)',
     'title' => 'Title (A-Z)', '-title' => 'Title (Z-A)',
