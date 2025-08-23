@@ -980,7 +980,7 @@
                                         Finding</button></div>
                             </form>
                         </div>
-                        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                        <div class="grid gap-5 sm:grid-cols-2">
                             @forelse($audit->findings as $finding)
                             <div
                                 class="group relative rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden">
