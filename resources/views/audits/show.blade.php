@@ -938,7 +938,7 @@
                             class="hidden border border-indigo-200 rounded-xl bg-gradient-to-br from-indigo-50/80 via-white to-indigo-50 p-5 shadow-sm">
                             <h5 class="text-sm font-semibold text-indigo-900 mb-3">Add Finding</h5>
                             <form method="POST" action="{{ route('audits.findings.add', $audit) }}"
-                                class="grid md:grid-cols-12 gap-3 text-xs">@csrf
+                                enctype="multipart/form-data" class="grid md:grid-cols-12 gap-3 text-xs">@csrf
                                 <input name="title" required placeholder="Title"
                                     class="md:col-span-4 rounded-md border-indigo-300" />
                                 <select name="category" class="md:col-span-2 rounded-md border-indigo-300">
@@ -970,6 +970,11 @@
                                     class="md:col-span-2 rounded-md border-indigo-300" />
                                 <input type="date" name="actual_closure_date"
                                     class="md:col-span-2 rounded-md border-indigo-300" />
+                                <div class="md:col-span-6 space-y-1">
+                                    <label
+                                        class="text-[10px] font-semibold text-indigo-800 uppercase tracking-wide">Attachments</label>
+                                    <input type="file" name="attachments[]" multiple class="w-full text-[11px]" />
+                                </div>
                                 <div class="md:col-span-12 flex justify-end pt-2"><button
                                         class="px-4 py-2 bg-indigo-600 text-white rounded-md font-semibold">Save
                                         Finding</button></div>
@@ -1007,12 +1012,6 @@
                                         <div class="flex flex-col items-end gap-1">
                                             <button onclick="toggleFindingEdit('{{ $finding->id }}')"
                                                 class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
-                                            <form method="POST"
-                                                action="{{ route('audits.findings.delete', [$audit,$finding]) }}"
-                                                onsubmit="return confirm('Delete finding?')">@csrf
-                                                @method('DELETE')<button
-                                                    class="text-[11px] text-red-600 hover:text-red-700">Delete</button>
-                                            </form>
                                         </div>
                                     </div>
                                     @if($finding->description)<p
@@ -1111,12 +1110,6 @@
                                                     <div class="flex items-center gap-2">
                                                         <a href="{{ route('audits.findings.attachments.download', [$audit,$finding,$att]) }}"
                                                             class="text-[10px] text-indigo-600 hover:underline">DL</a>
-                                                        <form method="POST"
-                                                            action="{{ route('audits.findings.attachments.delete', [$audit,$finding,$att]) }}"
-                                                            onsubmit="return confirm('Delete file?')" class="inline">
-                                                            @csrf @method('DELETE')<button
-                                                                class="text-[10px] text-red-600 hover:underline">Del</button>
-                                                        </form>
                                                     </div>
                                                 </div>
                                                 @empty

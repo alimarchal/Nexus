@@ -193,12 +193,31 @@ class AuditExtraController extends Controller
             'recommendation' => 'nullable|string',
             'target_closure_date' => 'nullable|date',
             'actual_closure_date' => 'nullable|date',
-            'owner_user_id' => 'nullable|exists:users,id'
+            'owner_user_id' => 'nullable|exists:users,id',
+            'attachments.*' => 'sometimes|file|max:20480'
         ]);
         $data['audit_id'] = $audit->id;
         $data['created_by'] = auth()->id();
         $data['reference_no'] = generateUniqueId('afd', 'audit_findings', 'reference_no');
         $finding = AuditFinding::create($data);
+        // Handle attachments (store under Complaints path per requirement for consistency)
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                if ($file->isValid()) {
+                    $storedPath = \App\Helpers\FileStorageHelper::storeSinglePrivateFile($file, 'Complaints/' . $audit->reference_no . '/findings');
+                    AuditFindingAttachment::create([
+                        'audit_finding_id' => $finding->id,
+                        'original_name' => $file->getClientOriginalName(),
+                        'stored_name' => basename($storedPath),
+                        'mime_type' => substr((string) $file->getMimeType(), 0, 150),
+                        'size_bytes' => $file->getSize(),
+                        'uploaded_by' => auth()->id(),
+                        'uploaded_at' => now(),
+                        'metadata' => null,
+                    ]);
+                }
+            }
+        }
         \App\Models\AuditStatusHistory::create([
             'auditable_type' => Audit::class,
             'auditable_id' => $audit->id,
@@ -283,7 +302,7 @@ class AuditExtraController extends Controller
         ]);
         $file = $data['file'];
         if ($file->isValid()) {
-            $storedPath = \App\Helpers\FileStorageHelper::storeSinglePrivateFile($file, 'Audits/' . $audit->reference_no . '/findings');
+            $storedPath = \App\Helpers\FileStorageHelper::storeSinglePrivateFile($file, 'Complaints/' . $audit->reference_no . '/findings');
             $att = AuditFindingAttachment::create([
                 'audit_finding_id' => $finding->id,
                 'original_name' => $file->getClientOriginalName(),
