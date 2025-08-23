@@ -358,22 +358,29 @@ class AuditExtraController extends Controller
         abort_unless($finding->audit_id === $audit->id && $attachment->audit_finding_id === $finding->id, 404);
         // Attachments for findings were moved to the "Complaints/<ref>/findings" folder for consistency.
         // Older records may still exist under "Audits/<ref>/findings". Try new path first, then legacy.
-        $candidateBases = [
-            'Complaints', // new location (as used in upload helper call)
-            'Audits',     // legacy fallback
-        ];
-        $resolvedPath = null;
-        foreach ($candidateBases as $base) {
-            $try = storage_path('app/' . $base . '/' . $audit->reference_no . '/findings/' . $attachment->stored_name);
-            if (file_exists($try)) {
-                $resolvedPath = $try;
-                break;
+        $candidates = [];
+        // 1. Exact path under Complaints (current storage pattern)
+        $candidates[] = storage_path('app/private/Complaints/' . $audit->reference_no . '/findings/' . $attachment->stored_name); // current path with 'private' disk root
+        $candidates[] = storage_path('app/Complaints/' . $audit->reference_no . '/findings/' . $attachment->stored_name); // fallback without private
+        // 2. Legacy Audits path
+        $candidates[] = storage_path('app/private/Audits/' . $audit->reference_no . '/findings/' . $attachment->stored_name);
+        $candidates[] = storage_path('app/Audits/' . $audit->reference_no . '/findings/' . $attachment->stored_name);
+        // 3. If stored_name accidentally already includes the directory (full relative path)
+        $candidates[] = storage_path('app/' . ltrim($attachment->stored_name, '/'));
+
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                return response()->download($path, $attachment->original_name);
             }
         }
-        if (!$resolvedPath) {
-            return back()->with('error', 'File not found.');
-        }
-        return response()->download($resolvedPath, $attachment->original_name);
+        \Log::warning('Finding attachment file not found', [
+            'audit_id' => $audit->id,
+            'finding_id' => $finding->id,
+            'attachment_id' => $attachment->id,
+            'stored_name' => $attachment->stored_name,
+            'tried' => $candidates,
+        ]);
+        return back()->with('error', 'File not found.');
     }
 
     public function addAction(Request $request, Audit $audit, AuditFinding $finding)
