@@ -42,21 +42,6 @@ class AuditController extends Controller
                     $q->whereDate('created_at', '<=', $v);
                 }),
             ])
-            ->allowedFilters([
-                AllowedFilter::exact('id'),
-                AllowedFilter::partial('reference_no'),
-                AllowedFilter::partial('title'),
-                AllowedFilter::exact('status'),
-                AllowedFilter::exact('risk_overall'),
-                AllowedFilter::exact('audit_type_id'),
-                AllowedFilter::exact('lead_auditor_id'),
-                AllowedFilter::callback('date_from', function ($q, $v) {
-                    $q->whereDate('created_at', '>=', $v);
-                }),
-                AllowedFilter::callback('date_to', function ($q, $v) {
-                    $q->whereDate('created_at', '<=', $v);
-                }),
-            ])
             ->allowedSorts(['id', 'reference_no', 'title', 'status', 'risk_overall', 'planned_start_date', 'created_at'])
             ->latest()
             ->paginate(15);
@@ -111,21 +96,22 @@ class AuditController extends Controller
                 'changed_at' => now(),
             ]);
 
+            // Optional quick risk creation (decoupled)
+            if ($request->filled('risk.title')) {
+                AuditRisk::create([
+                    'audit_id' => $audit->id,
+                    'title' => $request->input('risk.title'),
+                    'description' => $request->input('risk.description'),
+                    'likelihood' => $request->input('risk.likelihood', 'low'),
+                    'impact' => $request->input('risk.impact', 'low'),
+                    'risk_level' => $request->input('risk.risk_level', 'low'),
+                    'status' => 'open',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
             // Handle documents
             if ($request->hasFile('documents')) {
-                // Optional quick risk creation
-                if ($request->filled('risk.title')) {
-                    AuditRisk::create([
-                        'audit_id' => $audit->id,
-                        'title' => $request->input('risk.title'),
-                        'description' => $request->input('risk.description'),
-                        'likelihood' => $request->input('risk.likelihood', 'low'),
-                        'impact' => $request->input('risk.impact', 'low'),
-                        'risk_level' => $request->input('risk.risk_level', 'low'),
-                        'status' => 'open',
-                        'created_by' => auth()->id(),
-                    ]);
-                }
                 foreach ($request->file('documents') as $file) {
                     if ($file->isValid()) {
                         $storedPath = FileStorageHelper::storeSinglePrivateFile($file, 'Audits/' . $audit->reference_no);
@@ -157,7 +143,21 @@ class AuditController extends Controller
      */
     public function show(Audit $audit)
     {
-        $audit->load(['type', 'auditors.user', 'documents.uploader', 'findings', 'actions', 'leadAuditor', 'tags', 'risks']);
+        $audit->load([
+            'type',
+            'auditors.user',
+            'documents.uploader',
+            'findings.actions.updates',
+            'findings.owner',
+            'actions.updates',
+            'leadAuditor',
+            'tags',
+            'risks',
+            'scopes',
+            'schedules',
+            'children',
+            'notifications'
+        ]);
         $statusHistory = $audit->statusHistories()->latest('changed_at')->limit(20)->get();
         $checklistItems = AuditChecklistItem::where('audit_type_id', $audit->audit_type_id)->orderBy('display_order')->get();
         $availableTags = AuditTag::where('is_active', true)->orderBy('name')->get();
@@ -207,21 +207,22 @@ class AuditController extends Controller
                 ]);
             }
 
+            // Quick risk create on update (decoupled from documents)
+            if ($request->filled('risk.title')) {
+                AuditRisk::create([
+                    'audit_id' => $audit->id,
+                    'title' => $request->input('risk.title'),
+                    'description' => $request->input('risk.description'),
+                    'likelihood' => $request->input('risk.likelihood', 'low'),
+                    'impact' => $request->input('risk.impact', 'low'),
+                    'risk_level' => $request->input('risk.risk_level', 'low'),
+                    'status' => 'open',
+                    'created_by' => auth()->id(),
+                ]);
+            }
+
             // Documents
             if ($request->hasFile('documents')) {
-                // Quick risk create on update
-                if ($request->filled('risk.title')) {
-                    AuditRisk::create([
-                        'audit_id' => $audit->id,
-                        'title' => $request->input('risk.title'),
-                        'description' => $request->input('risk.description'),
-                        'likelihood' => $request->input('risk.likelihood', 'low'),
-                        'impact' => $request->input('risk.impact', 'low'),
-                        'risk_level' => $request->input('risk.risk_level', 'low'),
-                        'status' => 'open',
-                        'created_by' => auth()->id(),
-                    ]);
-                }
                 foreach ($request->file('documents') as $file) {
                     if ($file->isValid()) {
                         $storedPath = FileStorageHelper::storeSinglePrivateFile($file, 'Audits/' . $audit->reference_no);

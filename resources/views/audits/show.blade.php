@@ -212,6 +212,177 @@
                 @endif
             </div>
         </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Auditors ({{ $audit->auditors->count() }})</h3>
+                @if($audit->auditors->count())
+                <ul class="text-sm space-y-2">
+                    @foreach($audit->auditors as $aud)
+                    <li class="border-b pb-1 flex justify-between">
+                        <span>{{ $aud->user?->name ?? '—' }}</span>
+                        <span class="text-xs text-gray-500">{{ ucfirst($aud->role ?? 'member') }}@if($aud->is_primary) •
+                            Primary @endif</span>
+                    </li>
+                    @endforeach
+                </ul>
+                @else
+                <p class="text-sm text-gray-500">No auditors assigned.</p>
+                @endif
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Scopes ({{ $audit->scopes->count() }})</h3>
+                @if($audit->scopes->count())
+                <ul class="text-xs space-y-1">
+                    @foreach($audit->scopes as $sc)
+                    <li class="border-b pb-1"><span class="font-medium">{{ $sc->scope_item }}</span> - <span
+                            class="text-gray-600">{{ $sc->is_in_scope ? 'In Scope' : 'Out of Scope' }}</span></li>
+                    @endforeach
+                </ul>
+                @else
+                <p class="text-sm text-gray-500">No scope items defined.</p>
+                @endif
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Schedules ({{ $audit->schedules->count() }})</h3>
+                @if($audit->schedules->count())
+                <table class="min-w-full text-xs">
+                    <thead>
+                        <tr class="bg-gray-100 dark:bg-gray-700">
+                            <th class="px-2 py-1 text-left">Frequency</th>
+                            <th class="px-2 py-1 text-left">Scheduled</th>
+                            <th class="px-2 py-1 text-left">Next Run</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($audit->schedules as $sch)
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <td class="px-2 py-1">{{ ucfirst($sch->frequency) }}</td>
+                            <td class="px-2 py-1">{{ $sch->scheduled_date?->format('Y-m-d') }}</td>
+                            <td class="px-2 py-1">{{ $sch->next_run_date?->format('Y-m-d') }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                @else
+                <p class="text-sm text-gray-500">No schedules.</p>
+                @endif
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Child Audits ({{ $audit->children->count() }})</h3>
+                @if($audit->children->count())
+                <ul class="text-sm space-y-1">
+                    @foreach($audit->children as $child)
+                    <li><a href="{{ route('audits.show',$child) }}" class="text-blue-600 hover:underline">{{
+                            $child->reference_no }}</a> - {{ Str::limit($child->title,40) }}</li>
+                    @endforeach
+                </ul>
+                @else
+                <p class="text-sm text-gray-500">No child audits.</p>
+                @endif
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Findings & Actions</h3>
+            @php($findings = $audit->findings)
+            @if($findings->count())
+            <div class="overflow-x-auto text-xs">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="bg-gray-100 dark:bg-gray-700">
+                            <th class="px-2 py-1 text-left">Ref</th>
+                            <th class="px-2 py-1 text-left">Title</th>
+                            <th class="px-2 py-1 text-left">Severity</th>
+                            <th class="px-2 py-1 text-left">Status</th>
+                            <th class="px-2 py-1 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($findings as $f)
+                        <tr class="border-b border-gray-200 dark:border-gray-700 align-top">
+                            <td class="px-2 py-1 whitespace-nowrap">{{ $f->reference_no ?? $f->id }}</td>
+                            <td class="px-2 py-1">{{ Str::limit($f->title,50) }}</td>
+                            <td class="px-2 py-1">{{ ucfirst($f->severity ?? '-') }}</td>
+                            <td class="px-2 py-1">{{ ucfirst($f->status ?? '-') }}</td>
+                            <td class="px-2 py-1">
+                                @if($f->actions->count())
+                                <ul class="space-y-1">
+                                    @foreach($f->actions as $act)
+                                    <li>
+                                        <span class="font-medium">{{ Str::limit($act->title,40) }}</span>
+                                        <span class="text-gray-500">({{ ucfirst($act->status) }})</span>
+                                        @if($act->updates->count())
+                                        <ul class="ml-3 list-disc">
+                                            @foreach($act->updates->take(3) as $up)
+                                            <li class="text-[10px]">{{ Str::limit($up->update_text,60) }} <span
+                                                    class="text-gray-400">{{ $up->created_at?->diffForHumans() }}</span>
+                                            </li>
+                                            @endforeach
+                                        </ul>
+                                        @endif
+                                    </li>
+                                    @endforeach
+                                </ul>
+                                @else
+                                <span class="text-gray-400">No actions</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @else
+            <p class="text-sm text-gray-500">No findings recorded.</p>
+            @endif
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Notifications ({{ $audit->notifications->count() }})</h3>
+            @if($audit->notifications->count())
+            <div class="overflow-x-auto text-xs">
+                <table class="min-w-full">
+                    <thead>
+                        <tr class="bg-gray-100 dark:bg-gray-700">
+                            <th class="px-2 py-1 text-left">Channel</th>
+                            <th class="px-2 py-1 text-left">Subject</th>
+                            <th class="px-2 py-1 text-left">Status</th>
+                            <th class="px-2 py-1 text-left">Sent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($audit->notifications as $n)
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <td class="px-2 py-1">{{ ucfirst($n->channel) }}</td>
+                            <td class="px-2 py-1">{{ Str::limit($n->subject,40) }}</td>
+                            <td class="px-2 py-1">{{ ucfirst($n->status) }}</td>
+                            <td class="px-2 py-1">{{ $n->sent_at?->format('Y-m-d H:i') ?? '—' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @else
+            <p class="text-sm text-gray-500">No notifications.</p>
+            @endif
+        </div>
+        <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Metrics</h3>
+            @php($metrics = $audit->metrics)
+            @if($metrics->count())
+            <ul class="text-xs grid grid-cols-1 md:grid-cols-2 gap-2">
+                @foreach($metrics as $m)
+                <li class="border rounded p-2">
+                    <div class="font-medium">{{ $m->metric_key }}</div>
+                    <div class="text-gray-600">Value: {{ $m->metric_value ?? $m->numeric_value ?? '—' }}</div>
+                    <div class="text-[10px] text-gray-400">Calculated: {{ $m->calculated_at?->diffForHumans() }}</div>
+                </li>
+                @endforeach
+            </ul>
+            @else
+            <p class="text-sm text-gray-500">No metrics cached.</p>
+            @endif
+        </div>
         <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
             <h3 class="text-lg font-semibold mb-4">Recent Status History</h3>
             @if($statusHistory->count())

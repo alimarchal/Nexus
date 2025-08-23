@@ -30,6 +30,7 @@ use App\Http\Controllers\ComplaintStatusTypeController;
 use App\Http\Controllers\StationeryTransactionController;
 use App\Http\Controllers\EmployeeResourceController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\AuditExtraController;
 
 
 
@@ -126,6 +127,18 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('products/employee-resources', EmployeeResourceController::class)->names('employee_resources');
     // Audits module routes
     Route::resource('products/audits', AuditController::class)->names('audits');
+    Route::prefix('products/audits/{audit}')->name('audits.')->group(function () {
+        Route::post('auditors', [AuditExtraController::class, 'assignAuditors'])->name('assign-auditors');
+        Route::post('responses', [AuditExtraController::class, 'saveResponses'])->name('save-responses');
+        Route::post('findings', [AuditExtraController::class, 'addFinding'])->name('findings.add');
+        Route::post('findings/{finding}/actions', [AuditExtraController::class, 'addAction'])->name('actions.add');
+        Route::post('actions/{action}/updates', [AuditExtraController::class, 'addActionUpdate'])->name('actions.updates.add');
+        Route::post('scopes', [AuditExtraController::class, 'addScope'])->name('scopes.add');
+        Route::delete('scopes/{scope}', [AuditExtraController::class, 'deleteScope'])->name('scopes.delete');
+        Route::post('schedules', [AuditExtraController::class, 'addSchedule'])->name('schedules.add');
+        Route::post('notifications', [AuditExtraController::class, 'addNotification'])->name('notifications.add');
+        Route::post('metrics/recalc', [AuditExtraController::class, 'recalcMetrics'])->name('metrics.recalc');
+    });
 
 
 
