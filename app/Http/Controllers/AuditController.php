@@ -191,6 +191,7 @@ class AuditController extends Controller
             'auditors.user',
             'documents.uploader',
             'findings.actions.updates',
+            'findings.attachments',
             'findings.owner',
             'actions.updates',
             'leadAuditor',

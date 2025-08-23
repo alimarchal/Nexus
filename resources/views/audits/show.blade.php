@@ -1017,6 +1017,28 @@
                                     @if($finding->description)<p
                                         class="text-[11px] text-gray-600 leading-relaxed line-clamp-4">{{
                                         Str::limit($finding->description,300) }}</p>@endif
+                                    @if($finding->attachments->count())
+                                    <div class="flex flex-wrap gap-1.5 mt-1">
+                                        @foreach($finding->attachments->take(4) as $att)
+                                        <a href="{{ route('audits.findings.attachments.download', [$audit,$finding,$att]) }}"
+                                            class="group inline-flex items-center max-w-full px-2 py-1 rounded-md border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-[10px] font-medium text-indigo-700 shadow-sm"
+                                            title="Download {{ $att->original_name }}">
+                                            <svg class="w-3.5 h-3.5 mr-1 text-indigo-500 group-hover:text-indigo-700"
+                                                fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M8 12l4 4m0 0l4-4m-4 4V4" />
+                                            </svg>
+                                            <span class="truncate max-w-[90px]" style="direction:ltr">{{
+                                                Str::limit($att->original_name, 22) }}</span>
+                                        </a>
+                                        @endforeach
+                                        @if($finding->attachments->count() > 4)
+                                        <span
+                                            class="inline-flex items-center px-2 py-1 rounded-md bg-gray-100 text-gray-600 text-[10px] font-medium border border-gray-200">+{{
+                                            $finding->attachments->count()-4 }} more</span>
+                                        @endif
+                                    </div>
+                                    @endif
                                     <div class="grid grid-cols-2 gap-2 text-[10px] text-gray-500">
                                         <div><span class="font-semibold text-gray-700">Category:</span> {{
                                             ucfirst($finding->category ?? '—') }}</div>
