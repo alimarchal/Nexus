@@ -331,46 +331,59 @@
 
                 <div id="auditors-tab" class="tab-content p-6" style="display:none;">
                     <h4 class="text-lg font-semibold text-gray-800 mb-4">Auditor Team</h4>
-                    <div class="overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm">
-                        <table class="min-w-full text-sm">
-                            <thead class="bg-gray-50 text-gray-700 text-xs uppercase tracking-wide">
-                                <tr>
-                                    <th class="px-4 py-2 text-left">#</th>
-                                    <th class="px-4 py-2 text-left">User</th>
-                                    <th class="px-4 py-2 text-left">Email</th>
-                                    <th class="px-4 py-2 text-left">Role</th>
-                                    <th class="px-4 py-2 text-left">Primary</th>
-                                    <th class="px-4 py-2"></th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                @forelse($audit->auditors as $idx => $aud)
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-2 text-gray-500">{{ $idx+1 }}</td>
-                                    <td class="px-4 py-2 font-medium text-gray-800">{{ $aud->user?->name ?? '—' }}</td>
-                                    <td class="px-4 py-2 text-gray-600">{{ $aud->user?->email ?? '—' }}</td>
-                                    <td class="px-4 py-2 text-gray-700 capitalize">{{ $aud->role }}</td>
-                                    <td class="px-4 py-2">@if($aud->is_primary)<span
-                                            class="px-2 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-700">Yes</span>@else<span
-                                            class="text-xs text-gray-400">No</span>@endif</td>
-                                    <td class="px-4 py-2 text-right">
-                                        <form method="POST"
-                                            action="{{ route('audits.auditors.delete', [$audit, $aud]) }}"
-                                            onsubmit="return confirm('Remove auditor?')">@csrf @method('DELETE')
-                                            <button
-                                                class="text-xs px-2 py-1 bg-red-600 text-white rounded">Remove</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="6" class="px-4 py-6 text-center text-gray-500">No auditors assigned.
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    @if($audit->auditors->count())
+                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        @foreach($audit->auditors as $aud)
+                        <div
+                            class="relative group rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition">
+                            <div class="flex items-start justify-between gap-3 mb-3">
+                                <div class="min-w-0">
+                                    <h5 class="text-sm font-semibold text-gray-900 truncate flex items-center gap-2">
+                                        <span>{{ $aud->user?->name ?? '—' }}</span>
+                                        @if($aud->is_primary)
+                                        <span
+                                            class="inline-flex items-center px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-medium">Primary</span>
+                                        @endif
+                                    </h5>
+                                    <p class="text-xs text-gray-500 truncate">{{ $aud->user?->email ?? '—' }}</p>
+                                </div>
+                                <form method="POST" action="{{ route('audits.auditors.delete', [$audit, $aud]) }}"
+                                    onsubmit="return confirm('Remove auditor?')" class="shrink-0">@csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                        class="opacity-60 group-hover:opacity-100 transition text-red-600 hover:text-red-700"
+                                        title="Remove auditor">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="flex items-center gap-2 text-[11px] font-medium">
+                                <span
+                                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 capitalize">{{
+                                    $aud->role }}</span>
+                                <span class="text-gray-300">•</span>
+                                <span class="text-gray-500">Added {{ $aud->created_at?->diffForHumans() }}</span>
+                            </div>
+                        </div>
+                        @endforeach
                     </div>
+                    @else
+                    <div class="mb-6 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+                        <div
+                            class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white shadow">
+                            <svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                        </div>
+                        <p class="text-sm font-medium text-gray-700">No auditors assigned yet</p>
+                        <p class="mt-1 text-xs text-gray-500">Add the first auditor using the form below.</p>
+                    </div>
+                    @endif
                     <div class="mt-8 bg-indigo-50/60 border border-indigo-200 rounded-lg p-5">
                         <h5 class="text-sm font-semibold text-gray-800 mb-3">Add / Update Single Auditor</h5>
                         <p class="text-[11px] text-gray-600 mb-3">Use this form to add a new auditor or update role /
