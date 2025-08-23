@@ -249,7 +249,7 @@
                             data-tab="scopes">Scopes ({{ $audit->scopes->count() }})</button>
                         <button
                             class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
-                            data-tab="checklist">Assessment Items</button>
+                            data-tab="checklist">Checklist ({{ ($assessmentItems ?? collect())->count() }})</button>
                         <button
                             class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
                             data-tab="findings">Findings ({{ $audit->findings->count() }})</button>
