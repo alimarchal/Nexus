@@ -143,6 +143,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::patch('checklist-items/{item}', [AuditExtraController::class, 'updateChecklistItem'])->name('checklist.update');
         Route::delete('checklist-items/{item}', [AuditExtraController::class, 'deleteChecklistItem'])->name('checklist.delete');
         Route::post('responses', [AuditExtraController::class, 'saveResponses'])->name('save-responses');
+        // Inline Assessment Items (audit-specific)
+        Route::post('inline-items', [AuditExtraController::class, 'addInlineChecklistItem'])->name('inline-items.add');
+        Route::delete('inline-items/{item}', [AuditExtraController::class, 'deleteInlineChecklistItem'])->name('inline-items.delete');
 
         // Risk Management
         Route::post('risks', [AuditExtraController::class, 'addRisk'])->name('risks.add');

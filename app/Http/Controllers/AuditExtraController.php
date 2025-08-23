@@ -349,4 +349,68 @@ class AuditExtraController extends Controller
             return back()->with('error', 'Failed to delete document.');
         }
     }
+
+    // Inline (audit-local) checklist items (not tied to audit type) -----------------
+    public function addInlineChecklistItem(Request $request, Audit $audit)
+    {
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'response_type' => 'nullable|in:yes_no,compliant_noncompliant,rating,text,numeric,evidence',
+            'criteria' => 'nullable|string',
+            'guidance' => 'nullable|string',
+            'max_score' => 'nullable|integer|min:0|max:100'
+        ]);
+        $item = AuditChecklistItem::create([
+            'audit_type_id' => null,
+            'parent_id' => null,
+            'reference_code' => null,
+            'title' => $data['title'],
+            'criteria' => $data['criteria'] ?? null,
+            'guidance' => $data['guidance'] ?? null,
+            'response_type' => $data['response_type'] ?? 'yes_no',
+            'max_score' => $data['max_score'] ?? null,
+            'display_order' => 0,
+            'is_active' => true,
+            'metadata' => ['inline_for_audit' => $audit->id],
+        ]);
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Added inline item: ' . $item->title,
+            'metadata' => [
+                'event' => 'inline_item_added',
+                'item_id' => $item->id,
+                'title' => $item->title,
+                'response_type' => $item->response_type,
+                'max_score' => $item->max_score,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Assessment item added.');
+    }
+
+    public function deleteInlineChecklistItem(Audit $audit, AuditChecklistItem $item)
+    {
+        abort_unless(optional($item->metadata)['inline_for_audit'] === $audit->id, 404);
+        $snapshot = $item->replicate();
+        $item->delete();
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Removed inline item: ' . $snapshot->title,
+            'metadata' => [
+                'event' => 'inline_item_removed',
+                'item_id' => $snapshot->id,
+                'title' => $snapshot->title,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Assessment item removed.');
+    }
 }
