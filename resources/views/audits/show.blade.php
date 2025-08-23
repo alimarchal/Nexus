@@ -278,7 +278,8 @@
                             class="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-300 via-gray-200 to-transparent pointer-events-none">
                         </div>
                         <ul class="space-y-6">
-                            @forelse($audit->statusHistories as $h)
+                            @php $__seq = 1; @endphp
+                            @forelse($statusHistory as $h)
                             <li class="relative pl-12 group">
                                 <span class="absolute left-0 flex items-center justify-center w-8 h-8 rounded-full ring-4 ring-white shadow-sm
 										@switch($h->to_status)
@@ -308,11 +309,12 @@
                                     @endif
                                     <div class="mt-3 flex items-center justify-between text-[11px] text-gray-500">
                                         <span>by {{ $h->changer?->name ?? 'System' }}</span>
-                                        <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">#{{ $h->id
+                                        <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">#{{ $__seq
                                             }}</span>
                                     </div>
                                 </div>
                             </li>
+                            @php $__seq++; @endphp
                             @empty
                             <li class="text-center py-10">
                                 <div class="inline-flex flex-col items-center text-gray-500">

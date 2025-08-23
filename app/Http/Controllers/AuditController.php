@@ -201,7 +201,8 @@ class AuditController extends Controller
             'children',
             'notifications'
         ]);
-        $statusHistory = $audit->statusHistories()->latest('changed_at')->limit(20)->get();
+        // Load full status / timeline history latest first for display
+        $statusHistory = $audit->statusHistories()->orderByDesc('changed_at')->get();
         $checklistItems = AuditChecklistItem::where('audit_type_id', $audit->audit_type_id)->orderBy('display_order')->get();
         $availableTags = AuditTag::where('is_active', true)->orderBy('name')->get();
         $allUsers = User::orderBy('name')->select('id', 'name', 'email')->get();
