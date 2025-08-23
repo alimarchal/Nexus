@@ -24,6 +24,7 @@ return new class extends Migration {
             ['name' => 'employee_resource', 'prefix' => 'EMPRES', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'audit', 'prefix' => 'AUD', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'audit_findings', 'prefix' => 'AFD', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'audit_actions', 'prefix' => 'ACT', 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 
