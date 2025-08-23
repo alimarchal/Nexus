@@ -3,7 +3,7 @@
   "workspaces": {
     "": {
       "dependencies": {
-        "@rollup/rollup-darwin-arm64": "^4.46.3",
+        "@rollup/rollup-darwin-arm64": "^4.47.1",
         "bun": "^1.2.20",
       },
       "devDependencies": {
@@ -118,7 +118,7 @@
 
     "@rollup/rollup-android-arm64": ["@rollup/rollup-android-arm64@4.40.1", "", { "os": "android", "cpu": "arm64" }, "sha512-PPkxTOisoNC6TpnDKatjKkjRMsdaWIhyuMkA4UsBXT9WEZY4uHezBTjs6Vl4PbqQQeu6oION1w2voYZv9yquCw=="],
 
-    "@rollup/rollup-darwin-arm64": ["@rollup/rollup-darwin-arm64@4.47.1", "", { "os": "darwin", "cpu": "arm64" }, "sha512-tV6reObmxBDS4DDyLzTDIpymthNlxrLBGAoQx6m2a7eifSNEZdkXQl1PE4ZjCkEDPVgNXSzND/k9AQ3mC4IOEQ=="],
+    "@rollup/rollup-darwin-arm64": ["@rollup/rollup-darwin-arm64@4.48.0", "", { "os": "darwin", "cpu": "arm64" }, "sha512-QhR2KA18fPlJWFefySJPDYZELaVqIUVnYgAOdtJ+B/uH96CFg2l1TQpX19XpUMWUqMyIiyY45wje8K6F4w4/CA=="],
 
     "@rollup/rollup-darwin-x64": ["@rollup/rollup-darwin-x64@4.40.1", "", { "os": "darwin", "cpu": "x64" }, "sha512-nIwkXafAI1/QCS7pxSpv/ZtFW6TXcNUEHAIA9EIyw5OzxJZQ1YDrX+CL6JAIQgZ33CInl1R6mHet9Y/UZTg2Bw=="],
 
