@@ -13,8 +13,9 @@ return new class extends Migration {
         Schema::create('audit_status_histories', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuidMorphs('auditable');
-            $table->enum('from_status', ['planned', 'in_progress', 'reporting', 'issued', 'closed', 'cancelled', 'open', 'implemented', 'verified'])->nullable();
-            $table->enum('to_status', ['planned', 'in_progress', 'reporting', 'issued', 'closed', 'cancelled', 'open', 'implemented', 'verified']);
+            // Restrict status enums to lifecycle states only (do NOT include role values)
+            $table->enum('from_status', ['planned', 'in_progress', 'reporting', 'issued', 'closed', 'cancelled'])->nullable();
+            $table->enum('to_status', ['planned', 'in_progress', 'reporting', 'issued', 'closed', 'cancelled']);
             $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('note')->nullable();
             $table->json('metadata')->nullable();

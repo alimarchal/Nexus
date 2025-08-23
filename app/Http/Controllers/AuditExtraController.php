@@ -37,15 +37,16 @@ class AuditExtraController extends Controller
                     'role' => $role,
                     'is_primary' => $makePrimary
                 ]);
-                // History log
+                // History log (use lifecycle-neutral placeholder so enum constraint not violated)
                 \App\Models\AuditStatusHistory::create([
                     'auditable_type' => Audit::class,
                     'auditable_id' => $audit->id,
-                    'from_status' => $existing ? $existing->role : null,
-                    'to_status' => $role,
+                    'from_status' => null,
+                    'to_status' => $audit->status ?? 'planned',
                     'changed_by' => auth()->id(),
-                    'note' => ($existing ? 'Updated auditor' : 'Added auditor') . ' ' . ($auditor->user?->name ?? 'User ID ' . $auditor->user_id) . ($makePrimary ? ' (primary)' : ''),
+                    'note' => ($existing ? 'Updated auditor' : 'Added auditor') . ' ' . ($auditor->user?->name ?? 'User ID ' . $auditor->user_id) . ' role=' . $role . ($makePrimary ? ' (primary)' : ''),
                     'metadata' => [
+                        'event' => $existing ? 'auditor_updated' : 'auditor_added',
                         'auditor_id' => $auditor->id,
                         'user_id' => $auditor->user_id,
                         'role' => $role,
@@ -67,10 +68,11 @@ class AuditExtraController extends Controller
                         'auditable_type' => Audit::class,
                         'auditable_id' => $audit->id,
                         'from_status' => null,
-                        'to_status' => $auditor->role,
+                        'to_status' => $audit->status ?? 'planned',
                         'changed_by' => auth()->id(),
-                        'note' => 'Added auditor ' . ($auditor->user?->name ?? 'User ID ' . $auditor->user_id) . ($auditor->is_primary ? ' (primary)' : ''),
+                        'note' => 'Added auditor ' . ($auditor->user?->name ?? 'User ID ' . $auditor->user_id) . ' role=' . $auditor->role . ($auditor->is_primary ? ' (primary)' : ''),
                         'metadata' => [
+                            'event' => 'auditor_added',
                             'auditor_id' => $auditor->id,
                             'user_id' => $auditor->user_id,
                             'role' => $auditor->role,
@@ -82,6 +84,33 @@ class AuditExtraController extends Controller
             }
         });
         return back()->with('success', (!empty($data['user_id']) ? 'Auditor saved.' : 'Auditors updated.'));
+    }
+
+    public function removeAuditor(Audit $audit, AuditAuditor $auditor)
+    {
+        abort_unless($auditor->audit_id === $audit->id, 404);
+        $name = $auditor->user?->name ?? ('User ID ' . $auditor->user_id);
+        DB::transaction(function () use ($audit, $auditor, $name) {
+            $metadata = [
+                'event' => 'auditor_removed',
+                'auditor_id' => $auditor->id,
+                'user_id' => $auditor->user_id,
+                'role' => $auditor->role,
+                'was_primary' => $auditor->is_primary,
+            ];
+            $auditor->delete();
+            \App\Models\AuditStatusHistory::create([
+                'auditable_type' => Audit::class,
+                'auditable_id' => $audit->id,
+                'from_status' => null,
+                'to_status' => $audit->status ?? 'planned',
+                'changed_by' => auth()->id(),
+                'note' => 'Removed auditor ' . $name,
+                'metadata' => $metadata,
+                'changed_at' => now(),
+            ]);
+        });
+        return back()->with('success', 'Auditor removed.');
     }
 
     public function updateAuditor(Request $request, Audit $audit, AuditAuditor $auditor)
