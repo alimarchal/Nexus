@@ -1049,10 +1049,8 @@
                                         <div><span class="font-semibold text-gray-700">Actual:</span> {{
                                             optional($finding->actual_closure_date)->format('Y-m-d') ?? '—' }}</div>
                                     </div>
-                                    <div class="flex items-center gap-4 text-[10px] text-gray-500 pt-1 border-t">
-                                        <div>Actions {{ $finding->actions->count() }}</div>
+                                    <div class="flex items-center gap-4 text-xs text-black pt-1 border-t font-medium">
                                         <div>Attachments {{ $finding->attachments->count() }}</div>
-                                        <div>Risks {{ $finding->risks->count() }}</div>
                                     </div>
                                     <div id="finding-edit-{{ $finding->id }}"
                                         class="hidden mt-3 border rounded-lg bg-indigo-50/50 p-3">
