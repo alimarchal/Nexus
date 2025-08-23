@@ -196,6 +196,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         // Finding Attachments
         Route::post('findings/{finding}/attachments', [AuditExtraController::class, 'addFindingAttachment'])->name('findings.attachments.add');
         Route::delete('findings/{finding}/attachments/{attachment}', [AuditExtraController::class, 'deleteFindingAttachment'])->name('findings.attachments.delete');
+        Route::get('findings/{finding}/attachments/{attachment}/download', [AuditExtraController::class, 'downloadFindingAttachment'])->name('findings.attachments.download');
 
         // Status History (readonly - auto-generated)
         Route::get('status-history', [AuditExtraController::class, 'getStatusHistory'])->name('status-history');

@@ -21,8 +21,9 @@ return new class extends Migration {
             ['name' => 'complaint', 'prefix' => 'CMP', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'quotation', 'prefix' => 'QTN', 'created_at' => now(), 'updated_at' => now()],
             ['name' => 'circular', 'prefix' => 'CIR', 'created_at' => now(), 'updated_at' => now()],
-            ['name' => 'employee_resource', 'prefix' => 'EMPRES', 'created_at' => now(), 'updated_at' => now()], // 👈 Added
-            ['name' => 'audit', 'prefix' => 'AUD', 'created_at' => now(), 'updated_at' => now()], // 👈 Added
+            ['name' => 'employee_resource', 'prefix' => 'EMPRES', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'audit', 'prefix' => 'AUD', 'created_at' => now(), 'updated_at' => now()],
+            ['name' => 'audit_findings', 'prefix' => 'AFD', 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 

@@ -846,6 +846,8 @@
                                 </div>
                                 @endforeach
                             </div>
+                            @else
+                            <p class="text-[11px] text-gray-500">No inline items added yet.</p>
                             @endif
                             <div class="relative">
                                 <div
@@ -925,43 +927,238 @@
                 </div>
 
                 <div id="findings-tab" class="tab-content p-6" style="display:none;">
-                    <div class="space-y-4">
-                        @forelse($audit->findings as $finding)
-                        <div class="p-4 border rounded bg-white shadow-sm">
-                            <div class="flex justify-between">
-                                <div class="font-semibold text-gray-800">{{ $finding->reference_no ?? 'Finding
-                                    #'.$finding->id }}</div>
-                                <div class="text-xs text-gray-500">Severity: {{ ucfirst($finding->severity ?? 'n/a') }}
-                                    • Status: {{ ucfirst($finding->status ?? 'n/a') }}</div>
-                            </div>
-                            <div class="mt-2 text-xs text-gray-600">Actions: {{ $finding->actions->count() }} •
-                                Attachments: {{ $finding->attachments->count() }} • Risks: {{ $finding->risks->count()
-                                }}</div>
+                    <div class="space-y-8">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-lg font-semibold text-gray-800">Findings ({{ $audit->findings->count() }})
+                            </h4>
+                            <button onclick="document.getElementById('addFindingPanel').classList.toggle('hidden')"
+                                class="text-xs px-3 py-1.5 rounded-md bg-indigo-600 text-white">New Finding</button>
                         </div>
-                        @empty
-                        <p class="text-sm text-gray-500">No findings recorded.</p>
-                        @endforelse
-                        <div class="mt-6 p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
-                            <h5 class="text-sm font-semibold text-gray-800 mb-2">Add Finding</h5>
+                        <div id="addFindingPanel"
+                            class="hidden border border-indigo-200 rounded-lg bg-indigo-50/50 p-5">
+                            <h5 class="text-sm font-semibold text-indigo-900 mb-3">Add Finding</h5>
                             <form method="POST" action="{{ route('audits.findings.add', $audit) }}"
-                                class="grid gap-3 md:grid-cols-3">@csrf
-                                <input name="reference_no" placeholder="Reference (optional)"
-                                    class="border-gray-300 rounded-md text-sm md:col-span-1">
-                                <select name="severity" class="border-gray-300 rounded-md text-sm">
+                                class="grid md:grid-cols-12 gap-3 text-xs">@csrf
+                                <input name="title" required placeholder="Title"
+                                    class="md:col-span-4 rounded-md border-indigo-300" />
+                                <select name="category" class="md:col-span-2 rounded-md border-indigo-300">
+                                    <option value="">Category</option>
+                                    @foreach(['process','compliance','safety','financial','operational','other'] as $c)
+                                    <option value="{{ $c }}">{{ ucfirst($c) }}</option>@endforeach
+                                </select>
+                                <select name="severity" class="md:col-span-2 rounded-md border-indigo-300">
                                     <option value="">Severity</option>
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="critical">Critical</option>
+                                    @foreach(['low','medium','high','critical'] as $s)<option value="{{ $s }}">{{
+                                        ucfirst($s) }}</option>@endforeach
                                 </select>
-                                <select name="status" class="border-gray-300 rounded-md text-sm">
-                                    <option value="open">Open</option>
-                                    <option value="closed">Closed</option>
+                                <select name="status" class="md:col-span-2 rounded-md border-indigo-300">
+                                    @foreach(['open','in_progress','implemented','verified','closed','void'] as $st)
+                                    <option value="{{ $st }}">{{ Str::headline($st) }}</option>@endforeach
                                 </select>
-                                <div class="md:col-span-3 flex justify-end"><button
-                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Add Finding</button>
-                                </div>
+                                <select name="owner_user_id" class="md:col-span-2 rounded-md border-indigo-300">
+                                    <option value="">Owner</option>
+                                    @foreach($allUsers as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>
+                                    @endforeach
+                                </select>
+                                <textarea name="description" placeholder="Description"
+                                    class="md:col-span-6 rounded-md border-indigo-300" rows="2"></textarea>
+                                <textarea name="risk_description" placeholder="Risk Description"
+                                    class="md:col-span-6 rounded-md border-indigo-300" rows="2"></textarea>
+                                <textarea name="root_cause" placeholder="Root Cause"
+                                    class="md:col-span-6 rounded-md border-indigo-300" rows="2"></textarea>
+                                <textarea name="recommendation" placeholder="Recommendation"
+                                    class="md:col-span-6 rounded-md border-indigo-300" rows="2"></textarea>
+                                <input type="date" name="target_closure_date"
+                                    class="md:col-span-2 rounded-md border-indigo-300" />
+                                <input type="date" name="actual_closure_date"
+                                    class="md:col-span-2 rounded-md border-indigo-300" />
+                                <div class="md:col-span-12 flex justify-end pt-2"><button
+                                        class="px-4 py-2 bg-indigo-600 text-white rounded-md font-semibold">Save
+                                        Finding</button></div>
                             </form>
+                        </div>
+                        <div class="overflow-x-auto bg-white border rounded-lg shadow-sm">
+                            <table class="min-w-full divide-y divide-gray-200 text-xs">
+                                <thead class="bg-gray-50">
+                                    <tr class="text-[11px] uppercase tracking-wide text-gray-600">
+                                        <th class="px-3 py-2 text-left">Ref</th>
+                                        <th class="px-3 py-2 text-left">Title</th>
+                                        <th class="px-3 py-2 text-left">Cat</th>
+                                        <th class="px-3 py-2 text-left">Severity</th>
+                                        <th class="px-3 py-2 text-left">Status</th>
+                                        <th class="px-3 py-2 text-left">Owner</th>
+                                        <th class="px-3 py-2 text-left">Target</th>
+                                        <th class="px-3 py-2 text-left">Actual</th>
+                                        <th class="px-3 py-2 text-left">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @forelse($audit->findings as $finding)
+                                    <tr class="hover:bg-indigo-50/40">
+                                        <td class="px-3 py-2 font-medium text-gray-700">{{ $finding->reference_no ??
+                                            Str::upper(Str::substr($finding->id,0,6)) }}</td>
+                                        <td class="px-3 py-2 max-w-xs">
+                                            <div class="font-medium text-gray-800 truncate"
+                                                title="{{ $finding->title }}">{{ Str::limit($finding->title,60) }}</div>
+                                            <div class="text-[10px] text-gray-500 line-clamp-2">{{
+                                                Str::limit($finding->description,90) }}</div>
+                                        </td>
+                                        <td class="px-3 py-2">{{ ucfirst($finding->category ?? '—') }}</td>
+                                        <td class="px-3 py-2"><span class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold
+                                            @class([
+                                                'bg-green-100 text-green-700'=> $finding->severity==='low',
+                                                'bg-yellow-100 text-yellow-700'=> $finding->severity==='medium',
+                                                'bg-orange-100 text-orange-700'=> $finding->severity==='high',
+                                                'bg-red-100 text-red-700'=> $finding->severity==='critical',
+                                                'bg-gray-100 text-gray-600'=> !$finding->severity,
+                                            ])>{{ ucfirst($finding->severity ?? 'n/a') }}</span></td>
+                                        <td class=" px-3 py-2"><span
+                                                    class="inline-flex items-center rounded px-2 py-0.5 text-[10px] font-medium bg-indigo-100 text-indigo-700">{{
+                                                    Str::headline($finding->status ?? 'n/a') }}</span></td>
+                                        <td class="px-3 py-2">{{ $finding->owner?->name ?? '—' }}</td>
+                                        <td class="px-3 py-2">{{
+                                            optional($finding->target_closure_date)->format('Y-m-d') }}</td>
+                                        <td class="px-3 py-2">{{
+                                            optional($finding->actual_closure_date)->format('Y-m-d') }}</td>
+                                        <td class="px-3 py-2 whitespace-nowrap space-x-1">
+                                            <button onclick="toggleFindingEdit('{{ $finding->id }}')"
+                                                class="text-indigo-600 hover:underline">Edit</button>
+                                            <form method="POST"
+                                                action="{{ route('audits.findings.delete', [$audit,$finding]) }}"
+                                                class="inline" onsubmit="return confirm('Delete finding?')">@csrf
+                                                @method('DELETE')<button
+                                                    class="text-red-600 hover:underline">Del</button></form>
+                                        </td>
+                                    </tr>
+                                    <tr id="finding-edit-{{ $finding->id }}" class="hidden bg-indigo-50/40">
+                                        <td colspan="9" class="px-3 py-3">
+                                            <form method="POST"
+                                                action="{{ route('audits.findings.update', [$audit,$finding]) }}"
+                                                class="grid md:grid-cols-12 gap-2 text-[11px]">@csrf @method('PATCH')
+                                                <input name="title" value="{{ $finding->title }}" required
+                                                    class="md:col-span-4 rounded-md border-indigo-300" />
+                                                <select name="category"
+                                                    class="md:col-span-2 rounded-md border-indigo-300">
+                                                    @foreach(['process','compliance','safety','financial','operational','other']
+                                                    as $c)<option value="{{ $c }}" @selected($finding->category==$c)>{{
+                                                        ucfirst($c) }}</option>@endforeach
+                                                </select>
+                                                <select name="severity"
+                                                    class="md:col-span-2 rounded-md border-indigo-300">
+                                                    @foreach(['low','medium','high','critical'] as $s)<option
+                                                        value="{{ $s }}" @selected($finding->severity==$s)>{{
+                                                        ucfirst($s) }}</option>@endforeach
+                                                </select>
+                                                <select name="status"
+                                                    class="md:col-span-2 rounded-md border-indigo-300">
+                                                    @foreach(['open','in_progress','implemented','verified','closed','void']
+                                                    as $st)<option value="{{ $st }}" @selected($finding->status==$st)>{{
+                                                        Str::headline($st) }}</option>@endforeach
+                                                </select>
+                                                <select name="owner_user_id"
+                                                    class="md:col-span-2 rounded-md border-indigo-300">
+                                                    <option value="">Owner</option>
+                                                    @foreach($allUsers as $u)<option value="{{ $u->id }}"
+                                                        @selected($finding->owner_user_id==$u->id)>{{ $u->name }}
+                                                    </option>@endforeach
+                                                </select>
+                                                <textarea name="description" rows="2"
+                                                    class="md:col-span-6 rounded-md border-indigo-300"
+                                                    placeholder="Description">{{ $finding->description }}</textarea>
+                                                <textarea name="risk_description" rows="2"
+                                                    class="md:col-span-6 rounded-md border-indigo-300"
+                                                    placeholder="Risk Description">{{ $finding->risk_description }}</textarea>
+                                                <textarea name="root_cause" rows="2"
+                                                    class="md:col-span-6 rounded-md border-indigo-300"
+                                                    placeholder="Root Cause">{{ $finding->root_cause }}</textarea>
+                                                <textarea name="recommendation" rows="2"
+                                                    class="md:col-span-6 rounded-md border-indigo-300"
+                                                    placeholder="Recommendation">{{ $finding->recommendation }}</textarea>
+                                                <input type="date" name="target_closure_date"
+                                                    value="{{ optional($finding->target_closure_date)->format('Y-m-d') }}"
+                                                    class="md:col-span-2 rounded-md border-indigo-300" />
+                                                <input type="date" name="actual_closure_date"
+                                                    value="{{ optional($finding->actual_closure_date)->format('Y-m-d') }}"
+                                                    class="md:col-span-2 rounded-md border-indigo-300" />
+                                                <div class="md:col-span-12 flex justify-end space-x-2 pt-1">
+                                                    <button type="button"
+                                                        onclick="toggleFindingEdit('{{ $finding->id }}')"
+                                                        class="px-3 py-1 rounded-md bg-gray-200">Cancel</button>
+                                                    <button
+                                                        class="px-3 py-1 rounded-md bg-indigo-600 text-white">Save</button>
+                                                </div>
+                                            </form>
+                                            <div class="mt-4 border-t pt-3">
+                                                <div class="flex items-center justify-between mb-2">
+                                                    <h6 class="text-[11px] font-semibold text-gray-700">Attachments ({{
+                                                        $finding->attachments->count() }})</h6>
+                                                    <form method="POST"
+                                                        action="{{ route('audits.findings.attachments.add', [$audit,$finding]) }}"
+                                                        enctype="multipart/form-data"
+                                                        class="flex items-center gap-2 text-[11px]">@csrf
+                                                        <input type="file" name="file" required class="text-[10px]" />
+                                                        <button
+                                                            class="px-2 py-1 bg-indigo-600 text-white rounded">Upload</button>
+                                                    </form>
+                                                </div>
+                                                <div class="overflow-x-auto">
+                                                    <table
+                                                        class="min-w-full divide-y divide-gray-200 text-[11px] bg-white rounded">
+                                                        <thead class="bg-gray-50">
+                                                            <tr class="text-gray-600">
+                                                                <th class="px-2 py-1 text-left">File</th>
+                                                                <th class="px-2 py-1 text-left">Type</th>
+                                                                <th class="px-2 py-1 text-left">Size</th>
+                                                                <th class="px-2 py-1 text-left">Uploaded</th>
+                                                                <th class="px-2 py-1 text-left">By</th>
+                                                                <th class="px-2 py-1"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody class="divide-y divide-gray-100">
+                                                            @forelse($finding->attachments as $att)
+                                                            <tr>
+                                                                <td class="px-2 py-1">{{ $att->original_name }}</td>
+                                                                <td class="px-2 py-1">{{ $att->mime_type ?? 'n/a' }}
+                                                                </td>
+                                                                <td class="px-2 py-1">{{ number_format(($att->size_bytes
+                                                                    ?? 0)/1024,1) }} KB</td>
+                                                                <td class="px-2 py-1">{{
+                                                                    optional($att->uploaded_at)->format('Y-m-d H:i') }}
+                                                                </td>
+                                                                <td class="px-2 py-1">{{ $att->uploader?->name ?? '—' }}
+                                                                </td>
+                                                                <td class="px-2 py-1 text-right space-x-1">
+                                                                    <a href="{{ route('audits.findings.attachments.download', [$audit,$finding,$att]) }}"
+                                                                        class="text-indigo-600 hover:underline">DL</a>
+                                                                    <form method="POST"
+                                                                        action="{{ route('audits.findings.attachments.delete', [$audit,$finding,$att]) }}"
+                                                                        class="inline"
+                                                                        onsubmit="return confirm('Delete file?')">@csrf
+                                                                        @method('DELETE')<button
+                                                                            class="text-red-600 hover:underline">Del</button>
+                                                                    </form>
+                                                                </td>
+                                                            </tr>
+                                                            @empty
+                                                            <tr>
+                                                                <td class="px-2 py-2 text-gray-500" colspan="6">No
+                                                                    attachments.</td>
+                                                            </tr>
+                                                            @endforelse
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="9" class="px-3 py-4 text-sm text-gray-500">No findings recorded.
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -1349,6 +1546,10 @@
 			}
 			if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initTabs); else initTabs();
 		})();
+        function toggleFindingEdit(id){
+          const row = document.getElementById('finding-edit-'+id);
+          if(row){ row.classList.toggle('hidden'); }
+        }
     </script>
     @endpush
 </x-app-layout>

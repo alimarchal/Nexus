@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Audit, AuditAuditor, AuditChecklistItem, AuditItemResponse, AuditFinding, AuditAction, AuditActionUpdate, AuditScope, AuditSchedule, AuditNotification, AuditMetricsCache};
+use App\Models\{Audit, AuditAuditor, AuditChecklistItem, AuditItemResponse, AuditFinding, AuditAction, AuditActionUpdate, AuditScope, AuditSchedule, AuditNotification, AuditMetricsCache, AuditFindingAttachment};
 use App\Models\AuditDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -184,14 +184,164 @@ class AuditExtraController extends Controller
     {
         $data = $request->validate([
             'title' => 'required|string|max:255',
-            'severity' => 'nullable|string|max:50',
-            'description' => 'nullable|string'
+            'category' => 'nullable|in:process,compliance,safety,financial,operational,other',
+            'severity' => 'nullable|in:low,medium,high,critical',
+            'status' => 'nullable|in:open,in_progress,implemented,verified,closed,void',
+            'description' => 'nullable|string',
+            'risk_description' => 'nullable|string',
+            'root_cause' => 'nullable|string',
+            'recommendation' => 'nullable|string',
+            'target_closure_date' => 'nullable|date',
+            'actual_closure_date' => 'nullable|date',
+            'owner_user_id' => 'nullable|exists:users,id'
         ]);
         $data['audit_id'] = $audit->id;
         $data['created_by'] = auth()->id();
         $data['reference_no'] = generateUniqueId('afd', 'audit_findings', 'reference_no');
-        AuditFinding::create($data);
+        $finding = AuditFinding::create($data);
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Added finding: ' . $finding->title,
+            'metadata' => [
+                'event' => 'finding_added',
+                'finding_id' => $finding->id,
+                'severity' => $finding->severity,
+                'status' => $finding->status,
+            ],
+            'changed_at' => now(),
+        ]);
         return back()->with('success', 'Finding added.');
+    }
+
+    public function updateFinding(Request $request, Audit $audit, AuditFinding $finding)
+    {
+        abort_unless($finding->audit_id === $audit->id, 404);
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'nullable|in:process,compliance,safety,financial,operational,other',
+            'severity' => 'nullable|in:low,medium,high,critical',
+            'status' => 'nullable|in:open,in_progress,implemented,verified,closed,void',
+            'description' => 'nullable|string',
+            'risk_description' => 'nullable|string',
+            'root_cause' => 'nullable|string',
+            'recommendation' => 'nullable|string',
+            'target_closure_date' => 'nullable|date',
+            'actual_closure_date' => 'nullable|date',
+            'owner_user_id' => 'nullable|exists:users,id'
+        ]);
+        $finding->update($data);
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Updated finding: ' . $finding->title,
+            'metadata' => [
+                'event' => 'finding_updated',
+                'finding_id' => $finding->id,
+                'severity' => $finding->severity,
+                'status' => $finding->status,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Finding updated.');
+    }
+
+    public function deleteFinding(Audit $audit, AuditFinding $finding)
+    {
+        abort_unless($finding->audit_id === $audit->id, 404);
+        $snapshot = $finding->replicate();
+        $finding->delete();
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Deleted finding: ' . $snapshot->title,
+            'metadata' => [
+                'event' => 'finding_deleted',
+                'finding_id' => $snapshot->id,
+                'severity' => $snapshot->severity,
+                'status' => $snapshot->status,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Finding deleted.');
+    }
+
+    public function addFindingAttachment(Request $request, Audit $audit, AuditFinding $finding)
+    {
+        abort_unless($finding->audit_id === $audit->id, 404);
+        $data = $request->validate([
+            'file' => 'required|file|max:20480', // 20MB
+        ]);
+        $file = $data['file'];
+        if ($file->isValid()) {
+            $storedPath = \App\Helpers\FileStorageHelper::storeSinglePrivateFile($file, 'Audits/' . $audit->reference_no . '/findings');
+            $att = AuditFindingAttachment::create([
+                'audit_finding_id' => $finding->id,
+                'original_name' => $file->getClientOriginalName(),
+                'stored_name' => basename($storedPath),
+                'mime_type' => substr((string) $file->getMimeType(), 0, 150),
+                'size_bytes' => $file->getSize(),
+                'uploaded_by' => auth()->id(),
+                'uploaded_at' => now(),
+                'metadata' => null,
+            ]);
+            \App\Models\AuditStatusHistory::create([
+                'auditable_type' => Audit::class,
+                'auditable_id' => $audit->id,
+                'from_status' => null,
+                'to_status' => $audit->status ?? 'planned',
+                'changed_by' => auth()->id(),
+                'note' => 'Added finding attachment: ' . $att->original_name,
+                'metadata' => [
+                    'event' => 'finding_attachment_added',
+                    'finding_id' => $finding->id,
+                    'attachment_id' => $att->id,
+                ],
+                'changed_at' => now(),
+            ]);
+        }
+        return back()->with('success', 'Attachment uploaded.');
+    }
+
+    public function deleteFindingAttachment(Audit $audit, AuditFinding $finding, AuditFindingAttachment $attachment)
+    {
+        abort_unless($finding->audit_id === $audit->id && $attachment->audit_finding_id === $finding->id, 404);
+        $snapshot = $attachment->replicate();
+        $attachment->delete();
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Deleted finding attachment: ' . $snapshot->original_name,
+            'metadata' => [
+                'event' => 'finding_attachment_deleted',
+                'finding_id' => $finding->id,
+                'attachment_id' => $snapshot->id,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Attachment deleted.');
+    }
+
+    public function downloadFindingAttachment(Audit $audit, AuditFinding $finding, AuditFindingAttachment $attachment)
+    {
+        abort_unless($finding->audit_id === $audit->id && $attachment->audit_finding_id === $finding->id, 404);
+        $path = storage_path('app/Audits/' . $audit->reference_no . '/findings/' . $attachment->stored_name);
+        if (!file_exists($path)) {
+            return back()->with('error', 'File not found.');
+        }
+        return response()->download($path, $attachment->original_name);
     }
 
     public function addAction(Request $request, Audit $audit, AuditFinding $finding)
