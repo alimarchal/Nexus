@@ -48,353 +48,73 @@
                 <form method="GET" action="{{ route('complaints.index') }}">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- Filter by ID -->
-                        <div>
-                            <label for="filter[id]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complaint ID</label>
-                            <input type="number" name="filter[id]" id="filter[id]" value="{{ request('filter.id') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter complaint ID">
-                        </div>
+                        <x-input-filters name="id" label="Complaint ID" type="number" />
 
                         <!-- Filter by Complaint Number -->
-                        <div>
-                            <label for="filter[complaint_number]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complaint
-                                Number</label>
-                            <input type="text" name="filter[complaint_number]" id="filter[complaint_number]"
-                                value="{{ request('filter.complaint_number') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter complaint number">
-                        </div>
+                        <x-input-filters name="complaint_number" label="Complaint Number" />
 
                         <!-- Filter by Title -->
-                        <div>
-                            <label for="filter[title]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
-                            <input type="text" name="filter[title]" id="filter[title]"
-                                value="{{ request('filter.title') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter title">
-                        </div>
+                        <x-input-filters name="title" label="Title" />
 
                         <!-- Filter by Status -->
-                        <div>
-                            <label for="filter[status]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                            <select name="filter[status]" id="filter[status]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Statuses</option>
-                                <option value="Open" {{ request('filter.status')==='Open' ? 'selected' : '' }}>Open
-                                </option>
-                                <option value="In Progress" {{ request('filter.status')==='In Progress' ? 'selected'
-                                    : '' }}>In
-                                    Progress</option>
-                                <option value="Pending" {{ request('filter.status')==='Pending' ? 'selected' : '' }}>
-                                    Pending
-                                </option>
-                                <option value="Resolved" {{ request('filter.status')==='Resolved' ? 'selected' : '' }}>
-                                    Resolved
-                                </option>
-                                <option value="Closed" {{ request('filter.status')==='Closed' ? 'selected' : '' }}>
-                                    Closed
-                                </option>
-                                <option value="Reopened" {{ request('filter.status')==='Reopened' ? 'selected' : '' }}>
-                                    Reopened
-                                </option>
-                            </select>
-                        </div>
+                        <x-status-select />
 
                         <!-- Filter by Priority -->
-                        <div>
-                            <label for="filter[priority]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Priority</label>
-                            <select name="filter[priority]" id="filter[priority]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Priorities</option>
-                                <option value="Low" {{ request('filter.priority')==='Low' ? 'selected' : '' }}>Low
-                                </option>
-                                <option value="Medium" {{ request('filter.priority')==='Medium' ? 'selected' : '' }}>
-                                    Medium
-                                </option>
-                                <option value="High" {{ request('filter.priority')==='High' ? 'selected' : '' }}>High
-                                </option>
-                                <option value="Critical" {{ request('filter.priority')==='Critical' ? 'selected' : ''
-                                    }}>
-                                    Critical</option>
-                            </select>
-                        </div>
+                        <x-priority-select />
 
                         <!-- Filter by Source -->
-                        <div>
-                            <label for="filter[source]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source</label>
-                            <select name="filter[source]" id="filter[source]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Sources</option>
-                                <option value="Email" {{ request('filter.source')==='Email' ? 'selected' : '' }}>Email
-                                </option>
-                                <option value="Phone" {{ request('filter.source')==='Phone' ? 'selected' : '' }}>Phone
-                                </option>
-                                <option value="Website" {{ request('filter.source')==='Website' ? 'selected' : '' }}>
-                                    Website</option>
-                                <option value="Walk-in" {{ request('filter.source')==='Walk-in' ? 'selected' : '' }}>
-                                    Walk-in</option>
-                                <option value="Social Media" {{ request('filter.source')==='Social Media' ? 'selected'
-                                    : '' }}>Social Media</option>
-                            </select>
-                        </div>
+                        <x-source-select />
 
-                        <!-- Filter by Category (converted to dropdown) -->
-                        <div>
-                            <label for="filter[category]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-                            <select name="filter[category]" id="filter[category]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Categories</option>
-                                @foreach(($categories ?? []) as $cat)
-                                @php($catName = $cat->category_name)
-                                <option value="{{ $catName }}" {{ request('filter.category')===$catName ? 'selected'
-                                    : '' }}>{{ $catName }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <!-- Filter by Category -->
+                        <x-category-select />
 
                         <!-- Filter by Branch -->
-                        <div>
-                            <label for="filter[branch_id]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Branch</label>
-                            <select name="filter[branch_id]" id="filter[branch_id]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Branches</option>
-                                @foreach($branches ?? [] as $branch)
-                                <option value="{{ $branch->id }}" {{ request('filter.branch_id')==$branch->id ?
-                                    'selected' : ''
-                                    }}>
-                                    {{ $branch->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-branch-select />
 
                         <!-- Filter by Region -->
-                        <div>
-                            <label for="filter[region_id]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Region</label>
-                            <select name="filter[region_id]" id="filter[region_id]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Regions</option>
-                                @foreach($regions ?? [] as $region)
-                                <option value="{{ $region->id }}" {{ request('filter.region_id')==$region->id ?
-                                    'selected' : '' }}>{{ $region->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-regions />
 
                         <!-- Filter by Division -->
-                        <div>
-                            <label for="filter[division_id]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Division</label>
-                            <select name="filter[division_id]" id="filter[division_id]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Divisions</option>
-                                @foreach($divisions ?? [] as $division)
-                                <option value="{{ $division->id }}" {{ request('filter.division_id')==$division->id
-                                    ?
-                                    'selected' : '' }}>{{ $division->short_name ?? $division->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-division />
 
                         <!-- Filter by Assigned To -->
-                        <div>
-                            <label for="filter[assigned_to]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assigned
-                                To</label>
-                            <select name="filter[assigned_to]" id="filter[assigned_to]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Users</option>
-                                <option value="unassigned" {{ request('filter.assigned_to')==='unassigned' ? 'selected'
-                                    : '' }}>Unassigned</option>
-                                @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}" {{ request('filter.assigned_to')==$user->id ?
-                                    'selected'
-                                    : ''
-                                    }}>
-                                    {{ $user->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-user-select name="assigned_to" label="Assigned To" :includeUnassigned="true" />
 
                         <!-- Filter by Assigned By -->
-                        <div>
-                            <label for="filter[assigned_by]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assigned
-                                By</label>
-                            <select name="filter[assigned_by]" id="filter[assigned_by]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Users</option>
-                                @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}" {{ request('filter.assigned_by')==$user->id ?
-                                    'selected'
-                                    : ''
-                                    }}>
-                                    {{ $user->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-user-select name="assigned_by" label="Assigned By" />
 
                         <!-- Filter by Resolved By -->
-                        <div>
-                            <label for="filter[resolved_by]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Resolved
-                                By</label>
-                            <select name="filter[resolved_by]" id="filter[resolved_by]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Users</option>
-                                @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}" {{ request('filter.resolved_by')==$user->id ?
-                                    'selected'
-                                    : ''
-                                    }}>
-                                    {{ $user->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-user-select name="resolved_by" label="Resolved By" />
 
                         <!-- Filter by SLA Breached -->
-                        <div>
-                            <label for="filter[sla_breached]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">SLA
-                                Status</label>
-                            <select name="filter[sla_breached]" id="filter[sla_breached]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All SLA Status</option>
-                                <option value="1" {{ request('filter.sla_breached')==='1' ? 'selected' : '' }}>SLA
-                                    Breached</option>
-                                <option value="0" {{ request('filter.sla_breached')==='0' ? 'selected' : '' }}>
-                                    Within
-                                    SLA</option>
-                            </select>
-                        </div>
+                        <x-sla-breached-select />
 
                         <!-- Filter: Escalated -->
-                        <div>
-                            <label for="filter[escalated]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Escalated</label>
-                            <select name="filter[escalated]" id="filter[escalated]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All</option>
-                                <option value="1" {{ request('filter.escalated')==='1' ? 'selected' : '' }}>Yes
-                                </option>
-                                <option value="0" {{ request('filter.escalated')==='0' ? 'selected' : '' }}>No
-                                </option>
-                            </select>
-                        </div>
+                        <x-escalated-select />
 
                         <!-- Filter: Harassment Only -->
-                        <div>
-                            <label for="filter[harassment_only]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harassment</label>
-                            <select name="filter[harassment_only]" id="filter[harassment_only]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All</option>
-                                <option value="1" {{ request('filter.harassment_only')==='1' ? 'selected' : '' }}>
-                                    Only
-                                    Harassment</option>
-                            </select>
-                        </div>
+                        <x-harassment-only-select />
 
                         <!-- Filter: Has Witnesses -->
-                        <div>
-                            <label for="filter[has_witnesses]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Witnesses</label>
-                            <select name="filter[has_witnesses]" id="filter[has_witnesses]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All</option>
-                                <option value="1" {{ request('filter.has_witnesses')==='1' ? 'selected' : '' }}>Has
-                                </option>
-                                <option value="0" {{ request('filter.has_witnesses')==='0' ? 'selected' : '' }}>None
-                                </option>
-                            </select>
-                        </div>
+                        <x-witnesses-select />
 
                         <!-- Filter: Confidential -->
-                        <div>
-                            <label for="filter[harassment_confidential]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Confidential</label>
-                            <select name="filter[harassment_confidential]" id="filter[harassment_confidential]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All</option>
-                                <option value="1" {{ request('filter.harassment_confidential')==='1' ? 'selected' : ''
-                                    }}>
-                                    Yes</option>
-                                <option value="0" {{ request('filter.harassment_confidential')==='0' ? 'selected' : ''
-                                    }}>No
-                                </option>
-                            </select>
-                        </div>
+                        <x-harassment-confidential-select />
 
-                        <!-- Filter: Harassment Sub Category (dropdown to match create form) -->
-                        <div>
-                            <label for="filter[harassment_sub_category]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harassment Sub
-                                Category</label>
-                            @php($harassmentSubCategories =
-                            ['Verbal','Physical','Sexual','Discriminatory','Bullying','Cyber','Retaliation','Other'])
-                            <select name="filter[harassment_sub_category]" id="filter[harassment_sub_category]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Sub Categories</option>
-                                @foreach($harassmentSubCategories as $sub)
-                                <option value="{{ $sub }}" {{ request('filter.harassment_sub_category')===$sub
-                                    ? 'selected' : '' }}>{{ $sub }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <!-- Filter: Harassment Sub Category -->
+                        <x-harassment-sub-category-select />
 
                         <!-- Filter by Complainant Name -->
-                        <div>
-                            <label for="filter[complainant_name]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complainant
-                                Name</label>
-                            <input type="text" name="filter[complainant_name]" id="filter[complainant_name]"
-                                value="{{ request('filter.complainant_name') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter complainant name">
-                        </div>
+                        <x-input-filters name="complainant_name" label="Complainant Name" />
 
                         <!-- Filter by Complainant Email -->
-                        <div>
-                            <label for="filter[complainant_email]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complainant
-                                Email</label>
-                            <input type="email" name="filter[complainant_email]" id="filter[complainant_email]"
-                                value="{{ request('filter.complainant_email') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter complainant email">
-                        </div>
+                        <x-input-filters name="complainant_email" label="Complainant Email" type="email" />
 
                         <!-- Filter by Date From -->
-                        <div>
-                            <label for="filter[date_from]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Created Date
-                                From</label>
-                            <input type="date" name="filter[date_from]" id="filter[date_from]"
-                                value="{{ request('filter.date_from') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                        </div>
+                        <x-date-from />
 
                         <!-- Filter by Date To -->
-                        <div>
-                            <label for="filter[date_to]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Created Date
-                                To</label>
-                            <input type="date" name="filter[date_to]" id="filter[date_to]"
-                                value="{{ request('filter.date_to') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                        </div>
+                        <x-date-to />
 
                         <!-- Filter by Assigned Date From -->
                         <div>
