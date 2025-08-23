@@ -595,7 +595,7 @@
                 </div>
 
                 <div id="checklist-tab" class="tab-content p-6" style="display:none;">
-                    @php($items = $audit->checklistItems ?? collect())
+                    @php($items = $assessmentItems ?? collect())
                     @php($responsesByItem = $audit->responses?->groupBy('audit_checklist_item_id') ?? collect())
                     <div class="space-y-8">
                         <div class="flex flex-wrap items-center justify-between gap-3">

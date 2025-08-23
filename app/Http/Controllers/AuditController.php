@@ -199,14 +199,30 @@ class AuditController extends Controller
             'scopes',
             'schedules',
             'children',
-            'notifications'
+            'notifications',
+            'responses'
         ]);
         // Load full status / timeline history latest first for display
         $statusHistory = $audit->statusHistories()->orderByDesc('changed_at')->get();
-        $checklistItems = AuditChecklistItem::where('audit_type_id', $audit->audit_type_id)->orderBy('display_order')->get();
+        // Items from audit type
+        $typeItems = AuditChecklistItem::where('audit_type_id', $audit->audit_type_id)
+            ->orderBy('display_order')->get();
+        // Inline items created specifically for this audit (metadata->inline_for_audit == audit id)
+        $inlineItems = AuditChecklistItem::whereNull('audit_type_id')
+            ->where('metadata->inline_for_audit', $audit->id)
+            ->orderByDesc('created_at')
+            ->get();
+        $assessmentItems = $typeItems->merge($inlineItems)->values();
         $availableTags = AuditTag::where('is_active', true)->orderBy('name')->get();
         $allUsers = User::orderBy('name')->select('id', 'name', 'email')->get();
-        return view('audits.show', compact('audit', 'statusHistory', 'checklistItems', 'availableTags', 'allUsers'));
+        return view('audits.show', [
+            'audit' => $audit,
+            'statusHistory' => $statusHistory,
+            'assessmentItems' => $assessmentItems,
+            'inlineItems' => $inlineItems,
+            'availableTags' => $availableTags,
+            'allUsers' => $allUsers,
+        ]);
     }
 
     /**
