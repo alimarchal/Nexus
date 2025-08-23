@@ -42,25 +42,33 @@ class AuditController extends Controller
                 }),
                 // Created date range
                 AllowedFilter::callback('date_from', function ($q, $v) {
-                    $q->whereDate('created_at', '>=', $v); }),
+                    $q->whereDate('created_at', '>=', $v);
+                }),
                 AllowedFilter::callback('date_to', function ($q, $v) {
-                    $q->whereDate('created_at', '<=', $v); }),
+                    $q->whereDate('created_at', '<=', $v);
+                }),
                 // Planned date ranges
                 AllowedFilter::callback('planned_start_from', function ($q, $v) {
-                    $q->whereDate('planned_start_date', '>=', $v); }),
+                    $q->whereDate('planned_start_date', '>=', $v);
+                }),
                 AllowedFilter::callback('planned_start_to', function ($q, $v) {
-                    $q->whereDate('planned_start_date', '<=', $v); }),
+                    $q->whereDate('planned_start_date', '<=', $v);
+                }),
                 AllowedFilter::callback('planned_end_from', function ($q, $v) {
-                    $q->whereDate('planned_end_date', '>=', $v); }),
+                    $q->whereDate('planned_end_date', '>=', $v);
+                }),
                 AllowedFilter::callback('planned_end_to', function ($q, $v) {
-                    $q->whereDate('planned_end_date', '<=', $v); }),
+                    $q->whereDate('planned_end_date', '<=', $v);
+                }),
                 // Score range
                 AllowedFilter::callback('score_min', function ($q, $v) {
                     if (is_numeric($v))
-                        $q->where('score', '>=', $v); }),
+                        $q->where('score', '>=', $v);
+                }),
                 AllowedFilter::callback('score_max', function ($q, $v) {
                     if (is_numeric($v))
-                        $q->where('score', '<=', $v); }),
+                        $q->where('score', '<=', $v);
+                }),
             ])
             ->allowedSorts(['id', 'reference_no', 'title', 'status', 'risk_overall', 'planned_start_date', 'planned_end_date', 'score', 'created_at'])
             ->latest()
@@ -196,7 +204,8 @@ class AuditController extends Controller
         $statusHistory = $audit->statusHistories()->latest('changed_at')->limit(20)->get();
         $checklistItems = AuditChecklistItem::where('audit_type_id', $audit->audit_type_id)->orderBy('display_order')->get();
         $availableTags = AuditTag::where('is_active', true)->orderBy('name')->get();
-        return view('audits.show', compact('audit', 'statusHistory', 'checklistItems', 'availableTags'));
+        $allUsers = User::orderBy('name')->select('id', 'name', 'email')->get();
+        return view('audits.show', compact('audit', 'statusHistory', 'checklistItems', 'availableTags', 'allUsers'));
     }
 
     /**

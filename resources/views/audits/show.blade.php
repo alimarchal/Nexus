@@ -330,50 +330,69 @@
                 </div>
 
                 <div id="auditors-tab" class="tab-content p-6" style="display:none;">
-                    <div class="mb-4">
-                        <h4 class="text-lg font-semibold text-gray-800 mb-3">Auditor Team</h4>
-                        <div class="grid md:grid-cols-2 gap-4">
-                            @forelse($audit->auditors as $aud)
-                            <div class="p-3 bg-white border border-gray-200 rounded-lg shadow-sm flex justify-between">
-                                <div>
-                                    <div class="font-medium text-gray-900">{{ $aud->user?->name ?? 'User Deleted' }}
-                                    </div>
-                                    <div class="text-xs text-gray-600">Role: {{ ucfirst($aud->role) }}
-                                        @if($aud->is_primary)<span
-                                            class="ml-1 px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded-full">Primary</span>@endif
-                                    </div>
-                                </div>
-                                <form method="POST" action="{{ route('audits.auditors.delete', [$audit, $aud]) }}">@csrf
-                                    @method('DELETE')<button class="text-xs px-2 py-1 bg-red-600 text-white rounded"
-                                        onclick="return confirm('Remove auditor?')">Remove</button></form>
-                            </div>
-                            @empty
-                            <p class="text-sm text-gray-500">No auditors assigned.</p>
-                            @endforelse
-                        </div>
+                    <h4 class="text-lg font-semibold text-gray-800 mb-4">Auditor Team</h4>
+                    <div class="overflow-x-auto bg-white border border-gray-200 rounded-lg shadow-sm">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-gray-50 text-gray-700 text-xs uppercase tracking-wide">
+                                <tr>
+                                    <th class="px-4 py-2 text-left">#</th>
+                                    <th class="px-4 py-2 text-left">User</th>
+                                    <th class="px-4 py-2 text-left">Email</th>
+                                    <th class="px-4 py-2 text-left">Role</th>
+                                    <th class="px-4 py-2 text-left">Primary</th>
+                                    <th class="px-4 py-2"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @forelse($audit->auditors as $idx => $aud)
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-2 text-gray-500">{{ $idx+1 }}</td>
+                                    <td class="px-4 py-2 font-medium text-gray-800">{{ $aud->user?->name ?? '—' }}</td>
+                                    <td class="px-4 py-2 text-gray-600">{{ $aud->user?->email ?? '—' }}</td>
+                                    <td class="px-4 py-2 text-gray-700 capitalize">{{ $aud->role }}</td>
+                                    <td class="px-4 py-2">@if($aud->is_primary)<span
+                                            class="px-2 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-700">Yes</span>@else<span
+                                            class="text-xs text-gray-400">No</span>@endif</td>
+                                    <td class="px-4 py-2 text-right">
+                                        <form method="POST"
+                                            action="{{ route('audits.auditors.delete', [$audit, $aud]) }}"
+                                            onsubmit="return confirm('Remove auditor?')">@csrf @method('DELETE')
+                                            <button
+                                                class="text-xs px-2 py-1 bg-red-600 text-white rounded">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="px-4 py-6 text-center text-gray-500">No auditors assigned.
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
-                    <div class="mt-6 p-4 border border-indigo-200 rounded-lg bg-indigo-50/50">
-                        <h5 class="text-sm font-semibold text-gray-800 mb-2">Assign Auditors</h5>
-                        <form method="POST" action="{{ route('audits.assign-auditors', $audit) }}" class="space-y-3">
+                    <div class="mt-8 bg-indigo-50/60 border border-indigo-200 rounded-lg p-5">
+                        <h5 class="text-sm font-semibold text-gray-800 mb-3">Assign / Replace Auditors</h5>
+                        <p class="text-[11px] text-gray-600 mb-3">Select one or more users. First selected becomes
+                            primary automatically.</p>
+                        <form method="POST" action="{{ route('audits.assign-auditors', $audit) }}" class="space-y-4">
                             @csrf
-                            <div class="grid md:grid-cols-3 gap-3">
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1">User IDs (comma
-                                        separated)</label><input name="user_ids"
-                                        class="w-full border-gray-300 rounded-md text-sm" placeholder="e.g. 5,12,19" />
-                                </div>
-                                <div><label class="block text-xs font-medium text-gray-600 mb-1">Role</label><select
-                                        name="role" class="w-full border-gray-300 rounded-md text-sm">
-                                        <option value="member">Member</option>
-                                        <option value="lead">Lead</option>
-                                        <option value="observer">Observer</option>
-                                    </select></div>
-                                <div class="flex items-end"><label class="inline-flex items-center text-xs"><input
-                                            type="checkbox" name="is_primary" value="1"
-                                            class="rounded border-gray-300 text-indigo-600"><span
-                                            class="ml-2">Primary</span></label></div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Auditors</label>
+                                <select name="user_ids[]" multiple size="8"
+                                    class="w-full border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    @foreach($allUsers as $u)
+                                    <option value="{{ $u->id }}" @if($audit->
+                                        auditors->pluck('user_id')->contains($u->id)) selected @endif>{{ $u->name }} ({{
+                                        $u->email }})</option>
+                                    @endforeach
+                                </select>
+                                <div class="mt-1 text-[11px] text-gray-500">Hold Ctrl / Cmd to multi-select.</div>
                             </div>
-                            <div class="flex justify-end"><button type="submit"
-                                    class="px-3 py-1.5 bg-indigo-600 text-white rounded text-xs font-medium">Add</button>
+                            <div class="flex justify-end gap-3">
+                                <button type="submit"
+                                    class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded shadow-sm hover:bg-indigo-700">Save
+                                    Auditors</button>
                             </div>
                         </form>
                     </div>
