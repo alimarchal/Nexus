@@ -2120,8 +2120,6 @@
                                 </div>
                             </div>
                         </div>
-                        <p class="text-sm text-gray-500">No child audits.</p>
-                        @endif
                     </div>
                 </div>
             </div>
@@ -2323,239 +2321,235 @@
                         @endif
                     </div>
                 </div>
-                class="mt-4 text-xs space-y-2">
-                @csrf
-                <input type="text" name="channel" placeholder="Channel (email)"
-                    class="w-full rounded border-gray-300 dark:bg-gray-900" required />
-                <input type="text" name="subject" placeholder="Subject"
-                    class="w-full rounded border-gray-300 dark:bg-gray-900" required />
-                <textarea name="body" rows="2" placeholder="Body"
-                    class="w-full rounded border-gray-300 dark:bg-gray-900"></textarea>
-                <button class="px-3 py-1 bg-blue-600 text-white rounded">Queue Notification</button>
-                </form>
-            </div>
 
-            <!-- Metrics & Analytics Tab -->
-            <div id="content-metrics" class="tab-content hidden">
-                <div class="max-w-6xl mx-auto">
-                    <!-- Key Metrics Dashboard -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <!-- Completion Rate -->
+                <!-- Metrics & Analytics Tab -->
+                <div id="content-metrics" class="tab-content hidden">
+                    <div class="max-w-6xl mx-auto">
+                        <!-- Key Metrics Dashboard -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <!-- Completion Rate -->
+                            <div
+                                class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Completion Rate</p>
+                                        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                                            {{ $audit->checklist_items_count > 0 ?
+                                            round(($audit->completed_checklist_items_count /
+                                            $audit->checklist_items_count) * 100, 1) : 0 }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Findings -->
+                            <div
+                                class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Findings</p>
+                                        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{
+                                            $audit->findings_count ??
+                                            0 }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- High Risks -->
+                            <div
+                                class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-12 h-12 bg-orange-100 dark:bg-orange-900/50 rounded-lg flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-4">
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">High Risks</p>
+                                        <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{
+                                            $audit->high_risk_count ??
+                                            0 }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detailed Metrics -->
+                        <div
+                            class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mb-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Detailed Metrics</h3>
+                                    <p class="text-base text-gray-600 dark:text-gray-400">View cached performance
+                                        metrics
+                                    </p>
+                                </div>
+                                <form method="POST" action="{{ route('audits.metrics.recalc', $audit) }}"
+                                    class="inline">
+                                    @csrf
+                                    <button type="submit"
+                                        class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-lg transition-colors duration-200">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                            </path>
+                                        </svg>
+                                        Recalculate
+                                    </button>
+                                </form>
+                            </div>
+
+                            @php($metrics = $audit->metrics)
+                            @if($metrics->count())
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                @foreach($metrics as $metric)
+                                <div
+                                    class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div>
+                                            <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{
+                                                str_replace('_', '
+                                                ', ucwords($metric->metric_key)) }}</h4>
+                                            <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                                                {{ $metric->metric_value ?? $metric->numeric_value ?? '—' }}
+                                            </p>
+                                        </div>
+                                        <div class="text-right">
+                                            <span
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">
+                                                Cached
+                                            </span>
+                                        </div>
+                                    </div>
+                                    @if($metric->description)
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ $metric->description }}
+                                    </p>
+                                    @endif
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <span class="font-semibold">Last calculated:</span>
+                                        {{ $metric->calculated_at ? $metric->calculated_at->diffForHumans() : 'Never' }}
+                                    </div>
+                                    @if($metric->calculation_parameters)
+                                    <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                        <span class="font-semibold">Parameters:</span>
+                                        {{ is_array($metric->calculation_parameters) ?
+                                        json_encode($metric->calculation_parameters)
+                                        : $metric->calculation_parameters }}
+                                    </div>
+                                    @endif
+                                </div>
+                                @endforeach
+                            </div>
+                            @else
+                            <div class="text-center py-12">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                                    </path>
+                                </svg>
+                                <h3 class="mt-2 text-base font-medium text-gray-900 dark:text-gray-100">No metrics
+                                    available
+                                </h3>
+                                <p class="mt-1 text-base text-gray-500 dark:text-gray-400">Metrics will be generated
+                                    automatically
+                                    as the audit progresses.</p>
+                            </div>
+                            @endif
+                        </div>
+
+                        <!-- Performance Chart Placeholder -->
                         <div
                             class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center">
-                                <div
-                                    class="w-12 h-12 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">Completion Rate</p>
-                                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                                        {{ $audit->checklist_items_count > 0 ?
-                                        round(($audit->completed_checklist_items_count /
-                                        $audit->checklist_items_count) * 100, 1) : 0 }}%
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Performance Overview
+                                    </h3>
+                                    <p class="text-base text-gray-600 dark:text-gray-400">Visual representation of audit
+                                        progress
                                     </p>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Total Findings -->
-                        <div
-                            class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center">
-                                <div
-                                    class="w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
+                            <!-- Placeholder for charts (can be enhanced with Chart.js, ApexCharts, etc.) -->
+                            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-8">
+                                <div class="text-center">
+                                    <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z">
+                                            d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z">
                                         </path>
                                     </svg>
+                                    <h3 class="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">Performance
+                                        Charts
+                                    </h3>
+                                    <p class="mt-1 text-base text-gray-500 dark:text-gray-400">
+                                        Visual analytics will be displayed here.<br>
+                                        Consider integrating Chart.js or ApexCharts for detailed visualizations.
+                                    </p>
                                 </div>
-                                <div class="ml-4">
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Findings</p>
-                                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{
-                                        $audit->findings_count ??
-                                        0 }}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- High Risks -->
-                        <div
-                            class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center">
-                                <div
-                                    class="w-12 h-12 bg-orange-100 dark:bg-orange-900/50 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none"
-                                        stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                </div>
-                                <div class="ml-4">
-                                    <p class="text-sm text-gray-500 dark:text-gray-400">High Risks</p>
-                                    <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{
-                                        $audit->high_risk_count ??
-                                        0 }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Detailed Metrics -->
-                    <div
-                        class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700 mb-6">
-                        <div class="flex items-center justify-between mb-6">
-                            <div>
-                                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Detailed Metrics</h3>
-                                <p class="text-base text-gray-600 dark:text-gray-400">View cached performance metrics
-                                </p>
-                            </div>
-                            <form method="POST" action="{{ route('audits.metrics.recalc', $audit) }}" class="inline">
-                                @csrf
-                                <button type="submit"
-                                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-lg transition-colors duration-200">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                        </path>
-                                    </svg>
-                                    Recalculate
-                                </button>
-                            </form>
-                        </div>
-
-                        @php($metrics = $audit->metrics)
-                        @if($metrics->count())
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            @foreach($metrics as $metric)
-                            <div
-                                class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                <div class="flex items-start justify-between mb-3">
-                                    <div>
-                                        <h4 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{
-                                            str_replace('_', '
-                                            ', ucwords($metric->metric_key)) }}</h4>
-                                        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
-                                            {{ $metric->metric_value ?? $metric->numeric_value ?? '—' }}
-                                        </p>
-                                    </div>
-                                    <div class="text-right">
-                                        <span
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">
-                                            Cached
-                                        </span>
-                                    </div>
-                                </div>
-                                @if($metric->description)
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ $metric->description }}</p>
-                                @endif
-                                <div class="text-xs text-gray-500 dark:text-gray-400">
-                                    <span class="font-semibold">Last calculated:</span>
-                                    {{ $metric->calculated_at ? $metric->calculated_at->diffForHumans() : 'Never' }}
-                                </div>
-                                @if($metric->calculation_parameters)
-                                <div class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                    <span class="font-semibold">Parameters:</span>
-                                    {{ is_array($metric->calculation_parameters) ?
-                                    json_encode($metric->calculation_parameters)
-                                    : $metric->calculation_parameters }}
-                                </div>
-                                @endif
-                            </div>
-                            @endforeach
-                        </div>
-                        @else
-                        <div class="text-center py-12">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                                </path>
-                            </svg>
-                            <h3 class="mt-2 text-base font-medium text-gray-900 dark:text-gray-100">No metrics available
-                            </h3>
-                            <p class="mt-1 text-base text-gray-500 dark:text-gray-400">Metrics will be generated
-                                automatically
-                                as the audit progresses.</p>
-                        </div>
-                        @endif
-                    </div>
-
-                    <!-- Performance Chart Placeholder -->
-                    <div class="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                        <div class="flex items-center justify-between mb-6">
-                            <div>
-                                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">Performance Overview</h3>
-                                <p class="text-base text-gray-600 dark:text-gray-400">Visual representation of audit
-                                    progress
-                                </p>
-                            </div>
-                        </div>
-
-                        <!-- Placeholder for charts (can be enhanced with Chart.js, ApexCharts, etc.) -->
-                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-8">
-                            <div class="text-center">
-                                <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z">
-                                    </path>
-                                </svg>
-                                <h3 class="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">Performance Charts
-                                </h3>
-                                <p class="mt-1 text-base text-gray-500 dark:text-gray-400">
-                                    Visual analytics will be displayed here.<br>
-                                    Consider integrating Chart.js or ApexCharts for detailed visualizations.
-                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Status History Section (separate from tabs) -->
-    <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
-        <h3 class="text-lg font-semibold mb-4">Recent Status History</h3>
-        @if($statusHistory->count())
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead>
-                    <tr class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                        <th class="px-3 py-2 text-left">Changed At</th>
-                        <th class="px-3 py-2 text-left">From</th>
-                        <th class="px-3 py-2 text-left">To</th>
-                        <th class="px-3 py-2 text-left">By</th>
-                        <th class="px-3 py-2 text-left">Note</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($statusHistory as $h)
-                    <tr class="border-b border-gray-200 dark:border-gray-700">
-                        <td class="px-3 py-2">{{ $h->changed_at?->format('Y-m-d H:i') }}</td>
-                        <td class="px-3 py-2">{{ $h->from_status ? ucwords(str_replace('_',' ',$h->from_status))
-                            :
-                            '—' }}</td>
-                        <td class="px-3 py-2 font-semibold">{{ ucwords(str_replace('_',' ',$h->to_status)) }}
-                        </td>
-                        <td class="px-3 py-2">{{ $h->changer?->name ?? '—' }}</td>
-                        <td class="px-3 py-2">{{ $h->note ?? '—' }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <!-- Status History Section (separate from tabs) -->
+        <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Recent Status History</h3>
+            @if($statusHistory->count())
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                            <th class="px-3 py-2 text-left">Changed At</th>
+                            <th class="px-3 py-2 text-left">From</th>
+                            <th class="px-3 py-2 text-left">To</th>
+                            <th class="px-3 py-2 text-left">By</th>
+                            <th class="px-3 py-2 text-left">Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($statusHistory as $h)
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <td class="px-3 py-2">{{ $h->changed_at?->format('Y-m-d H:i') }}</td>
+                            <td class="px-3 py-2">{{ $h->from_status ? ucwords(str_replace('_',' ',$h->from_status))
+                                :
+                                '—' }}</td>
+                            <td class="px-3 py-2 font-semibold">{{ ucwords(str_replace('_',' ',$h->to_status)) }}
+                            </td>
+                            <td class="px-3 py-2">{{ $h->changer?->name ?? '—' }}</td>
+                            <td class="px-3 py-2">{{ $h->note ?? '—' }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @else
+            <p class="text-sm text-gray-500">No history records.</p>
+            @endif
         </div>
-        @else
-        <p class="text-sm text-gray-500">No history records.</p>
-        @endif
-    </div>
     </div>
 
     <script>
