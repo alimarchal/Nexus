@@ -28,6 +28,15 @@
                 <div><span class="font-semibold">Actual:</span> {{ $audit->actual_start_date?->format('Y-m-d') }} {{
                     $audit->actual_end_date? ' - '.$audit->actual_end_date->format('Y-m-d') : '' }}</div>
                 <div><span class="font-semibold">Score:</span> {{ $audit->score ?? '-' }}</div>
+                <div class="md:col-span-3 mt-2">
+                    <span class="font-semibold">Tags:</span>
+                    @forelse($audit->tags as $tag)
+                    <span class="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded">{{ $tag->name
+                        }}</span>
+                    @empty
+                    <span class="text-gray-500">—</span>
+                    @endforelse
+                </div>
             </div>
             <div class="mt-4">
                 <h4 class="font-semibold mb-1">Description</h4>
@@ -82,6 +91,49 @@
                         <label class="block text-sm font-medium">Documents (add)</label>
                         <input type="file" name="documents[]" multiple class="mt-1 w-full text-sm" />
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium">Tags</label>
+                        <select name="tag_ids[]" multiple size="5"
+                            class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                            @foreach($availableTags as $tag)
+                            <option value="{{ $tag->id }}" @selected($audit->tags->pluck('id')->contains($tag->id))>{{
+                                $tag->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="border-t pt-4">
+                        <h4 class="text-sm font-semibold mb-2">Quick Risk</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                            <div>
+                                <label class="block font-medium">Title</label>
+                                <input type="text" name="risk[title]"
+                                    class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200" />
+                            </div>
+                            <div>
+                                <label class="block font-medium">Likelihood</label>
+                                <select name="risk[likelihood]"
+                                    class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                                    @foreach(['low','medium','high','critical'] as $v)
+                                    <option value="{{ $v }}">{{ ucfirst($v) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-medium">Impact</label>
+                                <select name="risk[impact]"
+                                    class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                                    @foreach(['low','medium','high','critical'] as $v)
+                                    <option value="{{ $v }}">{{ ucfirst($v) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label class="block text-xs font-medium">Description</label>
+                            <textarea name="risk[description]" rows="2"
+                                class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"></textarea>
+                        </div>
+                    </div>
                     <div class="flex justify-end space-x-3 pt-2">
                         <button type="submit"
                             class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md">Save
@@ -107,6 +159,56 @@
                 </ul>
                 @else
                 <p class="text-sm text-gray-500">No documents uploaded.</p>
+                @endif
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Risks ({{ $audit->risks->count() }})</h3>
+                @if($audit->risks->count())
+                <ul class="text-sm space-y-2">
+                    @foreach($audit->risks as $risk)
+                    <li class="border-b pb-1">
+                        <div class="flex justify-between">
+                            <span class="font-medium">{{ $risk->title }}</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-red-100 text-red-700">{{
+                                ucfirst($risk->risk_level) }}</span>
+                        </div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">L: {{ ucfirst($risk->likelihood) }} | I:
+                            {{ ucfirst($risk->impact) }} | Status: {{ ucfirst($risk->status) }}</div>
+                        @if($risk->description)
+                        <p class="text-xs mt-1 text-gray-700 dark:text-gray-300">{{ $risk->description }}</p>
+                        @endif
+                    </li>
+                    @endforeach
+                </ul>
+                @else
+                <p class="text-sm text-gray-500">No risks recorded.</p>
+                @endif
+            </div>
+            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Checklist Items ({{ $checklistItems->count() }})</h3>
+                @if($checklistItems->count())
+                <div class="max-h-64 overflow-y-auto text-xs">
+                    <table class="min-w-full">
+                        <thead>
+                            <tr class="bg-gray-100 dark:bg-gray-700">
+                                <th class="px-2 py-1 text-left">Ref</th>
+                                <th class="px-2 py-1 text-left">Title</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($checklistItems as $ci)
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <td class="px-2 py-1 whitespace-nowrap">{{ $ci->reference_code }}</td>
+                                <td class="px-2 py-1">{{ $ci->title }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @else
+                <p class="text-sm text-gray-500">No checklist items for this type.</p>
                 @endif
             </div>
         </div>

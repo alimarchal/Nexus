@@ -9,6 +9,9 @@ use App\Models\AuditType;
 use App\Models\User;
 use App\Models\AuditDocument;
 use App\Models\AuditStatusHistory;
+use App\Models\AuditTag;
+use App\Models\AuditRisk;
+use App\Models\AuditChecklistItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\FileStorageHelper;
@@ -71,8 +74,10 @@ class AuditController extends Controller
     {
         $auditTypes = AuditType::orderBy('name')->get();
         $users = User::orderBy('name')->get();
+        $tags = AuditTag::where('is_active', true)->orderBy('name')->get();
         $parentAudits = Audit::select('id', 'reference_no', 'title')->orderByDesc('id')->limit(50)->get();
-        return view('audits.create', compact('auditTypes', 'users', 'parentAudits'));
+        $checklistItems = AuditChecklistItem::where('audit_type_id', $auditTypes->first()?->id)->orderBy('display_order')->get();
+        return view('audits.create', compact('auditTypes', 'users', 'parentAudits', 'tags', 'checklistItems'));
     }
 
     /**
@@ -89,7 +94,11 @@ class AuditController extends Controller
             $validated['status'] = 'planned';
             $validated['created_by'] = auth()->id();
 
+            $tagIds = $request->input('tag_ids', []);
             $audit = Audit::create($validated);
+            if ($tagIds) {
+                $audit->tags()->sync($tagIds);
+            }
 
             // Initial status history
             AuditStatusHistory::create([
@@ -104,6 +113,19 @@ class AuditController extends Controller
 
             // Handle documents
             if ($request->hasFile('documents')) {
+                // Optional quick risk creation
+                if ($request->filled('risk.title')) {
+                    AuditRisk::create([
+                        'audit_id' => $audit->id,
+                        'title' => $request->input('risk.title'),
+                        'description' => $request->input('risk.description'),
+                        'likelihood' => $request->input('risk.likelihood', 'low'),
+                        'impact' => $request->input('risk.impact', 'low'),
+                        'risk_level' => $request->input('risk.risk_level', 'low'),
+                        'status' => 'open',
+                        'created_by' => auth()->id(),
+                    ]);
+                }
                 foreach ($request->file('documents') as $file) {
                     if ($file->isValid()) {
                         $storedPath = FileStorageHelper::storeSinglePrivateFile($file, 'Audits/' . $audit->reference_no);
@@ -135,10 +157,11 @@ class AuditController extends Controller
      */
     public function show(Audit $audit)
     {
-        $audit->load(['type', 'auditors.user', 'documents.uploader', 'findings', 'actions']);
+        $audit->load(['type', 'auditors.user', 'documents.uploader', 'findings', 'actions', 'leadAuditor', 'tags', 'risks']);
         $statusHistory = $audit->statusHistories()->latest('changed_at')->limit(20)->get();
-        $audit->load(['type', 'auditors.user', 'documents.uploader', 'findings', 'actions', 'leadAuditor']);
-        return view('audits.show', compact('audit', 'statusHistory'));
+        $checklistItems = AuditChecklistItem::where('audit_type_id', $audit->audit_type_id)->orderBy('display_order')->get();
+        $availableTags = AuditTag::where('is_active', true)->orderBy('name')->get();
+        return view('audits.show', compact('audit', 'statusHistory', 'checklistItems', 'availableTags'));
     }
 
     /**
@@ -146,11 +169,13 @@ class AuditController extends Controller
      */
     public function edit(Audit $audit)
     {
-        $audit->load(['type', 'leadAuditor', 'auditeeUser']);
+        $audit->load(['type', 'leadAuditor', 'auditeeUser', 'tags']);
         $auditTypes = AuditType::orderBy('name')->get();
         $users = User::orderBy('name')->get();
+        $tags = AuditTag::where('is_active', true)->orderBy('name')->get();
         $parentAudits = Audit::select('id', 'reference_no', 'title')->where('id', '!=', $audit->id)->orderByDesc('id')->limit(50)->get();
-        return view('audits.edit', compact('audit', 'auditTypes', 'users', 'parentAudits'));
+        $checklistItems = AuditChecklistItem::where('audit_type_id', $audit->audit_type_id)->orderBy('display_order')->get();
+        return view('audits.edit', compact('audit', 'auditTypes', 'users', 'parentAudits', 'tags', 'checklistItems'));
     }
 
     /**
@@ -163,7 +188,11 @@ class AuditController extends Controller
         DB::beginTransaction();
         try {
             $originalStatus = $audit->status;
+            $tagIds = $request->input('tag_ids', []);
             $audit->update($validated);
+            if ($tagIds) {
+                $audit->tags()->sync($tagIds);
+            }
 
             // Status history
             if (array_key_exists('status', $validated) && $validated['status'] !== $originalStatus) {
@@ -180,6 +209,19 @@ class AuditController extends Controller
 
             // Documents
             if ($request->hasFile('documents')) {
+                // Quick risk create on update
+                if ($request->filled('risk.title')) {
+                    AuditRisk::create([
+                        'audit_id' => $audit->id,
+                        'title' => $request->input('risk.title'),
+                        'description' => $request->input('risk.description'),
+                        'likelihood' => $request->input('risk.likelihood', 'low'),
+                        'impact' => $request->input('risk.impact', 'low'),
+                        'risk_level' => $request->input('risk.risk_level', 'low'),
+                        'status' => 'open',
+                        'created_by' => auth()->id(),
+                    ]);
+                }
                 foreach ($request->file('documents') as $file) {
                     if ($file->isValid()) {
                         $storedPath = FileStorageHelper::storeSinglePrivateFile($file, 'Audits/' . $audit->reference_no);

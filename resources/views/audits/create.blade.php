@@ -91,6 +91,17 @@
                         </select>
                         @error('parent_audit_id')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags</label>
+                        <select name="tag_ids[]" multiple size="5"
+                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                            @foreach($tags as $tag)
+                            <option value="{{ $tag->id }}" @selected(collect(old('tag_ids',[]))->contains($tag->id))>{{
+                                $tag->name }}</option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to multi-select.</p>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
@@ -111,6 +122,50 @@
                     @error('documents')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                     @error('documents.*')<p class="text-xs text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
+                <div class="border-t pt-4">
+                    <h4 class="font-semibold mb-2 text-sm">Quick Risk (optional)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <label class="block text-xs font-medium">Title</label>
+                            <input type="text" name="risk[title]" value="{{ old('risk.title') }}"
+                                class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium">Likelihood</label>
+                            <select name="risk[likelihood]"
+                                class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                                @foreach(['low','medium','high','critical'] as $v)
+                                <option value="{{ $v }}" @selected(old('risk.likelihood')==$v)>{{ ucfirst($v) }}
+                                </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium">Impact</label>
+                            <select name="risk[impact]"
+                                class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                                @foreach(['low','medium','high','critical'] as $v)
+                                <option value="{{ $v }}" @selected(old('risk.impact')==$v)>{{ ucfirst($v) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <label class="block text-xs font-medium">Description</label>
+                        <textarea name="risk[description]" rows="2"
+                            class="mt-1 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200">{{ old('risk.description') }}</textarea>
+                    </div>
+                </div>
+                @if($checklistItems->count())
+                <div class="border-t pt-4">
+                    <h4 class="font-semibold mb-2 text-sm">Checklist Preview ({{ $checklistItems->count() }})</h4>
+                    <ul class="text-xs space-y-1 max-h-40 overflow-y-auto pr-2">
+                        @foreach($checklistItems as $ci)
+                        <li class="border-b pb-1">{{ $ci->reference_code }} - {{ $ci->title }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                @endif
                 <div class="pt-4 flex justify-end space-x-4">
                     <a href="{{ route('audits.index') }}"
                         class="px-4 py-2 bg-gray-500 text-white text-xs font-semibold rounded-md">Cancel</a>
