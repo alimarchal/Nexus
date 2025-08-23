@@ -156,6 +156,10 @@ class ComplaintController extends Controller
         $branches = Branch::orderBy('name')->get();
         $users = User::active()->orderBy('name')->get();
         $statusTypes = ComplaintStatusType::active()->orderBy('name')->get();
+        // Added: categories, regions, divisions for dropdown filters in index view
+        $categories = ComplaintCategory::orderBy('category_name')->get();
+        $regions = \App\Models\Region::orderBy('name')->get();
+        $divisions = \App\Models\Division::orderBy('short_name')->orderBy('name')->get();
 
         // Get statistics for dashboard
         $statistics = [
@@ -169,7 +173,16 @@ class ComplaintController extends Controller
             'sla_breached' => Complaint::where('sla_breached', true)->count(),
         ];
 
-        return view('complaints.index', compact('complaints', 'branches', 'users', 'statusTypes', 'statistics'));
+        return view('complaints.index', compact(
+            'complaints',
+            'branches',
+            'users',
+            'statusTypes',
+            'statistics',
+            'categories',
+            'regions',
+            'divisions'
+        ));
     }
 
     /**

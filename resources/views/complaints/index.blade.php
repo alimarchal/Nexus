@@ -144,14 +144,19 @@
                             </select>
                         </div>
 
-                        <!-- Filter by Category -->
+                        <!-- Filter by Category (converted to dropdown) -->
                         <div>
                             <label for="filter[category]"
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-                            <input type="text" name="filter[category]" id="filter[category]"
-                                value="{{ request('filter.category') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter category">
+                            <select name="filter[category]" id="filter[category]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">All Categories</option>
+                                @foreach(($categories ?? []) as $cat)
+                                @php($catName = $cat->category_name)
+                                <option value="{{ $catName }}" {{ request('filter.category')===$catName ? 'selected'
+                                    : '' }}>{{ $catName }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <!-- Filter by Branch -->
@@ -332,16 +337,21 @@
                             </select>
                         </div>
 
-                        <!-- Filter: Harassment Sub Category -->
+                        <!-- Filter: Harassment Sub Category (dropdown to match create form) -->
                         <div>
                             <label for="filter[harassment_sub_category]"
                                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Harassment Sub
                                 Category</label>
-                            <input type="text" name="filter[harassment_sub_category]"
-                                id="filter[harassment_sub_category]"
-                                value="{{ request('filter.harassment_sub_category') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="e.g. Verbal" />
+                            @php($harassmentSubCategories =
+                            ['Verbal','Physical','Sexual','Discriminatory','Bullying','Cyber','Retaliation','Other'])
+                            <select name="filter[harassment_sub_category]" id="filter[harassment_sub_category]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">All Sub Categories</option>
+                                @foreach($harassmentSubCategories as $sub)
+                                <option value="{{ $sub }}" {{ request('filter.harassment_sub_category')===$sub
+                                    ? 'selected' : '' }}>{{ $sub }}</option>
+                                @endforeach
+                            </select>
                         </div>
 
                         <!-- Filter by Complainant Name -->
