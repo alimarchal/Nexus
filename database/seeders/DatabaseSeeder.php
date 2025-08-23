@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             AuditChecklistItemSeeder::class,
             AuditRiskSeeder::class,
             AuditDemoSeeder::class,
+            AuditSampleSeeder::class,
         ]);
     }
 }

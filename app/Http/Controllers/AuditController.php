@@ -26,7 +26,7 @@ class AuditController extends Controller
      */
     public function index(Request $request)
     {
-        $audits = QueryBuilder::for(Audit::query()->with(['type', 'auditors.user']))
+        $audits = QueryBuilder::for(Audit::query()->with(['type', 'auditors.user', 'tags']))
             ->allowedFilters([
                 AllowedFilter::exact('id'),
                 AllowedFilter::partial('reference_no'),
@@ -35,21 +35,56 @@ class AuditController extends Controller
                 AllowedFilter::exact('risk_overall'),
                 AllowedFilter::exact('audit_type_id'),
                 AllowedFilter::exact('lead_auditor_id'),
+                AllowedFilter::exact('created_by'),
+                // Tag (relation) filter
+                AllowedFilter::callback('audit_tag_id', function ($q, $v) {
+                    $q->whereHas('tags', fn($t) => $t->where('audit_tags.id', $v));
+                }),
+                // Created date range
                 AllowedFilter::callback('date_from', function ($q, $v) {
-                    $q->whereDate('created_at', '>=', $v);
-                }),
+                    $q->whereDate('created_at', '>=', $v); }),
                 AllowedFilter::callback('date_to', function ($q, $v) {
-                    $q->whereDate('created_at', '<=', $v);
-                }),
+                    $q->whereDate('created_at', '<=', $v); }),
+                // Planned date ranges
+                AllowedFilter::callback('planned_start_from', function ($q, $v) {
+                    $q->whereDate('planned_start_date', '>=', $v); }),
+                AllowedFilter::callback('planned_start_to', function ($q, $v) {
+                    $q->whereDate('planned_start_date', '<=', $v); }),
+                AllowedFilter::callback('planned_end_from', function ($q, $v) {
+                    $q->whereDate('planned_end_date', '>=', $v); }),
+                AllowedFilter::callback('planned_end_to', function ($q, $v) {
+                    $q->whereDate('planned_end_date', '<=', $v); }),
+                // Score range
+                AllowedFilter::callback('score_min', function ($q, $v) {
+                    if (is_numeric($v))
+                        $q->where('score', '>=', $v); }),
+                AllowedFilter::callback('score_max', function ($q, $v) {
+                    if (is_numeric($v))
+                        $q->where('score', '<=', $v); }),
             ])
-            ->allowedSorts(['id', 'reference_no', 'title', 'status', 'risk_overall', 'planned_start_date', 'created_at'])
+            ->allowedSorts(['id', 'reference_no', 'title', 'status', 'risk_overall', 'planned_start_date', 'planned_end_date', 'score', 'created_at'])
             ->latest()
-            ->paginate(15);
+            ->paginate(15)
+            ->appends($request->query());
 
         $auditTypes = AuditType::orderBy('name')->get();
         $users = User::orderBy('name')->get();
+        $tags = \App\Models\AuditTag::orderBy('name')->get();
 
-        return view('audits.index', compact('audits', 'auditTypes', 'users'));
+        // Statistics (simple aggregated counts for dashboard cards)
+        $statusCounts = Audit::select('status', DB::raw('count(*) as c'))
+            ->groupBy('status')->pluck('c', 'status');
+        $riskCounts = Audit::select('risk_overall', DB::raw('count(*) as c'))
+            ->whereNotNull('risk_overall')
+            ->groupBy('risk_overall')->pluck('c', 'risk_overall');
+        $statistics = [
+            'total_audits' => Audit::count(),
+            'status' => $statusCounts,
+            'risk' => $riskCounts,
+            'avg_score' => round((float) Audit::whereNotNull('score')->avg('score'), 2),
+        ];
+
+        return view('audits.index', compact('audits', 'auditTypes', 'users', 'tags', 'statistics'));
     }
 
     /**

@@ -34,7 +34,7 @@
     <!-- FILTER SECTION -->
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters"
-            style="display: none">
+            style="display:none">
             <div class="p-6">
                 <form method="GET" action="{{ route('audits.index') }}">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -69,34 +69,91 @@
                             <select name="filter[audit_type_id]"
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm">
                                 <option value="">-- Select Type --</option>
-                                @if(!empty($auditTypes))
-                                @foreach($auditTypes as $type)
-                                @if($type)
+                                @foreach(($auditTypes ?? []) as $type)
                                 <option value="{{ $type->id }}" @selected(request('filter.audit_type_id')==$type->id)>{{
                                     $type->name }}</option>
-                                @endif
                                 @endforeach
-                                @endif
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Lead
                                 Auditor</label>
-                            <select name="filter.lead_auditor_id"
+                            <select name="filter[lead_auditor_id]"
                                 class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm">
                                 <option value="">-- Select Lead --</option>
-                                @if(!empty($users))
-                                @foreach($users as $u)
-                                @if($u)
+                                @foreach(($users ?? []) as $u)
                                 <option value="{{ $u->id }}" @selected(request('filter.lead_auditor_id')==$u->id)>{{
                                     $u->name }}</option>
-                                @endif
                                 @endforeach
-                                @endif
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Created By</label>
+                            <select name="filter[created_by]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm">
+                                <option value="">-- Select User --</option>
+                                @foreach(($users ?? []) as $u)
+                                <option value="{{ $u->id }}" @selected(request('filter.created_by')==$u->id)>{{ $u->name
+                                    }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tag</label>
+                            <select name="filter[audit_tag_id]"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm">
+                                <option value="">-- Select Tag --</option>
+                                @foreach(($tags ?? []) as $tag)
+                                <option value="{{ $tag->id }}" @selected(request('filter.audit_tag_id')==$tag->id)>{{
+                                    $tag->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <!-- Created Date Range -->
                         <x-date-from />
                         <x-date-to />
+                        <!-- Planned Date Range -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Planned Start
+                                From</label>
+                            <input type="date" name="filter[planned_start_from]"
+                                value="{{ request('filter.planned_start_from') }}"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Planned Start
+                                To</label>
+                            <input type="date" name="filter[planned_start_to]"
+                                value="{{ request('filter.planned_start_to') }}"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Planned End
+                                From</label>
+                            <input type="date" name="filter[planned_end_from]"
+                                value="{{ request('filter.planned_end_from') }}"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Planned End
+                                To</label>
+                            <input type="date" name="filter[planned_end_to]"
+                                value="{{ request('filter.planned_end_to') }}"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <!-- Score Range -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Score Min</label>
+                            <input type="number" step="0.01" name="filter[score_min]"
+                                value="{{ request('filter.score_min') }}"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Score Max</label>
+                            <input type="number" step="0.01" name="filter[score_max]"
+                                value="{{ request('filter.score_max') }}"
+                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 rounded-md shadow-sm" />
+                        </div>
                     </div>
                     <div class="mt-4 flex space-x-4">
                         <button type="submit"
@@ -106,6 +163,45 @@
                             class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-xs font-semibold rounded-md">Reset</a>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- STATISTICS DASHBOARD -->
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600">{{ $statistics['total_audits'] ?? 0 }}</div>
+                    <div class="text-sm text-gray-600">Total</div>
+                </div>
+            </div>
+            @php $statusMap = [ 'planned'=>'yellow', 'in_progress'=>'blue', 'reporting'=>'purple', 'issued'=>'orange',
+            'closed'=>'green', 'cancelled'=>'gray']; @endphp
+            @foreach($statusMap as $key=>$color)
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-{{ $color }}-600">{{ $statistics['status'][$key] ?? 0 }}</div>
+                    <div class="text-xs text-gray-600">{{ ucwords(str_replace('_',' ',$key)) }}</div>
+                </div>
+            </div>
+            @endforeach
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+            @php $riskColors = ['low'=>'green','medium'=>'yellow','high'=>'orange','critical'=>'red']; @endphp
+            @foreach($riskColors as $risk=>$col)
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+                <div class="text-center">
+                    <div class="text-xl font-bold text-{{ $col }}-600">{{ $statistics['risk'][$risk] ?? 0 }}</div>
+                    <div class="text-xs text-gray-600">Risk {{ ucfirst($risk) }}</div>
+                </div>
+            </div>
+            @endforeach
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+                <div class="text-center">
+                    <div class="text-xl font-bold text-indigo-600">{{ $statistics['avg_score'] ?? '-' }}</div>
+                    <div class="text-xs text-gray-600">Avg Score</div>
+                </div>
             </div>
         </div>
     </div>
