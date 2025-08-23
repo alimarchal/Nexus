@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_status_histories', function (Blueprint $table) {
-            $table->id();
-            $table->morphs('auditable');
+            $table->uuid('id')->primary();
+            $table->uuidMorphs('auditable');
             $table->enum('from_status', ['planned', 'in_progress', 'reporting', 'issued', 'closed', 'cancelled', 'open', 'implemented', 'verified'])->nullable();
             $table->enum('to_status', ['planned', 'in_progress', 'reporting', 'issued', 'closed', 'cancelled', 'open', 'implemented', 'verified']);
             $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();

@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_auditors', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_id')->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->enum('role', ['lead', 'member', 'observer'])->default('member');
             $table->boolean('is_primary')->default(false);

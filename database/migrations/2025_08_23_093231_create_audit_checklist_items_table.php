@@ -11,9 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_checklist_items', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_type_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('parent_id')->nullable()->constrained('audit_checklist_items')->nullOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_type_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignUuid('parent_id')->nullable()->constrained('audit_checklist_items')->nullOnDelete();
             $table->string('reference_code')->nullable()->index();
             $table->string('title');
             $table->text('criteria')->nullable();

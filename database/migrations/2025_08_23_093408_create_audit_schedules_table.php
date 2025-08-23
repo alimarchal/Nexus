@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_schedules', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_id')->nullable()->constrained()->cascadeOnDelete();
             $table->enum('frequency', ['once', 'monthly', 'quarterly', 'semiannual', 'annual'])->default('once');
             $table->date('scheduled_date');
             $table->date('next_run_date')->nullable();

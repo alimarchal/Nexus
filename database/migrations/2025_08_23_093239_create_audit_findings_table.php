@@ -11,9 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_findings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('audit_item_response_id')->nullable()->constrained('audit_item_responses')->nullOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('audit_item_response_id')->nullable()->constrained('audit_item_responses')->nullOnDelete();
             $table->string('reference_no')->nullable()->index();
             $table->enum('category', ['process', 'compliance', 'safety', 'financial', 'operational', 'other'])->default('other');
             $table->enum('severity', ['low', 'medium', 'high', 'critical'])->index();

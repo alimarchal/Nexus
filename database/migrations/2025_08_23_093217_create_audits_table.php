@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audits', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_type_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_type_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
             $table->string('reference_no')->unique();
             $table->string('title');
             $table->text('description')->nullable();
@@ -28,7 +28,7 @@ return new class extends Migration {
             $table->foreignId('auditee_user_id')->nullable()->constrained('users')->nullOnDelete();
             $table->decimal('score', 5, 2)->nullable();
             $table->boolean('is_template')->default(false);
-            $table->foreignId('parent_audit_id')->nullable()->constrained('audits')->nullOnDelete();
+            $table->foreignUuid('parent_audit_id')->nullable()->constrained('audits')->nullOnDelete();
             $table->json('metadata')->nullable();
             $table->softDeletes();
             $table->timestamps();

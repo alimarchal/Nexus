@@ -4,11 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class AuditChecklistItem extends Model
 {
     /** @use HasFactory<\Database\Factories\AuditChecklistItemFactory> */
-    use HasFactory;
+    use HasFactory, HasUuids;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'audit_type_id',

@@ -11,12 +11,11 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_tag_pivots', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('audit_tag_id')->constrained('audit_tags')->cascadeOnDelete();
+            $table->foreignUuid('audit_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('audit_tag_id')->constrained('audit_tags')->cascadeOnDelete();
             $table->foreignId('tagged_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-            $table->unique(['audit_id', 'audit_tag_id']);
+            $table->primary(['audit_id', 'audit_tag_id']);
             $table->index(['audit_tag_id']);
         });
     }

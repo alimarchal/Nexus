@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_metrics_caches', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_id')->nullable()->constrained()->cascadeOnDelete();
             $table->string('metric_key');
             $table->decimal('metric_value', 12, 4)->nullable();
             $table->unsignedBigInteger('numeric_value')->nullable();

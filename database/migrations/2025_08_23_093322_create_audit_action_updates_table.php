@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_action_updates', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_action_id')->constrained('audit_actions')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_action_id')->constrained('audit_actions')->cascadeOnDelete();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->text('update_text');
             $table->enum('status_after', ['open', 'in_progress', 'implemented', 'verified', 'closed', 'cancelled'])->nullable()->index();

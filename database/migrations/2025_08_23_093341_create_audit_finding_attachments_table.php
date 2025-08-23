@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_finding_attachments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_finding_id')->constrained('audit_findings')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_finding_id')->constrained('audit_findings')->cascadeOnDelete();
             $table->string('original_name');
             $table->string('stored_name');
             $table->string('mime_type', 150)->nullable();

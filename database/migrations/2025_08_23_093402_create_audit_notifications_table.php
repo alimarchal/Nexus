@@ -11,9 +11,11 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_notifications', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->morphs('notifiable');
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_id')->nullable()->constrained()->cascadeOnDelete();
+            // notifiable may reference users (bigint) so keep traditional morph columns to avoid uuid mismatch
+            $table->string('notifiable_type');
+            $table->unsignedBigInteger('notifiable_id');
             $table->string('channel'); // mail, database, sms, slack
             $table->string('template')->nullable();
             $table->text('subject')->nullable();

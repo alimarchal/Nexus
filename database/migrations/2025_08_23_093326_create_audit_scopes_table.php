@@ -11,8 +11,8 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_scopes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_id')->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_id')->constrained()->cascadeOnDelete();
             $table->string('scope_item');
             $table->text('description')->nullable();
             $table->boolean('is_in_scope')->default(true)->index();

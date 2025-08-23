@@ -4,11 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class AuditMetricsCache extends Model
 {
     /** @use HasFactory<\Database\Factories\AuditMetricsCacheFactory> */
-    use HasFactory;
+    use HasFactory, HasUuids;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = ['audit_id', 'metric_key', 'metric_value', 'numeric_value', 'payload', 'calculated_at', 'ttl_seconds'];
 

@@ -11,9 +11,9 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('audit_item_responses', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('audit_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('audit_checklist_item_id')->constrained()->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('audit_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('audit_checklist_item_id')->constrained()->cascadeOnDelete();
             $table->foreignId('responded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->enum('response_value', ['yes', 'no', 'compliant', 'noncompliant', 'na'])->nullable();
             $table->text('comment')->nullable();
