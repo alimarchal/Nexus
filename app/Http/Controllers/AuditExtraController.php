@@ -388,6 +388,10 @@ class AuditExtraController extends Controller
         abort_unless($finding->audit_id === $audit->id, 404);
         $data = $request->validate([
             'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'action_type' => 'nullable|in:corrective,preventive,remediation,improvement',
+            'priority' => 'nullable|in:low,medium,high,critical',
+            'owner_user_id' => 'nullable|exists:users,id',
             'due_date' => 'nullable|date'
         ]);
         $data['audit_id'] = $audit->id;
@@ -395,6 +399,9 @@ class AuditExtraController extends Controller
         $data['created_by'] = auth()->id();
         $data['status'] = 'open';
         $data['reference_no'] = generateUniqueId('act', 'audit_actions', 'reference_no');
+        // Defaults if not provided
+        $data['action_type'] = $data['action_type'] ?? 'corrective';
+        $data['priority'] = $data['priority'] ?? 'medium';
         AuditAction::create($data);
         return back()->with('success', 'Action added.');
     }
@@ -404,7 +411,7 @@ class AuditExtraController extends Controller
         abort_unless($action->audit_id === $audit->id, 404);
         $data = $request->validate([
             'update_text' => 'required|string|max:1000',
-            'status_after' => 'nullable|string|max:50'
+            'status_after' => 'nullable|in:open,in_progress,implemented,verified,closed,cancelled'
         ]);
         AuditActionUpdate::create([
             'audit_action_id' => $action->id,
@@ -415,11 +422,16 @@ class AuditExtraController extends Controller
         ]);
         if (!empty($data['status_after'])) {
             $action->status = $data['status_after'];
-            if ($data['status_after'] === 'completed') {
-                $action->update(['completed_date' => now()->format('Y-m-d')]);
+            // Set completed_date when moving into a terminal/implemented state; clear otherwise
+            $finalStates = ['implemented', 'verified', 'closed'];
+            if (in_array($data['status_after'], $finalStates, true)) {
+                if (!$action->completed_date) {
+                    $action->forceFill(['completed_date' => now()]);
+                }
             } else {
-                $action->save();
+                $action->completed_date = null; // ensure cleared if reverting
             }
+            $action->save();
         }
         return back()->with('success', 'Action update added.');
     }

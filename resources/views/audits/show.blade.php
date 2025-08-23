@@ -1117,8 +1117,7 @@
                                                     <select name="category"
                                                         class="rounded-md border-indigo-300 text-[11px]">
                                                         <option value="">Category</option>
-                                                        @foreach(['process','compliance','safety','financial','operational','other']
-                                                        as $c)
+                                                        @foreach(['process','compliance','safety','financial','operational','other'] as $c)
                                                         <option value="{{ $c }}" @selected($finding->category==$c)>{{
                                                             ucfirst($c) }}</option>
                                                         @endforeach
@@ -1133,8 +1132,7 @@
                                                     </select>
                                                     <select name="status"
                                                         class="rounded-md border-indigo-300 text-[11px]">
-                                                        @foreach(['open','in_progress','implemented','verified','closed','void']
-                                                        as $st)
+                                                        @foreach(['open','in_progress','implemented','verified','closed','void'] as $st)
                                                         <option value="{{ $st }}" @selected($finding->status==$st)>{{
                                                             Str::headline($st) }}</option>
                                                         @endforeach
@@ -1230,54 +1228,143 @@
                 </div>
 
                 <div id="actions-tab" class="tab-content p-6" style="display:none;">
-                    <div class="space-y-4">
-                        @forelse($audit->actions as $action)
-                        <div class="p-4 border rounded bg-white shadow-sm">
-                            <div class="flex justify-between">
-                                <div class="font-medium text-gray-800">{{ $action->reference_no ?? 'Action
-                                    #'.$action->id }} • {{ $action->title }}</div>
-                                <div class="text-xs text-gray-500">Status: {{ ucfirst($action->status ?? 'n/a') }}
-                                    @if($action->due_date) • Due: {{ \Carbon\Carbon::parse($action->due_date)->format('M
-                                    d, Y') }} @endif</div>
+                    <div class="space-y-6">
+                        <h4 class="text-sm font-semibold text-gray-800">Corrective / Preventive Actions ({{
+                            $audit->actions->count() }})</h4>
+                        @forelse($audit->actions->sortByDesc('created_at') as $action)
+                        <div class="p-4 border rounded-lg bg-white shadow-sm">
+                            <div class="flex flex-wrap justify-between gap-3">
+                                <div class="flex-1 min-w-[240px]">
+                                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                                        <span
+                                            class="px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-semibold">{{
+                                            $action->reference_no ?? Str::upper(Str::substr($action->id,0,6)) }}</span>
+                                        <span
+                                            class="px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700">{{
+                                            Str::headline($action->action_type) }}</span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-medium @class([
+                                            'bg-green-100 text-green-700'=> $action->priority==='low',
+                                            'bg-yellow-100 text-yellow-700'=> $action->priority==='medium',
+                                            'bg-orange-100 text-orange-700'=> $action->priority==='high',
+                                            'bg-red-100 text-red-700'=> $action->priority==='critical',
+                                            'bg-gray-100 text-gray-600'=> !$action->priority,
+                                        ])">{{ ucfirst($action->priority ?? 'n/a') }}</span>
+                                        <span
+                                            class="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700">{{
+                                            Str::headline($action->status) }}</span>
+                                    </div>
+                                    <h5 class="text-sm font-semibold text-gray-800 leading-snug break-words">{{
+                                        $action->title }}</h5>
+                                    @if($action->description)
+                                    <p class="mt-1 text-[11px] text-gray-600 leading-relaxed">{{
+                                        Str::limit($action->description, 240) }}</p>
+                                    @endif
+                                </div>
+                                <div class="text-[11px] text-gray-600 space-y-1 min-w-[160px]">
+                                    <div><span class="font-semibold text-gray-700">Owner:</span> {{
+                                        $action->owner?->name ?? '—' }}</div>
+                                    <div><span class="font-semibold text-gray-700">Due:</span> {{
+                                        optional($action->due_date)->format('d-m-Y') ?? '—' }}</div>
+                                    <div><span class="font-semibold text-gray-700">Completed:</span> {{
+                                        optional($action->completed_date)->format('d-m-Y') ?? '—' }}</div>
+                                    <div><span class="font-semibold text-gray-700">Created:</span> {{
+                                        $action->created_at->format('d-m-Y') }}</div>
+                                </div>
                             </div>
-                            @if($action->description)<div class="mt-2 text-xs text-gray-600">{{
-                                Str::limit($action->description, 180) }}</div>@endif
                             @if($action->updates->count())
-                            <div class="mt-3 space-y-2">
+                            <div class="mt-4 space-y-1.5">
                                 @foreach($action->updates->sortByDesc('created_at')->take(5) as $upd)
-                                <div class="p-2 bg-gray-50 border rounded text-[11px]"><span class="font-medium">{{
-                                        $upd->creator?->name ?? 'System' }}:</span> {{ Str::limit($upd->update_text,
-                                    140) }} <span class="text-gray-500 ml-2">{{ $upd->created_at->format('M d H:i')
-                                        }}</span></div>
+                                <div class="p-2 bg-gray-50 border rounded text-[11px] flex justify-between gap-3">
+                                    <div class="min-w-0"><span class="font-medium">{{ $upd->creator?->name ?? 'System'
+                                            }}:</span> {{ Str::limit($upd->update_text, 160) }}</div>
+                                    <div class="shrink-0 text-gray-500">{{ $upd->created_at->format('d-m H:i') }}</div>
+                                </div>
                                 @endforeach
                             </div>
                             @endif
                             <form method="POST" action="{{ route('audits.actions.updates.add', [$audit, $action]) }}"
-                                class="mt-3 flex gap-2">@csrf
-                                <input name="update_text" required placeholder="Add update..."
-                                    class="flex-1 border-gray-300 rounded-md text-xs">
-                                <button class="px-2 py-1 bg-indigo-600 text-white rounded text-xs">Add</button>
+                                class="mt-4 flex flex-wrap gap-2 items-end">@csrf
+                                <div class="flex-1 min-w-[200px]">
+                                    <input name="update_text" required placeholder="Add update..."
+                                        class="w-full border-gray-300 rounded-md text-xs" />
+                                </div>
+                                <div>
+                                    <select name="status_after"
+                                        class="border-gray-300 rounded-md text-xs text-gray-600">
+                                        <option value="">Status...</option>
+                                        @foreach(['open','in_progress','implemented','verified','closed','cancelled'] as $st)
+                                        <option value="{{ $st }}">{{ Str::headline($st) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <button
+                                    class="px-3 py-1.5 bg-indigo-600 text-white rounded text-[11px] font-medium">Save
+                                    Update</button>
                             </form>
                         </div>
                         @empty
                         <p class="text-sm text-gray-500">No actions yet.</p>
                         @endforelse
                         @if($audit->findings->count())
-                        <div class="mt-6 p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
-                            <h5 class="text-sm font-semibold text-gray-800 mb-2">Add Action</h5>
+                        <div class="p-5 border border-indigo-200 rounded-xl bg-indigo-50/60">
+                            <h5 class="text-sm font-semibold text-gray-800 mb-3">Add Action</h5>
                             <form method="POST"
                                 action="{{ route('audits.actions.add', [$audit, $audit->findings->first()]) }}"
-                                class="grid md:grid-cols-4 gap-3">@csrf
-                                <select name="audit_finding_id" required
-                                    class="border-gray-300 rounded-md text-sm md:col-span-2">
-                                    <option value="">Select Finding</option>@foreach($audit->findings as $f)<option
-                                        value="{{ $f->id }}">{{ $f->reference_no ?? 'Finding '.$f->id }}</option>
-                                    @endforeach
-                                </select>
-                                <input name="title" required placeholder="Action title"
-                                    class="border-gray-300 rounded-md text-sm md:col-span-2">
-                                <div class="md:col-span-4 flex justify-end"><button
-                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Add Action</button>
+                                class="grid md:grid-cols-12 gap-3 text-[11px]">@csrf
+                                <div class="md:col-span-3">
+                                    <label class="block mb-1 font-semibold text-gray-700">Finding</label>
+                                    <select name="audit_finding_id" required
+                                        class="w-full border-indigo-300 rounded-md">
+                                        <option value="">Select...</option>
+                                        @foreach($audit->findings as $f)
+                                        <option value="{{ $f->id }}">{{ $f->reference_no ??
+                                            Str::upper(Str::substr($f->id,0,6)) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="md:col-span-4">
+                                    <label class="block mb-1 font-semibold text-gray-700">Title</label>
+                                    <input name="title" required class="w-full border-indigo-300 rounded-md"
+                                        placeholder="Action title" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block mb-1 font-semibold text-gray-700">Type</label>
+                                    <select name="action_type" class="w-full border-indigo-300 rounded-md">
+                                        @foreach(['corrective','preventive','remediation','improvement'] as $t)
+                                        <option value="{{ $t }}">{{ ucfirst($t) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="md:col-span-1">
+                                    <label class="block mb-1 font-semibold text-gray-700">Priority</label>
+                                    <select name="priority" class="w-full border-indigo-300 rounded-md">
+                                        @foreach(['low','medium','high','critical'] as $p)
+                                        <option value="{{ $p }}">{{ ucfirst($p) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block mb-1 font-semibold text-gray-700">Owner</label>
+                                    <select name="owner_user_id" class="w-full border-indigo-300 rounded-md">
+                                        <option value="">—</option>
+                                        @foreach($allUsers as $u)
+                                        <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block mb-1 font-semibold text-gray-700">Due Date</label>
+                                    <input type="date" name="due_date" class="w-full border-indigo-300 rounded-md" />
+                                </div>
+                                <div class="md:col-span-12">
+                                    <label class="block mb-1 font-semibold text-gray-700">Description</label>
+                                    <textarea name="description" rows="2" class="w-full border-indigo-300 rounded-md"
+                                        placeholder="Optional details"></textarea>
+                                </div>
+                                <div class="md:col-span-12 flex justify-end pt-2">
+                                    <button
+                                        class="px-5 py-2 bg-indigo-600 text-white rounded-md text-[11px] font-semibold">Save
+                                        Action</button>
                                 </div>
                             </form>
                         </div>
