@@ -128,17 +128,59 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     // Audits module routes
     Route::resource('products/audits', AuditController::class)->names('audits');
     Route::prefix('products/audits/{audit}')->name('audits.')->group(function () {
-        Route::post('auditors', [AuditExtraController::class, 'assignAuditors'])->name('assign-auditors');
-        Route::post('responses', [AuditExtraController::class, 'saveResponses'])->name('save-responses');
-        Route::post('findings', [AuditExtraController::class, 'addFinding'])->name('findings.add');
-        Route::post('findings/{finding}/actions', [AuditExtraController::class, 'addAction'])->name('actions.add');
-        Route::post('actions/{action}/updates', [AuditExtraController::class, 'addActionUpdate'])->name('actions.updates.add');
-        Route::post('scopes', [AuditExtraController::class, 'addScope'])->name('scopes.add');
-        Route::delete('scopes/{scope}', [AuditExtraController::class, 'deleteScope'])->name('scopes.delete');
-        Route::post('schedules', [AuditExtraController::class, 'addSchedule'])->name('schedules.add');
-        Route::post('notifications', [AuditExtraController::class, 'addNotification'])->name('notifications.add');
-        Route::post('metrics/recalc', [AuditExtraController::class, 'recalcMetrics'])->name('metrics.recalc');
+        // Basic Audit Updates
+        Route::patch('basic-info', [AuditExtraController::class, 'updateBasicInfo'])->name('update-basic-info');
+        Route::patch('status', [AuditExtraController::class, 'updateStatus'])->name('update-status');
+
+        // Document Management
+        Route::post('documents', [AuditExtraController::class, 'addDocument'])->name('documents.add');
+        Route::patch('documents/{document}', [AuditExtraController::class, 'updateDocument'])->name('documents.update');
         Route::delete('documents/{document}', [AuditExtraController::class, 'deleteDocument'])->name('documents.delete');
+
+        // Checklist Management
+        Route::post('checklist-items', [AuditExtraController::class, 'addChecklistItem'])->name('checklist.add');
+        Route::patch('checklist-items/{item}', [AuditExtraController::class, 'updateChecklistItem'])->name('checklist.update');
+        Route::delete('checklist-items/{item}', [AuditExtraController::class, 'deleteChecklistItem'])->name('checklist.delete');
+        Route::post('responses', [AuditExtraController::class, 'saveResponses'])->name('save-responses');
+
+        // Risk Management
+        Route::post('risks', [AuditExtraController::class, 'addRisk'])->name('risks.add');
+        Route::patch('risks/{risk}', [AuditExtraController::class, 'updateRisk'])->name('risks.update');
+        Route::delete('risks/{risk}', [AuditExtraController::class, 'deleteRisk'])->name('risks.delete');
+
+        // Findings & Actions
+        Route::post('findings', [AuditExtraController::class, 'addFinding'])->name('findings.add');
+        Route::patch('findings/{finding}', [AuditExtraController::class, 'updateFinding'])->name('findings.update');
+        Route::delete('findings/{finding}', [AuditExtraController::class, 'deleteFinding'])->name('findings.delete');
+        Route::post('findings/{finding}/actions', [AuditExtraController::class, 'addAction'])->name('actions.add');
+        Route::patch('actions/{action}', [AuditExtraController::class, 'updateAction'])->name('actions.update');
+        Route::delete('actions/{action}', [AuditExtraController::class, 'deleteAction'])->name('actions.delete');
+        Route::post('actions/{action}/updates', [AuditExtraController::class, 'addActionUpdate'])->name('actions.updates.add');
+
+        // Team & Scope Management
+        Route::post('auditors', [AuditExtraController::class, 'assignAuditors'])->name('assign-auditors');
+        Route::patch('auditors/{auditor}', [AuditExtraController::class, 'updateAuditor'])->name('auditors.update');
+        Route::delete('auditors/{auditor}', [AuditExtraController::class, 'removeAuditor'])->name('auditors.delete');
+        Route::post('scopes', [AuditExtraController::class, 'addScope'])->name('scopes.add');
+        Route::patch('scopes/{scope}', [AuditExtraController::class, 'updateScope'])->name('scopes.update');
+        Route::delete('scopes/{scope}', [AuditExtraController::class, 'deleteScope'])->name('scopes.delete');
+
+        // Schedule Management
+        Route::post('schedules', [AuditExtraController::class, 'addSchedule'])->name('schedules.add');
+        Route::patch('schedules/{schedule}', [AuditExtraController::class, 'updateSchedule'])->name('schedules.update');
+        Route::delete('schedules/{schedule}', [AuditExtraController::class, 'deleteSchedule'])->name('schedules.delete');
+
+        // Notifications Management
+        Route::post('notifications', [AuditExtraController::class, 'addNotification'])->name('notifications.add');
+        Route::patch('notifications/{notification}', [AuditExtraController::class, 'updateNotification'])->name('notifications.update');
+        Route::delete('notifications/{notification}', [AuditExtraController::class, 'deleteNotification'])->name('notifications.delete');
+        Route::post('notifications/{notification}/send', [AuditExtraController::class, 'sendNotification'])->name('notifications.send');
+
+        // Metrics & Analytics
+        Route::post('metrics/recalc', [AuditExtraController::class, 'recalcMetrics'])->name('metrics.recalc');
+        Route::post('metrics', [AuditExtraController::class, 'addMetric'])->name('metrics.add');
+        Route::patch('metrics/{metric}', [AuditExtraController::class, 'updateMetric'])->name('metrics.update');
+        Route::delete('metrics/{metric}', [AuditExtraController::class, 'deleteMetric'])->name('metrics.delete');
     });
 
 
