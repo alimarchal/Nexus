@@ -13,24 +13,103 @@ class AuditExtraController extends Controller
 {
     public function assignAuditors(Request $request, Audit $audit)
     {
+        // Dual mode: bulk replace (user_ids[]) or single add/update (user_id, role, is_primary)
         $data = $request->validate([
+            'user_id' => 'nullable|exists:users,id',
+            'role' => 'nullable|string|in:lead,member,observer',
+            'is_primary' => 'nullable|boolean',
             'user_ids' => 'array',
             'user_ids.*' => 'exists:users,id'
         ]);
+
         DB::transaction(function () use ($audit, $data) {
-            $audit->auditors()->delete();
-            if (!empty($data['user_ids'])) {
+            if (!empty($data['user_id'])) {
+                $role = $data['role'] ?? 'member';
+                $makePrimary = (bool) ($data['is_primary'] ?? false);
+                $existing = AuditAuditor::where('audit_id', $audit->id)->where('user_id', $data['user_id'])->first();
+                if ($makePrimary) {
+                    $audit->auditors()->update(['is_primary' => false]);
+                }
+                $auditor = AuditAuditor::updateOrCreate([
+                    'audit_id' => $audit->id,
+                    'user_id' => $data['user_id']
+                ], [
+                    'role' => $role,
+                    'is_primary' => $makePrimary
+                ]);
+                // History log
+                \App\Models\AuditStatusHistory::create([
+                    'auditable_type' => Audit::class,
+                    'auditable_id' => $audit->id,
+                    'from_status' => $existing ? $existing->role : null,
+                    'to_status' => $role,
+                    'changed_by' => auth()->id(),
+                    'note' => ($existing ? 'Updated auditor' : 'Added auditor') . ' ' . ($auditor->user?->name ?? 'User ID ' . $auditor->user_id) . ($makePrimary ? ' (primary)' : ''),
+                    'metadata' => [
+                        'auditor_id' => $auditor->id,
+                        'user_id' => $auditor->user_id,
+                        'role' => $role,
+                        'is_primary' => $makePrimary
+                    ],
+                    'changed_at' => now(),
+                ]);
+            } elseif (!empty($data['user_ids'])) {
+                // Legacy replace
+                $audit->auditors()->delete();
                 foreach ($data['user_ids'] as $idx => $uid) {
-                    AuditAuditor::create([
+                    $auditor = AuditAuditor::create([
                         'audit_id' => $audit->id,
                         'user_id' => $uid,
-                        'role' => 'member',
+                        'role' => $data['role'] ?? 'member',
                         'is_primary' => $idx === 0,
+                    ]);
+                    \App\Models\AuditStatusHistory::create([
+                        'auditable_type' => Audit::class,
+                        'auditable_id' => $audit->id,
+                        'from_status' => null,
+                        'to_status' => $auditor->role,
+                        'changed_by' => auth()->id(),
+                        'note' => 'Added auditor ' . ($auditor->user?->name ?? 'User ID ' . $auditor->user_id) . ($auditor->is_primary ? ' (primary)' : ''),
+                        'metadata' => [
+                            'auditor_id' => $auditor->id,
+                            'user_id' => $auditor->user_id,
+                            'role' => $auditor->role,
+                            'is_primary' => $auditor->is_primary
+                        ],
+                        'changed_at' => now(),
                     ]);
                 }
             }
         });
-        return back()->with('success', 'Auditors updated.');
+        return back()->with('success', (!empty($data['user_id']) ? 'Auditor saved.' : 'Auditors updated.'));
+    }
+
+    public function updateAuditor(Request $request, Audit $audit, AuditAuditor $auditor)
+    {
+        abort_unless($auditor->audit_id === $audit->id, 404);
+        $data = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role' => 'required|in:lead,member,observer',
+            'is_primary' => 'nullable|boolean'
+        ]);
+        if (
+            AuditAuditor::where('audit_id', $audit->id)
+                ->where('user_id', $data['user_id'])
+                ->where('id', '!=', $auditor->id)->exists()
+        ) {
+            return back()->with('error', 'Another auditor already uses that user.');
+        }
+        DB::transaction(function () use ($audit, $auditor, $data) {
+            if (!empty($data['is_primary'])) {
+                $audit->auditors()->where('id', '!=', $auditor->id)->update(['is_primary' => false]);
+            }
+            $auditor->update([
+                'user_id' => $data['user_id'],
+                'role' => $data['role'],
+                'is_primary' => (bool) ($data['is_primary'] ?? false),
+            ]);
+        });
+        return back()->with('success', 'Auditor updated.');
     }
 
     public function saveResponses(Request $request, Audit $audit)

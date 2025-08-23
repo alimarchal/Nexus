@@ -240,7 +240,7 @@
                     <nav class="flex space-x-8 px-6 overflow-x-auto" aria-label="Tabs">
                         <button
                             class="tab-button border-b-2 border-indigo-500 py-4 px-1 text-sm font-medium text-indigo-600"
-                            data-tab="history">Status History ({{ $audit->statusHistories->count() }})</button>
+                            data-tab="history">History & Timeline ({{ $audit->statusHistories->count() }})</button>
                         <button
                             class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
                             data-tab="auditors">Auditors ({{ $audit->auditors->count() }})</button>
@@ -372,27 +372,41 @@
                         </table>
                     </div>
                     <div class="mt-8 bg-indigo-50/60 border border-indigo-200 rounded-lg p-5">
-                        <h5 class="text-sm font-semibold text-gray-800 mb-3">Assign / Replace Auditors</h5>
-                        <p class="text-[11px] text-gray-600 mb-3">Select one or more users. First selected becomes
-                            primary automatically.</p>
-                        <form method="POST" action="{{ route('audits.assign-auditors', $audit) }}" class="space-y-4">
+                        <h5 class="text-sm font-semibold text-gray-800 mb-3">Add / Update Single Auditor</h5>
+                        <p class="text-[11px] text-gray-600 mb-3">Use this form to add a new auditor or update role /
+                            primary flag if the user already exists. Primary is unique.</p>
+                        <form method="POST" action="{{ route('audits.assign-auditors', $audit) }}"
+                            class="grid gap-4 md:grid-cols-4 items-end">
                             @csrf
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">Auditors</label>
-                                <select name="user_ids[]" multiple size="8"
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">User</label>
+                                <select name="user_id" required
                                     class="w-full border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="">-- Select User --</option>
                                     @foreach($allUsers as $u)
-                                    <option value="{{ $u->id }}" @if($audit->
-                                        auditors->pluck('user_id')->contains($u->id)) selected @endif>{{ $u->name }} ({{
-                                        $u->email }})</option>
+                                    <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
                                     @endforeach
                                 </select>
-                                <div class="mt-1 text-[11px] text-gray-500">Hold Ctrl / Cmd to multi-select.</div>
                             </div>
-                            <div class="flex justify-end gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Role</label>
+                                <select name="role"
+                                    class="w-full border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="lead">Lead</option>
+                                    <option value="member" selected>Member</option>
+                                    <option value="observer">Observer</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="inline-flex items-center text-xs mt-5"><input type="checkbox"
+                                        name="is_primary" value="1"
+                                        class="rounded border-gray-300 text-indigo-600"><span
+                                        class="ml-2">Primary</span></label>
+                            </div>
+                            <div class="md:col-span-4 flex justify-end">
                                 <button type="submit"
                                     class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded shadow-sm hover:bg-indigo-700">Save
-                                    Auditors</button>
+                                    Auditor</button>
                             </div>
                         </form>
                     </div>
