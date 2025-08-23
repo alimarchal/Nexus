@@ -596,6 +596,8 @@
 
                 <div id="checklist-tab" class="tab-content p-6" style="display:none;">
                     @php($items = $assessmentItems ?? collect())
+                    @php($inlineItems = ($items)->filter(fn($i)=> ($i->metadata['inline_for_audit'] ?? null) ===
+                    $audit->id))
                     @php($responsesByItem = $audit->responses?->groupBy('audit_checklist_item_id') ?? collect())
                     <div class="space-y-8">
                         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -816,6 +818,107 @@
                             <p class="text-sm font-medium text-gray-700">No assessment items for this audit type</p>
                             <p class="mt-1 text-xs text-gray-500">Define checklist items under audit type configuration.
                             </p>
+                        </div>
+                        <!-- Inline items area even when no type-based items -->
+                        <div class="mt-8">
+                            <h4 class="text-xs font-semibold tracking-wide text-gray-700 uppercase mb-3">Inline Items
+                                (Custom)</h4>
+                            @if($inlineItems->count())
+                            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mb-8">
+                                @foreach($inlineItems as $item)
+                                <div class="relative rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                                    <div class="flex justify-between items-start gap-3 mb-1">
+                                        <h5 class="text-sm font-semibold text-gray-800">{{ $item->title }}</h5>
+                                        <form method="POST"
+                                            action="{{ route('audits.inline-items.delete', [$audit, $item]) }}"
+                                            onsubmit="return confirm('Delete custom item?')">@csrf @method('DELETE')
+                                            <button class="text-red-600 hover:text-red-700 text-xs"
+                                                type="submit">&times;</button>
+                                        </form>
+                                    </div>
+                                    <div class="text-[11px] text-gray-500 mb-2">Type: {{
+                                        Str::headline($item->response_type) }} @if($item->max_score) • Max {{
+                                        $item->max_score }} @endif</div>
+                                    @if($item->criteria)<div class="text-[11px] text-gray-600 line-clamp-3">{{
+                                        Str::limit($item->criteria,160) }}</div>@endif
+                                    @if($item->guidance)<div class="mt-2 text-[10px] text-indigo-600 line-clamp-3">{{
+                                        Str::limit($item->guidance,160) }}</div>@endif
+                                </div>
+                                @endforeach
+                            </div>
+                            @endif
+                            <div class="relative">
+                                <div
+                                    class="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-100/40 via-white to-indigo-50 pointer-events-none">
+                                </div>
+                                <div class="relative rounded-xl border border-indigo-200/70 shadow-sm overflow-hidden">
+                                    <div
+                                        class="px-5 pt-5 pb-3 flex items-center justify-between bg-gradient-to-r from-white to-indigo-50/60">
+                                        <div>
+                                            <h5 class="text-sm font-semibold text-indigo-900">Add Inline Item</h5>
+                                            <p class="mt-1 text-[11px] text-indigo-600/80">Create an ad-hoc checklist
+                                                entry for this audit.</p>
+                                        </div>
+                                    </div>
+                                    <form method="POST" action="{{ route('audits.inline-items.add', $audit) }}"
+                                        class="p-5 grid gap-4 md:grid-cols-12">@csrf
+                                        <div class="md:col-span-4 space-y-1">
+                                            <label
+                                                class="text-[10px] font-semibold text-indigo-800 uppercase tracking-wide">Title</label>
+                                            <input name="title" required
+                                                class="w-full rounded-md border-indigo-300 bg-white text-xs focus:ring-indigo-500 focus:border-indigo-500"
+                                                placeholder="e.g. Cash count evidence" />
+                                        </div>
+                                        <div class="md:col-span-2 space-y-1">
+                                            <label
+                                                class="text-[10px] font-semibold text-indigo-800 uppercase tracking-wide">Type</label>
+                                            <select name="response_type"
+                                                class="w-full rounded-md border-indigo-300 bg-white text-xs focus:ring-indigo-500 focus:border-indigo-500">
+                                                <option value="yes_no">Yes / No</option>
+                                                <option value="compliant_noncompliant">Compliant / Noncompliant</option>
+                                                <option value="rating">Rating</option>
+                                                <option value="text">Text</option>
+                                                <option value="numeric">Numeric</option>
+                                                <option value="evidence">Evidence</option>
+                                            </select>
+                                        </div>
+                                        <div class="md:col-span-2 space-y-1">
+                                            <label
+                                                class="text-[10px] font-semibold text-indigo-800 uppercase tracking-wide">Max
+                                                Score</label>
+                                            <input type="number" name="max_score" min="0" max="100"
+                                                class="w-full rounded-md border-indigo-300 bg-white text-xs focus:ring-indigo-500 focus:border-indigo-500"
+                                                placeholder="Optional" />
+                                        </div>
+                                        <div class="md:col-span-4 space-y-1">
+                                            <label
+                                                class="text-[10px] font-semibold text-indigo-800 uppercase tracking-wide">Criteria</label>
+                                            <input name="criteria"
+                                                class="w-full rounded-md border-indigo-300 bg-white text-xs focus:ring-indigo-500 focus:border-indigo-500"
+                                                placeholder="Optional criteria" />
+                                        </div>
+                                        <div class="md:col-span-12 space-y-1">
+                                            <label
+                                                class="text-[10px] font-semibold text-indigo-800 uppercase tracking-wide">Guidance</label>
+                                            <textarea name="guidance" rows="2"
+                                                class="w-full rounded-md border-indigo-300 bg-white text-xs focus:ring-indigo-500 focus:border-indigo-500"
+                                                placeholder="Optional guidance text"></textarea>
+                                        </div>
+                                        <div class="md:col-span-12 flex justify-end pt-2">
+                                            <button
+                                                class="group inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-[11px] font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1">
+                                                <svg class="h-4 w-4 text-indigo-200 group-hover:text-white transition"
+                                                    fill="none" stroke="currentColor" stroke-width="1.8"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M12 4v16m8-8H4" />
+                                                </svg>
+                                                <span>Add Item</span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
                         @endif
                     </div>
