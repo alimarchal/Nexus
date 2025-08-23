@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             ComplaintStatusTypeSeeder::class,
             ComplaintCategorySeeder::class,
             PrintedStationerySeeder::class,
+            AuditTypeSeeder::class,
         ]);
     }
 }

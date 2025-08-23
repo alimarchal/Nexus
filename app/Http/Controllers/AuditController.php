@@ -39,6 +39,21 @@ class AuditController extends Controller
                     $q->whereDate('created_at', '<=', $v);
                 }),
             ])
+            ->allowedFilters([
+                AllowedFilter::exact('id'),
+                AllowedFilter::partial('reference_no'),
+                AllowedFilter::partial('title'),
+                AllowedFilter::exact('status'),
+                AllowedFilter::exact('risk_overall'),
+                AllowedFilter::exact('audit_type_id'),
+                AllowedFilter::exact('lead_auditor_id'),
+                AllowedFilter::callback('date_from', function ($q, $v) {
+                    $q->whereDate('created_at', '>=', $v);
+                }),
+                AllowedFilter::callback('date_to', function ($q, $v) {
+                    $q->whereDate('created_at', '<=', $v);
+                }),
+            ])
             ->allowedSorts(['id', 'reference_no', 'title', 'status', 'risk_overall', 'planned_start_date', 'created_at'])
             ->latest()
             ->paginate(15);
@@ -122,6 +137,7 @@ class AuditController extends Controller
     {
         $audit->load(['type', 'auditors.user', 'documents.uploader', 'findings', 'actions']);
         $statusHistory = $audit->statusHistories()->latest('changed_at')->limit(20)->get();
+        $audit->load(['type', 'auditors.user', 'documents.uploader', 'findings', 'actions', 'leadAuditor']);
         return view('audits.show', compact('audit', 'statusHistory'));
     }
 
