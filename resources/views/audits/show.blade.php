@@ -330,7 +330,7 @@
                 </div>
 
                 <div id="auditors-tab" class="tab-content p-6" style="display:none;">
-                    <h4 class="text-lg font-semibold text-gray-800 mb-4">Auditor Team</h4>
+                    <!-- Auditor team heading removed per request -->
                     @if($audit->auditors->count())
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                         @foreach($audit->auditors as $aud)
@@ -384,44 +384,85 @@
                         <p class="mt-1 text-xs text-gray-500">Add the first auditor using the form below.</p>
                     </div>
                     @endif
-                    <div class="mt-8 bg-indigo-50/60 border border-indigo-200 rounded-lg p-5">
-                        <h5 class="text-sm font-semibold text-gray-800 mb-3">Add / Update Single Auditor</h5>
-                        <p class="text-[11px] text-gray-600 mb-3">Use this form to add a new auditor or update role /
-                            primary flag if the user already exists. Primary is unique.</p>
-                        <form method="POST" action="{{ route('audits.assign-auditors', $audit) }}"
-                            class="grid gap-4 md:grid-cols-4 items-end">
-                            @csrf
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">User</label>
-                                <select name="user_id" required
-                                    class="w-full border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="">-- Select User --</option>
-                                    @foreach($allUsers as $u)
-                                    <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
-                                    @endforeach
-                                </select>
+                    <div class="mt-10 relative">
+                        <div
+                            class="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-100/70 via-white to-indigo-50 pointer-events-none">
+                        </div>
+                        <div class="relative rounded-2xl border border-indigo-200/70 shadow-sm overflow-hidden">
+                            <div
+                                class="px-6 pt-6 pb-4 flex items-center justify-between flex-wrap gap-4 bg-gradient-to-r from-white to-indigo-50/60">
+                                <div>
+                                    <h5 class="text-sm font-semibold text-indigo-900 tracking-wide">Add / Update Auditor
+                                    </h5>
+                                    <p class="mt-1 text-[11px] text-indigo-600/80">Add a new auditor or change role /
+                                        primary flag of an existing one.</p>
+                                </div>
+                                <div
+                                    class="hidden md:flex items-center gap-2 text-[10px] text-indigo-600/70 font-medium">
+                                    <span class="inline-flex items-center gap-1"><span
+                                            class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> Primary is
+                                        unique</span>
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-xs font-medium text-gray-700 mb-1">Role</label>
-                                <select name="role"
-                                    class="w-full border-gray-300 rounded-md text-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="lead">Lead</option>
-                                    <option value="member" selected>Member</option>
-                                    <option value="observer">Observer</option>
-                                </select>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <label class="inline-flex items-center text-xs mt-5"><input type="checkbox"
-                                        name="is_primary" value="1"
-                                        class="rounded border-gray-300 text-indigo-600"><span
-                                        class="ml-2">Primary</span></label>
-                            </div>
-                            <div class="md:col-span-4 flex justify-end">
-                                <button type="submit"
-                                    class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded shadow-sm hover:bg-indigo-700">Save
-                                    Auditor</button>
-                            </div>
-                        </form>
+                            <form method="POST" action="{{ route('audits.assign-auditors', $audit) }}"
+                                class="p-6 grid gap-6 lg:grid-cols-12">
+                                @csrf
+                                <div class="lg:col-span-5 space-y-1">
+                                    <label
+                                        class="text-[11px] uppercase tracking-wide font-semibold text-indigo-800">User</label>
+                                    <select name="user_id" required
+                                        class="w-full rounded-md border-indigo-300 bg-white text-sm focus:ring-indigo-500 focus:border-indigo-500 shadow-sm">
+                                        <option value="">Select a user...</option>
+                                        @foreach($allUsers as $u)
+                                        <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="lg:col-span-3 space-y-1">
+                                    <label
+                                        class="text-[11px] uppercase tracking-wide font-semibold text-indigo-800">Role</label>
+                                    <div class="relative">
+                                        <select name="role"
+                                            class="w-full rounded-md border-indigo-300 bg-white text-sm focus:ring-indigo-500 focus:border-indigo-500 shadow-sm pr-8">
+                                            <option value="lead">Lead</option>
+                                            <option value="member" selected>Member</option>
+                                            <option value="observer">Observer</option>
+                                        </select>
+                                        <span
+                                            class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-indigo-400">
+                                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd"
+                                                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.185l3.71-3.954a.75.75 0 011.08 1.04l-4.25 4.53a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="lg:col-span-2 flex items-center pt-5">
+                                    <label
+                                        class="inline-flex items-center text-xs font-medium text-indigo-800 select-none cursor-pointer">
+                                        <input type="checkbox" name="is_primary" value="1"
+                                            class="rounded border-indigo-300 text-indigo-600 focus:ring-indigo-500">
+                                        <span class="ml-2">Primary</span>
+                                    </label>
+                                </div>
+                                <div class="lg:col-span-2 flex items-end justify-end">
+                                    <button type="submit"
+                                        class="group relative inline-flex items-center gap-2 rounded-md bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1">
+                                        <svg class="h-4 w-4 text-indigo-200 group-hover:text-white transition"
+                                            fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        <span>Save Auditor</span>
+                                    </button>
+                                </div>
+                                <div
+                                    class="lg:col-span-12 border-t border-dashed border-indigo-200/60 pt-4 text-[10px] text-indigo-500 flex flex-wrap gap-4 justify-between">
+                                    <span>Auditor entries are logged to history for traceability.</span>
+                                    <span>Changing primary will remove primary flag from others.</span>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
