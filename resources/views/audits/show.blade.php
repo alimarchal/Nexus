@@ -79,7 +79,6 @@
                 <div class="p-6">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2 space-y-6">
-                            @if($audit->description)
                             <div
                                 class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 shadow-sm">
                                 <div class="flex items-center mb-4">
@@ -90,14 +89,15 @@
                                     </svg>
                                     <h4 class="text-lg font-semibold text-gray-800">Description</h4>
                                 </div>
-                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 min-h-[60px]">
+                                    @if($audit->description)
                                     <p class="text-gray-700 leading-relaxed whitespace-pre-wrap break-words">{{
                                         $audit->description }}</p>
+                                    @else
+                                    <p class="text-gray-400 italic text-sm">No description added yet.</p>
+                                    @endif
                                 </div>
                             </div>
-                            @endif
-
-                            @if($audit->scope_summary)
                             <div
                                 class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100 shadow-sm">
                                 <div class="flex items-center mb-4">
@@ -108,11 +108,14 @@
                                     </svg>
                                     <h4 class="text-lg font-semibold text-gray-800">Scope Summary</h4>
                                 </div>
-                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 min-h-[60px]">
+                                    @if($audit->scope_summary)
                                     <p class="text-gray-700 whitespace-pre-wrap">{{ $audit->scope_summary }}</p>
+                                    @else
+                                    <p class="text-gray-400 italic text-sm">No scope summary added yet.</p>
+                                    @endif
                                 </div>
                             </div>
-                            @endif
 
                             @if($audit->status === 'closed')
                             <div
@@ -259,15 +262,7 @@
                         <button
                             class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
                             data-tab="risks">Risks ({{ $audit->risks->count() }})</button>
-                        <button
-                            class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
-                            data-tab="notifications">Notifications ({{ $audit->notifications->count() }})</button>
-                        <button
-                            class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
-                            data-tab="schedules">Schedules ({{ $audit->schedules->count() }})</button>
-                        <button
-                            class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
-                            data-tab="tags">Tags ({{ $audit->tags->count() }})</button>
+                        <!-- Removed notifications, schedules, tags tabs moved to Operations -->
                         <button
                             class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
                             data-tab="metrics">Metrics ({{ $audit->metrics->count() }})</button>
@@ -637,112 +632,7 @@
                     </div>
                 </div>
 
-                <div id="notifications-tab" class="tab-content p-6" style="display:none;">
-                    <div class="space-y-4">
-                        @forelse($audit->notifications as $note)
-                        <div class="p-3 border rounded bg-white shadow-sm flex justify-between">
-                            <div class="text-sm">
-                                <div class="font-medium text-gray-800">{{ $note->subject ?? $note->template ??
-                                    'Notification' }}</div>
-                                <div class="text-[11px] text-gray-500">Channel: {{ $note->channel ?? 'n/a' }} • Status:
-                                    {{ $note->status ?? 'n/a' }} @if($note->sent_at) • Sent {{ $note->sent_at->format('M
-                                    d H:i') }} @endif</div>
-                            </div>
-                            <div class="flex gap-2">
-                                <form method="POST"
-                                    action="{{ route('audits.notifications.resend', [$audit, $note]) }}">@csrf <button
-                                        class="text-xs px-2 py-1 bg-blue-600 text-white rounded">Resend</button></form>
-                                <form method="POST"
-                                    action="{{ route('audits.notifications.delete', [$audit, $note]) }}">@csrf
-                                    @method('DELETE') <button class="text-xs px-2 py-1 bg-red-600 text-white rounded"
-                                        onclick="return confirm('Delete notification?')">Delete</button></form>
-                            </div>
-                        </div>
-                        @empty
-                        <p class="text-sm text-gray-500">No notifications sent.</p>
-                        @endforelse
-                        <div class="mt-6 p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
-                            <h5 class="text-sm font-semibold text-gray-800 mb-2">Add Notification</h5>
-                            <form method="POST" action="{{ route('audits.notifications.add', $audit) }}"
-                                class="grid md:grid-cols-3 gap-3">@csrf
-                                <input name="subject" placeholder="Subject"
-                                    class="border-gray-300 rounded-md text-sm md:col-span-2">
-                                <select name="channel" class="border-gray-300 rounded-md text-sm">
-                                    <option value="email">Email</option>
-                                    <option value="system">System</option>
-                                </select>
-                                <textarea name="body" rows="2" class="border-gray-300 rounded-md text-sm md:col-span-3"
-                                    placeholder="Body (optional)"></textarea>
-                                <div class="md:col-span-3 flex justify-end"><button
-                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Queue</button></div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="schedules-tab" class="tab-content p-6" style="display:none;">
-                    <div class="space-y-4">
-                        @forelse($audit->schedules as $sch)
-                        <div class="p-3 border rounded bg-white shadow-sm flex justify-between text-sm">
-                            <div>
-                                <div class="font-medium text-gray-800">{{ ucfirst($sch->frequency) }} • {{
-                                    $sch->scheduled_date?->format('M d, Y') }}</div>
-                                <div class="text-[11px] text-gray-500">Next: {{ $sch->next_run_date?->format('M d, Y')
-                                    ?? '—' }}</div>
-                            </div>
-                            <form method="POST" action="{{ route('audits.schedules.delete', [$audit, $sch]) }}">@csrf
-                                @method('DELETE')<button class="px-2 py-1 bg-red-600 text-white rounded text-xs"
-                                    onclick="return confirm('Delete schedule?')">Delete</button></form>
-                        </div>
-                        @empty
-                        <p class="text-sm text-gray-500">No schedules.</p>
-                        @endforelse
-                        <div class="mt-6 p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
-                            <h5 class="text-sm font-semibold text-gray-800 mb-2">Add Schedule</h5>
-                            <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
-                                class="grid md:grid-cols-3 gap-3">@csrf
-                                <select name="frequency" class="border-gray-300 rounded-md text-sm">
-                                    <option value="once">Once</option>
-                                    <option value="monthly">Monthly</option>
-                                    <option value="quarterly">Quarterly</option>
-                                    <option value="semiannual">Semiannual</option>
-                                    <option value="annual">Annual</option>
-                                </select>
-                                <input type="date" name="scheduled_date" required
-                                    class="border-gray-300 rounded-md text-sm">
-                                <input type="date" name="next_run_date" class="border-gray-300 rounded-md text-sm">
-                                <div class="md:col-span-3 flex justify-end"><button
-                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Add</button></div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="tags-tab" class="tab-content p-6" style="display:none;">
-                    <div class="space-y-4">
-                        <div class="flex flex-wrap gap-2">
-                            @forelse($audit->tags as $tag)
-                            <div class="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium"
-                                style="background: {{ $tag->color ?? '#eee' }}20; border:1px solid {{ $tag->color ?? '#ccc' }};">
-                                <span style="color: {{ $tag->color ?? '#555' }}">{{ $tag->name }}</span>
-                                <form method="POST" action="{{ route('audits.tags.remove', [$audit, $tag]) }}">@csrf
-                                    @method('DELETE')<button class="text-[10px] text-red-600"
-                                        onclick="return confirm('Remove tag?')">&times;</button></form>
-                            </div>
-                            @empty
-                            <p class="text-sm text-gray-500">No tags.</p>
-                            @endforelse
-                        </div>
-                        <div class="mt-4 p-4 border rounded bg-gray-50">
-                            <h5 class="text-sm font-semibold text-gray-800 mb-2">Add Tag</h5>
-                            <form method="POST" action="{{ route('audits.tags.add', $audit) }}" class="flex gap-3">@csrf
-                                <input name="tag_name" placeholder="Existing tag name"
-                                    class="flex-1 border-gray-300 rounded-md text-sm">
-                                <button class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Add</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+                <!-- Removed notifications, schedules, tags tab content -->
 
                 <div id="metrics-tab" class="tab-content p-6" style="display:none;">
                     <div class="space-y-4">
@@ -809,7 +699,7 @@
                                 </div>
                             </form>
                         </div>
-                        <div class="space-y-4">
+                        <div class="space-y-6">
                             <div class="bg-white rounded-lg p-4 border border-gray-200">
                                 <h4 class="text-md font-medium mb-3">Basic Info</h4>
                                 <form method="POST" action="{{ route('audits.update-basic-info', $audit) }}">@csrf
@@ -821,6 +711,9 @@
                                         <textarea name="description" rows="2"
                                             class="w-full border-gray-300 rounded-md text-sm"
                                             placeholder="Description">{{ $audit->description }}</textarea>
+                                        <textarea name="scope_summary" rows="2"
+                                            class="w-full border-gray-300 rounded-md text-sm"
+                                            placeholder="Scope Summary">{{ $audit->scope_summary }}</textarea>
                                         <div class="grid grid-cols-2 gap-2">
                                             <input type="date" name="planned_start_date"
                                                 value="{{ $audit->planned_start_date }}"
@@ -842,6 +735,114 @@
                                         <div class="flex justify-end"><button
                                                 class="px-3 py-1 bg-blue-600 text-white rounded text-xs">Save</button>
                                         </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <!-- Tags Management -->
+                            <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                <h4 class="text-md font-medium mb-3">Tags</h4>
+                                <div class="flex flex-wrap gap-2 mb-4">
+                                    @forelse($audit->tags as $tag)
+                                    <div class="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium"
+                                        style="background: {{ $tag->color ?? '#eee' }}20; border:1px solid {{ $tag->color ?? '#ccc' }};">
+                                        <span style="color: {{ $tag->color ?? '#555' }}">{{ $tag->name }}</span>
+                                        <form method="POST" action="{{ route('audits.tags.remove', [$audit, $tag]) }}">
+                                            @csrf @method('DELETE')<button class="text-[10px] text-red-600"
+                                                onclick="return confirm('Remove tag?')">&times;</button></form>
+                                    </div>
+                                    @empty
+                                    <p class="text-sm text-gray-500">No tags.</p>
+                                    @endforelse
+                                </div>
+                                <form method="POST" action="{{ route('audits.tags.add', $audit) }}" class="flex gap-3">
+                                    @csrf
+                                    <input name="tag_name" placeholder="Existing tag name"
+                                        class="flex-1 border-gray-300 rounded-md text-sm">
+                                    <button class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Add Tag</button>
+                                </form>
+                            </div>
+                            <!-- Schedules Management -->
+                            <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                <h4 class="text-md font-medium mb-3">Schedules</h4>
+                                <div class="space-y-3 mb-4">
+                                    @forelse($audit->schedules as $sch)
+                                    <div
+                                        class="p-2 border rounded flex justify-between items-center text-xs bg-gray-50">
+                                        <div>
+                                            <div class="font-medium text-gray-700">{{ ucfirst($sch->frequency) }} • {{
+                                                $sch->scheduled_date?->format('M d, Y') }}</div>
+                                            <div class="text-[10px] text-gray-500">Next: {{
+                                                $sch->next_run_date?->format('M d, Y') ?? '—' }}</div>
+                                        </div>
+                                        <form method="POST"
+                                            action="{{ route('audits.schedules.delete', [$audit, $sch]) }}">@csrf
+                                            @method('DELETE')<button class="px-2 py-0.5 bg-red-600 text-white rounded"
+                                                onclick="return confirm('Delete schedule?')">✕</button></form>
+                                    </div>
+                                    @empty
+                                    <p class="text-sm text-gray-500">No schedules.</p>
+                                    @endforelse
+                                </div>
+                                <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
+                                    class="grid md:grid-cols-4 gap-2">@csrf
+                                    <select name="frequency" class="border-gray-300 rounded-md text-xs col-span-1">
+                                        <option value="once">Once</option>
+                                        <option value="monthly">Monthly</option>
+                                        <option value="quarterly">Quarterly</option>
+                                        <option value="semiannual">Semiannual</option>
+                                        <option value="annual">Annual</option>
+                                    </select>
+                                    <input type="date" name="scheduled_date" required
+                                        class="border-gray-300 rounded-md text-xs col-span-1">
+                                    <input type="date" name="next_run_date"
+                                        class="border-gray-300 rounded-md text-xs col-span-1">
+                                    <button
+                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs col-span-1">Add</button>
+                                </form>
+                            </div>
+                            <!-- Notifications Management -->
+                            <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                <h4 class="text-md font-medium mb-3">Notifications</h4>
+                                <div class="space-y-3 mb-4">
+                                    @forelse($audit->notifications as $note)
+                                    <div
+                                        class="p-2 border rounded bg-gray-50 flex justify-between items-center text-xs">
+                                        <div>
+                                            <div class="font-medium text-gray-700">{{ $note->subject ?? $note->template
+                                                ?? 'Notification' }}</div>
+                                            <div class="text-[10px] text-gray-500">Channel: {{ $note->channel ?? 'n/a'
+                                                }} • Status: {{ $note->status ?? 'n/a' }} @if($note->sent_at) • Sent {{
+                                                $note->sent_at->format('M d H:i') }} @endif</div>
+                                        </div>
+                                        <div class="flex gap-1">
+                                            <form method="POST"
+                                                action="{{ route('audits.notifications.resend', [$audit, $note]) }}">
+                                                @csrf <button
+                                                    class="px-2 py-0.5 bg-blue-600 text-white rounded">↻</button></form>
+                                            <form method="POST"
+                                                action="{{ route('audits.notifications.delete', [$audit, $note]) }}">
+                                                @csrf @method('DELETE') <button
+                                                    class="px-2 py-0.5 bg-red-600 text-white rounded"
+                                                    onclick="return confirm('Delete?')">✕</button></form>
+                                        </div>
+                                    </div>
+                                    @empty
+                                    <p class="text-sm text-gray-500">No notifications.</p>
+                                    @endforelse
+                                </div>
+                                <form method="POST" action="{{ route('audits.notifications.add', $audit) }}"
+                                    class="grid md:grid-cols-3 gap-2">@csrf
+                                    <input name="subject" placeholder="Subject"
+                                        class="border-gray-300 rounded-md text-xs md:col-span-2">
+                                    <select name="channel" class="border-gray-300 rounded-md text-xs">
+                                        <option value="email">Email</option>
+                                        <option value="system">System</option>
+                                    </select>
+                                    <textarea name="body" rows="2"
+                                        class="border-gray-300 rounded-md text-xs md:col-span-3"
+                                        placeholder="Body (optional)"></textarea>
+                                    <div class="md:col-span-3 flex justify-end"><button
+                                            class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Queue</button>
                                     </div>
                                 </form>
                             </div>
