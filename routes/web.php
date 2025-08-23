@@ -29,6 +29,7 @@ use App\Http\Controllers\ComplaintAttachmentController;
 use App\Http\Controllers\ComplaintStatusTypeController;
 use App\Http\Controllers\StationeryTransactionController;
 use App\Http\Controllers\EmployeeResourceController;
+use App\Http\Controllers\AuditController;
 
 
 
@@ -123,6 +124,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     // Employee Resources
     Route::resource('products/employee-resources', EmployeeResourceController::class)->names('employee_resources');
+    // Audits module routes
+    Route::resource('products/audits', AuditController::class)->names('audits');
 
 
 

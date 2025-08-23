@@ -74,6 +74,14 @@ class Audit extends Model
     {
         return $this->hasMany(AuditAction::class);
     }
+    public function leadAuditor()
+    {
+        return $this->belongsTo(User::class, 'lead_auditor_id');
+    }
+    public function auditeeUser()
+    {
+        return $this->belongsTo(User::class, 'auditee_user_id');
+    }
     public function scopes()
     {
         return $this->hasMany(AuditScope::class);

@@ -20,7 +20,8 @@ return new class extends Migration {
             $table->json('metadata')->nullable();
             $table->timestamp('changed_at');
             $table->timestamps();
-            $table->index(['auditable_type', 'auditable_id', 'changed_at']);
+            // Short composite index name to satisfy MySQL/MariaDB identifier length limits
+            $table->index(['auditable_type', 'auditable_id', 'changed_at'], 'ash_auditable_changed_idx');
         });
     }
 
