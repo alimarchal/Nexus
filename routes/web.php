@@ -174,13 +174,27 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('notifications', [AuditExtraController::class, 'addNotification'])->name('notifications.add');
         Route::patch('notifications/{notification}', [AuditExtraController::class, 'updateNotification'])->name('notifications.update');
         Route::delete('notifications/{notification}', [AuditExtraController::class, 'deleteNotification'])->name('notifications.delete');
-        Route::post('notifications/{notification}/send', [AuditExtraController::class, 'sendNotification'])->name('notifications.send');
+        Route::post('notifications/{notification}/resend', [AuditExtraController::class, 'resendNotification'])->name('notifications.resend');
 
         // Metrics & Analytics
         Route::post('metrics/recalc', [AuditExtraController::class, 'recalcMetrics'])->name('metrics.recalc');
         Route::post('metrics', [AuditExtraController::class, 'addMetric'])->name('metrics.add');
         Route::patch('metrics/{metric}', [AuditExtraController::class, 'updateMetric'])->name('metrics.update');
         Route::delete('metrics/{metric}', [AuditExtraController::class, 'deleteMetric'])->name('metrics.delete');
+
+        // Tags Management
+        Route::post('tags', [AuditExtraController::class, 'addTag'])->name('tags.add');
+        Route::delete('tags/{tag}', [AuditExtraController::class, 'removeTag'])->name('tags.remove');
+
+        // Audit Types Management
+        Route::post('types', [AuditExtraController::class, 'updateType'])->name('types.update');
+
+        // Finding Attachments
+        Route::post('findings/{finding}/attachments', [AuditExtraController::class, 'addFindingAttachment'])->name('findings.attachments.add');
+        Route::delete('findings/{finding}/attachments/{attachment}', [AuditExtraController::class, 'deleteFindingAttachment'])->name('findings.attachments.delete');
+
+        // Status History (readonly - auto-generated)
+        Route::get('status-history', [AuditExtraController::class, 'getStatusHistory'])->name('status-history');
     });
 
 
