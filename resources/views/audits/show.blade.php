@@ -938,46 +938,98 @@
                             class="hidden border border-indigo-200 rounded-xl bg-gradient-to-br from-indigo-50/80 via-white to-indigo-50 p-5 shadow-sm">
                             <h5 class="text-sm font-semibold text-indigo-900 mb-3">Add Finding</h5>
                             <form method="POST" action="{{ route('audits.findings.add', $audit) }}"
-                                enctype="multipart/form-data" class="grid md:grid-cols-12 gap-3 text-xs">@csrf
-                                <input name="title" required placeholder="Title"
-                                    class="md:col-span-4 rounded-md border-indigo-300" />
-                                <select name="category" class="md:col-span-2 rounded-md border-indigo-300">
-                                    <option value="">Category</option>
-                                    @foreach(['process','compliance','safety','financial','operational','other'] as $c)
-                                    <option value="{{ $c }}">{{ ucfirst($c) }}</option>@endforeach
-                                </select>
-                                <select name="severity" class="md:col-span-2 rounded-md border-indigo-300">
-                                    <option value="">Severity</option>@foreach(['low','medium','high','critical'] as $s)
-                                    <option value="{{ $s }}">{{ ucfirst($s) }}</option>@endforeach
-                                </select>
-                                <select name="status"
-                                    class="md:col-span-2 rounded-md border-indigo-300">@foreach(['open','in_progress','implemented','verified','closed','void']
-                                    as $st)<option value="{{ $st }}">{{ Str::headline($st) }}</option>
-                                    @endforeach</select>
-                                <select name="owner_user_id" class="md:col-span-2 rounded-md border-indigo-300">
-                                    <option value="">Owner</option>@foreach($allUsers as $u)<option
-                                        value="{{ $u->id }}">{{ $u->name }}</option>@endforeach
-                                </select>
-                                <textarea name="description" placeholder="Description"
-                                    class="md:col-span-6 rounded-md border-indigo-300" rows="2"></textarea>
-                                <textarea name="risk_description" placeholder="Risk Description"
-                                    class="md:col-span-6 rounded-md border-indigo-300" rows="2"></textarea>
-                                <textarea name="root_cause" placeholder="Root Cause"
-                                    class="md:col-span-6 rounded-md border-indigo-300" rows="2"></textarea>
-                                <textarea name="recommendation" placeholder="Recommendation"
-                                    class="md:col-span-6 rounded-md border-indigo-300" rows="2"></textarea>
-                                <input type="date" name="target_closure_date"
-                                    class="md:col-span-2 rounded-md border-indigo-300" />
-                                <input type="date" name="actual_closure_date"
-                                    class="md:col-span-2 rounded-md border-indigo-300" />
-                                <div class="md:col-span-6 space-y-1">
-                                    <label
-                                        class="text-[10px] font-semibold text-indigo-800 uppercase tracking-wide">Attachments</label>
-                                    <input type="file" name="attachments[]" multiple class="w-full text-[11px]" />
+                                enctype="multipart/form-data" class="space-y-4 text-sm">@csrf
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Title</label>
+                                    <input name="title" required class="w-full rounded-md border-indigo-300 px-3 py-2"
+                                        placeholder="Finding title" />
                                 </div>
-                                <div class="md:col-span-12 flex justify-end pt-2"><button
-                                        class="px-4 py-2 bg-indigo-600 text-white rounded-md font-semibold">Save
-                                        Finding</button></div>
+                                <div class="grid md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Category</label>
+                                        <select name="category" class="w-full rounded-md border-indigo-300 px-2 py-2">
+                                            <option value="">Select</option>
+                                            @foreach(['process','compliance','safety','financial','operational','other'] as $c)
+                                            <option value="{{ $c }}">{{ ucfirst($c) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Severity</label>
+                                        <select name="severity" class="w-full rounded-md border-indigo-300 px-2 py-2">
+                                            <option value="">Select</option>
+                                            @foreach(['low','medium','high','critical'] as $s)
+                                            <option value="{{ $s }}">{{ ucfirst($s) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Status</label>
+                                        <select name="status" class="w-full rounded-md border-indigo-300 px-2 py-2">
+                                            @foreach(['open','in_progress','implemented','verified','closed','void'] as $st)
+                                            <option value="{{ $st }}">{{ Str::headline($st) }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Owner</label>
+                                        <select name="owner_user_id"
+                                            class="w-full rounded-md border-indigo-300 px-2 py-2">
+                                            <option value="">Select</option>
+                                            @foreach($allUsers as $u)
+                                            <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Description</label>
+                                    <textarea name="description" rows="3"
+                                        class="w-full rounded-md border-indigo-300 px-3 py-2"
+                                        placeholder="Description"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Risk
+                                        Description</label>
+                                    <textarea name="risk_description" rows="3"
+                                        class="w-full rounded-md border-indigo-300 px-3 py-2"
+                                        placeholder="Risk description"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Root Cause</label>
+                                    <textarea name="root_cause" rows="3"
+                                        class="w-full rounded-md border-indigo-300 px-3 py-2"
+                                        placeholder="Root cause"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Recommendation</label>
+                                    <textarea name="recommendation" rows="3"
+                                        class="w-full rounded-md border-indigo-300 px-3 py-2"
+                                        placeholder="Recommendation"></textarea>
+                                </div>
+                                <div class="grid md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Target Closure
+                                            Date (dd-mm-yyyy)</label>
+                                        <input type="date" name="target_closure_date"
+                                            class="w-full rounded-md border-indigo-300 px-3 py-2 tracking-wider" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">Actual Closure
+                                            Date (dd-mm-yyyy)</label>
+                                        <input type="date" name="actual_closure_date"
+                                            class="w-full rounded-md border-indigo-300 px-3 py-2 tracking-wider" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1">Attachments</label>
+                                    <input type="file" name="attachments[]" multiple class="w-full text-xs" />
+                                </div>
+                                <div class="flex justify-end pt-2">
+                                    <button
+                                        class="px-5 py-2.5 bg-indigo-600 text-white rounded-md font-semibold text-sm">Save
+                                        Finding</button>
+                                </div>
                             </form>
                         </div>
                         <div class="grid gap-5 sm:grid-cols-2">
@@ -1045,9 +1097,9 @@
                                         <div><span class="font-semibold text-gray-700">Owner:</span> {{
                                             $finding->owner?->name ?? '—' }}</div>
                                         <div><span class="font-semibold text-gray-700">Target:</span> {{
-                                            optional($finding->target_closure_date)->format('Y-m-d') ?? '—' }}</div>
+                                            optional($finding->target_closure_date)->format('d-m-Y') ?? '—' }}</div>
                                         <div><span class="font-semibold text-gray-700">Actual:</span> {{
-                                            optional($finding->actual_closure_date)->format('Y-m-d') ?? '—' }}</div>
+                                            optional($finding->actual_closure_date)->format('d-m-Y') ?? '—' }}</div>
                                     </div>
                                     <div class="flex items-center gap-4 text-xs text-black pt-1 border-t font-medium">
                                         <div>Attachments {{ $finding->attachments->count() }}</div>
