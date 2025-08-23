@@ -138,6 +138,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('schedules', [AuditExtraController::class, 'addSchedule'])->name('schedules.add');
         Route::post('notifications', [AuditExtraController::class, 'addNotification'])->name('notifications.add');
         Route::post('metrics/recalc', [AuditExtraController::class, 'recalcMetrics'])->name('metrics.recalc');
+        Route::delete('documents/{document}', [AuditExtraController::class, 'deleteDocument'])->name('documents.delete');
     });
 
 

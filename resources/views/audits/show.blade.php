@@ -212,6 +212,38 @@
                 @endif
             </div>
         </div>
+        <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Enter Checklist Responses</h3>
+            @if($checklistItems->count())
+            <form method="POST" action="{{ route('audits.save-responses',$audit) }}" class="space-y-4">
+                @csrf
+                <div class="max-h-72 overflow-y-auto border rounded divide-y">
+                    @foreach($checklistItems as $ci)
+                    @php($resp = $audit->responses->firstWhere('audit_checklist_item_id',$ci->id))
+                    <div class="p-3 text-xs">
+                        <div class="font-medium">{{ $ci->reference_code }} - {{ $ci->title }}</div>
+                        <div class="mt-1 grid grid-cols-1 md:grid-cols-6 gap-2">
+                            <input type="text" name="responses[{{ $ci->id }}][response_value]" placeholder="Response"
+                                value="{{ $resp->response_value ?? '' }}"
+                                class="col-span-2 rounded border-gray-300 dark:bg-gray-900" />
+                            <input type="number" step="0.01" name="responses[{{ $ci->id }}][score]" placeholder="Score"
+                                value="{{ $resp->score ?? '' }}"
+                                class="w-24 rounded border-gray-300 dark:bg-gray-900" />
+                            <input type="text" name="responses[{{ $ci->id }}][comment]" placeholder="Comment"
+                                value="{{ $resp->comment ?? '' }}"
+                                class="col-span-3 rounded border-gray-300 dark:bg-gray-900" />
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                <div class="flex justify-end">
+                    <button class="px-4 py-2 bg-blue-600 text-white text-xs rounded">Save Responses</button>
+                </div>
+            </form>
+            @else
+            <p class="text-sm text-gray-500">No checklist to respond.</p>
+            @endif
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
                 <h3 class="text-lg font-semibold mb-4">Auditors ({{ $audit->auditors->count() }})</h3>
@@ -241,6 +273,16 @@
                 @else
                 <p class="text-sm text-gray-500">No scope items defined.</p>
                 @endif
+                <form method="POST" action="{{ route('audits.scopes.add',$audit) }}" class="mt-4 space-y-2 text-xs">
+                    @csrf
+                    <input type="text" name="scope_item" placeholder="Scope item"
+                        class="w-full rounded border-gray-300 dark:bg-gray-900" required />
+                    <textarea name="description" rows="2" placeholder="Description"
+                        class="w-full rounded border-gray-300 dark:bg-gray-900"></textarea>
+                    <label class="inline-flex items-center space-x-2 text-xs"><input type="checkbox" name="is_in_scope"
+                            value="1" checked><span>In Scope</span></label>
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded">Add Scope</button>
+                </form>
             </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -268,6 +310,14 @@
                 @else
                 <p class="text-sm text-gray-500">No schedules.</p>
                 @endif
+                <form method="POST" action="{{ route('audits.schedules.add',$audit) }}" class="mt-4 text-xs space-y-2">
+                    @csrf
+                    <input type="text" name="frequency" placeholder="Frequency"
+                        class="w-full rounded border-gray-300 dark:bg-gray-900" required />
+                    <input type="date" name="scheduled_date" class="w-full rounded border-gray-300 dark:bg-gray-900"
+                        required />
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded">Add Schedule</button>
+                </form>
             </div>
             <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
                 <h3 class="text-lg font-semibold mb-4">Child Audits ({{ $audit->children->count() }})</h3>
@@ -336,6 +386,20 @@
             @else
             <p class="text-sm text-gray-500">No findings recorded.</p>
             @endif
+            <form method="POST" action="{{ route('audits.findings.add',$audit) }}" class="mt-4 text-xs space-y-2">
+                @csrf
+                <input type="text" name="title" placeholder="New finding title"
+                    class="w-full rounded border-gray-300 dark:bg-gray-900" required />
+                <select name="severity" class="w-full rounded border-gray-300 dark:bg-gray-900">
+                    <option value="">Severity</option>
+                    @foreach(['low','medium','high','critical'] as $sv)
+                    <option value="{{ $sv }}">{{ ucfirst($sv) }}</option>
+                    @endforeach
+                </select>
+                <textarea name="description" rows="2" placeholder="Description"
+                    class="w-full rounded border-gray-300 dark:bg-gray-900"></textarea>
+                <button class="px-3 py-1 bg-blue-600 text-white rounded">Add Finding</button>
+            </form>
         </div>
         <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
             <h3 class="text-lg font-semibold mb-4">Notifications ({{ $audit->notifications->count() }})</h3>
@@ -365,6 +429,16 @@
             @else
             <p class="text-sm text-gray-500">No notifications.</p>
             @endif
+            <form method="POST" action="{{ route('audits.notifications.add',$audit) }}" class="mt-4 text-xs space-y-2">
+                @csrf
+                <input type="text" name="channel" placeholder="Channel (email)"
+                    class="w-full rounded border-gray-300 dark:bg-gray-900" required />
+                <input type="text" name="subject" placeholder="Subject"
+                    class="w-full rounded border-gray-300 dark:bg-gray-900" required />
+                <textarea name="body" rows="2" placeholder="Body"
+                    class="w-full rounded border-gray-300 dark:bg-gray-900"></textarea>
+                <button class="px-3 py-1 bg-blue-600 text-white rounded">Queue Notification</button>
+            </form>
         </div>
         <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
             <h3 class="text-lg font-semibold mb-4">Metrics</h3>
@@ -382,6 +456,10 @@
             @else
             <p class="text-sm text-gray-500">No metrics cached.</p>
             @endif
+            <form method="POST" action="{{ route('audits.metrics.recalc',$audit) }}" class="mt-4">
+                @csrf
+                <button class="px-3 py-1 bg-blue-600 text-white text-xs rounded">Recalculate Metrics</button>
+            </form>
         </div>
         <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
             <h3 class="text-lg font-semibold mb-4">Recent Status History</h3>

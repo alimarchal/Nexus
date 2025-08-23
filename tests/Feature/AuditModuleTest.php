@@ -56,3 +56,17 @@ it('adds documents on update', function () {
 
     expect($audit->documents()->count())->toBe(1);
 });
+
+it('shows the audit details page', function () {
+    $audit = Audit::factory()->create([
+        'audit_type_id' => $this->type->id,
+        'created_by' => $this->user->id,
+        'reference_no' => generateUniqueId('audit', 'audits', 'reference_no'),
+        'title' => 'Sample Audit Show Test'
+    ]);
+
+    $this->get(route('audits.show', $audit))
+        ->assertStatus(200)
+        ->assertSee($audit->reference_no)
+        ->assertSee('Sample Audit Show Test');
+});

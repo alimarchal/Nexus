@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\{Audit, AuditAuditor, AuditChecklistItem, AuditItemResponse, AuditFinding, AuditAction, AuditActionUpdate, AuditScope, AuditSchedule, AuditNotification, AuditMetricsCache};
+use App\Models\AuditDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -168,7 +169,10 @@ class AuditExtraController extends Controller
         ]);
         $data['audit_id'] = $audit->id;
         $data['template'] = 'manual';
-        $data['status'] = 'queued';
+        // Enum allowed values: pending,sent,failed (migration). Use 'pending' for newly queued notifications.
+        $data['status'] = 'pending';
+        $data['notifiable_type'] = \App\Models\User::class;
+        $data['notifiable_id'] = auth()->id();
         AuditNotification::create($data);
         return back()->with('success', 'Notification queued.');
     }
@@ -193,5 +197,17 @@ class AuditExtraController extends Controller
             ]);
         }
         return back()->with('success', 'Metrics recalculated.');
+    }
+
+    public function deleteDocument(Audit $audit, AuditDocument $document)
+    {
+        abort_unless($document->audit_id === $audit->id, 404);
+        try {
+            $document->delete();
+            return back()->with('success', 'Document deleted.');
+        } catch (\Exception $e) {
+            Log::error('Doc delete failed', ['id' => $document->id, 'e' => $e->getMessage()]);
+            return back()->with('error', 'Failed to delete document.');
+        }
     }
 }
