@@ -244,14 +244,45 @@ class AuditExtraController extends Controller
         ]);
         $data['audit_id'] = $audit->id;
         $data['is_in_scope'] = (bool) ($data['is_in_scope'] ?? true);
-        AuditScope::create($data);
+        $scope = AuditScope::create($data);
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Added scope item: ' . $scope->scope_item . ($scope->is_in_scope ? ' (in scope)' : ' (out of scope)'),
+            'metadata' => [
+                'event' => 'scope_added',
+                'scope_id' => $scope->id,
+                'scope_item' => $scope->scope_item,
+                'is_in_scope' => $scope->is_in_scope,
+            ],
+            'changed_at' => now(),
+        ]);
         return back()->with('success', 'Scope item added.');
     }
 
     public function deleteScope(Audit $audit, AuditScope $scope)
     {
         abort_unless($scope->audit_id === $audit->id, 404);
+        $snapshot = $scope->replicate();
         $scope->delete();
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Removed scope item: ' . $snapshot->scope_item,
+            'metadata' => [
+                'event' => 'scope_removed',
+                'scope_id' => $snapshot->id,
+                'scope_item' => $snapshot->scope_item,
+                'was_in_scope' => $snapshot->is_in_scope,
+            ],
+            'changed_at' => now(),
+        ]);
         return back()->with('success', 'Scope item removed.');
     }
 
