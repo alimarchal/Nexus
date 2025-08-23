@@ -356,11 +356,24 @@ class AuditExtraController extends Controller
     public function downloadFindingAttachment(Audit $audit, AuditFinding $finding, AuditFindingAttachment $attachment)
     {
         abort_unless($finding->audit_id === $audit->id && $attachment->audit_finding_id === $finding->id, 404);
-        $path = storage_path('app/Audits/' . $audit->reference_no . '/findings/' . $attachment->stored_name);
-        if (!file_exists($path)) {
+        // Attachments for findings were moved to the "Complaints/<ref>/findings" folder for consistency.
+        // Older records may still exist under "Audits/<ref>/findings". Try new path first, then legacy.
+        $candidateBases = [
+            'Complaints', // new location (as used in upload helper call)
+            'Audits',     // legacy fallback
+        ];
+        $resolvedPath = null;
+        foreach ($candidateBases as $base) {
+            $try = storage_path('app/' . $base . '/' . $audit->reference_no . '/findings/' . $attachment->stored_name);
+            if (file_exists($try)) {
+                $resolvedPath = $try;
+                break;
+            }
+        }
+        if (!$resolvedPath) {
             return back()->with('error', 'File not found.');
         }
-        return response()->download($path, $attachment->original_name);
+        return response()->download($resolvedPath, $attachment->original_name);
     }
 
     public function addAction(Request $request, Audit $audit, AuditFinding $finding)

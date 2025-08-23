@@ -1058,46 +1058,76 @@
                                         class="hidden mt-3 border rounded-lg bg-indigo-50/50 p-3">
                                         <form method="POST"
                                             action="{{ route('audits.findings.update', [$audit,$finding]) }}"
-                                            class="grid md:grid-cols-12 gap-2 text-[11px]">@csrf @method('PATCH')
-                                            <input name="title" value="{{ $finding->title }}" required
-                                                class="md:col-span-6 rounded-md border-indigo-300" />
-                                            <select name="category"
-                                                class="md:col-span-3 rounded-md border-indigo-300">@foreach(['process','compliance','safety','financial','operational','other']
-                                                as $c)<option value="{{ $c }}" @selected($finding->category==$c)>{{
-                                                    ucfirst($c) }}</option>@endforeach</select>
-                                            <select name="severity"
-                                                class="md:col-span-3 rounded-md border-indigo-300">@foreach(['low','medium','high','critical']
-                                                as $s)<option value="{{ $s }}" @selected($finding->severity==$s)>{{
-                                                    ucfirst($s) }}</option>@endforeach</select>
-                                            <select name="status"
-                                                class="md:col-span-3 rounded-md border-indigo-300">@foreach(['open','in_progress','implemented','verified','closed','void']
-                                                as $st)<option value="{{ $st }}" @selected($finding->status==$st)>{{
-                                                    Str::headline($st) }}</option>@endforeach</select>
-                                            <select name="owner_user_id"
-                                                class="md:col-span-3 rounded-md border-indigo-300">
-                                                <option value="">Owner</option>@foreach($allUsers as $u)<option
-                                                    value="{{ $u->id }}" @selected($finding->owner_user_id==$u->id)>{{
-                                                    $u->name }}</option>@endforeach
-                                            </select>
-                                            <textarea name="description" rows="2"
-                                                class="md:col-span-12 rounded-md border-indigo-300"
-                                                placeholder="Description">{{ $finding->description }}</textarea>
-                                            <textarea name="risk_description" rows="2"
-                                                class="md:col-span-12 rounded-md border-indigo-300"
-                                                placeholder="Risk Description">{{ $finding->risk_description }}</textarea>
-                                            <textarea name="root_cause" rows="2"
-                                                class="md:col-span-12 rounded-md border-indigo-300"
-                                                placeholder="Root Cause">{{ $finding->root_cause }}</textarea>
-                                            <textarea name="recommendation" rows="2"
-                                                class="md:col-span-12 rounded-md border-indigo-300"
-                                                placeholder="Recommendation">{{ $finding->recommendation }}</textarea>
-                                            <input type="date" name="target_closure_date"
-                                                value="{{ optional($finding->target_closure_date)->format('Y-m-d') }}"
-                                                class="md:col-span-3 rounded-md border-indigo-300" />
-                                            <input type="date" name="actual_closure_date"
-                                                value="{{ optional($finding->actual_closure_date)->format('Y-m-d') }}"
-                                                class="md:col-span-3 rounded-md border-indigo-300" />
-                                            <div class="md:col-span-12 flex justify-end space-x-2 pt-1">
+                                            class="space-y-3">@csrf @method('PATCH')
+                                            <div class="grid md:grid-cols-12 gap-3 text-[11px]">
+                                                <input name="title" value="{{ $finding->title }}" required
+                                                    class="md:col-span-12 lg:col-span-8 rounded-md border-indigo-300"
+                                                    placeholder="Title" />
+                                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:col-span-12">
+                                                    <select name="category"
+                                                        class="rounded-md border-indigo-300 text-[11px]">
+                                                        <option value="">Category</option>
+                                                        @foreach(['process','compliance','safety','financial','operational','other']
+                                                        as $c)
+                                                        <option value="{{ $c }}" @selected($finding->category==$c)>{{
+                                                            ucfirst($c) }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <select name="severity"
+                                                        class="rounded-md border-indigo-300 text-[11px]">
+                                                        <option value="">Severity</option>
+                                                        @foreach(['low','medium','high','critical'] as $s)
+                                                        <option value="{{ $s }}" @selected($finding->severity==$s)>{{
+                                                            ucfirst($s) }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <select name="status"
+                                                        class="rounded-md border-indigo-300 text-[11px]">
+                                                        @foreach(['open','in_progress','implemented','verified','closed','void']
+                                                        as $st)
+                                                        <option value="{{ $st }}" @selected($finding->status==$st)>{{
+                                                            Str::headline($st) }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    <select name="owner_user_id"
+                                                        class="rounded-md border-indigo-300 text-[11px]">
+                                                        <option value="">Owner</option>
+                                                        @foreach($allUsers as $u)
+                                                        <option value="{{ $u->id }}" @selected($finding->
+                                                            owner_user_id==$u->id)>{{ $u->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <textarea name="description" rows="2"
+                                                    class="md:col-span-12 rounded-md border-indigo-300"
+                                                    placeholder="Description">{{ $finding->description }}</textarea>
+                                                <textarea name="risk_description" rows="2"
+                                                    class="md:col-span-12 rounded-md border-indigo-300"
+                                                    placeholder="Risk Description">{{ $finding->risk_description }}</textarea>
+                                                <textarea name="root_cause" rows="2"
+                                                    class="md:col-span-12 rounded-md border-indigo-300"
+                                                    placeholder="Root Cause">{{ $finding->root_cause }}</textarea>
+                                                <textarea name="recommendation" rows="2"
+                                                    class="md:col-span-12 rounded-md border-indigo-300"
+                                                    placeholder="Recommendation">{{ $finding->recommendation }}</textarea>
+                                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:col-span-12">
+                                                    <div>
+                                                        <label
+                                                            class="block text-[10px] font-semibold text-gray-600 mb-1">Target</label>
+                                                        <input type="date" name="target_closure_date"
+                                                            value="{{ optional($finding->target_closure_date)->format('Y-m-d') }}"
+                                                            class="w-full rounded-md border-indigo-300" />
+                                                    </div>
+                                                    <div>
+                                                        <label
+                                                            class="block text-[10px] font-semibold text-gray-600 mb-1">Actual</label>
+                                                        <input type="date" name="actual_closure_date"
+                                                            value="{{ optional($finding->actual_closure_date)->format('Y-m-d') }}"
+                                                            class="w-full rounded-md border-indigo-300" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="flex justify-end space-x-2 pt-1">
                                                 <button type="button" onclick="toggleFindingEdit('{{ $finding->id }}')"
                                                     class="px-3 py-1 rounded-md bg-gray-200">Cancel</button>
                                                 <button
