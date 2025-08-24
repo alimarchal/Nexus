@@ -615,6 +615,97 @@ class AuditExtraController extends Controller
         return back()->with('success', 'Document updated.');
     }
 
+    // Risks -------------------------------------------------------------------
+    public function addRisk(Request $request, Audit $audit)
+    {
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'likelihood' => 'nullable|in:low,medium,high',
+            'impact' => 'nullable|in:low,medium,high',
+            'risk_level' => 'nullable|in:low,medium,high,critical',
+            'status' => 'nullable|in:identified,assessed,treated,retired',
+            'owner_user_id' => 'nullable|exists:users,id'
+        ]);
+        $data['audit_id'] = $audit->id;
+        $data['created_by'] = auth()->id();
+        $risk = \App\Models\AuditRisk::create($data);
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Added risk: ' . $risk->title,
+            'metadata' => [
+                'event' => 'risk_added',
+                'risk_id' => $risk->id,
+                'likelihood' => $risk->likelihood,
+                'impact' => $risk->impact,
+                'risk_level' => $risk->risk_level,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Risk added.');
+    }
+
+    public function updateRisk(Request $request, Audit $audit, \App\Models\AuditRisk $risk)
+    {
+        abort_unless($risk->audit_id === $audit->id, 404);
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'likelihood' => 'nullable|in:low,medium,high',
+            'impact' => 'nullable|in:low,medium,high',
+            'risk_level' => 'nullable|in:low,medium,high,critical',
+            'status' => 'nullable|in:identified,assessed,treated,retired',
+            'owner_user_id' => 'nullable|exists:users,id'
+        ]);
+        $risk->update($data);
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Updated risk: ' . $risk->title,
+            'metadata' => [
+                'event' => 'risk_updated',
+                'risk_id' => $risk->id,
+                'likelihood' => $risk->likelihood,
+                'impact' => $risk->impact,
+                'risk_level' => $risk->risk_level,
+                'status' => $risk->status,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Risk updated.');
+    }
+
+    public function deleteRisk(Audit $audit, \App\Models\AuditRisk $risk)
+    {
+        abort_unless($risk->audit_id === $audit->id, 404);
+        $snapshot = $risk->replicate();
+        $risk->delete();
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Deleted risk: ' . $snapshot->title,
+            'metadata' => [
+                'event' => 'risk_deleted',
+                'risk_id' => $snapshot->id,
+                'likelihood' => $snapshot->likelihood,
+                'impact' => $snapshot->impact,
+                'risk_level' => $snapshot->risk_level,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Risk deleted.');
+    }
+
     public function deleteDocument(Audit $audit, AuditDocument $document)
     {
         abort_unless($document->audit_id === $audit->id, 404);
