@@ -44,7 +44,7 @@
                     </svg>
                     Back to List
                 </a>
-                <button id="audit-structured-pdf-btn"
+                <button id="audit-structured-pdf-btn" type="button"
                     class="inline-flex items-center px-4 py-2 bg-indigo-700 hover:bg-indigo-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
                     title="Generate printable structured Audit PDF">
                     <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -1321,7 +1321,7 @@
                                             <td class="py-3 px-2 text-center text-xs">
                                                 @if($action->updates->count())
                                                 <div class="space-y-1 max-w-[240px] mx-auto text-left">
-                                                    @foreach($action->updates->sortByDesc('created_at')->take(3) as $upd)
+                                                    @foreach($action->updates->sortByDesc('created_at')->take(3) as  $upd)
                                                     <div
                                                         class="p-1.5 bg-gray-50 border rounded text-[10px] flex justify-between gap-2">
                                                         <div class="min-w-0"><span class="font-medium">{{
@@ -2006,27 +2006,51 @@
         }
     </script>
     @endpush
-</x-app-layout>
-
-@push('scripts')
-<script>
-    // Structured PDF generator for Audit (mirrors Complaints implementation)
+    @push('scripts')
+    <script>
+        // Structured PDF generator for Audit (mirrors Complaints implementation)
 (function(){
-    function loadScriptOnce(id, src){
-        return new Promise((res, rej)=>{ if(document.getElementById(id)) return res(true); const s=document.createElement('script'); s.id=id; s.src=src; s.onload=()=>res(true); s.onerror=()=>rej(new Error('Load failed '+src)); document.head.appendChild(s); });
+    // Helper to safely access nested properties without optional chaining (for older browsers)
+    function gv(obj, path){ var parts = path.split('.'); var cur = obj; for(var i=0;i<parts.length;i++){ if(!cur || typeof cur!=='object') return undefined; cur = cur[parts[i]]; } return cur; }
+    function log(){ try{ console.log('[AUDIT PDF]', ...arguments);}catch(e){} }
+    function status(msg){
+        var btn=document.getElementById('audit-structured-pdf-btn');
+        if(btn){ btn.dataset.stage=msg; btn.title='PDF: '+msg; }
+        var box=document.getElementById('audit-pdf-status-box');
+        if(!box){ box=document.createElement('div'); box.id='audit-pdf-status-box'; box.style.position='fixed'; box.style.bottom='10px'; box.style.right='10px'; box.style.zIndex='9999'; box.style.background='#111'; box.style.color='#fff'; box.style.fontSize='11px'; box.style.padding='6px 10px'; box.style.borderRadius='6px'; box.style.boxShadow='0 2px 6px rgba(0,0,0,.3)'; box.style.opacity='0.85'; box.innerHTML='Audit PDF: init'; document.body.appendChild(box);} box.innerHTML='Audit PDF: '+msg; }
+    function loadScriptOnce(id, src, readyTest){
+        return new Promise((res, rej)=>{
+            const existing=document.getElementById(id);
+            const isReady = function(){ try{ return !readyTest || readyTest(); }catch(e){ return false; } };
+            if(existing){
+                log('script already present', id);
+                if(isReady()) return res(true);
+                existing.addEventListener('load', ()=>{ if(isReady()) res(true); else rej(new Error('Library not ready after load '+id)); });
+                existing.addEventListener('error', ()=>rej(new Error('Load failed '+src)));
+                return;
+            }
+            const s=document.createElement('script'); s.id=id; s.src=src; s.async=true;
+            s.onload=()=>{ log('loaded', id); if(isReady()) res(true); else rej(new Error('Library not ready '+id)); };
+            s.onerror=()=>{ log('failed load', id, src); rej(new Error('Load failed '+src)); };
+            document.head.appendChild(s);
+        });
     }
     async function ensureLibs(){
-        async function attempt(id, primary, fallback){ try{ await loadScriptOnce(id, primary);}catch(e){ if(fallback) await loadScriptOnce(id+'-fb', fallback); else throw e; } }
-        if(!(window.jspdf && window.jspdf.jsPDF)) await attempt('jspdf-core','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js');
-        if(!(window.jspdf && window.jspdf.jsPDF)) throw new Error('jsPDF load failed');
-        if(!window.jspdf.jsPDF.API.autoTable) await attempt('jspdf-autotable','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js','https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+        async function attempt(id, primary, fallback, test){
+            try{ await loadScriptOnce(id, primary, test); }
+            catch(e){ if(fallback) { log('primary failed, trying fallback', id); await loadScriptOnce(id+'-fb', fallback, test); } else throw e; }
+        }
+        if(!(window.jspdf && window.jspdf.jsPDF)) await attempt('jspdf-core','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js', ()=>window.jspdf && window.jspdf.jsPDF);
+        if(!(window.jspdf && window.jspdf.jsPDF)) throw new Error('jsPDF load failed (after load attempt)');
+        if(!window.jspdf.jsPDF.API.autoTable) await attempt('jspdf-autotable','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js','https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js', ()=>window.jspdf && window.jspdf.jsPDF && !!window.jspdf.jsPDF.API.autoTable);
     }
     function fmt(dt){ if(!dt) return '-'; try{ return new Date(dt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return dt;} }
     function addTitle(doc, txt, y){ doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(30); doc.text(txt.toUpperCase(),40,y); doc.setFont('helvetica','normal'); return y+8; }
     function footer(doc, audit){ const pc=doc.getNumberOfPages(); for(let i=1;i<=pc;i++){ doc.setPage(i); const t=`Audit # ${audit.reference_no||audit.id||'-'} | Page ${i} of ${pc}`; doc.setFontSize(8); doc.setTextColor(90); const w=doc.internal.pageSize.getWidth(); const tw=doc.getTextWidth(t); doc.text(t,(w/2)-(tw/2), doc.internal.pageSize.getHeight()-12);} }
-    async function init(){ const btn=document.getElementById('audit-structured-pdf-btn'); if(!btn||btn.dataset.init) return; btn.dataset.init='1'; btn.addEventListener('click', async ()=>{
-        try{ btn.disabled=true; btn.classList.add('opacity-50'); btn.textContent='Building...'; await ensureLibs(); const { jsPDF } = window.jspdf;
-            const url = @json(route('audits.full',$audit)); const res = await fetch(url,{headers:{'Accept':'application/json'}}); if(!res.ok) throw new Error('Fetch failed'); const data= await res.json(); const a = data.audit || {};
+    async function runPdf(){ const btn=document.getElementById('audit-structured-pdf-btn'); if(!btn){ log('runPdf: no button'); return; }
+        log('runPdf invoked'); status('clicked');
+        try{ btn.disabled=true; btn.classList.add('opacity-50'); btn.textContent='Building...'; status('loading libs'); await ensureLibs(); log('libs ready'); status('libs ready'); const { jsPDF } = window.jspdf;
+            const url = @json(route('audits.full',$audit)); log('fetching', url); status('fetching data'); const res = await fetch(url,{headers:{'Accept':'application/json'}, credentials:'same-origin'}); log('fetch status', res.status); if(!res.ok) throw new Error('Fetch failed '+res.status); const data= await res.json(); log('data received keys', Object.keys(data)); status('building pdf'); const a = data.audit || {};
             const doc = new jsPDF('p','pt');
             // Header
             doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(20); doc.text('THE BANK OF AZAD JAMMU AND KASHMIR',40,40);
@@ -2034,52 +2058,41 @@
             doc.text('Generated: '+fmt(data.exported_at),40,74); doc.text('Reference: '+(a.reference_no||'-'),300,74); doc.text('Status: '+(a.status||'-'),480,74);
             doc.setDrawColor(0); doc.setLineWidth(0.5); doc.line(40,78,555,78);
             let y=95;
-            // Summary
             const summaryRows=[
                 ['Reference', a.reference_no||'-','Status', a.status||'-'],
                 ['Title', a.title||'-','Risk Overall', a.risk_overall||'-'],
-                ['Type', a.type?.name||'-','Score', a.score==null?'-':a.score],
+                ['Type', (a.type && a.type.name) || '-','Score', a.score==null?'-':a.score],
                 ['Planned Start', fmt(a.planned_start_date),'Planned End', fmt(a.planned_end_date)],
                 ['Actual Start', fmt(a.actual_start_date),'Actual End', fmt(a.actual_end_date)],
-                ['Lead Auditor', a.lead_auditor?.name||'-','Auditee', a.auditee_user?.name||'-'],
-                ['Parent Audit', a.parent?.reference_no||'-','Children', (a.children||[]).length]
+                ['Lead Auditor', (a.lead_auditor && a.lead_auditor.name) || '-','Auditee', (a.auditee_user && a.auditee_user.name) || '-'],
+                ['Parent Audit', (a.parent && a.parent.reference_no) || '-','Children', (a.children||[]).length]
             ];
             doc.autoTable({ startY:y, head:[['FIELD','VALUE','FIELD','VALUE']], body:summaryRows, styles:{fontSize:8,cellPadding:3,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]}, columnStyles:{0:{cellWidth:94},1:{cellWidth:172},2:{cellWidth:94},3:{cellWidth:146}}, tableWidth:510, theme:'grid'});
             y=doc.lastAutoTable.finalY+15;
-            // Description
             y=addTitle(doc,'Description', y); doc.setFontSize(9); let block = doc.splitTextToSize(a.description||'-',515); doc.text(block,40,y); y+=block.length*11+10;
-            // Scope Summary
             if(a.scope_summary){ y=addTitle(doc,'Scope Summary', y); block=doc.splitTextToSize(a.scope_summary,515); doc.text(block,40,y); y+=block.length*11+10; }
-            // Team
-            if(Array.isArray(a.auditors) && a.auditors.length){ y=addTitle(doc,'Audit Team', y); const tRows=a.auditors.map(m=>[m.user?.name||'-', m.role||'-', m.is_primary?'Yes':'No']); doc.autoTable({ startY:y, head:[['NAME','ROLE','PRIMARY']], body:tRows, styles:{fontSize:8,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]}, theme:'grid'}); y=doc.lastAutoTable.finalY+15; }
-            // Scopes
+            if(Array.isArray(a.auditors) && a.auditors.length){ y=addTitle(doc,'Audit Team', y); const tRows=a.auditors.map(function(m){ return [ (m.user && m.user.name) || '-', m.role||'-', m.is_primary?'Yes':'No']; }); doc.autoTable({ startY:y, head:[['NAME','ROLE','PRIMARY']], body:tRows, styles:{fontSize:8,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]}, theme:'grid'}); y=doc.lastAutoTable.finalY+15; }
             if(Array.isArray(a.scopes)&&a.scopes.length){ y=addTitle(doc,'Scopes', y); const sRows=a.scopes.map(s=>[s.scope_item, s.is_in_scope?'In':'Out', (s.description||'').substring(0,80)]); doc.autoTable({ startY:y, head:[['ITEM','IN/OUT','DESC']], body:sRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Findings
-            if(Array.isArray(a.findings)&&a.findings.length){ y=addTitle(doc,'Findings', y); const fRows=a.findings.map(f=>[f.id, (f.title||'').substring(0,40), f.status||'-', f.risk_level||f.severity||'-', (f.owner?.name||'-')]); doc.autoTable({ startY:y, head:[['ID','TITLE','STATUS','RISK','OWNER']], body:fRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Actions
+            if(Array.isArray(a.findings)&&a.findings.length){ y=addTitle(doc,'Findings', y); const fRows=a.findings.map(function(f){ return [f.id, (f.title||'').substring(0,40), f.status||'-', f.risk_level||f.severity||'-', (f.owner && f.owner.name) || '-']; }); doc.autoTable({ startY:y, head:[['ID','TITLE','STATUS','RISK','OWNER']], body:fRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
             if(Array.isArray(a.actions)&&a.actions.length){ y=addTitle(doc,'Actions', y); const actRows=a.actions.map(ac=>[ac.id, (ac.title||'').substring(0,38), ac.status||'-', fmt(ac.due_date)]); doc.autoTable({ startY:y, head:[['ID','TITLE','STATUS','DUE']], body:actRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Risks
             if(Array.isArray(a.risks)&&a.risks.length){ y=addTitle(doc,'Risks', y); const rRows=a.risks.map(r=>[r.id,(r.title||'').substring(0,40), r.risk_level||r.likelihood+'/' + r.impact, r.status||'-']); doc.autoTable({ startY:y, head:[['ID','TITLE','LEVEL','STATUS']], body:rRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Schedules
             if(Array.isArray(a.schedules)&&a.schedules.length){ y=addTitle(doc,'Schedules', y); const schRows=a.schedules.map(s=>[s.id, (s.title||s.schedule_type||'-').substring(0,34), fmt(s.start_date||s.scheduled_for), fmt(s.end_date)]); doc.autoTable({ startY:y, head:[['ID','TITLE','START','END']], body:schRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Documents (meta only)
             if(Array.isArray(a.documents)&&a.documents.length){ y=addTitle(doc,'Documents', y); const dRows=a.documents.map(d=>[(d.original_name||d.stored_name||'-').substring(0,40), (d.category||'-'), (d.mime_type||'-').split('/')[1]||'-', (Math.round((d.size_bytes||0)/1024)+' KB')]); doc.autoTable({ startY:y, head:[['NAME','CATEGORY','TYPE','SIZE']], body:dRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Checklist Responses
             if(Array.isArray(data.assessment_items) && data.assessment_items.length){ y=addTitle(doc,'Checklist Responses (Summary)', y); const respMap={}; (a.responses||[]).forEach(r=>{ respMap[r.audit_checklist_item_id]=r; }); const ciRows = data.assessment_items.slice(0,140).map(ci=>{ const r=respMap[ci.id]||{}; return [ (ci.reference_code||ci.id).toString(), (ci.title||'').substring(0,34), r.response_value||'-', r.score==null?'-':r.score, (r.comment||'').substring(0,30) ]; }); doc.autoTable({ startY:y, head:[['REF','ITEM','RESP','SCORE','COMMENT']], body:ciRows, styles:{fontSize:6.5,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Status History
-            if(Array.isArray(a.status_histories)&&a.status_histories.length){ y=addTitle(doc,'Status History', y); const hRows=a.status_histories.map(h=>[fmt(h.changed_at), (h.from_status||'-')+' → '+(h.to_status||'-'), h.changer?.name||'System', (h.note||'').substring(0,50)]); doc.autoTable({ startY:y, head:[['WHEN','TRANSITION','BY','NOTE']], body:hRows, styles:{fontSize:6.5,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Notifications
-            if(Array.isArray(a.notifications)&&a.notifications.length){ y=addTitle(doc,'Notifications', y); const nRows=a.notifications.map(n=>[n.channel||'-', fmt(n.sent_at||n.created_at), (n.status||'-'), (n.subject||'').substring(0,40)]); doc.autoTable({ startY:y, head:[['CHANNEL','SENT','STATUS','SUBJECT']], body:nRows, styles:{fontSize:6.5,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Tags & Metrics inline small tables
+            if(Array.isArray(a.status_histories)&&a.status_histories.length){ y=addTitle(doc,'Status History', y); const hRows=a.status_histories.map(function(h){ return [fmt(h.changed_at), (h.from_status||'-')+' → '+(h.to_status||'-'), (h.changer && h.changer.name) || 'System', (h.note||'').substring(0,50)]; }); doc.autoTable({ startY:y, head:[['WHEN','TRANSITION','BY','NOTE']], body:hRows, styles:{fontSize:6.5,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            if(Array.isArray(a.notifications)&&a.notifications.length){ y=addTitle(doc,'Notifications', y); const nRows=a.notifications.map(function(n){ return [n.channel||'-', fmt(n.sent_at||n.created_at), (n.status||'-'), (n.subject||'').substring(0,40)]; }); doc.autoTable({ startY:y, head:[['CHANNEL','SENT','STATUS','SUBJECT']], body:nRows, styles:{fontSize:6.5,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
             if(Array.isArray(a.tags)&&a.tags.length){ y=addTitle(doc,'Tags', y); const tRows=a.tags.map(t=>[t.name]); doc.autoTable({ startY:y, head:[['TAG']], body:tRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]}, tableWidth:180 }); y=doc.lastAutoTable.finalY+15; }
             if(Array.isArray(a.metrics)&&a.metrics.length){ y=addTitle(doc,'Metrics Cache', y); const mRows=a.metrics.map(m=>[m.metric_key||'-', m.metric_value||m.numeric_value||'-']); doc.autoTable({ startY:y, head:[['KEY','VALUE']], body:mRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            // Derived
             if(data.derived){ y=addTitle(doc,'Derived Metrics', y); const dRows=Object.entries(data.derived).map(([k,v])=>[k.replace(/_/g,' '), v]); doc.autoTable({ startY:y, head:[['METRIC','VALUE']], body:dRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
-            footer(doc,a); doc.save('audit-'+(a.reference_no||a.id||'export')+'.pdf');
-        }catch(e){ console.error(e); alert('Failed to build structured PDF: '+e.message); }
-        finally{ btn.disabled=false; btn.classList.remove('opacity-50'); btn.textContent='Download Structured PDF'; }
-    }); }
+            footer(doc,a); var fname='audit-'+(a.reference_no||a.id||'export')+'.pdf'; log('saving', fname); status('saving '+fname); doc.save(fname); status('done');
+        }catch(e){ log('error', e); status('error: '+e.message); console.error(e); alert('Failed to build structured PDF: '+e.message+' (see console for details)'); }
+        finally{ if(btn){ btn.disabled=false; btn.classList.remove('opacity-50'); btn.textContent='Download Structured PDF'; } }
+    }
+    async function init(){ const btn=document.getElementById('audit-structured-pdf-btn'); if(!btn||btn.dataset.init){ log('init: button missing or already init'); } else { btn.dataset.init='1'; btn.addEventListener('click', runPdf, { once:false }); log('init: listener bound'); status('ready'); }
+        window.generateAuditPdf = runPdf; // expose global for manual trigger if needed
+    }
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
-</script>
-@endpush
+    </script>
+    @endpush
+</x-app-layout>
