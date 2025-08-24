@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{Audit, AuditAuditor, AuditChecklistItem, AuditItemResponse, AuditFinding, AuditAction, AuditActionUpdate, AuditScope, AuditSchedule, AuditNotification, AuditMetricsCache, AuditFindingAttachment};
+use App\Models\{Audit, AuditAuditor, AuditChecklistItem, AuditItemResponse, AuditFinding, AuditAction, AuditActionUpdate, AuditScope, AuditSchedule, AuditNotification, AuditMetricsCache, AuditFindingAttachment, AuditTag};
 use App\Models\AuditDocument;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +11,164 @@ use Illuminate\Support\Carbon;
 
 class AuditExtraController extends Controller
 {
+    // ------------------------------------------------------------------
+    // Basic Audit Meta Updates
+    // ------------------------------------------------------------------
+    public function updateStatus(Request $request, Audit $audit)
+    {
+        $data = $request->validate([
+            'status' => 'required|in:planned,in_progress,reporting,issued,closed,cancelled',
+            'note' => 'nullable|string|max:500'
+        ]);
+        $old = $audit->status;
+        $audit->status = $data['status'];
+        $audit->save();
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => $old,
+            'to_status' => $audit->status,
+            'changed_by' => auth()->id(),
+            'note' => 'Status changed from ' . ($old ?: 'n/a') . ' to ' . $audit->status . ($data['note'] ? ('. Note: ' . $data['note']) : ''),
+            'metadata' => [
+                'event' => 'status_changed',
+                'old_status' => $old,
+                'new_status' => $audit->status,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Status updated.');
+    }
+
+    public function updateBasicInfo(Request $request, Audit $audit)
+    {
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'scope_summary' => 'nullable|string',
+            'planned_start_date' => 'nullable|date',
+            'planned_end_date' => 'nullable|date|after_or_equal:planned_start_date',
+            'actual_start_date' => 'nullable|date',
+            'actual_end_date' => 'nullable|date|after_or_equal:actual_start_date',
+            'score' => 'nullable|numeric'
+        ]);
+        $audit->fill($data);
+        $audit->save();
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Basic info updated',
+            'metadata' => [
+                'event' => 'basic_info_updated',
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Basic info saved.');
+    }
+
+    // ------------------------------------------------------------------
+    // Tags
+    // ------------------------------------------------------------------
+    public function addTag(Request $request, Audit $audit)
+    {
+        $data = $request->validate([
+            'tag_name' => 'required|string|max:100'
+        ]);
+        $tag = AuditTag::where('name', $data['tag_name'])->first();
+        if (!$tag) {
+            return back()->with('error', 'Tag not found.');
+        }
+        if (!$audit->tags()->where('audit_tags.id', $tag->id)->exists()) {
+            $audit->tags()->attach($tag->id, ['created_at' => now(), 'updated_at' => now()]);
+            \App\Models\AuditStatusHistory::create([
+                'auditable_type' => Audit::class,
+                'auditable_id' => $audit->id,
+                'from_status' => null,
+                'to_status' => $audit->status ?? 'planned',
+                'changed_by' => auth()->id(),
+                'note' => 'Tag added: ' . $tag->name,
+                'metadata' => [
+                    'event' => 'tag_added',
+                    'tag_id' => $tag->id,
+                    'tag_name' => $tag->name,
+                ],
+                'changed_at' => now(),
+            ]);
+        }
+        return back()->with('success', 'Tag added.');
+    }
+
+    public function removeTag(Audit $audit, AuditTag $tag)
+    {
+        $audit->tags()->detach($tag->id);
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Tag removed: ' . $tag->name,
+            'metadata' => [
+                'event' => 'tag_removed',
+                'tag_id' => $tag->id,
+                'tag_name' => $tag->name,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Tag removed.');
+    }
+
+    // ------------------------------------------------------------------
+    // Schedules
+    // ------------------------------------------------------------------
+    public function updateSchedule(Request $request, Audit $audit, AuditSchedule $schedule)
+    {
+        abort_unless($schedule->audit_id === $audit->id, 404);
+        $data = $request->validate([
+            'frequency' => 'required|string|max:50',
+            'scheduled_date' => 'required|date',
+            'next_run_date' => 'nullable|date'
+        ]);
+        $schedule->update($data);
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Schedule updated: ' . ucfirst($schedule->frequency),
+            'metadata' => [
+                'event' => 'schedule_updated',
+                'schedule_id' => $schedule->id,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Schedule updated.');
+    }
+
+    public function deleteSchedule(Audit $audit, AuditSchedule $schedule)
+    {
+        abort_unless($schedule->audit_id === $audit->id, 404);
+        $snapshot = $schedule->replicate();
+        $schedule->delete();
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Schedule deleted: ' . ucfirst($snapshot->frequency) . ' ' . ($snapshot->scheduled_date ?? ''),
+            'metadata' => [
+                'event' => 'schedule_deleted',
+                'schedule_id' => $snapshot->id,
+            ],
+            'changed_at' => now(),
+        ]);
+        return back()->with('success', 'Schedule deleted.');
+    }
     public function assignAuditors(Request $request, Audit $audit)
     {
         // Dual mode: bulk replace (user_ids[]) or single add/update (user_id, role, is_primary)
