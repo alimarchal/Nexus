@@ -1886,7 +1886,6 @@
                     </div>
                 </div>
                 <div id="schedules-tab" class="tab-content p-6" style="display:none;">
-                    <h4 class="text-md font-medium mb-4">Schedules</h4>
                     <div class="mb-6 overflow-x-auto">
                         <table class="min-w-full border border-gray-300 bg-white text-sm">
                             <thead class="bg-gray-100">
@@ -1896,7 +1895,6 @@
                                     <th class="px-3 py-2 text-left font-semibold">Scheduled Date</th>
                                     <th class="px-3 py-2 text-left font-semibold">Next Run Date</th>
                                     <th class="px-3 py-2 text-left font-semibold">Created</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-200">
@@ -1908,19 +1906,10 @@
                                     <td class="px-3 py-2">{{ $sch->next_run_date?->format('d-m-Y') ?? '—' }}</td>
                                     <td class="px-3 py-2 text-xs text-gray-600">{{ $sch->created_at?->format('d-m-Y') }}
                                     </td>
-                                    <td class="px-3 py-2">
-                                        <form method="POST"
-                                            action="{{ route('audits.schedules.delete', [$audit, $sch]) }}"
-                                            onsubmit="return confirm('Delete schedule?')" class="inline">@csrf
-                                            @method('DELETE')
-                                            <button
-                                                class="px-2 py-1 bg-red-600 text-white rounded text-xs">Delete</button>
-                                        </form>
-                                    </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="px-3 py-4 text-center text-gray-500">No schedules.</td>
+                                    <td colspan="5" class="px-3 py-4 text-center text-gray-500">No schedules.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
