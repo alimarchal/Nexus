@@ -1576,41 +1576,110 @@
                 <!-- Removed notifications, schedules, tags tab content -->
 
                 <div id="metrics-tab" class="tab-content p-6" style="display:none;">
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h4 class="text-lg font-semibold text-gray-800">Metrics Cache</h4>
-                            <form method="POST" action="{{ route('audits.metrics.recalc', $audit) }}">@csrf <button
-                                    class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Recalculate</button>
-                            </form>
+                    @php($metricDescriptions = [
+                    'findings_total' => 'Count of all findings for this audit (audit_findings where audit_id =
+                    current).',
+                    'actions_open' => 'Count of actions whose status is not completed/closed (open, in_progress,
+                    implemented, verified, etc).',
+                    'risks_total' => 'Count of all risks linked to this audit.'
+                    ])
+                    <div class="space-y-6">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <h4 class="text-xl font-semibold text-gray-800">Metrics</h4>
+                            <div class="flex items-center gap-2">
+                                <form method="POST" action="{{ route('audits.metrics.recalc', $audit) }}" class="flex">
+                                    @csrf
+                                    <button
+                                        class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium">Recalculate</button>
+                                </form>
+                            </div>
                         </div>
-                        <div class="grid md:grid-cols-3 gap-4">
+                        <p class="text-sm text-gray-600 leading-relaxed">Below are cached audit metrics. Each card shows
+                            the latest calculated value and how it is derived. Values are recalculated server-side;
+                            manual entries allow adding custom one-off metrics.</p>
+                        <div class="grid md:grid-cols-3 gap-5">
                             @forelse($audit->metrics as $m)
-                            <div class="p-3 border rounded bg-white shadow-sm text-xs">
-                                <div class="font-medium text-gray-700 truncate">{{ Str::headline($m->metric_key) }}
+                            <div class="p-4 border rounded-lg bg-white shadow-sm text-sm space-y-2">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="font-semibold text-gray-800 break-words">{{
+                                        Str::headline($m->metric_key) }}</div>
+                                    <span
+                                        class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 text-xs font-medium">{{
+                                        $m->ttl_seconds ? ($m->ttl_seconds.'s TTL') : 'No TTL' }}</span>
                                 </div>
-                                <div class="text-indigo-600 font-bold text-sm">{{ $m->metric_value ?? $m->numeric_value
+                                <div class="text-2xl font-bold text-indigo-600">{{ $m->metric_value ?? $m->numeric_value
                                     ?? '—' }}</div>
-                                <div class="text-[10px] text-gray-500 mt-1">Calc: {{
-                                    optional($m->calculated_at)->diffForHumans() }}</div>
+                                <div class="text-[13px] text-gray-600 leading-snug">
+                                    <span class="font-medium text-gray-700">How calculated:</span>
+                                    {{ $metricDescriptions[$m->metric_key] ?? 'Custom metric entered manually by a
+                                    user.' }}
+                                </div>
+                                <div
+                                    class="flex flex-wrap items-center justify-between text-[12px] text-gray-500 pt-1 border-t">
+                                    <span>Updated {{ optional($m->calculated_at)->diffForHumans() ?: '—' }}</span>
+                                    @if($m->calculated_at)<span class="text-gray-400">{{
+                                        optional($m->calculated_at)->format('d-m-Y H:i') }}</span>@endif
+                                </div>
+                                @if(!isset($metricDescriptions[$m->metric_key]))
+                                <div
+                                    class="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                                    Manual / custom metric – will not auto-recalculate.</div>
+                                @endif
                             </div>
                             @empty
-                            <p class="text-sm text-gray-500">No metrics cached.</p>
+                            <p class="text-sm text-gray-500 col-span-full">No metrics cached.</p>
                             @endforelse
                         </div>
-                        <div class="mt-6 p-4 border rounded bg-gray-50">
-                            <h5 class="text-sm font-semibold mb-2">Add Metric</h5>
+                        <div class="p-5 border rounded-xl bg-gray-50/70">
+                            <h5 class="text-base font-semibold mb-4 text-gray-800">Add / Update Metric</h5>
                             <form method="POST" action="{{ route('audits.metrics.add', $audit) }}"
-                                class="grid md:grid-cols-4 gap-3">@csrf
-                                <input name="metric_key" required placeholder="Key"
-                                    class="border-gray-300 rounded-md text-sm">
-                                <input name="metric_value" placeholder="Decimal Value"
-                                    class="border-gray-300 rounded-md text-sm">
-                                <input name="numeric_value" placeholder="Integer Value"
-                                    class="border-gray-300 rounded-md text-sm">
-                                <input name="ttl_seconds" placeholder="TTL (s)"
-                                    class="border-gray-300 rounded-md text-sm">
-                                <div class="md:col-span-4 flex justify-end"><button
-                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Add</button></div>
+                                class="grid md:grid-cols-12 gap-4 text-sm"
+                                onsubmit="if(document.getElementById('metric_key_select').value==='__custom'){ document.getElementById('metric_key').value = document.getElementById('custom_metric_key').value.trim(); }">
+                                @csrf
+                                <div class="md:col-span-3 space-y-1">
+                                    <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Metric
+                                        Key</label>
+                                    <select id="metric_key_select" class="w-full border-gray-300 rounded-md"
+                                        onchange="const sel=this.value;const customRow=document.getElementById('custom_metric_key_row');if(sel==='__custom'){customRow.classList.remove('hidden')}else{customRow.classList.add('hidden');document.getElementById('metric_key').value=sel;}">
+                                        <option value="findings_total">findings_total</option>
+                                        <option value="actions_open">actions_open</option>
+                                        <option value="risks_total">risks_total</option>
+                                        <option value="__custom">Custom…</option>
+                                    </select>
+                                    <input type="hidden" id="metric_key" name="metric_key" value="findings_total" />
+                                </div>
+                                <div id="custom_metric_key_row" class="md:col-span-3 space-y-1 hidden">
+                                    <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Custom
+                                        Key</label>
+                                    <input id="custom_metric_key" placeholder="e.g. overdue_actions"
+                                        class="w-full border-gray-300 rounded-md" />
+                                </div>
+                                <div class="md:col-span-2 space-y-1">
+                                    <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Decimal
+                                        Value</label>
+                                    <input name="metric_value" placeholder="e.g. 87.5"
+                                        class="w-full border-gray-300 rounded-md" />
+                                </div>
+                                <div class="md:col-span-2 space-y-1">
+                                    <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Integer
+                                        Value</label>
+                                    <input name="numeric_value" placeholder="e.g. 42"
+                                        class="w-full border-gray-300 rounded-md" />
+                                </div>
+                                <div class="md:col-span-2 space-y-1">
+                                    <label class="text-xs font-semibold text-gray-700 uppercase tracking-wide">TTL
+                                        (seconds)</label>
+                                    <input name="ttl_seconds" placeholder="3600"
+                                        class="w-full border-gray-300 rounded-md" />
+                                </div>
+                                <div class="md:col-span-12 flex justify-end pt-2">
+                                    <button
+                                        class="px-5 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold">Save
+                                        Metric</button>
+                                </div>
+                                <div class="md:col-span-12 text-[12px] text-gray-500 leading-snug">Predefined metrics
+                                    are auto-managed during recalculation; custom metrics remain static unless updated
+                                    manually.</div>
                             </form>
                         </div>
                     </div>
