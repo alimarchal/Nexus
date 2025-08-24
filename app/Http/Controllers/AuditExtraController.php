@@ -539,6 +539,52 @@ class AuditExtraController extends Controller
         return back()->with('success', 'Metrics recalculated.');
     }
 
+    public function addMetric(Request $request, Audit $audit)
+    {
+        $data = $request->validate([
+            'metric_key' => 'required|string|max:150',
+            'metric_value' => 'nullable|numeric',
+            'numeric_value' => 'nullable|integer',
+            'ttl_seconds' => 'nullable|integer|min:0'
+        ]);
+        $payload = null;
+        AuditMetricsCache::updateOrCreate([
+            'audit_id' => $audit->id,
+            'metric_key' => $data['metric_key'],
+        ], [
+            'metric_value' => $data['metric_value'] !== null ? (string) $data['metric_value'] : null,
+            'numeric_value' => $data['numeric_value'] ?? null,
+            'payload' => $payload,
+            'calculated_at' => now(),
+            'ttl_seconds' => $data['ttl_seconds'] ?? null,
+        ]);
+        return back()->with('success', 'Metric saved.');
+    }
+
+    public function updateMetric(Request $request, Audit $audit, AuditMetricsCache $metric)
+    {
+        abort_unless($metric->audit_id === $audit->id, 404);
+        $data = $request->validate([
+            'metric_value' => 'nullable|numeric',
+            'numeric_value' => 'nullable|integer',
+            'ttl_seconds' => 'nullable|integer|min:0'
+        ]);
+        $metric->update([
+            'metric_value' => $data['metric_value'] !== null ? (string) $data['metric_value'] : null,
+            'numeric_value' => $data['numeric_value'] ?? null,
+            'ttl_seconds' => $data['ttl_seconds'] ?? null,
+            'calculated_at' => now(),
+        ]);
+        return back()->with('success', 'Metric updated.');
+    }
+
+    public function deleteMetric(Audit $audit, AuditMetricsCache $metric)
+    {
+        abort_unless($metric->audit_id === $audit->id, 404);
+        $metric->delete();
+        return back()->with('success', 'Metric deleted.');
+    }
+
     // Documents ---------------------------------------------------------------
     public function addDocument(Request $request, Audit $audit)
     {
