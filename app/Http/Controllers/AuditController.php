@@ -227,6 +227,58 @@ class AuditController extends Controller
     }
 
     /**
+     * Return full JSON snapshot of an audit with all related entities for export (structured PDF, offline analysis).
+     * Mirrors complaints fullData pattern for parity.
+     */
+    public function fullData(Audit $audit)
+    {
+        $audit->load([
+            'type',
+            'parent:id,reference_no,title',
+            'children:id,parent_audit_id,reference_no,title,status,score',
+            'auditors.user:id,name,email',
+            'documents.uploader:id,name,email',
+            'findings.actions.updates',
+            'findings.attachments',
+            'findings.owner:id,name,email',
+            'actions.updates',
+            'leadAuditor:id,name,email',
+            'auditeeUser:id,name,email',
+            'tags:id,name',
+            'risks',
+            'scopes',
+            'schedules',
+            'notifications',
+            'responses.responder:id,name,email',
+            'metrics',
+            'statusHistories.changer:id,name'
+        ]);
+
+        // Merge checklist items (type-based + inline) similar to show() to let client reconstruct
+        $typeItems = \App\Models\AuditChecklistItem::where('audit_type_id', $audit->audit_type_id)
+            ->orderBy('display_order')->get();
+        $inlineItems = \App\Models\AuditChecklistItem::whereNull('audit_type_id')
+            ->where('metadata->inline_for_audit', $audit->id)
+            ->orderByDesc('created_at')
+            ->get();
+        $assessmentItems = $typeItems->merge($inlineItems)->values();
+
+        // Basic derived metrics (example: open findings / actions counts) for convenience
+        $derived = [
+            'open_findings' => $audit->findings->where('status', '!=', 'closed')->count(),
+            'open_actions' => $audit->actions->where('status', '!=', 'completed')->count(),
+        ];
+
+        return response()->json([
+            'audit' => $audit,
+            'assessment_items' => $assessmentItems,
+            'exported_at' => now()->toIso8601String(),
+            'version' => '1.0',
+            'derived' => $derived,
+        ]);
+    }
+
+    /**
      * Show the form for editing the specified resource.
      */
     public function edit(Audit $audit)

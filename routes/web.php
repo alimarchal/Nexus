@@ -128,6 +128,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     // Audits module routes
     Route::resource('products/audits', AuditController::class)->names('audits');
     Route::prefix('products/audits/{audit}')->name('audits.')->group(function () {
+    // Full JSON snapshot (must be before other parameterized routes used by export button)
+    Route::get('full', [\App\Http\Controllers\AuditController::class, 'fullData'])->name('full');
         // Basic Audit Updates
         Route::patch('basic-info', [AuditExtraController::class, 'updateBasicInfo'])->name('update-basic-info');
         Route::patch('status', [AuditExtraController::class, 'updateStatus'])->name('update-status');
