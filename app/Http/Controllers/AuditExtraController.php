@@ -654,7 +654,23 @@ class AuditExtraController extends Controller
         $data['audit_id'] = $audit->id;
         $data['created_by'] = auth()->id();
         $data['next_run_date'] = $data['scheduled_date'];
-        AuditSchedule::create($data);
+        $schedule = AuditSchedule::create($data);
+        \App\Models\AuditStatusHistory::create([
+            'auditable_type' => Audit::class,
+            'auditable_id' => $audit->id,
+            'from_status' => null,
+            'to_status' => $audit->status ?? 'planned',
+            'changed_by' => auth()->id(),
+            'note' => 'Added schedule: ' . ucfirst($schedule->frequency) . ' for ' . (optional($schedule->scheduled_date)->format('Y-m-d') ?? ''),
+            'metadata' => [
+                'event' => 'schedule_added',
+                'schedule_id' => $schedule->id,
+                'frequency' => $schedule->frequency,
+                'scheduled_date' => $schedule->scheduled_date,
+                'next_run_date' => $schedule->next_run_date,
+            ],
+            'changed_at' => now(),
+        ]);
         return back()->with('success', 'Schedule added.');
     }
 
