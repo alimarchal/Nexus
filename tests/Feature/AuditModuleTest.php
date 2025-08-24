@@ -70,3 +70,14 @@ it('shows the audit details page', function () {
         ->assertSee($audit->reference_no)
         ->assertSee('Sample Audit Show Test');
 });
+
+it('returns full JSON snapshot for audit', function () {
+    $audit = Audit::factory()->create([
+        'audit_type_id' => $this->type->id,
+        'created_by' => $this->user->id,
+        'reference_no' => generateUniqueId('audit', 'audits', 'reference_no'),
+        'title' => 'Snapshot Test Audit'
+    ]);
+    $resp = $this->get(route('audits.full', $audit));
+    $resp->assertStatus(200)->assertJsonStructure(['audit' => ['id', 'reference_no', 'title'], 'exported_at', 'version']);
+});

@@ -44,6 +44,16 @@
                     </svg>
                     Back to List
                 </a>
+                <button id="audit-structured-pdf-btn"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-700 hover:bg-indigo-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
+                    title="Generate printable structured Audit PDF">
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4v12m0 0l-3.5-3.5M12 16l3.5-3.5M6 20h12" />
+                    </svg>
+                    Download Structured PDF
+                </button>
             </div>
         </div>
     </x-slot>
@@ -1997,3 +2007,79 @@
     </script>
     @endpush
 </x-app-layout>
+
+@push('scripts')
+<script>
+    // Structured PDF generator for Audit (mirrors Complaints implementation)
+(function(){
+    function loadScriptOnce(id, src){
+        return new Promise((res, rej)=>{ if(document.getElementById(id)) return res(true); const s=document.createElement('script'); s.id=id; s.src=src; s.onload=()=>res(true); s.onerror=()=>rej(new Error('Load failed '+src)); document.head.appendChild(s); });
+    }
+    async function ensureLibs(){
+        async function attempt(id, primary, fallback){ try{ await loadScriptOnce(id, primary);}catch(e){ if(fallback) await loadScriptOnce(id+'-fb', fallback); else throw e; } }
+        if(!(window.jspdf && window.jspdf.jsPDF)) await attempt('jspdf-core','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js');
+        if(!(window.jspdf && window.jspdf.jsPDF)) throw new Error('jsPDF load failed');
+        if(!window.jspdf.jsPDF.API.autoTable) await attempt('jspdf-autotable','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js','https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+    }
+    function fmt(dt){ if(!dt) return '-'; try{ return new Date(dt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return dt;} }
+    function addTitle(doc, txt, y){ doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(30); doc.text(txt.toUpperCase(),40,y); doc.setFont('helvetica','normal'); return y+8; }
+    function footer(doc, audit){ const pc=doc.getNumberOfPages(); for(let i=1;i<=pc;i++){ doc.setPage(i); const t=`Audit # ${audit.reference_no||audit.id||'-'} | Page ${i} of ${pc}`; doc.setFontSize(8); doc.setTextColor(90); const w=doc.internal.pageSize.getWidth(); const tw=doc.getTextWidth(t); doc.text(t,(w/2)-(tw/2), doc.internal.pageSize.getHeight()-12);} }
+    async function init(){ const btn=document.getElementById('audit-structured-pdf-btn'); if(!btn||btn.dataset.init) return; btn.dataset.init='1'; btn.addEventListener('click', async ()=>{
+        try{ btn.disabled=true; btn.classList.add('opacity-50'); btn.textContent='Building...'; await ensureLibs(); const { jsPDF } = window.jspdf;
+            const url = @json(route('audits.full',$audit)); const res = await fetch(url,{headers:{'Accept':'application/json'}}); if(!res.ok) throw new Error('Fetch failed'); const data= await res.json(); const a = data.audit || {};
+            const doc = new jsPDF('p','pt');
+            // Header
+            doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.setTextColor(20); doc.text('THE BANK OF AZAD JAMMU AND KASHMIR',40,40);
+            doc.setFontSize(13); doc.text('AUDIT REPORT',40,60); doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(70);
+            doc.text('Generated: '+fmt(data.exported_at),40,74); doc.text('Reference: '+(a.reference_no||'-'),300,74); doc.text('Status: '+(a.status||'-'),480,74);
+            doc.setDrawColor(0); doc.setLineWidth(0.5); doc.line(40,78,555,78);
+            let y=95;
+            // Summary
+            const summaryRows=[
+                ['Reference', a.reference_no||'-','Status', a.status||'-'],
+                ['Title', a.title||'-','Risk Overall', a.risk_overall||'-'],
+                ['Type', a.type?.name||'-','Score', a.score==null?'-':a.score],
+                ['Planned Start', fmt(a.planned_start_date),'Planned End', fmt(a.planned_end_date)],
+                ['Actual Start', fmt(a.actual_start_date),'Actual End', fmt(a.actual_end_date)],
+                ['Lead Auditor', a.lead_auditor?.name||'-','Auditee', a.auditee_user?.name||'-'],
+                ['Parent Audit', a.parent?.reference_no||'-','Children', (a.children||[]).length]
+            ];
+            doc.autoTable({ startY:y, head:[['FIELD','VALUE','FIELD','VALUE']], body:summaryRows, styles:{fontSize:8,cellPadding:3,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]}, columnStyles:{0:{cellWidth:94},1:{cellWidth:172},2:{cellWidth:94},3:{cellWidth:146}}, tableWidth:510, theme:'grid'});
+            y=doc.lastAutoTable.finalY+15;
+            // Description
+            y=addTitle(doc,'Description', y); doc.setFontSize(9); let block = doc.splitTextToSize(a.description||'-',515); doc.text(block,40,y); y+=block.length*11+10;
+            // Scope Summary
+            if(a.scope_summary){ y=addTitle(doc,'Scope Summary', y); block=doc.splitTextToSize(a.scope_summary,515); doc.text(block,40,y); y+=block.length*11+10; }
+            // Team
+            if(Array.isArray(a.auditors) && a.auditors.length){ y=addTitle(doc,'Audit Team', y); const tRows=a.auditors.map(m=>[m.user?.name||'-', m.role||'-', m.is_primary?'Yes':'No']); doc.autoTable({ startY:y, head:[['NAME','ROLE','PRIMARY']], body:tRows, styles:{fontSize:8,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]}, theme:'grid'}); y=doc.lastAutoTable.finalY+15; }
+            // Scopes
+            if(Array.isArray(a.scopes)&&a.scopes.length){ y=addTitle(doc,'Scopes', y); const sRows=a.scopes.map(s=>[s.scope_item, s.is_in_scope?'In':'Out', (s.description||'').substring(0,80)]); doc.autoTable({ startY:y, head:[['ITEM','IN/OUT','DESC']], body:sRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Findings
+            if(Array.isArray(a.findings)&&a.findings.length){ y=addTitle(doc,'Findings', y); const fRows=a.findings.map(f=>[f.id, (f.title||'').substring(0,40), f.status||'-', f.risk_level||f.severity||'-', (f.owner?.name||'-')]); doc.autoTable({ startY:y, head:[['ID','TITLE','STATUS','RISK','OWNER']], body:fRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Actions
+            if(Array.isArray(a.actions)&&a.actions.length){ y=addTitle(doc,'Actions', y); const actRows=a.actions.map(ac=>[ac.id, (ac.title||'').substring(0,38), ac.status||'-', fmt(ac.due_date)]); doc.autoTable({ startY:y, head:[['ID','TITLE','STATUS','DUE']], body:actRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Risks
+            if(Array.isArray(a.risks)&&a.risks.length){ y=addTitle(doc,'Risks', y); const rRows=a.risks.map(r=>[r.id,(r.title||'').substring(0,40), r.risk_level||r.likelihood+'/' + r.impact, r.status||'-']); doc.autoTable({ startY:y, head:[['ID','TITLE','LEVEL','STATUS']], body:rRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Schedules
+            if(Array.isArray(a.schedules)&&a.schedules.length){ y=addTitle(doc,'Schedules', y); const schRows=a.schedules.map(s=>[s.id, (s.title||s.schedule_type||'-').substring(0,34), fmt(s.start_date||s.scheduled_for), fmt(s.end_date)]); doc.autoTable({ startY:y, head:[['ID','TITLE','START','END']], body:schRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Documents (meta only)
+            if(Array.isArray(a.documents)&&a.documents.length){ y=addTitle(doc,'Documents', y); const dRows=a.documents.map(d=>[(d.original_name||d.stored_name||'-').substring(0,40), (d.category||'-'), (d.mime_type||'-').split('/')[1]||'-', (Math.round((d.size_bytes||0)/1024)+' KB')]); doc.autoTable({ startY:y, head:[['NAME','CATEGORY','TYPE','SIZE']], body:dRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Checklist Responses
+            if(Array.isArray(data.assessment_items) && data.assessment_items.length){ y=addTitle(doc,'Checklist Responses (Summary)', y); const respMap={}; (a.responses||[]).forEach(r=>{ respMap[r.audit_checklist_item_id]=r; }); const ciRows = data.assessment_items.slice(0,140).map(ci=>{ const r=respMap[ci.id]||{}; return [ (ci.reference_code||ci.id).toString(), (ci.title||'').substring(0,34), r.response_value||'-', r.score==null?'-':r.score, (r.comment||'').substring(0,30) ]; }); doc.autoTable({ startY:y, head:[['REF','ITEM','RESP','SCORE','COMMENT']], body:ciRows, styles:{fontSize:6.5,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Status History
+            if(Array.isArray(a.status_histories)&&a.status_histories.length){ y=addTitle(doc,'Status History', y); const hRows=a.status_histories.map(h=>[fmt(h.changed_at), (h.from_status||'-')+' → '+(h.to_status||'-'), h.changer?.name||'System', (h.note||'').substring(0,50)]); doc.autoTable({ startY:y, head:[['WHEN','TRANSITION','BY','NOTE']], body:hRows, styles:{fontSize:6.5,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Notifications
+            if(Array.isArray(a.notifications)&&a.notifications.length){ y=addTitle(doc,'Notifications', y); const nRows=a.notifications.map(n=>[n.channel||'-', fmt(n.sent_at||n.created_at), (n.status||'-'), (n.subject||'').substring(0,40)]); doc.autoTable({ startY:y, head:[['CHANNEL','SENT','STATUS','SUBJECT']], body:nRows, styles:{fontSize:6.5,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Tags & Metrics inline small tables
+            if(Array.isArray(a.tags)&&a.tags.length){ y=addTitle(doc,'Tags', y); const tRows=a.tags.map(t=>[t.name]); doc.autoTable({ startY:y, head:[['TAG']], body:tRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]}, tableWidth:180 }); y=doc.lastAutoTable.finalY+15; }
+            if(Array.isArray(a.metrics)&&a.metrics.length){ y=addTitle(doc,'Metrics Cache', y); const mRows=a.metrics.map(m=>[m.metric_key||'-', m.metric_value||m.numeric_value||'-']); doc.autoTable({ startY:y, head:[['KEY','VALUE']], body:mRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            // Derived
+            if(data.derived){ y=addTitle(doc,'Derived Metrics', y); const dRows=Object.entries(data.derived).map(([k,v])=>[k.replace(/_/g,' '), v]); doc.autoTable({ startY:y, head:[['METRIC','VALUE']], body:dRows, styles:{fontSize:7,cellPadding:2,lineColor:[0,0,0],lineWidth:0.1}, headStyles:{fillColor:[0,0,0],textColor:[255,255,255]} }); y=doc.lastAutoTable.finalY+15; }
+            footer(doc,a); doc.save('audit-'+(a.reference_no||a.id||'export')+'.pdf');
+        }catch(e){ console.error(e); alert('Failed to build structured PDF: '+e.message); }
+        finally{ btn.disabled=false; btn.classList.remove('opacity-50'); btn.textContent='Download Structured PDF'; }
+    }); }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+@endpush
