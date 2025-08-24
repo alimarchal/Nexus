@@ -401,26 +401,34 @@
                                             <td class="py-3 px-2 text-center font-semibold">{{ $idx+1 }}</td>
                                             <td class="py-3 px-2 font-medium text-gray-800 w-64">
                                                 <div>{{ $aud->user?->name ?? '—' }}</div>
-                                                <div class="text-[11px] text-gray-500 mt-1">{{ $aud->user?->email ?? '—' }}</div>
+                                                <div class="text-[11px] text-gray-500 mt-1">{{ $aud->user?->email ?? '—'
+                                                    }}</div>
                                             </td>
                                             <td class="py-3 px-2 text-center text-xs capitalize">{{ $aud->role }}</td>
                                             <td class="py-3 px-2 text-center text-xs">
                                                 @if($aud->is_primary)
-                                                    <span class="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-semibold">Yes</span>
+                                                <span
+                                                    class="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-semibold">Yes</span>
                                                 @else
-                                                    <span class="text-gray-500 text-xs">No</span>
+                                                <span class="text-gray-500 text-xs">No</span>
                                                 @endif
                                             </td>
-                                            <td class="py-3 px-2 text-center text-xs">{{ $aud->created_at?->format('d-m-Y') }}</td>
+                                            <td class="py-3 px-2 text-center text-xs">{{
+                                                $aud->created_at?->format('d-m-Y') }}</td>
                                             <td class="py-3 px-2 text-center text-xs">
-                                                <form method="POST" action="{{ route('audits.auditors.delete', [$audit, $aud]) }}" onsubmit="return confirm('Remove auditor?')" class="inline-block">@csrf @method('DELETE')
-                                                    <button class="px-2 py-1 text-white bg-red-600 hover:bg-red-700 rounded-md text-[11px] font-semibold">Delete</button>
+                                                <form method="POST"
+                                                    action="{{ route('audits.auditors.delete', [$audit, $aud]) }}"
+                                                    onsubmit="return confirm('Remove auditor?')" class="inline-block">
+                                                    @csrf @method('DELETE')
+                                                    <button
+                                                        class="px-2 py-1 text-white bg-red-600 hover:bg-red-700 rounded-md text-[11px] font-semibold">Delete</button>
                                                 </form>
                                             </td>
                                         </tr>
                                         @empty
                                         <tr>
-                                            <td colspan="6" class="py-6 px-4 text-center text-gray-500">No auditors assigned.</td>
+                                            <td colspan="6" class="py-6 px-4 text-center text-gray-500">No auditors
+                                                assigned.</td>
                                         </tr>
                                         @endforelse
                                     </tbody>
@@ -429,13 +437,14 @@
                         </div>
                     </div>
                     <div class="bg-white p-4 border border-gray-200 shadow-md sm:rounded-lg">
-                        <form method="POST" action="{{ route('audits.assign-auditors', $audit) }}" class="grid md:grid-cols-6 gap-4">@csrf
+                        <form method="POST" action="{{ route('audits.assign-auditors', $audit) }}"
+                            class="grid md:grid-cols-6 gap-4">@csrf
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-semibold mb-1">User</label>
                                 <select name="user_id" required class="w-full border-gray-300 rounded-md text-sm">
                                     <option value="">— Select —</option>
                                     @foreach($allUsers as $u)
-                                        <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
+                                    <option value="{{ $u->id }}">{{ $u->name }} ({{ $u->email }})</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -448,13 +457,17 @@
                                 </select>
                             </div>
                             <div class="flex items-center pt-5">
-                                <label class="inline-flex items-center text-xs font-medium text-gray-700 select-none cursor-pointer">
-                                    <input type="checkbox" name="is_primary" value="1" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <label
+                                    class="inline-flex items-center text-xs font-medium text-gray-700 select-none cursor-pointer">
+                                    <input type="checkbox" name="is_primary" value="1"
+                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
                                     <span class="ml-2">Primary</span>
                                 </label>
                             </div>
                             <div class="md:col-span-2 flex items-end justify-end">
-                                <button class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold w-full md:w-auto">Save Auditor</button>
+                                <button
+                                    class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold w-full md:w-auto">Save
+                                    Auditor</button>
                             </div>
                             <div class="md:col-span-6 -mt-2">
                                 <p class="text-[11px] text-gray-500">Primary flag is unique. Changes are logged.</p>
@@ -482,31 +495,40 @@
                                         @forelse($audit->scopes->sortBy('created_at') as $idx => $scope)
                                         <tr class="border-b border-gray-200 hover:bg-gray-50 align-top">
                                             <td class="py-3 px-2 text-center font-semibold">{{ $idx+1 }}</td>
-                                            <td class="py-3 px-2 font-medium text-gray-800 w-56">{{ $scope->scope_item }}</td>
+                                            <td class="py-3 px-2 font-medium text-gray-800 w-56">{{ $scope->scope_item
+                                                }}</td>
                                             <td class="py-3 px-2 text-center text-xs">
                                                 @if($scope->is_in_scope)
-                                                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-semibold">Yes</span>
+                                                <span
+                                                    class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-semibold">Yes</span>
                                                 @else
-                                                    <span class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-semibold">No</span>
+                                                <span
+                                                    class="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-semibold">No</span>
                                                 @endif
                                             </td>
                                             <td class="py-3 px-2 text-xs text-gray-700 w-80">
                                                 @if($scope->description)
-                                                    {{ Str::limit($scope->description,160) }}
+                                                {{ Str::limit($scope->description,160) }}
                                                 @else
-                                                    <span class="text-gray-400">—</span>
+                                                <span class="text-gray-400">—</span>
                                                 @endif
                                             </td>
-                                            <td class="py-3 px-2 text-center text-xs">{{ $scope->created_at?->format('d-m-Y') }}</td>
+                                            <td class="py-3 px-2 text-center text-xs">{{
+                                                $scope->created_at?->format('d-m-Y') }}</td>
                                             <td class="py-3 px-2 text-center text-xs">
-                                                <form method="POST" action="{{ route('audits.scopes.delete', [$audit, $scope]) }}" onsubmit="return confirm('Delete scope item?')" class="inline-block">@csrf @method('DELETE')
-                                                    <button class="px-2 py-1 text-white bg-red-600 hover:bg-red-700 rounded-md text-[11px] font-semibold">Delete</button>
+                                                <form method="POST"
+                                                    action="{{ route('audits.scopes.delete', [$audit, $scope]) }}"
+                                                    onsubmit="return confirm('Delete scope item?')"
+                                                    class="inline-block">@csrf @method('DELETE')
+                                                    <button
+                                                        class="px-2 py-1 text-white bg-red-600 hover:bg-red-700 rounded-md text-[11px] font-semibold">Delete</button>
                                                 </form>
                                             </td>
                                         </tr>
                                         @empty
                                         <tr>
-                                            <td colspan="6" class="py-6 px-4 text-center text-gray-500">No scope items defined.</td>
+                                            <td colspan="6" class="py-6 px-4 text-center text-gray-500">No scope items
+                                                defined.</td>
                                         </tr>
                                         @endforelse
                                     </tbody>
@@ -515,23 +537,29 @@
                         </div>
                     </div>
                     <div class="bg-white p-4 border border-gray-200 shadow-md sm:rounded-lg">
-                        <form method="POST" action="{{ route('audits.scopes.add', $audit) }}" class="grid md:grid-cols-6 gap-4">@csrf
+                        <form method="POST" action="{{ route('audits.scopes.add', $audit) }}"
+                            class="grid md:grid-cols-6 gap-4">@csrf
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-semibold mb-1">Scope Item</label>
-                                <input name="scope_item" required placeholder="e.g. Branch cash processes" class="w-full border-gray-300 rounded-md text-sm" />
+                                <input name="scope_item" required placeholder="e.g. Branch cash processes"
+                                    class="w-full border-gray-300 rounded-md text-sm" />
                             </div>
                             <div class="md:col-span-3">
                                 <label class="block text-xs font-semibold mb-1">Description</label>
-                                <textarea name="description" rows="2" placeholder="Optional details" class="w-full border-gray-300 rounded-md text-sm"></textarea>
+                                <textarea name="description" rows="2" placeholder="Optional details"
+                                    class="w-full border-gray-300 rounded-md text-sm"></textarea>
                             </div>
                             <div class="flex items-center pt-5">
-                                <label class="inline-flex items-center text-xs font-medium text-gray-700 cursor-pointer select-none">
-                                    <input type="checkbox" name="is_in_scope" value="1" checked class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                                <label
+                                    class="inline-flex items-center text-xs font-medium text-gray-700 cursor-pointer select-none">
+                                    <input type="checkbox" name="is_in_scope" value="1" checked
+                                        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
                                     <span class="ml-2">In Scope</span>
                                 </label>
                             </div>
                             <div class="md:col-span-6 flex justify-end pt-1">
-                                <button class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold">Add Scope</button>
+                                <button class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold">Add
+                                    Scope</button>
                             </div>
                             <div class="md:col-span-6 -mt-2">
                                 <p class="text-[11px] text-gray-500">Scope changes are logged for reference.</p>
@@ -895,7 +923,8 @@
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">Category</label>
                                         <select name="category" class="w-full rounded-md border-indigo-300 px-2 py-2">
                                             <option value="">Select</option>
-                                            @foreach(['process','compliance','safety','financial','operational','other'] as $c)
+                                            @foreach(['process','compliance','safety','financial','operational','other']
+                                            as $c)
                                             <option value="{{ $c }}">{{ ucfirst($c) }}</option>
                                             @endforeach
                                         </select>
@@ -912,7 +941,8 @@
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">Status</label>
                                         <select name="status" class="w-full rounded-md border-indigo-300 px-2 py-2">
-                                            @foreach(['open','in_progress','implemented','verified','closed','void'] as $st)
+                                            @foreach(['open','in_progress','implemented','verified','closed','void'] as
+                                            $st)
                                             <option value="{{ $st }}">{{ Str::headline($st) }}</option>
                                             @endforeach
                                         </select>
@@ -1063,7 +1093,8 @@
                                                     <select name="category"
                                                         class="rounded-md border-indigo-300 text-[11px]">
                                                         <option value="">Category</option>
-                                                        @foreach(['process','compliance','safety','financial','operational','other'] as $c)
+                                                        @foreach(['process','compliance','safety','financial','operational','other']
+                                                        as $c)
                                                         <option value="{{ $c }}" @selected($finding->category==$c)>{{
                                                             ucfirst($c) }}</option>
                                                         @endforeach
@@ -1078,7 +1109,8 @@
                                                     </select>
                                                     <select name="status"
                                                         class="rounded-md border-indigo-300 text-[11px]">
-                                                        @foreach(['open','in_progress','implemented','verified','closed','void'] as $st)
+                                                        @foreach(['open','in_progress','implemented','verified','closed','void']
+                                                        as $st)
                                                         <option value="{{ $st }}" @selected($finding->status==$st)>{{
                                                             Str::headline($st) }}</option>
                                                         @endforeach
@@ -1223,7 +1255,8 @@
                                             <td class="py-3 px-2 text-center text-xs">
                                                 @if($action->updates->count())
                                                 <div class="space-y-1 max-w-[240px] mx-auto text-left">
-                                                    @foreach($action->updates->sortByDesc('created_at')->take(3) as  $upd)
+                                                    @foreach($action->updates->sortByDesc('created_at')->take(3) as
+                                                    $upd)
                                                     <div
                                                         class="p-1.5 bg-gray-50 border rounded text-[10px] flex justify-between gap-2">
                                                         <div class="min-w-0"><span class="font-medium">{{
@@ -1245,7 +1278,8 @@
                                                     <select name="status_after"
                                                         class="border-gray-300 rounded-md text-[10px]">
                                                         <option value="">Status</option>
-                                                        @foreach(['open','in_progress','implemented','verified','closed','cancelled'] as $st)
+                                                        @foreach(['open','in_progress','implemented','verified','closed','cancelled']
+                                                        as $st)
                                                         <option value="{{ $st }}">{{ Str::headline($st) }}</option>
                                                         @endforeach
                                                     </select>
