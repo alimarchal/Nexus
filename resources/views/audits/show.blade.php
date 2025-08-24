@@ -1408,18 +1408,28 @@
 
                 <div id="documents-tab" class="tab-content p-3" style="display:none;">
                     <div class="mb-6">
-                        <div class="p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
-                            <h5 class="text-sm font-semibold text-gray-800 mb-2">Upload Documents</h5>
+                        <div class="bg-white p-4 border border-gray-200 rounded-lg">
+                            <h5 class="text-sm font-semibold text-gray-800 mb-3">Upload Documents</h5>
                             <form method="POST" action="{{ route('audits.documents.store', $audit) }}"
-                                enctype="multipart/form-data" class="space-y-2 text-xs">@csrf
-                                <input type="file" name="files[]" multiple required
-                                    class="border-gray-300 rounded-md text-sm w-full">
-                                <input name="category" placeholder="Category (optional)"
-                                    class="border-gray-300 rounded-md text-sm w-full">
-                                <p class="text-[10px] text-gray-500">All files stored under private Complaints/{{
-                                    $audit->reference_no }}/documents</p>
-                                <div class="flex justify-end"><button
-                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Upload</button></div>
+                                enctype="multipart/form-data" class="grid md:grid-cols-4 gap-4">@csrf
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-semibold mb-1">Files</label>
+                                    <input type="file" name="files[]" multiple required
+                                        class="border-gray-300 rounded-md text-sm w-full" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold mb-1">Category</label>
+                                    <input name="category" placeholder="Optional"
+                                        class="border-gray-300 rounded-md text-sm w-full" />
+                                </div>
+                                <div class="md:col-span-1 flex items-end justify-end">
+                                    <button
+                                        class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold w-full md:w-auto">Upload</button>
+                                </div>
+                                <div class="md:col-span-4 -mt-2">
+                                    <p class="text-[11px] text-gray-500">Stored at: private Complaints/{{
+                                        $audit->reference_no }}/documents</p>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -1527,62 +1537,66 @@
                             </div>
                         </div>
                     </div>
-                    <div class="p-5 border border-indigo-200 rounded-xl bg-indigo-50/60">
+                    <div class="bg-white p-4 border border-gray-200 rounded-lg">
                         <h5 class="text-sm font-semibold text-gray-800 mb-3">Add Risk</h5>
                         <form method="POST" action="{{ route('audits.risks.add', $audit) }}"
-                            class="grid md:grid-cols-12 gap-3 text-[11px]">@csrf
-                            <div class="md:col-span-4">
-                                <label class="block mb-1 font-semibold text-gray-700">Title</label>
-                                <input name="title" required class="w-full border-indigo-300 rounded-md"
+                            class="grid md:grid-cols-6 gap-4">@csrf
+                            <div class="md:col-span-3">
+                                <label class="block text-xs font-semibold mb-1">Title</label>
+                                <input name="title" required class="w-full border-gray-300 rounded-md text-sm"
                                     placeholder="Risk title" />
                             </div>
-                            <div class="md:col-span-2">
-                                <label class="block mb-1 font-semibold text-gray-700">Likelihood</label>
-                                <select name="likelihood" class="w-full border-indigo-300 rounded-md">
+                            <div>
+                                <label class="block text-xs font-semibold mb-1">Likelihood</label>
+                                <select name="likelihood" class="w-full border-gray-300 rounded-md text-sm">
                                     <option value="">—</option>
-                                    @foreach(['low','medium','high'] as $v)<option value="{{ $v }}">{{ ucfirst($v)
-                                        }}</option>@endforeach
-                                </select>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block mb-1 font-semibold text-gray-700">Impact</label>
-                                <select name="impact" class="w-full border-indigo-300 rounded-md">
-                                    <option value="">—</option>
-                                    @foreach(['low','medium','high'] as $v)<option value="{{ $v }}">{{ ucfirst($v)
-                                        }}</option>@endforeach
-                                </select>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block mb-1 font-semibold text-gray-700">Level</label>
-                                <select name="risk_level" class="w-full border-indigo-300 rounded-md">
-                                    <option value="">—</option>
-                                    @foreach(['low','medium','high','critical'] as $v)<option value="{{ $v }}">{{
-                                        ucfirst($v) }}</option>@endforeach
-                                </select>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block mb-1 font-semibold text-gray-700">Status</label>
-                                <select name="status" class="w-full border-indigo-300 rounded-md">
-                                    @foreach(['identified','assessed','treated','retired'] as $v)<option
-                                        value="{{ $v }}">{{ Str::headline($v) }}</option>@endforeach
-                                </select>
-                            </div>
-                            <div class="md:col-span-3">
-                                <label class="block mb-1 font-semibold text-gray-700">Owner</label>
-                                <select name="owner_user_id" class="w-full border-indigo-300 rounded-md">
-                                    <option value="">—</option>
-                                    @foreach($allUsers as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>
+                                    @foreach(['low','medium','high'] as $v)
+                                    <option value="{{ $v }}">{{ ucfirst($v) }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="md:col-span-12">
-                                <label class="block mb-1 font-semibold text-gray-700">Description</label>
-                                <textarea name="description" rows="2" class="w-full border-indigo-300 rounded-md"
+                            <div>
+                                <label class="block text-xs font-semibold mb-1">Impact</label>
+                                <select name="impact" class="w-full border-gray-300 rounded-md text-sm">
+                                    <option value="">—</option>
+                                    @foreach(['low','medium','high'] as $v)
+                                    <option value="{{ $v }}">{{ ucfirst($v) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold mb-1">Level</label>
+                                <select name="risk_level" class="w-full border-gray-300 rounded-md text-sm">
+                                    <option value="">—</option>
+                                    @foreach(['low','medium','high','critical'] as $v)
+                                    <option value="{{ $v }}">{{ ucfirst($v) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold mb-1">Status</label>
+                                <select name="status" class="w-full border-gray-300 rounded-md text-sm">
+                                    @foreach(['identified','assessed','treated','retired'] as $v)
+                                    <option value="{{ $v }}">{{ Str::headline($v) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold mb-1">Owner</label>
+                                <select name="owner_user_id" class="w-full border-gray-300 rounded-md text-sm">
+                                    <option value="">—</option>
+                                    @foreach($allUsers as $u)
+                                    <option value="{{ $u->id }}">{{ $u->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="md:col-span-6">
+                                <label class="block text-xs font-semibold mb-1">Description</label>
+                                <textarea name="description" rows="2" class="w-full border-gray-300 rounded-md text-sm"
                                     placeholder="Optional details"></textarea>
                             </div>
-                            <div class="md:col-span-12 flex justify-end pt-2">
-                                <button
-                                    class="px-5 py-2 bg-indigo-600 text-white rounded-md text-[11px] font-semibold">Save
+                            <div class="md:col-span-6 flex justify-end pt-1">
+                                <button class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold">Save
                                     Risk</button>
                             </div>
                         </form>
@@ -1906,7 +1920,8 @@
                         </div>
                     </div>
                     <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
-                        class="grid md:grid-cols-5 gap-4 bg-white p-4 border border-gray-200 shadow-xl sm:rounded-lg">@csrf
+                        class="grid md:grid-cols-5 gap-4 bg-white p-4 border border-gray-200 shadow-xl sm:rounded-lg">
+                        @csrf
                         <div class="md:col-span-2">
                             <label class="block text-xs font-semibold mb-1">Frequency</label>
                             <select name="frequency" class="w-full border-gray-300 rounded-md text-sm">
