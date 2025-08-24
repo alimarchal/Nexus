@@ -1886,76 +1886,70 @@
                     </div>
                 </div>
                 <div id="schedules-tab" class="tab-content p-6" style="display:none;">
-                    <div class="bg-white rounded-lg p-4 border border-gray-200">
-                        <h4 class="text-md font-medium mb-4">Schedules</h4>
-                        <div class="space-y-3 mb-4">
-                            @forelse($audit->schedules as $sch)
-                            <div class="p-3 border rounded bg-gray-50 space-y-2">
-                                <div class="flex justify-between items-center">
-                                    <div class="font-medium text-gray-800">{{ ucfirst($sch->frequency) }} • {{
-                                        $sch->scheduled_date?->format('d-m-Y') }}</div>
-                                    <form method="POST" action="{{ route('audits.schedules.delete', [$audit, $sch]) }}"
-                                        class="ml-2">@csrf @method('DELETE')
-                                        <button class="px-2 py-0.5 bg-red-600 text-white rounded text-xs"
-                                            onclick="return confirm('Delete schedule?')">✕</button>
-                                    </form>
-                                </div>
-                                <div class="text-xs text-gray-600">Next Run: {{ $sch->next_run_date?->format('d-m-Y') ??
-                                    '—' }}</div>
-                                <details class="text-xs">
-                                    <summary class="cursor-pointer text-indigo-600">Edit</summary>
-                                    <form method="POST" action="{{ route('audits.schedules.update', [$audit, $sch]) }}"
-                                        class="mt-2 space-y-2">@csrf @method('PATCH')
-                                        <div class="grid grid-cols-3 gap-2">
-                                            <select name="frequency"
-                                                class="border-gray-300 rounded-md text-xs col-span-1">
-                                                @foreach(['once','monthly','quarterly','semiannual','annual'] as $opt)
-                                                <option value="{{ $opt }}" @selected($sch->frequency==$opt)>{{
-                                                    ucfirst($opt) }}</option>
-                                                @endforeach
-                                            </select>
-                                            <input type="date" name="scheduled_date" value="{{ $sch->scheduled_date }}"
-                                                class="border-gray-300 rounded-md text-xs col-span-1">
-                                            <input type="date" name="next_run_date" value="{{ $sch->next_run_date }}"
-                                                class="border-gray-300 rounded-md text-xs col-span-1">
-                                        </div>
-                                        <div class="flex justify-end">
+                    <h4 class="text-md font-medium mb-4">Schedules</h4>
+                    <div class="mb-6 overflow-x-auto">
+                        <table class="min-w-full border border-gray-300 bg-white text-sm">
+                            <thead class="bg-gray-100">
+                                <tr class="divide-x divide-gray-300">
+                                    <th class="px-3 py-2 text-left font-semibold">#</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Frequency</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Scheduled Date</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Next Run Date</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Created</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                @forelse($audit->schedules as $idx => $sch)
+                                <tr class="divide-x divide-gray-200">
+                                    <td class="px-3 py-2">{{ $idx+1 }}</td>
+                                    <td class="px-3 py-2 font-medium">{{ ucfirst($sch->frequency) }}</td>
+                                    <td class="px-3 py-2">{{ $sch->scheduled_date?->format('d-m-Y') ?? '—' }}</td>
+                                    <td class="px-3 py-2">{{ $sch->next_run_date?->format('d-m-Y') ?? '—' }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-600">{{ $sch->created_at?->format('d-m-Y') }}
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <form method="POST"
+                                            action="{{ route('audits.schedules.delete', [$audit, $sch]) }}"
+                                            onsubmit="return confirm('Delete schedule?')" class="inline">@csrf
+                                            @method('DELETE')
                                             <button
-                                                class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Save</button>
-                                        </div>
-                                    </form>
-                                </details>
-                            </div>
-                            @empty
-                            <p class="text-sm text-gray-500">No schedules.</p>
-                            @endforelse
-                        </div>
-                        <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
-                            class="grid md:grid-cols-5 gap-3">@csrf
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-semibold mb-1">Frequency</label>
-                                <select name="frequency" class="w-full border-gray-300 rounded-md text-sm">
-                                    @foreach(['once','monthly','quarterly','semiannual','annual'] as $opt)
-                                    <option value="{{ $opt }}">{{ ucfirst($opt) }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="md:col-span-1">
-                                <label class="block text-xs font-semibold mb-1">Date</label>
-                                <input type="date" name="scheduled_date" required
-                                    class="w-full border-gray-300 rounded-md text-sm">
-                            </div>
-                            <div class="md:col-span-1">
-                                <label class="block text-xs font-semibold mb-1">Next Run (optional)</label>
-                                <input type="date" name="next_run_date"
-                                    class="w-full border-gray-300 rounded-md text-sm">
-                            </div>
-                            <div class="md:col-span-1 flex items-end justify-end">
-                                <button
-                                    class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold">Add</button>
-                            </div>
-                        </form>
+                                                class="px-2 py-1 bg-red-600 text-white rounded text-xs">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="px-3 py-4 text-center text-gray-500">No schedules.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
+                    <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
+                        class="grid md:grid-cols-5 gap-4 bg-white p-4 border border-gray-200 rounded-lg">@csrf
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold mb-1">Frequency</label>
+                            <select name="frequency" class="w-full border-gray-300 rounded-md text-sm">
+                                @foreach(['once','monthly','quarterly','semiannual','annual'] as $opt)
+                                <option value="{{ $opt }}">{{ ucfirst($opt) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Scheduled Date</label>
+                            <input type="date" name="scheduled_date" required
+                                class="w-full border-gray-300 rounded-md text-sm" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold mb-1">Next Run (optional)</label>
+                            <input type="date" name="next_run_date" class="w-full border-gray-300 rounded-md text-sm" />
+                        </div>
+                        <div class="flex items-end justify-end">
+                            <button class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold">Add
+                                Schedule</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
