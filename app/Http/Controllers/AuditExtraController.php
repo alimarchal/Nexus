@@ -539,6 +539,82 @@ class AuditExtraController extends Controller
         return back()->with('success', 'Metrics recalculated.');
     }
 
+    // Documents ---------------------------------------------------------------
+    public function addDocument(Request $request, Audit $audit)
+    {
+        // Support old single 'file' field or new 'files[]' multiple
+        if ($request->hasFile('file') && !$request->hasFile('files')) {
+            $request->merge(['files' => [$request->file('file')]]);
+        }
+        $data = $request->validate([
+            'files' => 'required|array|min:1',
+            'files.*' => 'file|max:51200', // 50MB per file
+            'category' => 'nullable|string|max:100'
+        ]);
+
+        $stored = 0;
+        foreach ($data['files'] as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+            try {
+                $storedPath = \App\Helpers\FileStorageHelper::storeSinglePrivateFile($file, 'Complaints/' . $audit->reference_no . '/documents');
+                AuditDocument::create([
+                    'audit_id' => $audit->id,
+                    'audit_finding_id' => null,
+                    'original_name' => $file->getClientOriginalName(),
+                    'stored_name' => basename($storedPath),
+                    'mime_type' => substr((string) $file->getMimeType(), 0, 150),
+                    'size_bytes' => $file->getSize(),
+                    'category' => $data['category'] ?? null,
+                    'uploaded_by' => auth()->id(),
+                    'uploaded_at' => now(),
+                    'metadata' => null,
+                ]);
+                $stored++;
+            } catch (\Throwable $e) {
+                Log::warning('Audit document upload failed', [
+                    'audit_id' => $audit->id,
+                    'name' => $file?->getClientOriginalName(),
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        return back()->with($stored ? 'success' : 'error', $stored ? ($stored . ' document(s) uploaded.') : 'Upload failed.');
+    }
+
+    public function downloadDocument(Audit $audit, AuditDocument $document)
+    {
+        abort_unless($document->audit_id === $audit->id, 404);
+        $candidates = [];
+        $candidates[] = storage_path('app/private/Complaints/' . $audit->reference_no . '/documents/' . $document->stored_name);
+        $candidates[] = storage_path('app/Complaints/' . $audit->reference_no . '/documents/' . $document->stored_name);
+        // Raw stored name if it already contains path
+        $candidates[] = storage_path('app/' . ltrim($document->stored_name, '/'));
+        foreach ($candidates as $path) {
+            if (is_file($path)) {
+                return response()->download($path, $document->original_name);
+            }
+        }
+        Log::warning('Audit document not found', [
+            'audit_id' => $audit->id,
+            'document_id' => $document->id,
+            'stored_name' => $document->stored_name,
+            'tried' => $candidates,
+        ]);
+        return back()->with('error', 'File not found.');
+    }
+
+    public function updateDocument(Request $request, Audit $audit, AuditDocument $document)
+    {
+        abort_unless($document->audit_id === $audit->id, 404);
+        $data = $request->validate([
+            'category' => 'nullable|string|max:100'
+        ]);
+        $document->update(['category' => $data['category'] ?? null]);
+        return back()->with('success', 'Document updated.');
+    }
+
     public function deleteDocument(Audit $audit, AuditDocument $document)
     {
         abort_unless($document->audit_id === $audit->id, 404);

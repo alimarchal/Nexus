@@ -1375,13 +1375,15 @@
                 <div id="documents-tab" class="tab-content p-6" style="display:none;">
                     <div class="space-y-4">
                         <div class="p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
-                            <h5 class="text-sm font-semibold text-gray-800 mb-2">Upload Document</h5>
+                            <h5 class="text-sm font-semibold text-gray-800 mb-2">Upload Documents</h5>
                             <form method="POST" action="{{ route('audits.documents.store', $audit) }}"
                                 enctype="multipart/form-data" class="space-y-2 text-xs">@csrf
-                                <input type="file" name="file" required
+                                <input type="file" name="files[]" multiple required
                                     class="border-gray-300 rounded-md text-sm w-full">
                                 <input name="category" placeholder="Category (optional)"
                                     class="border-gray-300 rounded-md text-sm w-full">
+                                <p class="text-[10px] text-gray-500">All files stored under private Complaints/{{
+                                    $audit->reference_no }}/documents</p>
                                 <div class="flex justify-end"><button
                                         class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Upload</button></div>
                             </form>
