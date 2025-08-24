@@ -306,7 +306,7 @@
                     </nav>
                 </div>
 
-                <div id="history-tab" class="tab-content p-6">
+                <div id="history-tab" class="tab-content p-3">
                     <div class="relative">
                         <div
                             class="absolute left-4 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-300 via-gray-200 to-transparent pointer-events-none">
@@ -370,7 +370,7 @@
                     </div>
                 </div>
 
-                <div id="auditors-tab" class="tab-content p-6" style="display:none;">
+                <div id="auditors-tab" class="tab-content p-3" style="display:none;">
                     <!-- Auditor team heading removed per request -->
                     @if($audit->auditors->count())
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -507,7 +507,7 @@
                     </div>
                 </div>
 
-                <div id="scopes-tab" class="tab-content p-6" style="display:none;">
+                <div id="scopes-tab" class="tab-content p-3" style="display:none;">
                     <div class="space-y-8">
                         @if($audit->scopes->count())
                         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -628,7 +628,7 @@
                     </div>
                 </div>
 
-                <div id="checklist-tab" class="tab-content p-6" style="display:none;">
+                <div id="checklist-tab" class="tab-content p-3" style="display:none;">
                     @php($items = $assessmentItems ?? collect())
                     @php($inlineItems = ($items)->filter(fn($i)=> ($i->metadata['inline_for_audit'] ?? null) ===
                     $audit->id))
@@ -960,7 +960,7 @@
                     </div>
                 </div>
 
-                <div id="findings-tab" class="tab-content p-6" style="display:none;">
+                <div id="findings-tab" class="tab-content p-3" style="display:none;">
                     <div class="space-y-8">
                         <div class="flex items-center justify-between">
                             <h4 class="text-lg font-semibold text-gray-800">Findings ({{ $audit->findings->count() }})
@@ -1261,7 +1261,7 @@
                     </div>
                 </div>
 
-                <div id="actions-tab" class="tab-content p-6" style="display:none;">
+                <div id="actions-tab" class="tab-content p-3" style="display:none;">
                     <div class="space-y-6">
                         <h4 class="text-sm font-semibold text-gray-800">Corrective / Preventive Actions ({{
                             $audit->actions->count() }})</h4>
@@ -1406,7 +1406,7 @@
                     </div>
                 </div>
 
-                <div id="documents-tab" class="tab-content p-6" style="display:none;">
+                <div id="documents-tab" class="tab-content p-3" style="display:none;">
                     <div class="space-y-4">
                         <div class="p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
                             <h5 class="text-sm font-semibold text-gray-800 mb-2">Upload Documents</h5>
@@ -1443,173 +1443,114 @@
                     </div>
                 </div>
 
-                <div id="risks-tab" class="tab-content p-6" style="display:none;">
-                    <div class="space-y-6">
-                        <h4 class="text-sm font-semibold text-gray-800">Risks ({{ $audit->risks->count() }})</h4>
-                        @forelse($audit->risks->sortByDesc('created_at') as $risk)
-                        <div class="p-4 border rounded-lg bg-white shadow-sm">
-                            <div class="flex flex-wrap justify-between gap-3">
-                                <div class="flex-1 min-w-[220px]">
-                                    <div class="flex items-center gap-2 flex-wrap mb-1">
-                                        <span
-                                            class="px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-[10px] font-semibold">RISK</span>
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-medium @class([
-                                            'bg-green-100 text-green-700'=> $risk->likelihood==='low',
-                                            'bg-yellow-100 text-yellow-700'=> $risk->likelihood==='medium',
-                                            'bg-red-100 text-red-700'=> $risk->likelihood==='high',
-                                            'bg-gray-100 text-gray-600'=> !$risk->likelihood,
-                                        ])">L: {{ ucfirst($risk->likelihood ?? 'n/a') }}</span>
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-medium @class([
-                                            'bg-green-100 text-green-700'=> $risk->impact==='low',
-                                            'bg-yellow-100 text-yellow-700'=> $risk->impact==='medium',
-                                            'bg-red-100 text-red-700'=> $risk->impact==='high',
-                                            'bg-gray-100 text-gray-600'=> !$risk->impact,
-                                        ])">I: {{ ucfirst($risk->impact ?? 'n/a') }}</span>
-                                        <span class="px-2 py-0.5 rounded text-[10px] font-medium @class([
-                                            'bg-green-200 text-green-800'=> $risk->risk_level==='low',
-                                            'bg-yellow-200 text-yellow-800'=> $risk->risk_level==='medium',
-                                            'bg-orange-200 text-orange-800'=> $risk->risk_level==='high',
-                                            'bg-red-200 text-red-800'=> $risk->risk_level==='critical',
-                                            'bg-gray-100 text-gray-600'=> !$risk->risk_level,
-                                        ])">Level: {{ ucfirst($risk->risk_level ?? 'n/a') }}</span>
-                                        <span
-                                            class="px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700">{{
-                                            Str::headline($risk->status ?? 'identified') }}</span>
-                                    </div>
-                                    <h5 class="text-sm font-semibold text-gray-800 leading-snug break-words">{{
-                                        $risk->title }}</h5>
-                                    @if($risk->description)
-                                    <p class="mt-1 text-[11px] text-gray-600 leading-relaxed">{{
-                                        Str::limit($risk->description, 240) }}</p>
-                                    @endif
-                                </div>
-                                <div class="text-[11px] text-gray-600 space-y-1 min-w-[160px]">
-                                    <div><span class="font-semibold text-gray-700">Owner:</span> {{ $risk->owner?->name
-                                        ?? '—' }}</div>
-                                    <div><span class="font-semibold text-gray-700">Created:</span> {{
-                                        $risk->created_at->format('d-m-Y') }}</div>
-                                </div>
-                                <div class="flex flex-col items-end gap-1">
-                                    <button
-                                        onclick="document.getElementById('risk-edit-{{ $risk->id }}').classList.toggle('hidden')"
-                                        class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium">Edit</button>
-                                    <form method="POST" action="{{ route('audits.risks.delete', [$audit,$risk]) }}"
-                                        onsubmit="return confirm('Delete risk?')">@csrf @method('DELETE')
-                                        <button class="text-[11px] text-red-600 hover:text-red-700">Delete</button>
-                                    </form>
-                                </div>
+                <div id="risks-tab" class="tab-content p-3" style="display:none;">
+                    <div class="mb-6 overflow-x-auto">
+                        <table class="min-w-full border border-gray-300 bg-white text-sm">
+                            <thead class="bg-gray-100">
+                                <tr class="divide-x divide-gray-300">
+                                    <th class="px-3 py-2 text-left font-semibold">#</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Title</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Likelihood</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Impact</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Level</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Status</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Owner</th>
+                                    <th class="px-3 py-2 text-left font-semibold">Created</th>
+
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                @forelse($audit->risks->sortByDesc('created_at') as $idx => $risk)
+                                <tr class="divide-x divide-gray-200 align-top">
+                                    <td class="px-3 py-2">{{ $idx+1 }}</td>
+                                    <td class="px-3 py-2 font-medium w-56">{{ $risk->title }}
+                                        @if($risk->description)
+                                        <div class="mt-1 text-[11px] text-gray-600 line-clamp-3">{{
+                                            Str::limit($risk->description,140) }}</div>
+                                        @endif
+                                    </td>
+                                    <td class="px-3 py-2 text-xs">{{ ucfirst($risk->likelihood ?? '—') }}</td>
+                                    <td class="px-3 py-2 text-xs">{{ ucfirst($risk->impact ?? '—') }}</td>
+                                    <td class="px-3 py-2 text-xs">{{ ucfirst($risk->risk_level ?? '—') }}</td>
+                                    <td class="px-3 py-2 text-xs">{{ Str::headline($risk->status ?? 'identified') }}
+                                    </td>
+                                    <td class="px-3 py-2 text-xs">{{ $risk->owner?->name ?? '—' }}</td>
+                                    <td class="px-3 py-2 text-xs">{{ $risk->created_at->format('d-m-Y') }}</td>
+
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="8" class="px-3 py-4 text-center text-gray-500">No risks logged.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-5 border border-indigo-200 rounded-xl bg-indigo-50/60">
+                        <h5 class="text-sm font-semibold text-gray-800 mb-3">Add Risk</h5>
+                        <form method="POST" action="{{ route('audits.risks.add', $audit) }}"
+                            class="grid md:grid-cols-12 gap-3 text-[11px]">@csrf
+                            <div class="md:col-span-4">
+                                <label class="block mb-1 font-semibold text-gray-700">Title</label>
+                                <input name="title" required class="w-full border-indigo-300 rounded-md"
+                                    placeholder="Risk title" />
                             </div>
-                            <div id="risk-edit-{{ $risk->id }}" class="hidden mt-4 border-t pt-4">
-                                <form method="POST" action="{{ route('audits.risks.update', [$audit,$risk]) }}"
-                                    class="grid md:grid-cols-12 gap-3 text-[11px]">@csrf @method('PATCH')
-                                    <input name="title" value="{{ $risk->title }}" required
-                                        class="md:col-span-6 rounded-md border-indigo-300" placeholder="Title" />
-                                    <select name="likelihood" class="md:col-span-2 rounded-md border-indigo-300">
-                                        <option value="">Likelihood</option>
-                                        @foreach(['low','medium','high'] as $v)<option value="{{ $v }}"
-                                            @selected($risk->likelihood==$v)>{{ ucfirst($v) }}</option>@endforeach
-                                    </select>
-                                    <select name="impact" class="md:col-span-2 rounded-md border-indigo-300">
-                                        <option value="">Impact</option>
-                                        @foreach(['low','medium','high'] as $v)<option value="{{ $v }}"
-                                            @selected($risk->impact==$v)>{{ ucfirst($v) }}</option>@endforeach
-                                    </select>
-                                    <select name="risk_level" class="md:col-span-2 rounded-md border-indigo-300">
-                                        <option value="">Level</option>
-                                        @foreach(['low','medium','high','critical'] as $v)<option value="{{ $v }}"
-                                            @selected($risk->risk_level==$v)>{{ ucfirst($v) }}</option>@endforeach
-                                    </select>
-                                    <select name="status" class="md:col-span-2 rounded-md border-indigo-300">
-                                        @foreach(['identified','assessed','treated','retired'] as $v)<option
-                                            value="{{ $v }}" @selected($risk->status==$v)>{{ Str::headline($v) }}
-                                        </option>@endforeach
-                                    </select>
-                                    <select name="owner_user_id" class="md:col-span-3 rounded-md border-indigo-300">
-                                        <option value="">Owner</option>
-                                        @foreach($allUsers as $u)<option value="{{ $u->id }}" @selected($risk->
-                                            owner_user_id==$u->id)>{{ $u->name }}</option>@endforeach
-                                    </select>
-                                    <textarea name="description" rows="2"
-                                        class="md:col-span-12 rounded-md border-indigo-300"
-                                        placeholder="Description">{{ $risk->description }}</textarea>
-                                    <div class="md:col-span-12 flex justify-end gap-2">
-                                        <button type="button"
-                                            onclick="document.getElementById('risk-edit-{{ $risk->id }}').classList.add('hidden')"
-                                            class="px-3 py-1 rounded-md bg-gray-200">Cancel</button>
-                                        <button class="px-3 py-1 rounded-md bg-indigo-600 text-white">Save</button>
-                                    </div>
-                                </form>
+                            <div class="md:col-span-2">
+                                <label class="block mb-1 font-semibold text-gray-700">Likelihood</label>
+                                <select name="likelihood" class="w-full border-indigo-300 rounded-md">
+                                    <option value="">—</option>
+                                    @foreach(['low','medium','high'] as $v)<option value="{{ $v }}">{{ ucfirst($v)
+                                        }}</option>@endforeach
+                                </select>
                             </div>
-                        </div>
-                        @empty
-                        <p class="text-sm text-gray-500">No risks logged.</p>
-                        @endforelse
-                        <div class="p-5 border border-indigo-200 rounded-xl bg-indigo-50/60">
-                            <h5 class="text-sm font-semibold text-gray-800 mb-3">Add Risk</h5>
-                            <form method="POST" action="{{ route('audits.risks.add', $audit) }}"
-                                class="grid md:grid-cols-12 gap-3 text-[11px]">@csrf
-                                <div class="md:col-span-4">
-                                    <label class="block mb-1 font-semibold text-gray-700">Title</label>
-                                    <input name="title" required class="w-full border-indigo-300 rounded-md"
-                                        placeholder="Risk title" />
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block mb-1 font-semibold text-gray-700">Likelihood</label>
-                                    <select name="likelihood" class="w-full border-indigo-300 rounded-md">
-                                        <option value="">—</option>
-                                        @foreach(['low','medium','high'] as $v)<option value="{{ $v }}">{{ ucfirst($v)
-                                            }}</option>@endforeach
-                                    </select>
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block mb-1 font-semibold text-gray-700">Impact</label>
-                                    <select name="impact" class="w-full border-indigo-300 rounded-md">
-                                        <option value="">—</option>
-                                        @foreach(['low','medium','high'] as $v)<option value="{{ $v }}">{{ ucfirst($v)
-                                            }}</option>@endforeach
-                                    </select>
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block mb-1 font-semibold text-gray-700">Level</label>
-                                    <select name="risk_level" class="w-full border-indigo-300 rounded-md">
-                                        <option value="">—</option>
-                                        @foreach(['low','medium','high','critical'] as $v)<option value="{{ $v }}">{{
-                                            ucfirst($v) }}</option>@endforeach
-                                    </select>
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block mb-1 font-semibold text-gray-700">Status</label>
-                                    <select name="status" class="w-full border-indigo-300 rounded-md">
-                                        @foreach(['identified','assessed','treated','retired'] as $v)<option
-                                            value="{{ $v }}">{{ Str::headline($v) }}</option>@endforeach
-                                    </select>
-                                </div>
-                                <div class="md:col-span-3">
-                                    <label class="block mb-1 font-semibold text-gray-700">Owner</label>
-                                    <select name="owner_user_id" class="w-full border-indigo-300 rounded-md">
-                                        <option value="">—</option>
-                                        @foreach($allUsers as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="md:col-span-12">
-                                    <label class="block mb-1 font-semibold text-gray-700">Description</label>
-                                    <textarea name="description" rows="2" class="w-full border-indigo-300 rounded-md"
-                                        placeholder="Optional details"></textarea>
-                                </div>
-                                <div class="md:col-span-12 flex justify-end pt-2">
-                                    <button
-                                        class="px-5 py-2 bg-indigo-600 text-white rounded-md text-[11px] font-semibold">Save
-                                        Risk</button>
-                                </div>
-                            </form>
-                        </div>
+                            <div class="md:col-span-2">
+                                <label class="block mb-1 font-semibold text-gray-700">Impact</label>
+                                <select name="impact" class="w-full border-indigo-300 rounded-md">
+                                    <option value="">—</option>
+                                    @foreach(['low','medium','high'] as $v)<option value="{{ $v }}">{{ ucfirst($v)
+                                        }}</option>@endforeach
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block mb-1 font-semibold text-gray-700">Level</label>
+                                <select name="risk_level" class="w-full border-indigo-300 rounded-md">
+                                    <option value="">—</option>
+                                    @foreach(['low','medium','high','critical'] as $v)<option value="{{ $v }}">{{
+                                        ucfirst($v) }}</option>@endforeach
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block mb-1 font-semibold text-gray-700">Status</label>
+                                <select name="status" class="w-full border-indigo-300 rounded-md">
+                                    @foreach(['identified','assessed','treated','retired'] as $v)<option
+                                        value="{{ $v }}">{{ Str::headline($v) }}</option>@endforeach
+                                </select>
+                            </div>
+                            <div class="md:col-span-3">
+                                <label class="block mb-1 font-semibold text-gray-700">Owner</label>
+                                <select name="owner_user_id" class="w-full border-indigo-300 rounded-md">
+                                    <option value="">—</option>
+                                    @foreach($allUsers as $u)<option value="{{ $u->id }}">{{ $u->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="md:col-span-12">
+                                <label class="block mb-1 font-semibold text-gray-700">Description</label>
+                                <textarea name="description" rows="2" class="w-full border-indigo-300 rounded-md"
+                                    placeholder="Optional details"></textarea>
+                            </div>
+                            <div class="md:col-span-12 flex justify-end pt-2">
+                                <button
+                                    class="px-5 py-2 bg-indigo-600 text-white rounded-md text-[11px] font-semibold">Save
+                                    Risk</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
                 <!-- Removed notifications, schedules, tags tab content -->
 
-                <div id="metrics-tab" class="tab-content p-6" style="display:none;">
+                <div id="metrics-tab" class="tab-content p-3" style="display:none;">
                     @php($metricDescriptions = [
                     'findings_total' => 'Count of all findings for this audit (audit_findings where audit_id =
                     current).',
@@ -1719,7 +1660,7 @@
                     </div>
                 </div>
 
-                <div id="operations-tab" class="tab-content p-6" style="display:none;">
+                <div id="operations-tab" class="tab-content p-3" style="display:none;">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="bg-white rounded-lg p-4 border border-gray-200">
                             <h4 class="text-md font-medium mb-3">Update Status</h4>
@@ -1885,7 +1826,7 @@
                         </div>
                     </div>
                 </div>
-                <div id="schedules-tab" class="tab-content p-6" style="display:none;">
+                <div id="schedules-tab" class="tab-content p-3" style="display:none;">
                     <div class="mb-6 overflow-x-auto">
                         <table class="min-w-full border border-gray-300 bg-white text-sm">
                             <thead class="bg-gray-100">
