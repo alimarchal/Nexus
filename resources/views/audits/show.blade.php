@@ -1263,7 +1263,7 @@
 
                 <div id="actions-tab" class="tab-content p-3" style="display:none;">
                     <div class="space-y-8">
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-md sm:rounded-lg">
                             <div class="relative overflow-x-auto rounded-lg">
                                 <table class="min-w-max w-full table-auto text-sm">
                                     <thead>
@@ -1353,7 +1353,7 @@
                             </div>
                         </div>
                         @if($audit->findings->count())
-                        <div class="bg-white p-4 border border-gray-200 rounded-lg">
+                        <div class="bg-white p-4 border border-gray-200 shadow-md sm:rounded-lg">
                             <h5 class="text-sm font-semibold text-gray-800 mb-3">Add Action</h5>
                             <form method="POST"
                                 action="{{ route('audits.actions.add', [$audit, $audit->findings->first()]) }}"
@@ -1422,33 +1422,8 @@
                 </div>
 
                 <div id="documents-tab" class="tab-content p-3" style="display:none;">
-                    <div class="mb-6">
-                        <div class="bg-white p-4 border border-gray-200 rounded-lg">
-                            <h5 class="text-sm font-semibold text-gray-800 mb-3">Upload Documents</h5>
-                            <form method="POST" action="{{ route('audits.documents.store', $audit) }}"
-                                enctype="multipart/form-data" class="grid md:grid-cols-4 gap-4">@csrf
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-semibold mb-1">Files</label>
-                                    <input type="file" name="files[]" multiple required
-                                        class="border-gray-300 rounded-md text-sm w-full" />
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold mb-1">Category</label>
-                                    <input name="category" placeholder="Optional"
-                                        class="border-gray-300 rounded-md text-sm w-full" />
-                                </div>
-                                <div class="md:col-span-1 flex items-end justify-end">
-                                    <button
-                                        class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold w-full md:w-auto">Upload</button>
-                                </div>
-                                <div class="md:col-span-4 -mt-2">
-                                    <p class="text-[11px] text-gray-500">Stored at: private Complaints/{{
-                                        $audit->reference_no }}/documents</p>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-md sm:rounded-lg">
                         <div class="relative overflow-x-auto rounded-lg">
                             <table class="min-w-max w-full table-auto text-sm">
                                 <thead>
@@ -1498,11 +1473,37 @@
                             </table>
                         </div>
                     </div>
+
+                    <div class="mt-6">
+                        <div class="bg-white p-4 border border-gray-200 shadow-md sm:rounded-lg">
+                            <form method="POST" action="{{ route('audits.documents.store', $audit) }}"
+                                enctype="multipart/form-data" class="grid md:grid-cols-4 gap-4">@csrf
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-semibold mb-1">Files</label>
+                                    <input type="file" name="files[]" multiple required
+                                        class="border-gray-300 rounded-md text-sm w-full" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold mb-1">Category</label>
+                                    <input name="category" placeholder="Optional"
+                                        class="border-gray-300 rounded-md text-sm w-full" />
+                                </div>
+                                <div class="md:col-span-1 flex items-end justify-end">
+                                    <button
+                                        class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold w-full md:w-auto">Upload</button>
+                                </div>
+                                <div class="md:col-span-4 -mt-2">
+                                    <p class="text-[11px] text-gray-500">Stored at: private Complaints/{{
+                                        $audit->reference_no }}/documents</p>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="risks-tab" class="tab-content p-3" style="display:none;">
                     <div class="mb-6">
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-md sm:rounded-lg">
                             <div class="relative overflow-x-auto rounded-lg">
                                 <table class="min-w-max w-full table-auto text-sm">
                                     <thead>
@@ -1552,8 +1553,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="bg-white p-4 border border-gray-200 rounded-lg">
-                        <h5 class="text-sm font-semibold text-gray-800 mb-3">Add Risk</h5>
+                    <div class="bg-white p-4 border border-gray-200 shadow-md sm:rounded-lg">
                         <form method="POST" action="{{ route('audits.risks.add', $audit) }}"
                             class="grid md:grid-cols-6 gap-4">@csrf
                             <div class="md:col-span-3">
@@ -1898,7 +1898,7 @@
                 </div>
                 <div id="schedules-tab" class="tab-content p-3" style="display:none;">
                     <div class="mb-6">
-                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-md sm:rounded-lg">
                             <div class="relative overflow-x-auto rounded-lg">
                                 <table class="min-w-max w-full table-auto text-sm">
                                     <thead>
@@ -1935,7 +1935,7 @@
                         </div>
                     </div>
                     <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
-                        class="grid md:grid-cols-5 gap-4 bg-white p-4 border border-gray-200 shadow-xl sm:rounded-lg">
+                        class="grid md:grid-cols-5 gap-4 bg-white p-4 border border-gray-200 shadow-md sm:rounded-lg">
                         @csrf
                         <div class="md:col-span-2">
                             <label class="block text-xs font-semibold mb-1">Frequency</label>
