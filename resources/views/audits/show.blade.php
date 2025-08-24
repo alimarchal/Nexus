@@ -1407,7 +1407,7 @@
                 </div>
 
                 <div id="documents-tab" class="tab-content p-3" style="display:none;">
-                    <div class="space-y-4">
+                    <div class="mb-6">
                         <div class="p-4 border border-indigo-200 rounded-lg bg-indigo-50/60">
                             <h5 class="text-sm font-semibold text-gray-800 mb-2">Upload Documents</h5>
                             <form method="POST" action="{{ route('audits.documents.store', $audit) }}"
@@ -1422,69 +1422,110 @@
                                         class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Upload</button></div>
                             </form>
                         </div>
-                        @forelse($audit->documents as $doc)
-                        <div class="flex justify-between items-center p-3 border rounded bg-white shadow-sm">
-                            <div class="text-sm">
-                                <div class="font-medium text-gray-800">{{ $doc->original_name }}</div>
-                                <div class="text-[11px] text-gray-500">{{ $doc->mime_type ?? 'n/a' }} • Uploaded {{
-                                    $doc->created_at->format('M d, Y') }}</div>
-                            </div>
-                            <div class="flex gap-2">
-                                <a href="{{ route('audits.documents.download', [$audit, $doc]) }}"
-                                    class="px-2 py-1 text-xs bg-blue-600 text-white rounded">Download</a>
-                                <form method="POST" action="{{ route('audits.documents.delete', [$audit, $doc]) }}">
-                                    @csrf @method('DELETE')<button onclick="return confirm('Delete document?')"
-                                        class="px-2 py-1 text-xs bg-red-600 text-white rounded">Delete</button></form>
-                            </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                        <div class="relative overflow-x-auto rounded-lg">
+                            <table class="min-w-max w-full table-auto text-sm">
+                                <thead>
+                                    <tr class="bg-green-800 text-white uppercase text-sm">
+                                        <th class="py-3 px-2 text-center">#</th>
+                                        <th class="py-3 px-2 text-left">Document</th>
+                                        <th class="py-3 px-2 text-center">Type</th>
+                                        <th class="py-3 px-2 text-center">Uploaded</th>
+                                        <th class="py-3 px-2 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-black text-sm leading-normal">
+                                    @forelse($audit->documents as $i => $doc)
+                                    <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                        <td class="py-3 px-2 text-center font-semibold">{{ $i+1 }}</td>
+                                        <td class="py-3 px-2 font-medium text-gray-800">
+                                            <div>{{ $doc->original_name }}</div>
+                                            @if($doc->category)
+                                            <div class="text-[11px] text-gray-500 mt-1">Category: {{ $doc->category }}
+                                            </div>
+                                            @endif
+                                        </td>
+                                        <td class="py-3 px-2 text-center text-xs">{{ $doc->mime_type ?? 'n/a' }}</td>
+                                        <td class="py-3 px-2 text-center text-xs">{{ $doc->created_at->format('d-m-Y')
+                                            }}</td>
+                                        <td class="py-3 px-2 text-center text-xs">
+                                            <div class="flex items-center justify-center gap-2">
+                                                <a href="{{ route('audits.documents.download', [$audit, $doc]) }}"
+                                                    class="px-2 py-1 text-white bg-blue-600 hover:bg-blue-700 rounded-md text-[11px] font-semibold">Download</a>
+                                                <form method="POST"
+                                                    action="{{ route('audits.documents.delete', [$audit, $doc]) }}"
+                                                    onsubmit="return confirm('Delete document?')">
+                                                    @csrf @method('DELETE')
+                                                    <button
+                                                        class="px-2 py-1 text-white bg-red-600 hover:bg-red-700 rounded-md text-[11px] font-semibold">Delete</button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="5" class="py-6 px-4 text-center text-gray-500">No documents
+                                            uploaded.</td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
-                        @empty
-                        <p class="text-sm text-gray-500">No documents uploaded.</p>
-                        @endforelse
                     </div>
                 </div>
 
                 <div id="risks-tab" class="tab-content p-3" style="display:none;">
-                    <div class="mb-6 overflow-x-auto">
-                        <table class="min-w-full border border-gray-300 bg-white text-sm">
-                            <thead class="bg-gray-100">
-                                <tr class="divide-x divide-gray-300">
-                                    <th class="px-3 py-2 text-left font-semibold">#</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Title</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Likelihood</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Impact</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Level</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Status</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Owner</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Created</th>
-
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                @forelse($audit->risks->sortByDesc('created_at') as $idx => $risk)
-                                <tr class="divide-x divide-gray-200 align-top">
-                                    <td class="px-3 py-2">{{ $idx+1 }}</td>
-                                    <td class="px-3 py-2 font-medium w-56">{{ $risk->title }}
-                                        @if($risk->description)
-                                        <div class="mt-1 text-[11px] text-gray-600 line-clamp-3">{{
-                                            Str::limit($risk->description,140) }}</div>
-                                        @endif
-                                    </td>
-                                    <td class="px-3 py-2 text-xs">{{ ucfirst($risk->likelihood ?? '—') }}</td>
-                                    <td class="px-3 py-2 text-xs">{{ ucfirst($risk->impact ?? '—') }}</td>
-                                    <td class="px-3 py-2 text-xs">{{ ucfirst($risk->risk_level ?? '—') }}</td>
-                                    <td class="px-3 py-2 text-xs">{{ Str::headline($risk->status ?? 'identified') }}
-                                    </td>
-                                    <td class="px-3 py-2 text-xs">{{ $risk->owner?->name ?? '—' }}</td>
-                                    <td class="px-3 py-2 text-xs">{{ $risk->created_at->format('d-m-Y') }}</td>
-
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="8" class="px-3 py-4 text-center text-gray-500">No risks logged.</td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    <div class="mb-6">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                            <div class="relative overflow-x-auto rounded-lg">
+                                <table class="min-w-max w-full table-auto text-sm">
+                                    <thead>
+                                        <tr class="bg-green-800 text-white uppercase text-sm">
+                                            <th class="py-3 px-2 text-center">#</th>
+                                            <th class="py-3 px-2 text-left">Title & Description</th>
+                                            <th class="py-3 px-2 text-center">Likelihood</th>
+                                            <th class="py-3 px-2 text-center">Impact</th>
+                                            <th class="py-3 px-2 text-center">Level</th>
+                                            <th class="py-3 px-2 text-center">Status</th>
+                                            <th class="py-3 px-2 text-center">Owner</th>
+                                            <th class="py-3 px-2 text-center">Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-black text-sm leading-normal">
+                                        @forelse($audit->risks->sortByDesc('created_at') as $idx => $risk)
+                                        <tr class="border-b border-gray-200 hover:bg-gray-50 align-top">
+                                            <td class="py-3 px-2 text-center font-semibold">{{ $idx+1 }}</td>
+                                            <td class="py-3 px-2 font-medium text-gray-800 w-60">
+                                                <div>{{ $risk->title }}</div>
+                                                @if($risk->description)
+                                                <div class="text-[11px] text-gray-600 mt-1">{{
+                                                    Str::limit($risk->description,120) }}</div>
+                                                @endif
+                                            </td>
+                                            <td class="py-3 px-2 text-center text-xs">{{ ucfirst($risk->likelihood ??
+                                                '—') }}</td>
+                                            <td class="py-3 px-2 text-center text-xs">{{ ucfirst($risk->impact ?? '—')
+                                                }}</td>
+                                            <td class="py-3 px-2 text-center text-xs">{{ ucfirst($risk->risk_level ??
+                                                '—') }}</td>
+                                            <td class="py-3 px-2 text-center text-xs">{{ Str::headline($risk->status ??
+                                                'identified') }}</td>
+                                            <td class="py-3 px-2 text-center text-xs">{{ $risk->owner?->name ?? '—' }}
+                                            </td>
+                                            <td class="py-3 px-2 text-center text-xs">{{
+                                                $risk->created_at->format('d-m-Y') }}</td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="8" class="py-6 px-4 text-center text-gray-500">No risks logged.
+                                            </td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                     <div class="p-5 border border-indigo-200 rounded-xl bg-indigo-50/60">
                         <h5 class="text-sm font-semibold text-gray-800 mb-3">Add Risk</h5>
@@ -1865,7 +1906,7 @@
                         </div>
                     </div>
                     <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
-                        class="grid md:grid-cols-5 gap-4 bg-white p-4 border border-gray-200 rounded-lg">@csrf
+                        class="grid md:grid-cols-5 gap-4 bg-white p-4 border border-gray-200 shadow-xl sm:rounded-lg">@csrf
                         <div class="md:col-span-2">
                             <label class="block text-xs font-semibold mb-1">Frequency</label>
                             <select name="frequency" class="w-full border-gray-300 rounded-md text-sm">
