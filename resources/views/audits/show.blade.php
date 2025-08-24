@@ -1827,34 +1827,42 @@
                     </div>
                 </div>
                 <div id="schedules-tab" class="tab-content p-3" style="display:none;">
-                    <div class="mb-6 overflow-x-auto">
-                        <table class="min-w-full border border-gray-300 bg-white text-sm">
-                            <thead class="bg-gray-100">
-                                <tr class="divide-x divide-gray-300">
-                                    <th class="px-3 py-2 text-left font-semibold">#</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Frequency</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Scheduled Date</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Next Run Date</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Created</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                @forelse($audit->schedules as $idx => $sch)
-                                <tr class="divide-x divide-gray-200">
-                                    <td class="px-3 py-2">{{ $idx+1 }}</td>
-                                    <td class="px-3 py-2 font-medium">{{ ucfirst($sch->frequency) }}</td>
-                                    <td class="px-3 py-2">{{ $sch->scheduled_date?->format('d-m-Y') ?? '—' }}</td>
-                                    <td class="px-3 py-2">{{ $sch->next_run_date?->format('d-m-Y') ?? '—' }}</td>
-                                    <td class="px-3 py-2 text-xs text-gray-600">{{ $sch->created_at?->format('d-m-Y') }}
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="5" class="px-3 py-4 text-center text-gray-500">No schedules.</td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    <div class="mb-6">
+                        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
+                            <div class="relative overflow-x-auto rounded-lg">
+                                <table class="min-w-max w-full table-auto text-sm">
+                                    <thead>
+                                        <tr class="bg-green-800 text-white uppercase text-sm">
+                                            <th class="py-3 px-2 text-center">#</th>
+                                            <th class="py-3 px-2 text-left">Frequency</th>
+                                            <th class="py-3 px-2 text-center">Scheduled Date</th>
+                                            <th class="py-3 px-2 text-center">Next Run Date</th>
+                                            <th class="py-3 px-2 text-center">Created</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-black text-sm leading-normal">
+                                        @forelse($audit->schedules as $idx => $sch)
+                                        <tr class="border-b border-gray-200 hover:bg-gray-50">
+                                            <td class="py-3 px-2 text-center font-semibold">{{ $idx+1 }}</td>
+                                            <td class="py-3 px-2 font-medium text-gray-800">{{ ucfirst($sch->frequency)
+                                                }}</td>
+                                            <td class="py-3 px-2 text-center">{{ $sch->scheduled_date?->format('d-m-Y')
+                                                ?? '—' }}</td>
+                                            <td class="py-3 px-2 text-center">{{ $sch->next_run_date?->format('d-m-Y')
+                                                ?? '—' }}</td>
+                                            <td class="py-3 px-2 text-center text-xs text-gray-600">{{
+                                                $sch->created_at?->format('d-m-Y') }}</td>
+                                        </tr>
+                                        @empty
+                                        <tr>
+                                            <td colspan="5" class="py-6 px-4 text-center text-gray-500">No schedules.
+                                            </td>
+                                        </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                     <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
                         class="grid md:grid-cols-5 gap-4 bg-white p-4 border border-gray-200 rounded-lg">@csrf
