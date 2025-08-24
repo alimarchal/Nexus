@@ -77,6 +77,37 @@
                 </div>
 
                 <div class="p-6">
+                    <!-- Readability Overrides: enforce 14px font size and black text color across all tab panels -->
+                    <style>
+                        /* Scope to this page only */
+                        .tab-content {
+                            font-size: 14px !important;
+                            color: #000 !important;
+                        }
+
+                        /* Apply to common inline text elements */
+                        .tab-content p,
+                        .tab-content span,
+                        .tab-content li,
+                        .tab-content td,
+                        .tab-content th,
+                        .tab-content label,
+                        .tab-content input,
+                        .tab-content textarea,
+                        .tab-content select,
+                        .tab-content button,
+                        .tab-content a,
+                        .tab-content div {
+                            font-size: 14px !important;
+                        }
+
+                        /* Ensure form controls inherit black text */
+                        .tab-content input,
+                        .tab-content textarea,
+                        .tab-content select {
+                            color: #000 !important;
+                        }
+                    </style>
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2 space-y-6">
                             <div
