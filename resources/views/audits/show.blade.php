@@ -293,6 +293,9 @@
                         <button
                             class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
                             data-tab="risks">Risks ({{ $audit->risks->count() }})</button>
+                        <button
+                            class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
+                            data-tab="schedules">Schedules ({{ $audit->schedules->count() }})</button>
                         <!-- Removed notifications, schedules, tags tabs moved to Operations -->
                         <button
                             class="tab-button border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700"
@@ -1746,33 +1749,56 @@
                                 <form method="POST" action="{{ route('audits.update-basic-info', $audit) }}">@csrf
                                     @method('PATCH')
                                     <div class="space-y-3">
-                                        <input name="title" value="{{ $audit->title }}"
-                                            class="w-full border-gray-300 rounded-md text-sm" placeholder="Title"
-                                            required>
-                                        <textarea name="description" rows="2"
-                                            class="w-full border-gray-300 rounded-md text-sm"
-                                            placeholder="Description">{{ $audit->description }}</textarea>
-                                        <textarea name="scope_summary" rows="2"
-                                            class="w-full border-gray-300 rounded-md text-sm"
-                                            placeholder="Scope Summary">{{ $audit->scope_summary }}</textarea>
-                                        <div class="grid grid-cols-2 gap-2">
-                                            <input type="date" name="planned_start_date"
-                                                value="{{ $audit->planned_start_date }}"
-                                                class="border-gray-300 rounded-md text-sm">
-                                            <input type="date" name="planned_end_date"
-                                                value="{{ $audit->planned_end_date }}"
-                                                class="border-gray-300 rounded-md text-sm">
+                                        <div>
+                                            <label class="block text-xs font-semibold mb-1">Title</label>
+                                            <input name="title" value="{{ $audit->title }}"
+                                                class="w-full border-gray-300 rounded-md text-sm" required>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold mb-1">Description</label>
+                                            <textarea name="description" rows="2"
+                                                class="w-full border-gray-300 rounded-md text-sm">{{ $audit->description }}</textarea>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold mb-1">Scope Summary</label>
+                                            <textarea name="scope_summary" rows="2"
+                                                class="w-full border-gray-300 rounded-md text-sm">{{ $audit->scope_summary }}</textarea>
                                         </div>
                                         <div class="grid grid-cols-2 gap-2">
-                                            <input type="date" name="actual_start_date"
-                                                value="{{ $audit->actual_start_date }}"
-                                                class="border-gray-300 rounded-md text-sm">
-                                            <input type="date" name="actual_end_date"
-                                                value="{{ $audit->actual_end_date }}"
-                                                class="border-gray-300 rounded-md text-sm">
+                                            <div>
+                                                <label class="block text-xs font-semibold mb-1">Planned Start
+                                                    Date</label>
+                                                <input type="date" name="planned_start_date"
+                                                    value="{{ $audit->planned_start_date }}"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-semibold mb-1">Planned End Date</label>
+                                                <input type="date" name="planned_end_date"
+                                                    value="{{ $audit->planned_end_date }}"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                            </div>
                                         </div>
-                                        <input name="score" value="{{ $audit->score }}" placeholder="Score"
-                                            class="w-full border-gray-300 rounded-md text-sm">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label class="block text-xs font-semibold mb-1">Actual Start
+                                                    Date</label>
+                                                <input type="date" name="actual_start_date"
+                                                    value="{{ $audit->actual_start_date }}"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-semibold mb-1">Actual End Date</label>
+                                                <input type="date" name="actual_end_date"
+                                                    value="{{ $audit->actual_end_date }}"
+                                                    class="w-full border-gray-300 rounded-md text-sm">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-semibold mb-1">Score</label>
+                                            <input name="score" value="{{ $audit->score }}"
+                                                class="w-full border-gray-300 rounded-md text-sm" placeholder="Score">
+                                        </div>
                                         <div class="flex justify-end"><button
                                                 class="px-3 py-1 bg-blue-600 text-white rounded text-xs">Save</button>
                                         </div>
@@ -1795,50 +1821,19 @@
                                     <p class="text-sm text-gray-500">No tags.</p>
                                     @endforelse
                                 </div>
-                                <form method="POST" action="{{ route('audits.tags.add', $audit) }}" class="flex gap-3">
+                                <form method="POST" action="{{ route('audits.tags.add', $audit) }}"
+                                    class="flex gap-3 items-end">
                                     @csrf
-                                    <input name="tag_name" placeholder="Existing tag name"
-                                        class="flex-1 border-gray-300 rounded-md text-sm">
-                                    <button class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Add Tag</button>
-                                </form>
-                            </div>
-                            <!-- Schedules Management -->
-                            <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                <h4 class="text-md font-medium mb-3">Schedules</h4>
-                                <div class="space-y-3 mb-4">
-                                    @forelse($audit->schedules as $sch)
-                                    <div
-                                        class="p-2 border rounded flex justify-between items-center text-xs bg-gray-50">
-                                        <div>
-                                            <div class="font-medium text-gray-700">{{ ucfirst($sch->frequency) }} • {{
-                                                $sch->scheduled_date?->format('M d, Y') }}</div>
-                                            <div class="text-[10px] text-gray-500">Next: {{
-                                                $sch->next_run_date?->format('M d, Y') ?? '—' }}</div>
-                                        </div>
-                                        <form method="POST"
-                                            action="{{ route('audits.schedules.delete', [$audit, $sch]) }}">@csrf
-                                            @method('DELETE')<button class="px-2 py-0.5 bg-red-600 text-white rounded"
-                                                onclick="return confirm('Delete schedule?')">✕</button></form>
+                                    <div class="flex-1">
+                                        <label class="block text-xs font-semibold mb-1">Select Tag</label>
+                                        <select name="tag_name" class="w-full border-gray-300 rounded-md text-sm">
+                                            <option value="">-- Choose --</option>
+                                            @foreach(\App\Models\AuditTag::orderBy('name')->get() as $allTag)
+                                            <option value="{{ $allTag->name }}">{{ $allTag->name }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
-                                    @empty
-                                    <p class="text-sm text-gray-500">No schedules.</p>
-                                    @endforelse
-                                </div>
-                                <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
-                                    class="grid md:grid-cols-4 gap-2">@csrf
-                                    <select name="frequency" class="border-gray-300 rounded-md text-xs col-span-1">
-                                        <option value="once">Once</option>
-                                        <option value="monthly">Monthly</option>
-                                        <option value="quarterly">Quarterly</option>
-                                        <option value="semiannual">Semiannual</option>
-                                        <option value="annual">Annual</option>
-                                    </select>
-                                    <input type="date" name="scheduled_date" required
-                                        class="border-gray-300 rounded-md text-xs col-span-1">
-                                    <input type="date" name="next_run_date"
-                                        class="border-gray-300 rounded-md text-xs col-span-1">
-                                    <button
-                                        class="px-3 py-1 bg-indigo-600 text-white rounded text-xs col-span-1">Add</button>
+                                    <button class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Add Tag</button>
                                 </form>
                             </div>
                             <!-- Notifications Management -->
@@ -1888,6 +1883,78 @@
                                 </form>
                             </div>
                         </div>
+                    </div>
+                </div>
+                <div id="schedules-tab" class="tab-content p-6" style="display:none;">
+                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                        <h4 class="text-md font-medium mb-4">Schedules</h4>
+                        <div class="space-y-3 mb-4">
+                            @forelse($audit->schedules as $sch)
+                            <div class="p-3 border rounded bg-gray-50 space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <div class="font-medium text-gray-800">{{ ucfirst($sch->frequency) }} • {{
+                                        $sch->scheduled_date?->format('d-m-Y') }}</div>
+                                    <form method="POST" action="{{ route('audits.schedules.delete', [$audit, $sch]) }}"
+                                        class="ml-2">@csrf @method('DELETE')
+                                        <button class="px-2 py-0.5 bg-red-600 text-white rounded text-xs"
+                                            onclick="return confirm('Delete schedule?')">✕</button>
+                                    </form>
+                                </div>
+                                <div class="text-xs text-gray-600">Next Run: {{ $sch->next_run_date?->format('d-m-Y') ??
+                                    '—' }}</div>
+                                <details class="text-xs">
+                                    <summary class="cursor-pointer text-indigo-600">Edit</summary>
+                                    <form method="POST" action="{{ route('audits.schedules.update', [$audit, $sch]) }}"
+                                        class="mt-2 space-y-2">@csrf @method('PATCH')
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <select name="frequency"
+                                                class="border-gray-300 rounded-md text-xs col-span-1">
+                                                @foreach(['once','monthly','quarterly','semiannual','annual'] as $opt)
+                                                <option value="{{ $opt }}" @selected($sch->frequency==$opt)>{{
+                                                    ucfirst($opt) }}</option>
+                                                @endforeach
+                                            </select>
+                                            <input type="date" name="scheduled_date" value="{{ $sch->scheduled_date }}"
+                                                class="border-gray-300 rounded-md text-xs col-span-1">
+                                            <input type="date" name="next_run_date" value="{{ $sch->next_run_date }}"
+                                                class="border-gray-300 rounded-md text-xs col-span-1">
+                                        </div>
+                                        <div class="flex justify-end">
+                                            <button
+                                                class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Save</button>
+                                        </div>
+                                    </form>
+                                </details>
+                            </div>
+                            @empty
+                            <p class="text-sm text-gray-500">No schedules.</p>
+                            @endforelse
+                        </div>
+                        <form method="POST" action="{{ route('audits.schedules.add', $audit) }}"
+                            class="grid md:grid-cols-5 gap-3">@csrf
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-semibold mb-1">Frequency</label>
+                                <select name="frequency" class="w-full border-gray-300 rounded-md text-sm">
+                                    @foreach(['once','monthly','quarterly','semiannual','annual'] as $opt)
+                                    <option value="{{ $opt }}">{{ ucfirst($opt) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="md:col-span-1">
+                                <label class="block text-xs font-semibold mb-1">Date</label>
+                                <input type="date" name="scheduled_date" required
+                                    class="w-full border-gray-300 rounded-md text-sm">
+                            </div>
+                            <div class="md:col-span-1">
+                                <label class="block text-xs font-semibold mb-1">Next Run (optional)</label>
+                                <input type="date" name="next_run_date"
+                                    class="w-full border-gray-300 rounded-md text-sm">
+                            </div>
+                            <div class="md:col-span-1 flex items-end justify-end">
+                                <button
+                                    class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-semibold">Add</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
