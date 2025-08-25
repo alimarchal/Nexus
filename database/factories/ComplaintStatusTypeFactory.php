@@ -17,7 +17,10 @@ class ComplaintStatusTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->words(2, true),
+            'code' => strtoupper($this->faker->unique()->lexify('??')),
+            'description' => $this->faker->sentence(),
+            'is_active' => true,
         ];
     }
 }
