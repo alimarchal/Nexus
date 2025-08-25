@@ -5,9 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Branch;
 use App\Models\Region;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Routing\Controllers\HasMiddleware;
 
-class DashboardController extends Controller
+class DashboardController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role_or_permission:view dashboard', only: ['dashboard']),
+            new Middleware('role_or_permission:view analytics', only: ['daily_position']),
+        ];
+    }
+
     public function dashboard()
     {
 

@@ -8,9 +8,21 @@ use App\Models\District;
 use Illuminate\Http\Request;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Routing\Controllers\HasMiddleware;
 
-class BranchController extends Controller
+class BranchController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role_or_permission:view branches', only: ['index', 'show']),
+            new Middleware('role_or_permission:create branches', only: ['create', 'store']),
+            new Middleware('role_or_permission:edit branches', only: ['edit', 'update']),
+            new Middleware('role_or_permission:delete branches', only: ['destroy']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $branches = QueryBuilder::for(Branch::class)

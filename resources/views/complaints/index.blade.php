@@ -13,6 +13,7 @@
                 </svg>
                 Search & Filter
             </button>
+            @can('create complaints')
             <a href="{{ route('complaints.create') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -20,6 +21,8 @@
                 </svg>
                 New Complaint
             </a>
+            @endcan
+            @can('view analytics')
             <a href="{{ route('complaints.analytics') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -29,6 +32,7 @@
                 </svg>
                 Analytics
             </a>
+            @endcan
             <a href="javascript:window.location.reload();"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -431,9 +435,11 @@
                                 </span>
                             </td>
                             <td class="py-3 px-2 text-center">
+                                @can('view complaints')
                                 <a href="{{ route('complaints.show', $complaint) }}"
                                     class="inline-flex items-center px-3 py-1 text-white bg-blue-600 hover:bg-blue-700 rounded-md text-xs font-semibold transition-all duration-200"
                                     title="View Details">View</a>
+                                @endcan
                             </td>
                         </tr>
                         @endforeach
@@ -466,10 +472,12 @@
                         Clear Filters
                     </a>
                     @endif
+                    @can('create complaints')
                     <a href="{{ route('complaints.create') }}"
                         class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700">
                         Create First Complaint
                     </a>
+                    @endcan
                 </div>
             </div>
             @endif

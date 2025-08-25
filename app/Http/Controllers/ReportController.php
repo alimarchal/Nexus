@@ -14,9 +14,20 @@ use App\Models\Report;
 use Illuminate\Support\Facades\DB;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Routing\Controllers\HasMiddleware;
 
-class ReportController extends Controller
+class ReportController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role_or_permission:view reports', only: ['index', 'show']),
+            new Middleware('role_or_permission:generate reports', only: ['generate', 'generateDailyPositions', 'generateStationeryReport']),
+            new Middleware('role_or_permission:export reports', only: ['export', 'exportDailyPositions']),
+        ];
+    }
+
     // Main report index
     public function index(Request $request)
     {
