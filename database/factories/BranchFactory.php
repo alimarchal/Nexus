@@ -19,7 +19,12 @@ class BranchFactory extends Factory
     public function definition(): array
     {
         // Create or get existing region and district for proper relationship
-        $region = Region::inRandomOrder()->first() ?: Region::factory()->create();
+        $regionCount = Region::count();
+        if ($regionCount > 0) {
+            $region = Region::skip(rand(0, $regionCount - 1))->first();
+        } else {
+            $region = Region::factory()->create();
+        }
         $district = District::where('region_id', $region->id)->inRandomOrder()->first() 
                    ?: District::factory()->create(['region_id' => $region->id]);
         
