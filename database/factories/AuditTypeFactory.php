@@ -17,7 +17,10 @@ class AuditTypeFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => $this->faker->sentence(3),
+            'code' => strtoupper($this->faker->lexify('???')),
+            'description' => $this->faker->paragraph(),
+            'is_active' => true,
         ];
     }
 }
