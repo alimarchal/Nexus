@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             DivisionSeeder::class,
             ComplaintStatusTypeSeeder::class,
             ComplaintCategorySeeder::class,
+            CategorySeeder::class,
             PrintedStationerySeeder::class,
             AuditTypeSeeder::class,
             AuditTagSeeder::class,

@@ -253,43 +253,50 @@
     <!-- STATISTICS DASHBOARD -->
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-blue-600">{{ $statistics['total_complaints'] ?? 0 }}</div>
                     <div class="text-sm text-gray-600">Total</div>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-yellow-600">{{ $statistics['open_complaints'] ?? 0 }}</div>
                     <div class="text-sm text-gray-600">Open</div>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-green-600">{{ $statistics['resolved_complaints'] ?? 0 }}</div>
                     <div class="text-sm text-gray-600">Resolved</div>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-red-600">{{ $statistics['overdue_complaints'] ?? 0 }}</div>
                     <div class="text-sm text-gray-600">Overdue</div>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-orange-600">{{ $statistics['high_priority'] ?? 0 }}</div>
                     <div class="text-sm text-gray-600">High Priority</div>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-red-700">{{ $statistics['critical_priority'] ?? 0 }}</div>
                     <div class="text-sm text-gray-600">Critical</div>
                 </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-purple-600">{{ $statistics['sla_breached'] ?? 0 }}</div>
                     <div class="text-sm text-gray-600">SLA Breach</div>

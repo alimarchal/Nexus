@@ -179,7 +179,8 @@
     <!-- STATISTICS DASHBOARD -->
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-blue-600">{{ $statistics['total_audits'] ?? 0 }}</div>
                     <div class="text-sm text-gray-600">Total</div>
@@ -188,7 +189,8 @@
             @php $statusMap = [ 'planned'=>'yellow', 'in_progress'=>'blue', 'reporting'=>'purple', 'issued'=>'orange',
             'closed'=>'green', 'cancelled'=>'gray']; @endphp
             @foreach($statusMap as $key=>$color)
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-2xl font-bold text-{{ $color }}-600">{{ $statistics['status'][$key] ?? 0 }}</div>
                     <div class="text-xs text-gray-600">{{ ucwords(str_replace('_',' ',$key)) }}</div>
@@ -199,14 +201,16 @@
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
             @php $riskColors = ['low'=>'green','medium'=>'yellow','high'=>'orange','critical'=>'red']; @endphp
             @foreach($riskColors as $risk=>$col)
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-xl font-bold text-{{ $col }}-600">{{ $statistics['risk'][$risk] ?? 0 }}</div>
                     <div class="text-xs text-gray-600">Risk {{ ucfirst($risk) }}</div>
                 </div>
             </div>
             @endforeach
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-4">
+            <div
+                class="bg-white dark:bg-gray-800 overflow-hidden  shadow-md transform hover:scale-110 transition duration-300  sm:rounded-lg p-4">
                 <div class="text-center">
                     <div class="text-xl font-bold text-indigo-600">{{ $statistics['avg_score'] ?? '-' }}</div>
                     <div class="text-xs text-gray-600">Avg Score</div>

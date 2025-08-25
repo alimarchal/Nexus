@@ -3,7 +3,6 @@
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
             Employee Resources
         </h2>
-
         <div class="flex justify-center items-center float-right">
             <button id="toggle"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
@@ -29,7 +28,6 @@
                         d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
                 </svg>
             </a>
-
             <a href="{{ route('product.index') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -41,29 +39,31 @@
         </div>
     </x-slot>
 
-    <!-- FILTER SECTION -->
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters"
             style="display: none">
             <div class="p-6">
                 <form method="GET" action="{{ route('employee_resources.index') }}">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- Filter by Division -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         <div>
                             <x-division />
                         </div>
-
-                        <!-- Filter by Resource No -->
                         <div>
-                            <x-input-filters name="resource_no" label="Resource Number" type="text" />
+                            <x-input-filters name="resource_no" label="Resource No" type="text" />
                         </div>
-
-                        <!-- Filter by Title -->
                         <div>
-                            <x-input-filters name="title" label="Title" type="text" />
+                            <label class="block font-medium text-sm text-gray-700 dark:text-gray-300"
+                                for="category_id">Category</label>
+                            <select name="filter[category_id]" id="category_id"
+                                class="select2 mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">All</option>
+                                @php($cats = \App\Models\Category::orderBy('name')->get())
+                                @foreach($cats as $cat)
+                                <option value="{{ $cat->id }}" {{ request('filter.category_id')==$cat->id ? 'selected' :
+                                    '' }}>{{ $cat->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
-
-                        <!-- Filter by Date Range -->
                         <div>
                             <x-date-from />
                         </div>
@@ -77,57 +77,49 @@
         </div>
     </div>
 
-    <!-- TABLE SECTION -->
     <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-2 pb-16">
         <x-status-message />
         <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
-
-            @if ($resources->count() > 0)
+            @if ($employeeResources->count() > 0)
             <div class="relative overflow-x-auto rounded-lg">
                 <table class="min-w-max w-full table-auto text-sm">
                     <thead>
                         <tr class="bg-green-800 text-white uppercase text-sm">
-                            <th class="py-2 px-2 text-center">Reference #</th>
-                            <th class="py-2 px-2 text-left">Date</th>
-                            <th class="py-2 px-2 text-left">Division</th>
-                            {{-- <th class="py-2 px-2 text-left">Category</th> --}}
-                            <th class="py-2 px-2 text-left">Title</th>
-                            <th class="py-2 px-2 text-left">Description</th>
-                            <th class="py-2 px-2 text-center">Attachment</th>
-                            <th class="py-2 px-2 text-center print:hidden">Actions</th>
+                            <th class="py-2 px-2 text-center whitespace-nowrap">Reference #</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Date</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Division</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Resource No</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Title</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Category</th>
+                            <th class="py-2 px-2 text-center whitespace-nowrap">Attachment</th>
+                            <th class="py-2 px-2 text-center whitespace-nowrap print:hidden">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="text-black text-md leading-normal font-extrabold">
-                        @foreach ($resources->sortByDesc('created_at')->values() as $index => $resource)
+                        @foreach ($employeeResources->sortByDesc('created_at')->values() as $resource)
                         <tr class="border-b border-gray-200 hover:bg-gray-100">
                             <td class="py-1 px-2 text-center">{{ $resource->resource_number }}</td>
                             <td class="py-1 px-2 text-left">{{ $resource->created_at->format('d-m-Y') }}</td>
                             <td class="py-1 px-2 text-left">
-                                <abbr title="{{ $resource->division->name ?? '-' }}">
-                                    {{ $resource->division->short_name ?? '-' }}
-                                </abbr>
+                                <abbr title="{{ $resource->division->name ?? '-' }}">{{ $resource->division->short_name
+                                    ?? '-' }}</abbr>
                             </td>
-                            {{-- <td class="py-1 px-2 text-left">
-                                {{ $resource->category ?? '-' }}</td> --}}
+                            <td class="py-1 px-2 text-left">{{ $resource->resource_no }}</td>
                             <td class="py-1 px-2 text-left">
-                                    {{ $resource->title }}
-                            </td>
-                              <td class="py-1 px-2 text-left">
-                                 <div class="w-96 break-words leading-relaxed">
-                                    {{ $resource->description }}
+                                <div class="max-w-xs truncate" title="{{ $resource->title }}">{{ $resource->title }}
                                 </div>
-                                </td>
+                            </td>
+                            <td class="py-1 px-2 text-left">{{ $resource->category?->name ?? '-' }}</td>
                             <td class="py-1 px-2 text-center">
                                 @if ($resource->attachment)
                                 <div class="flex justify-center space-x-2">
                                     <a href="{{ route('file.download', $resource->attachment) }}"
-                                        class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors duration-200"
-                                        title="Download attachment">
+                                        class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded">
                                         Download
                                     </a>
                                     <a href="{{ route('file.view', $resource->attachment) }}"
-                                        class="inline-flex items-center px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium rounded transition-colors duration-200"
-                                        target="_blank" title="View attachment">
+                                        class="inline-flex items-center px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium rounded"
+                                        target="_blank">
                                         View
                                     </a>
                                 </div>
@@ -136,11 +128,18 @@
                                 @endif
                             </td>
                             <td class="py-1 px-2 text-center">
-                                <div class="flex justify-center space-x-2">
+                                <div class="flex justify-center gap-1 flex-wrap max-w-[150px]">
+                                    <a href="{{ route('employee_resources.show', $resource) }}"
+                                        class="px-2 py-0.5 bg-gray-700 text-white rounded text-xs hover:bg-gray-600">View</a>
                                     <a href="{{ route('employee_resources.edit', $resource) }}"
-                                        class="inline-flex items-center px-3 py-1 bg-blue-800 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                        Edit
-                                    </a>
+                                        class="px-2 py-0.5 bg-blue-700 text-white rounded text-xs hover:bg-blue-600">Edit</a>
+                                    <form method="POST" action="{{ route('employee_resources.destroy', $resource) }}"
+                                        onsubmit="return confirm('Delete this resource?');" class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            class="px-2 py-0.5 bg-red-700 text-white rounded text-xs hover:bg-red-600">Del</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -148,34 +147,26 @@
                     </tbody>
                 </table>
             </div>
-            <div class="px-2 py-2">
-                {{ $resources->links() }}
-            </div>
+            <div class="px-2 py-2">{{ $employeeResources->links() }}</div>
             @else
             <p class="text-gray-700 dark:text-gray-300 text-center py-4">
-                No resources found.
-                <a href="{{ route('employee_resources.create') }}" class="text-blue-600 hover:underline">
-                    Add a new resource
-                </a>.
+                No employee resources found.
+                <a href="{{ route('employee_resources.create') }}" class="text-blue-600 hover:underline">Add a new
+                    resource</a>.
             </p>
             @endif
         </div>
     </div>
 
     @push('modals')
-        {{-- same scripts for toggle filters --}}
-        <script>
-            const targetDiv = document.getElementById("filters");
+    <script>
+        const targetDiv = document.getElementById("filters");
             const btn = document.getElementById("toggle");
-
-            function showFilters() { targetDiv.style.display = 'block'; targetDiv.style.opacity = '0'; targetDiv.style.transform = 'translateY(-20px)'; setTimeout(() => { targetDiv.style.opacity = '1'; targetDiv.style.transform = 'translateY(0)'; }, 10); }
-            function hideFilters() { targetDiv.style.opacity = '0'; targetDiv.style.transform = 'translateY(-20px)'; setTimeout(() => { targetDiv.style.display = 'none'; }, 300); }
-
-            btn.onclick = function(event) { event.stopPropagation(); if (targetDiv.style.display === "none") { showFilters(); } else { hideFilters(); } };
-            document.addEventListener('click', function(event) { if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) { hideFilters(); } });
-            targetDiv.addEventListener('click', function(event) { event.stopPropagation(); });
-
-            const style = document.createElement('style'); style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`; document.head.appendChild(style);
-        </script>
+            function showFilters() { targetDiv.style.display = 'block'; targetDiv.style.opacity = '0'; targetDiv.style.transform = 'translateY(-20px)'; setTimeout(() => { targetDiv.style.opacity = '1'; targetDiv.style.transform = 'translateY(0)';}, 10);}
+            function hideFilters() { targetDiv.style.opacity = '0'; targetDiv.style.transform = 'translateY(-20px)'; setTimeout(() => { targetDiv.style.display = 'none';}, 300);} btn.onclick = function(event){ event.stopPropagation(); if (targetDiv.style.display === 'none'){ showFilters(); } else { hideFilters(); }}; document.addEventListener('click', function(event){ if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn){ hideFilters(); }}); targetDiv.addEventListener('click', function(event){ event.stopPropagation();}); const style = document.createElement('style'); style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`; document.head.appendChild(style);
+    </script>
+    <script>
+        $(document).ready(function(){ $('#category_id').select2({width:'100%'});});
+    </script>
     @endpush
 </x-app-layout>

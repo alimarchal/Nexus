@@ -356,7 +356,7 @@ class AuditExtraController extends Controller
         ]);
         $data['audit_id'] = $audit->id;
         $data['created_by'] = auth()->id();
-        $data['reference_no'] = generateUniqueId('afd', 'audit_findings', 'reference_no');
+        $data['reference_no'] = generateUniqueId('audit_findings', 'audit_findings', 'reference_no');
         $finding = AuditFinding::create($data);
         // Handle attachments (store under Complaints path per requirement for consistency)
         if ($request->hasFile('attachments')) {
