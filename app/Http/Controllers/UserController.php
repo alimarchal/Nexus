@@ -7,6 +7,7 @@ use App\Models\Branch;
 use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Routing\Controllers\Middleware;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Spatie\QueryBuilder\QueryBuilder;
@@ -16,13 +17,15 @@ use Spatie\QueryBuilder\AllowedInclude;
 
 class UserController extends Controller
 {
-    public function __construct()
+    public static function middleware(): array
     {
-        $this->middleware('can:view users')->only(['index', 'show']);
-        $this->middleware('can:create users')->only(['create', 'store']);
-        $this->middleware('can:edit users')->only(['edit', 'update']);
-        $this->middleware('can:delete users')->only(['destroy']);
-        $this->middleware('can:assign permissions')->only(['store', 'update']);
+        return [
+            new Middleware('role_or_permission:view users', only: ['index', 'show']),
+            new Middleware('role_or_permission:create users', only: ['create', 'store']),
+            new Middleware('role_or_permission:edit users', only: ['edit', 'update']),
+            new Middleware('role_or_permission:delete users', only: ['destroy']),
+            new Middleware('role_or_permission:assign permissions', only: ['store', 'update']),
+        ];
     }
 
     public function index(Request $request)
@@ -45,7 +48,7 @@ class UserController extends Controller
         $divisions = Division::all();
         $roles = Role::all();
         $permissions = Permission::all();
-        
+
         return view('users.create', compact('branches', 'divisions', 'roles', 'permissions'));
     }
 
@@ -75,14 +78,16 @@ class UserController extends Controller
             'is_active' => $request->is_active,
         ]);
 
-        // Assign roles if provided
+        // Assign roles if provided (convert IDs to names for spatie/permission)
         if ($request->filled('roles')) {
-            $user->syncRoles($request->roles);
+            $roleNames = Role::whereIn('id', $request->roles)->pluck('name')->toArray();
+            $user->syncRoles($roleNames);
         }
 
-        // Assign individual permissions if provided
+        // Assign individual permissions if provided (convert IDs to names)
         if ($request->filled('permissions')) {
-            $user->syncPermissions($request->permissions);
+            $permissionNames = Permission::whereIn('id', $request->permissions)->pluck('name')->toArray();
+            $user->syncPermissions($permissionNames);
         }
 
         return redirect()->route('users.index')->with('success', 'User created successfully with assigned roles and permissions.');
@@ -96,7 +101,7 @@ class UserController extends Controller
         $permissions = Permission::all();
         $userRoles = $user->roles->pluck('id')->toArray();
         $userPermissions = $user->permissions->pluck('id')->toArray();
-        
+
         return view('users.edit', compact('user', 'branches', 'divisions', 'roles', 'permissions', 'userRoles', 'userPermissions'));
     }
 
@@ -146,11 +151,24 @@ class UserController extends Controller
 
         $user->update($updateData);
 
-        // Sync roles if provided, otherwise clear all roles
-        $user->syncRoles($request->roles ?? []);
+        // Sync roles (IDs -> names) if provided, otherwise clear all roles
+        if ($request->has('roles')) {
+            $roleIds = $request->roles ?? [];
+            $roleNames = empty($roleIds) ? [] : Role::whereIn('id', $roleIds)->pluck('name')->toArray();
+            $user->syncRoles($roleNames);
+        } else {
+            // Explicitly clear roles if roles key omitted? Keep existing behavior (clear) by passing empty array
+            $user->syncRoles([]);
+        }
 
-        // Sync individual permissions if provided, otherwise clear all permissions
-        $user->syncPermissions($request->permissions ?? []);
+        // Sync individual permissions (IDs -> names) if provided, otherwise clear all permissions
+        if ($request->has('permissions')) {
+            $permIds = $request->permissions ?? [];
+            $permissionNames = empty($permIds) ? [] : Permission::whereIn('id', $permIds)->pluck('name')->toArray();
+            $user->syncPermissions($permissionNames);
+        } else {
+            $user->syncPermissions([]);
+        }
 
         return redirect()->route('users.index')->with('success', 'User updated successfully with assigned roles and permissions.');
     }

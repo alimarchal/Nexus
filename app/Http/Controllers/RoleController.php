@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
-    public function __construct()
+    public function middleware()
     {
         $this->middleware('can:view roles')->only(['index', 'show']);
         $this->middleware('can:create roles')->only(['create', 'store']);

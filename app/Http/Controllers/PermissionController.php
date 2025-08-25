@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class PermissionController extends Controller
 {
-    public function __construct()
+    public function middleware()
     {
         $this->middleware('can:view permissions')->only(['index', 'show']);
         $this->middleware('can:create permissions')->only(['create', 'store']);
@@ -31,6 +31,7 @@ class PermissionController extends Controller
         // Create the permission
         Permission::create([
             'name' => $request->name,
+            'guard_name' => 'web',
         ]);
 
         // Redirect with success message
@@ -77,6 +78,7 @@ class PermissionController extends Controller
         // Update the permission
         $permission->update([
             'name' => $request->name,
+            'guard_name' => 'web',
         ]);
 
         // Redirect with success message
@@ -88,7 +90,7 @@ class PermissionController extends Controller
     {
         // Prevent deletion of critical permissions
         $criticalPermissions = ['view users', 'edit users', 'create users', 'delete users', 'view roles', 'edit roles'];
-        
+
         if (in_array($permission->name, $criticalPermissions)) {
             return redirect()->back()->withErrors(['permission' => 'Cannot delete critical system permission: ' . $permission->name]);
         }
