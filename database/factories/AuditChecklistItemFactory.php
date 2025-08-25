@@ -18,11 +18,11 @@ class AuditChecklistItemFactory extends Factory
     {
         return [
             'title' => $this->faker->sentence(4),
-            'description' => $this->faker->paragraph(),
-            'response_type' => $this->faker->randomElement(['yes_no', 'text', 'numeric', 'multiple_choice']),
-            'display_order' => $this->faker->numberBetween(1, 100),
+            'criteria' => $this->faker->paragraph(),
+            'guidance' => $this->faker->sentence(),
+            'response_type' => $this->faker->randomElement(['yes_no', 'compliant_noncompliant', 'rating', 'text', 'numeric', 'evidence']),
             'max_score' => $this->faker->numberBetween(5, 20),
-            'is_required' => $this->faker->boolean(80), // 80% required
+            'display_order' => $this->faker->numberBetween(1, 100),
             'is_active' => true,
         ];
     }
