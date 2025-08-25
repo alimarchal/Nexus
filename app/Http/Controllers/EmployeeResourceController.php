@@ -24,6 +24,8 @@ class EmployeeResourceController extends Controller
             ->allowedFilters([
                 AllowedFilter::exact('division_id'),
                 AllowedFilter::partial('resource_number'),
+                AllowedFilter::partial('resource_no'),
+                AllowedFilter::partial('reference_no'),
                 AllowedFilter::exact('category_id'),
                 AllowedFilter::callback('date_from', function ($query, $value) {
                     $query->whereDate('created_at', '>=', $value);
@@ -37,6 +39,12 @@ class EmployeeResourceController extends Controller
             ->paginate(10);
 
         return view('employee_resources.index', compact('employeeResources'));
+    }
+
+    public function show(EmployeeResource $employee_resource)
+    {
+        $employee_resource->load(['division', 'category', 'user', 'updatedBy']);
+        return view('employee_resources.show', ['resource' => $employee_resource]);
     }
 
     public function create()
@@ -139,6 +147,28 @@ class EmployeeResourceController extends Controller
             DB::rollBack();
             Log::error('Error updating employee resource', ['id' => $employee_resource->id, 'error' => $e->getMessage(), 'user_id' => auth()->id()]);
             return back()->withInput()->with('error', 'Failed to update employee resource.');
+        }
+    }
+
+    public function destroy(EmployeeResource $employee_resource)
+    {
+        DB::beginTransaction();
+        try {
+            // Delete attachment file if exists
+            if ($employee_resource->attachment) {
+                try {
+                    FileStorageHelper::deletePrivateFile($employee_resource->attachment);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to delete employee resource file', ['id' => $employee_resource->id, 'error' => $e->getMessage()]);
+                }
+            }
+            $employee_resource->delete();
+            DB::commit();
+            return redirect()->route('employee_resources.index')->with('success', 'Employee Resource deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting employee resource', ['id' => $employee_resource->id, 'error' => $e->getMessage()]);
+            return redirect()->route('employee_resources.index')->with('error', 'Failed to delete Employee Resource.');
         }
     }
 }

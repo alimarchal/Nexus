@@ -128,8 +128,17 @@
                             </td>
                             <td class="py-1 px-2 text-center">
                                 <div class="flex justify-center space-x-2">
+                                    <a href="{{ route('employee_resources.show', $resource) }}"
+                                        class="inline-flex items-center px-3 py-1 bg-gray-700 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">View</a>
                                     <a href="{{ route('employee_resources.edit', $resource) }}"
                                         class="inline-flex items-center px-3 py-1 bg-blue-800 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Edit</a>
+                                    <form method="POST" action="{{ route('employee_resources.destroy', $resource) }}"
+                                        onsubmit="return confirm('Delete this resource?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            class="inline-flex items-center px-3 py-1 bg-red-700 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">Del</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
