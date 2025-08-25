@@ -4,15 +4,21 @@ namespace App\Http\Controllers;
 
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use stdClass;
 
-class PermissionController extends Controller
+class PermissionController extends Controller implements HasMiddleware
 {
-    public function middleware()
+    public static function middleware()
     {
-        $this->middleware('can:view permissions')->only(['index', 'show']);
-        $this->middleware('can:create permissions')->only(['create', 'store']);
-        $this->middleware('can:edit permissions')->only(['edit', 'update']);
-        $this->middleware('can:delete permissions')->only(['destroy']);
+        return [
+            new Middleware('role_or_permission:view roles', only: ['index', 'show']),
+            new Middleware('role_or_permission:create roles', only: ['create', 'store']),
+            new Middleware('role_or_permission:edit roles', only: ['edit', 'update']),
+            new Middleware('role_or_permission:delete roles', only: ['destroy']),
+            new Middleware('role_or_permission:assign permissions', only: ['store', 'update']),
+        ];
     }
     // Show the form for creating a new permission
     public function create()
