@@ -2,67 +2,55 @@
 
 namespace App\Models;
 
+use App\Traits\UserTracking;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Support\Str;
-use App\Traits\UserTracking;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class EmployeeResource extends Model
 {
-    use HasFactory, SoftDeletes, UserTracking;
+    use HasFactory, UserTracking, SoftDeletes, HasUuids, LogsActivity;
 
-    protected $table = 'employee_resources';
-    protected $primaryKey = 'id';
-    protected $keyType = 'string';
-    public $incrementing = false;
-
-    /**
-     * The attributes that are mass assignable.
-     */
     protected $fillable = [
-        'id',
-        'user_id',
-        'category',     // ✅ fixed
+        'resource_no',            // Manually entered number
+        'resource_number',        // System generated reference
+        'reference_no',           // Optional duplicate business reference
         'division_id',
-        'resource_no',
-        'resource_number',
+        'category_id',
         'title',
         'description',
         'attachment',
     ];
-
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($model) {
-            if (empty($model->id)) {
-                $model->id = (string) Str::uuid();
-            }
-            if (empty($model->resource_number)) {
-                $model->resource_number = 'RES-' . strtoupper(Str::random(8));
-            }
-        });
-    }
-
-    /**
-     * Relationships
-     */
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
-
-    public function category()
-    {
-        // Change the category relationship to use 'category' as foreign key
-        return $this->belongsTo(Category::class, 'category'); // Use 'category' instead of 'category_id'
-    }
 
     public function division()
     {
         return $this->belongsTo(Division::class, 'division_id');
     }
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(User::class, 'update_by');
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn(string $eventName) => "Employee Resource has been {$eventName}");
+    }
 }

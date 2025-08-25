@@ -2,190 +2,143 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\EmployeeResource;
-use App\Models\User;
-use App\Models\Category;
+use App\Helpers\FileStorageHelper;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreEmployeeResourceRequest;
+use App\Http\Requests\UpdateEmployeeResourceRequest;
 use App\Models\Division;
+use App\Models\EmployeeResource;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
-use Exception;
+use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Support\Str;
 
 class EmployeeResourceController extends Controller
 {
-    /**
-     * Display paginated list of employee resources with advanced filters
-     */
     public function index(Request $request)
     {
-        $query = QueryBuilder::for(EmployeeResource::class)
+        $employeeResources = QueryBuilder::for(EmployeeResource::class)
             ->allowedFilters([
-                AllowedFilter::exact('id'),
-                AllowedFilter::partial('resource_number'),
-                AllowedFilter::partial('title'),
-                AllowedFilter::exact('user_id'),
-                AllowedFilter::exact('category_id'),
                 AllowedFilter::exact('division_id'),
-                // Add custom callback filters for date range
+                AllowedFilter::partial('resource_number'),
+                AllowedFilter::exact('category_id'),
                 AllowedFilter::callback('date_from', function ($query, $value) {
                     $query->whereDate('created_at', '>=', $value);
                 }),
                 AllowedFilter::callback('date_to', function ($query, $value) {
                     $query->whereDate('created_at', '<=', $value);
                 }),
-                // Alias: allow filtering via resource_no -> resource_number
-                AllowedFilter::partial('resource_no', 'resource_number'),
             ])
-            ->allowedIncludes(['attachments', 'histories'])
-            ->with(['user', 'category', 'division'])
-            ->latest();
+            ->with(['division', 'category', 'user', 'updatedBy'])
+            ->latest()
+            ->paginate(10);
 
-        $resources = $query->paginate(15)->withQueryString();
-
-        return view('employee_resources.index', compact('resources'));
+        return view('employee_resources.index', compact('employeeResources'));
     }
 
-    /**
-     * Show form for creating a new resource
-     */
     public function create()
     {
-        $users = User::all();
-        $categories = Category::all();
         $divisions = Division::all();
-
-        return view('employee_resources.create', compact('users', 'categories', 'divisions'));
+        $categories = Category::orderBy('name')->get();
+        return view('employee_resources.create', compact('divisions', 'categories'));
     }
 
-    /**
-     * Store a new employee resource (transactional)
-     */
-    public function store(Request $request)
+    public function store(StoreEmployeeResourceRequest $request)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'category_id' => 'required|exists:categories,id',
-            'division_id' => 'required|exists:divisions,id',
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'attachment' => 'nullable|file|mimes:pdf,doc,docx,png,jpg,jpeg|max:2048',
-        ]);
-
         DB::beginTransaction();
-
         try {
-            $resource = new EmployeeResource();
-            $resource->id = Str::uuid();
-            $resource->user_id = $request->user_id;
-            $resource->category_id = $request->category_id;
-            $resource->division_id = $request->division_id;
-            $resource->resource_number = strtoupper('RES-' . Str::random(8));
-            $resource->title = $request->title;
-            $resource->description = $request->description;
+            $validated = $request->validated();
+            // Generate system reference using existing id_prefixes naming pattern (use 'employee_resource')
+            $validated['resource_number'] = generateUniqueId('employee_resource', 'employee_resources', 'resource_number');
+
+            $division = Division::find($validated['division_id']);
+            $divisionFolder = Str::slug($division->name);
+            $refFolder = Str::slug($validated['resource_no'] ?? $validated['resource_number']);
+            $folderPath = 'Employee Resources/' . $divisionFolder . '/' . $refFolder; // private storage path
 
             if ($request->hasFile('attachment')) {
-                $path = $request->file('attachment')->store('employee_resources');
-                $resource->attachment = $path;
+                $validated['attachment'] = FileStorageHelper::storeSinglePrivateFile(
+                    $request->file('attachment'),
+                    $folderPath
+                );
             }
 
-            $resource->save();
+            // Mirror resource_number into reference_no unless explicitly provided
+            $validated['reference_no'] = $validated['reference_no'] ?? $validated['resource_number'];
 
+            $resource = EmployeeResource::create($validated);
             DB::commit();
-
-            return redirect()->route('employee_resources.index')
-                ->with('success', 'Employee Resource created successfully!');
-        } catch (Exception $e) {
+            return redirect()->route('employee_resources.index')->with('success', "Employee Resource '{$resource->title}' created successfully.");
+        } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
-            Log::error('Failed to create employee resource: ' . $e->getMessage());
-
-            return back()->with('error', 'Failed to create employee resource. Please try again.');
+            if ($e->getCode() === '23000' && str_contains($e->getMessage(), 'resource_no')) {
+                return back()->withInput()->with('error', 'Resource number already exists.');
+            }
+            Log::error('DB error creating employee resource', ['error' => $e->getMessage(), 'user_id' => auth()->id()]);
+            return back()->withInput()->with('error', 'Database error occurred.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating employee resource', ['error' => $e->getMessage(), 'user_id' => auth()->id()]);
+            return back()->withInput()->with('error', 'Failed to create employee resource.');
         }
     }
 
-    /**
-     * Show form for editing a resource
-     */
-    public function edit(EmployeeResource $employeeResource)
+    public function edit(EmployeeResource $employee_resource)
     {
-        $users = User::all();
-        $categories = Category::all();
         $divisions = Division::all();
-
-        return view('employee_resources.edit', compact('employeeResource', 'users', 'categories', 'divisions'));
+        $categories = Category::orderBy('name')->get();
+        return view('employee_resources.edit', ['resource' => $employee_resource, 'divisions' => $divisions, 'categories' => $categories]);
     }
 
-    /**
-     * Update an existing resource (transactional)
-     */
-    public function update(Request $request, EmployeeResource $employeeResource)
+    public function update(UpdateEmployeeResourceRequest $request, EmployeeResource $employee_resource)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'category_id' => 'required|exists:categories,id',
-            'division_id' => 'required|exists:divisions,id',
-            'title' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'attachment' => 'nullable|file|mimes:pdf,doc,docx,png,jpg,jpeg|max:2048',
-        ]);
-
         DB::beginTransaction();
-
         try {
-            $employeeResource->user_id = $request->user_id;
-            $employeeResource->category_id = $request->category_id;
-            $employeeResource->division_id = $request->division_id;
-            $employeeResource->title = $request->title;
-            $employeeResource->description = $request->description;
+            $validated = $request->validated();
+            $division = Division::find($validated['division_id']);
+            $divisionFolder = Str::slug($division->name);
+            $refFolder = Str::slug($validated['resource_no'] ?? $employee_resource->resource_number);
+            $folderPath = 'Employee Resources/' . $divisionFolder . '/' . $refFolder;
 
             if ($request->hasFile('attachment')) {
-                if ($employeeResource->attachment) {
-                    Storage::delete($employeeResource->attachment);
+                if ($employee_resource->attachment) {
+                    FileStorageHelper::deletePrivateFile($employee_resource->attachment);
                 }
-                $path = $request->file('attachment')->store('employee_resources');
-                $employeeResource->attachment = $path;
+                $validated['attachment'] = FileStorageHelper::storeSinglePrivateFile(
+                    $request->file('attachment'),
+                    $folderPath
+                );
             }
 
-            $employeeResource->save();
-
-            DB::commit();
-
-            return redirect()->route('employee_resources.index')
-                ->with('success', 'Employee Resource updated successfully!');
-        } catch (Exception $e) {
-            DB::rollBack();
-            Log::error('Failed to update employee resource: ' . $e->getMessage());
-
-            return back()->with('error', 'Failed to update employee resource. Please try again.');
-        }
-    }
-
-    /**
-     * Delete a resource (transactional)
-     */
-    public function destroy(EmployeeResource $employeeResource)
-    {
-        DB::beginTransaction();
-
-        try {
-            if ($employeeResource->attachment) {
-                Storage::delete($employeeResource->attachment);
+            // Preserve original resource_number (system reference) if not changed intentionally
+            if (isset($validated['resource_number'])) {
+                unset($validated['resource_number']);
             }
-
-            $employeeResource->delete();
-
+            // Keep reference_no synced if not manually changed
+            if (!isset($validated['reference_no'])) {
+                $validated['reference_no'] = $employee_resource->reference_no ?? $employee_resource->resource_number;
+            }
+            $isUpdated = $employee_resource->update($validated);
+            if (!$isUpdated) {
+                DB::rollBack();
+                return back()->with('info', 'No changes were made.');
+            }
             DB::commit();
-
-            return redirect()->route('employee_resources.index')
-                ->with('success', 'Employee Resource deleted successfully!');
-        } catch (Exception $e) {
+            return redirect()->route('employee_resources.index')->with('success', 'Employee Resource updated successfully.');
+        } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
-            Log::error('Failed to delete employee resource: ' . $e->getMessage());
-
-            return back()->with('error', 'Failed to delete employee resource. Please try again.');
+            if ($e->getCode() === '23000' && str_contains($e->getMessage(), 'resource_no')) {
+                return back()->withInput()->with('error', 'Resource number already exists.');
+            }
+            Log::error('DB error updating employee resource', ['id' => $employee_resource->id, 'error' => $e->getMessage(), 'user_id' => auth()->id()]);
+            return back()->withInput()->with('error', 'Database error occurred.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating employee resource', ['id' => $employee_resource->id, 'error' => $e->getMessage(), 'user_id' => auth()->id()]);
+            return back()->withInput()->with('error', 'Failed to update employee resource.');
         }
     }
 }
