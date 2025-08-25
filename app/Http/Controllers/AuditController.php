@@ -141,6 +141,12 @@ class AuditController extends Controller
 
             // Optional quick risk creation (decoupled)
             if ($request->filled('risk.title')) {
+                // Sanitize provided quick risk status
+                $quickRiskStatus = $request->input('risk.status');
+                $allowedRiskStatuses = ['identified', 'assessed', 'treated', 'retired'];
+                if (!in_array($quickRiskStatus, $allowedRiskStatuses, true)) {
+                    $quickRiskStatus = 'identified';
+                }
                 AuditRisk::create([
                     'audit_id' => $audit->id,
                     'title' => $request->input('risk.title'),
@@ -148,7 +154,8 @@ class AuditController extends Controller
                     'likelihood' => $request->input('risk.likelihood', 'low'),
                     'impact' => $request->input('risk.impact', 'low'),
                     'risk_level' => $request->input('risk.risk_level', 'low'),
-                    'status' => 'open',
+                    // Validated/sanitized enum value
+                    'status' => $quickRiskStatus,
                     'created_by' => auth()->id(),
                 ]);
             }
@@ -323,6 +330,11 @@ class AuditController extends Controller
 
             // Quick risk create on update (decoupled from documents)
             if ($request->filled('risk.title')) {
+                $quickRiskStatus = $request->input('risk.status');
+                $allowedRiskStatuses = ['identified', 'assessed', 'treated', 'retired'];
+                if (!in_array($quickRiskStatus, $allowedRiskStatuses, true)) {
+                    $quickRiskStatus = 'identified';
+                }
                 AuditRisk::create([
                     'audit_id' => $audit->id,
                     'title' => $request->input('risk.title'),
@@ -330,7 +342,7 @@ class AuditController extends Controller
                     'likelihood' => $request->input('risk.likelihood', 'low'),
                     'impact' => $request->input('risk.impact', 'low'),
                     'risk_level' => $request->input('risk.risk_level', 'low'),
-                    'status' => 'open',
+                    'status' => $quickRiskStatus,
                     'created_by' => auth()->id(),
                 ]);
             }
