@@ -22,6 +22,7 @@
                 </svg>
             </a>
 
+            @can('create users')
             <a href="{{ route('users.create') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,6 +30,7 @@
                 </svg>
                 <span class="hidden md:inline-block">Add User</span>
             </a>
+            @endcan
             <a href="{{ route('user.module') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <!-- Arrow Left Icon SVG -->
@@ -47,7 +49,22 @@
             style="display: none">
             <div class="p-6">
                 <form method="GET" action="{{ route('users.index') }}">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <!-- Name Search -->
+                        <div>
+                            <x-label for="name" value="{{ __('Name') }}" />
+                            <input type="text" name="filter[name]" id="name"
+                                value="{{ request('filter.name') }}" placeholder="Search by name..."
+                                class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
+                        </div>
+
+                        <!-- Email Search -->
+                        <div>
+                            <x-label for="email" value="{{ __('Email') }}" />
+                            <input type="email" name="filter[email]" id="email"
+                                value="{{ request('filter.email') }}" placeholder="Search by email..."
+                                class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
+                        </div>
                         <!-- Branch Filter -->
                         <div>
                             <x-label for="branch_id" value="{{ __('Branch') }}" />
@@ -83,11 +100,26 @@
                             <x-label for="is_active" value="{{ __('Status') }}" />
                             <select name="filter[is_active]" id="is_active"
                                 class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
-                                <option value="">Select status</option>
-                                <option value="1" {{ request('filter.is_active') == '1' ? 'selected' : '' }}>
+                                <option value="">All Status</option>
+                                <option value="Yes" {{ request('filter.is_active') == 'Yes' ? 'selected' : '' }}>
                                     Active</option>
-                                <option value="0" {{ request('filter.is_active') == '0' ? 'selected' : '' }}>
+                                <option value="No" {{ request('filter.is_active') == 'No' ? 'selected' : '' }}>
                                     Inactive</option>
+                            </select>
+                        </div>
+
+                        <!-- Division Filter -->
+                        <div>
+                            <x-label for="division_id" value="{{ __('Division') }}" />
+                            <select name="filter[division_id]" id="division_id"
+                                class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
+                                <option value="">All Divisions</option>
+                                @foreach (\App\Models\Division::all() as $division)
+                                    <option value="{{ $division->id }}"
+                                        {{ request('filter.division_id') == $division->id ? 'selected' : '' }}>
+                                        {{ $division->name }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
 
@@ -125,10 +157,11 @@
                                     <th class="py-2 px-4 text-center">Name</th>
                                     <th class="py-2 px-4 text-center">Email</th>
                                     <th class="py-2 px-4 text-center">Branch</th>
-                                    {{--  <th class="py-2 px-4 text-center">Super Admin</th>  --}}
-                                    {{--  <th class="py-2 px-4 text-center">Pssword</th>  --}}
-                                    <th class="py-2 px-4 text-center">Active</th>
+                                    <th class="py-2 px-4 text-center">Roles</th>
+                                    <th class="py-2 px-4 text-center">Status</th>
+                                    @can('edit users')
                                     <th class="py-2 px-4 text-center">Actions</th>
+                                    @endcan
                                 </tr>
                             </thead>
                             <tbody class="text-black text-md leading-normal font-extrabold">
@@ -137,19 +170,35 @@
                                         <td class="py-1 px-4 text-center">{{ $user->name }}</td>
                                         <td class="py-1 px-4 text-center">{{ $user->email }}</td>
                                         <td class="py-1 px-4 text-center">{{ $user->branch->name ?? 'N/A' }}</td>
-                                        {{--  <td class="py-1 px-4 text-center">{{ $user->is_super_admin ? 'Yes' : 'No' }}</td>  --}}
-                                        {{--  <td class="py-1 px-4 text-center">{{ $user->password }}</td>  --}}
                                         <td class="py-1 px-4 text-center">
-                                            {{ $user->is_active ? 'Active' : 'Inactive' }}</td>
-                                        <td class="py-1 px-4 text-center flex space-x-2">
-                                            <a href="{{ route('users.edit', $user) }}"
-                                                class="px-4 py-2 text-white bg-green-800 hover:bg-green-700 rounded-md">Edit</a>
-                                            {{--  <form action="{{ route('users.destroy', $user) }}" method="POST">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md">Delete</button>
-                                            </form>  --}}
+                                            @foreach($user->roles as $role)
+                                                <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1">
+                                                    {{ $role->name }}
+                                                </span>
+                                            @endforeach
                                         </td>
+                                        <td class="py-1 px-4 text-center">
+                                            <span class="inline-block px-2 py-1 rounded-full text-xs {{ $user->is_active === 'Yes' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                                {{ $user->is_active === 'Yes' ? 'Active' : 'Inactive' }}
+                                            </span>
+                                        </td>
+                                        @can('edit users')
+                                        <td class="py-1 px-4 text-center flex space-x-2 justify-center">
+                                            @can('edit users')
+                                                <a href="{{ route('users.edit', $user) }}"
+                                                    class="px-4 py-2 text-white bg-green-800 hover:bg-green-700 rounded-md text-xs">Edit</a>
+                                            @endcan
+                                            @can('delete users')
+                                                @if($user->id !== auth()->id())
+                                                <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="delete-button px-4 py-2 text-white bg-red-600 hover:bg-red-700 rounded-md text-xs">Delete</button>
+                                                </form>
+                                                @endif
+                                            @endcan
+                                        </td>
+                                        @endcan
                                     </tr>
                                 @endforeach
                             </tbody>

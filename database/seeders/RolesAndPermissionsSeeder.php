@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Hash;
 
 class RolesAndPermissionsSeeder extends Seeder
@@ -19,13 +20,31 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
+        // Create granular permissions for user management
+        $userPermissions = [
+            'view users',
+            'create users',
+            'edit users',
+            'delete users',
+        ];
+
+        foreach ($userPermissions as $permission) {
+            Permission::create(['name' => $permission]);
+        }
+
         // Create roles
-        Role::create(['name' => 'branch']);
-        Role::create(['name' => 'region']);
-        Role::create(['name' => 'division']);
-        Role::create(['name' => 'head-office']);
+        $branchRole = Role::create(['name' => 'branch']);
+        $regionRole = Role::create(['name' => 'region']);
+        $divisionRole = Role::create(['name' => 'division']);
+        $headOfficeRole = Role::create(['name' => 'head-office']);
         $superAdmin = Role::create(['name' => 'super-admin']);
 
+        // Assign permissions to roles
+        $branchRole->givePermissionTo(['view users']);
+        $regionRole->givePermissionTo(['view users', 'edit users']);
+        $divisionRole->givePermissionTo(['view users', 'edit users', 'create users']);
+        $headOfficeRole->givePermissionTo($userPermissions);
+        $superAdmin->givePermissionTo($userPermissions);
 
         // foreach(Branch::all() as $branch) {
         //     $new_user = User::create([

@@ -4,49 +4,48 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Branch;
+use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
+use Spatie\QueryBuilder\QueryBuilder;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\AllowedInclude;
+
+class UserController extends Controller
+{
+    public function __construct()
+    {
+        $this->middleware('can:view users')->only(['index', 'show']);
+        $this->middleware('can:create users')->only(['create', 'store']);
+        $this->middleware('can:edit users')->only(['edit', 'update']);
+        $this->middleware('can:delete users')->only(['destroy']);
+    }
 
 class UserController extends Controller
 {
     public function index(Request $request)
-
     {
-        $query = \App\Models\User::query();
+        $users = QueryBuilder::for(User::class)
+            ->allowedFilters(User::getAllowedFilters())
+            ->allowedSorts(User::getAllowedSorts())
+            ->allowedIncludes(User::getAllowedIncludes())
+            ->with(['branch', 'roles'])
+            ->defaultSort('-created_at')
+            ->paginate(request('per_page', 10))
+            ->appends(request()->query());
 
-    // Apply branch filter
-    if ($branchId = $request->input('filter.branch_id')) {
-        $query->where('branch_id', $branchId);
-    }
-
-    // Apply role filter
-    if ($role = $request->input('filter.role')) {
-        $query->whereHas('roles', function ($q) use ($role) {
-            $q->where('name', $role);
-        });
-    }
-
-    // Apply status filter
-    if ($status = $request->input('filter.is_active')) {
-        $query->where('is_active', $status);
-    }
-
-    // Apply created_at filter
-    if ($createdAt = $request->input('filter.created_at')) {
-        $query->whereDate('created_at', $createdAt);
-    }
-
-    // Paginate the results
-    $users = $query->paginate(10);
-
-    return view('users.index', compact('users'));
-
+        return view('users.index', compact('users'));
     }
 
     public function create()
     {
         $branches = Branch::all();
-        return view('users.create', compact('branches'));
+        $divisions = Division::all();
+        $roles = Role::all();
+        
+        return view('users.create', compact('branches', 'divisions', 'roles'));
     }
 
     public function store(Request $request)
@@ -56,18 +55,27 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'branch_id' => 'nullable|exists:branches,id',
+            'division_id' => 'nullable|exists:divisions,id',
             'is_super_admin' => 'required|in:Yes,No',
             'is_active' => 'required|in:Yes,No',
+            'roles' => 'array',
+            'roles.*' => 'exists:roles,id'
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'branch_id' => $request->branch_id,
+            'division_id' => $request->division_id,
             'password' => Hash::make($request->password),
             'is_super_admin' => $request->is_super_admin,
             'is_active' => $request->is_active,
         ]);
+
+        // Assign roles if provided
+        if ($request->filled('roles')) {
+            $user->syncRoles($request->roles);
+        }
 
         return redirect()->route('users.index')->with('success', 'User created successfully.');
     }
@@ -75,32 +83,68 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $branches = Branch::all();
-        return view('users.edit', compact('user', 'branches'));
+        $divisions = Division::all();
+        $roles = Role::all();
+        $userRoles = $user->roles->pluck('id')->toArray();
+        
+        return view('users.edit', compact('user', 'branches', 'divisions', 'roles', 'userRoles'));
     }
 
     public function update(Request $request, User $user)
     {
+        // Prevent self-deletion protection
+        if ($user->id === auth()->id() && $request->is_active === 'No') {
+            return redirect()->back()->withErrors(['is_active' => 'You cannot deactivate your own account.']);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8',
             'branch_id' => 'nullable|exists:branches,id',
+            'division_id' => 'nullable|exists:divisions,id',
             'is_super_admin' => 'required|in:Yes,No',
             'is_active' => 'required|in:Yes,No',
+            'roles' => 'array',
+            'roles.*' => 'exists:roles,id'
         ]);
 
-        $user->update([
+        $updateData = [
             'name' => $request->name,
             'email' => $request->email,
             'branch_id' => $request->branch_id,
+            'division_id' => $request->division_id,
             'is_super_admin' => $request->is_super_admin,
             'is_active' => $request->is_active,
-        ]);
+        ];
+
+        // Update password only if provided
+        if ($request->filled('password')) {
+            $updateData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($updateData);
+
+        // Sync roles if provided
+        if ($request->has('roles')) {
+            $user->syncRoles($request->roles);
+        }
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');
     }
 
     public function destroy(User $user)
     {
+        // Prevent self-deletion
+        if ($user->id === auth()->id()) {
+            return redirect()->back()->withErrors(['user' => 'You cannot delete your own account.']);
+        }
+
+        // Prevent deletion of super admin if it's the last one
+        if ($user->hasRole('super-admin') && User::role('super-admin')->count() <= 1) {
+            return redirect()->back()->withErrors(['user' => 'Cannot delete the last super admin user.']);
+        }
+
         $user->delete();
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
