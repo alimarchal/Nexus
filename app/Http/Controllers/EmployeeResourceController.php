@@ -63,9 +63,10 @@ class EmployeeResourceController extends Controller
             $validated['resource_number'] = generateUniqueId('employee_resource', 'employee_resources', 'resource_number');
 
             $division = Division::find($validated['division_id']);
-            $divisionFolder = Str::slug($division->name);
-            $refFolder = Str::slug($validated['resource_no'] ?? $validated['resource_number']);
-            $folderPath = 'Employee Resources/' . $divisionFolder . '/' . $refFolder; // private storage path
+            $divisionFolder = $division->name; // Use proper division name (no slug)
+            // Use system generated reference number as sole folder; sanitize disallowed chars
+            $referenceFolder = str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], '-', $validated['resource_number']);
+            $folderPath = 'Employee Resources/' . $divisionFolder . '/' . $referenceFolder; // e.g. Employee Resources/Commercial Retail Banking Division/ER-2025-0001
 
             if ($request->hasFile('attachment')) {
                 $validated['attachment'] = FileStorageHelper::storeSinglePrivateFile(
@@ -107,9 +108,9 @@ class EmployeeResourceController extends Controller
         try {
             $validated = $request->validated();
             $division = Division::find($validated['division_id']);
-            $divisionFolder = Str::slug($division->name);
-            $refFolder = Str::slug($validated['resource_no'] ?? $employee_resource->resource_number);
-            $folderPath = 'Employee Resources/' . $divisionFolder . '/' . $refFolder;
+            $divisionFolder = $division->name; // proper name
+            $referenceFolder = str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|'], '-', $employee_resource->resource_number); // immutable system ref
+            $folderPath = 'Employee Resources/' . $divisionFolder . '/' . $referenceFolder;
 
             if ($request->hasFile('attachment')) {
                 if ($employee_resource->attachment) {
