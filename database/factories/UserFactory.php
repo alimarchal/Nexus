@@ -30,7 +30,10 @@ class UserFactory extends Factory
     {
         // Get or create branch and division for proper relationships
         $branch = Branch::inRandomOrder()->first() ?: Branch::factory()->create();
-        $division = Division::inRandomOrder()->first() ?: Division::factory()->create();
+        $branchId = Branch::pluck('id')->random(null);
+        $branch = $branchId ? Branch::find($branchId) : Branch::factory()->create();
+        $divisionId = Division::pluck('id')->random(null);
+        $division = $divisionId ? Division::find($divisionId) : Division::factory()->create();
 
         return [
             'name' => fake()->name(),
