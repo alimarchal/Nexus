@@ -239,6 +239,7 @@ test('query parameters persist across pagination', function () {
     }
     $this->assertTrue($foundFilter, 'Pagination links should contain filter[is_active]=Yes');
     $this->assertTrue($foundSort, 'Pagination links should contain sort=name');
+});
 
 test('invalid filters are ignored', function () {
     $response = $this->actingAs($this->superAdmin)

@@ -4,10 +4,16 @@ namespace App\Http\Controllers;
 
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
-use App\Models\BranchTarget;
 
 class PermissionController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('can:view permissions')->only(['index', 'show']);
+        $this->middleware('can:create permissions')->only(['create', 'store']);
+        $this->middleware('can:edit permissions')->only(['edit', 'update']);
+        $this->middleware('can:delete permissions')->only(['destroy']);
+    }
     // Show the form for creating a new permission
     public function create()
     {
@@ -33,24 +39,24 @@ class PermissionController extends Controller
 
     // Display a listing of the permissions with pagination
     public function index(Request $request)
-{
-    $query = Permission::query();
+    {
+        $query = Permission::with('roles');
 
-    // Apply filters based on request inputs
-    if ($name = $request->input('filter.name')) {
-        $query->where('name', 'LIKE', '%' . $name . '%');
+        // Apply filters based on request inputs
+        if ($name = $request->input('filter.name')) {
+            $query->where('name', 'LIKE', '%' . $name . '%');
+        }
+
+        if ($createdAt = $request->input('filter.created_at')) {
+            $query->whereDate('created_at', $createdAt);
+        }
+
+        // Paginate the filtered results
+        $permissions = $query->paginate(10);
+
+        // Return the view with permissions data
+        return view('permissions.index', compact('permissions'));
     }
-
-    if ($createdAt = $request->input('filter.created_at')) {
-        $query->whereDate('created_at', $createdAt);
-    }
-
-    // Paginate the filtered results
-    $permissions = $query->paginate(10);
-
-    // Return the view with permissions data
-    return view('permissions.index', compact('permissions'));
-}
 
 
 
@@ -80,6 +86,13 @@ class PermissionController extends Controller
     // Remove the specified permission from storage
     public function destroy(Permission $permission)
     {
+        // Prevent deletion of critical permissions
+        $criticalPermissions = ['view users', 'edit users', 'create users', 'delete users', 'view roles', 'edit roles'];
+        
+        if (in_array($permission->name, $criticalPermissions)) {
+            return redirect()->back()->withErrors(['permission' => 'Cannot delete critical system permission: ' . $permission->name]);
+        }
+
         // Delete the permission
         $permission->delete();
 

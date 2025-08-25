@@ -158,6 +158,7 @@
                                     <th class="py-2 px-4 text-center">Email</th>
                                     <th class="py-2 px-4 text-center">Branch</th>
                                     <th class="py-2 px-4 text-center">Roles</th>
+                                    <th class="py-2 px-4 text-center">Individual Permissions</th>
                                     <th class="py-2 px-4 text-center">Status</th>
                                     @can('edit users')
                                     <th class="py-2 px-4 text-center">Actions</th>
@@ -176,6 +177,22 @@
                                                     {{ $role->name }}
                                                 </span>
                                             @endforeach
+                                        </td>
+                                        <td class="py-1 px-4 text-center">
+                                            @if($user->permissions->count() > 0)
+                                                @foreach($user->permissions->take(3) as $permission)
+                                                    <span class="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full mr-1 mb-1">
+                                                        {{ $permission->name }}
+                                                    </span>
+                                                @endforeach
+                                                @if($user->permissions->count() > 3)
+                                                    <span class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+                                                        +{{ $user->permissions->count() - 3 }} more
+                                                    </span>
+                                                @endif
+                                            @else
+                                                <span class="text-gray-500 text-xs">None</span>
+                                            @endif
                                         </td>
                                         <td class="py-1 px-4 text-center">
                                             <span class="inline-block px-2 py-1 rounded-full text-xs {{ $user->is_active === 'Yes' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">

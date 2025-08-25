@@ -20,31 +20,114 @@ class RolesAndPermissionsSeeder extends Seeder
     {
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create granular permissions for user management
-        $userPermissions = [
+        // Create comprehensive permissions for all modules
+        $permissions = [
+            // User Management
             'view users',
             'create users',
             'edit users',
             'delete users',
+            
+            // Role & Permission Management
+            'view roles',
+            'create roles', 
+            'edit roles',
+            'delete roles',
+            'view permissions',
+            'create permissions',
+            'edit permissions', 
+            'delete permissions',
+            'assign roles',
+            'revoke roles',
+            'assign permissions',
+            'revoke permissions',
+            
+            // Complaint Management
+            'view complaints',
+            'create complaints',
+            'edit complaints',
+            'delete complaints',
+            'assign complaints',
+            'escalate complaints',
+            
+            // Audit Management
+            'view audits',
+            'create audits',
+            'edit audits',
+            'delete audits',
+            'conduct audits',
+            'review audits',
+            
+            // Branch Management
+            'view branches',
+            'create branches',
+            'edit branches', 
+            'delete branches',
+            
+            // Report Management
+            'view reports',
+            'generate reports',
+            'export reports',
+            
+            // Dashboard Access
+            'view dashboard',
+            'view analytics',
+            
+            // Settings Management
+            'view settings',
+            'edit settings',
+            'system settings',
         ];
 
-        foreach ($userPermissions as $permission) {
-            Permission::create(['name' => $permission]);
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
         // Create roles
-        $branchRole = Role::create(['name' => 'branch']);
-        $regionRole = Role::create(['name' => 'region']);
-        $divisionRole = Role::create(['name' => 'division']);
-        $headOfficeRole = Role::create(['name' => 'head-office']);
-        $superAdmin = Role::create(['name' => 'super-admin']);
+        $branchRole = Role::firstOrCreate(['name' => 'branch']);
+        $regionRole = Role::firstOrCreate(['name' => 'region']);
+        $divisionRole = Role::firstOrCreate(['name' => 'division']);
+        $headOfficeRole = Role::firstOrCreate(['name' => 'head-office']);
+        $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
+
+        // Define role permissions
+        $rolePermissions = [
+            'branch' => [
+                'view users', 'view complaints', 'create complaints', 'edit complaints', 
+                'view dashboard', 'view reports'
+            ],
+            'region' => [
+                'view users', 'edit users', 'view complaints', 'create complaints', 
+                'edit complaints', 'assign complaints', 'view audits', 'view branches',
+                'view dashboard', 'view reports', 'generate reports'
+            ],
+            'division' => [
+                'view users', 'edit users', 'create users', 'view complaints', 
+                'create complaints', 'edit complaints', 'assign complaints', 
+                'escalate complaints', 'view audits', 'create audits', 'edit audits',
+                'view branches', 'edit branches', 'view dashboard', 'view reports', 
+                'generate reports', 'export reports'
+            ],
+            'head-office' => [
+                'view users', 'create users', 'edit users', 'delete users',
+                'view roles', 'edit roles', 'assign roles', 'revoke roles',
+                'view complaints', 'create complaints', 'edit complaints', 'delete complaints',
+                'assign complaints', 'escalate complaints', 'view audits', 'create audits', 
+                'edit audits', 'delete audits', 'conduct audits', 'review audits',
+                'view branches', 'create branches', 'edit branches', 'delete branches',
+                'view dashboard', 'view analytics', 'view reports', 'generate reports', 
+                'export reports', 'view settings', 'edit settings'
+            ],
+            'super-admin' => Permission::all()->pluck('name')->toArray()
+        ];
 
         // Assign permissions to roles
-        $branchRole->givePermissionTo(['view users']);
-        $regionRole->givePermissionTo(['view users', 'edit users']);
-        $divisionRole->givePermissionTo(['view users', 'edit users', 'create users']);
-        $headOfficeRole->givePermissionTo($userPermissions);
-        $superAdmin->givePermissionTo($userPermissions);
+        foreach ($rolePermissions as $roleName => $permissionNames) {
+            $role = Role::where('name', $roleName)->first();
+            if ($role) {
+                $role->syncPermissions($permissionNames);
+            }
+        }
 
         // foreach(Branch::all() as $branch) {
         //     $new_user = User::create([

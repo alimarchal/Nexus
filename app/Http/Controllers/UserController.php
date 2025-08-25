@@ -8,6 +8,7 @@ use App\Models\Division;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedSort;
@@ -21,6 +22,7 @@ class UserController extends Controller
         $this->middleware('can:create users')->only(['create', 'store']);
         $this->middleware('can:edit users')->only(['edit', 'update']);
         $this->middleware('can:delete users')->only(['destroy']);
+        $this->middleware('can:assign permissions')->only(['store', 'update']);
     }
 
     public function index(Request $request)
@@ -29,7 +31,7 @@ class UserController extends Controller
             ->allowedFilters(User::getAllowedFilters())
             ->allowedSorts(User::getAllowedSorts())
             ->allowedIncludes(User::getAllowedIncludes())
-            ->with(['branch', 'roles'])
+            ->with(['branch', 'roles', 'permissions'])
             ->defaultSort('-created_at')
             ->paginate(request('per_page', 10))
             ->appends(request()->query());
@@ -42,8 +44,9 @@ class UserController extends Controller
         $branches = Branch::all();
         $divisions = Division::all();
         $roles = Role::all();
+        $permissions = Permission::all();
         
-        return view('users.create', compact('branches', 'divisions', 'roles'));
+        return view('users.create', compact('branches', 'divisions', 'roles', 'permissions'));
     }
 
     public function store(Request $request)
@@ -57,7 +60,9 @@ class UserController extends Controller
             'is_super_admin' => 'required|in:Yes,No',
             'is_active' => 'required|in:Yes,No',
             'roles' => 'array',
-            'roles.*' => 'exists:roles,id'
+            'roles.*' => 'exists:roles,id',
+            'permissions' => 'array',
+            'permissions.*' => 'exists:permissions,id'
         ]);
 
         $user = User::create([
@@ -75,7 +80,12 @@ class UserController extends Controller
             $user->syncRoles($request->roles);
         }
 
-        return redirect()->route('users.index')->with('success', 'User created successfully.');
+        // Assign individual permissions if provided
+        if ($request->filled('permissions')) {
+            $user->syncPermissions($request->permissions);
+        }
+
+        return redirect()->route('users.index')->with('success', 'User created successfully with assigned roles and permissions.');
     }
 
     public function edit(User $user)
@@ -83,9 +93,11 @@ class UserController extends Controller
         $branches = Branch::all();
         $divisions = Division::all();
         $roles = Role::all();
+        $permissions = Permission::all();
         $userRoles = $user->roles->pluck('id')->toArray();
+        $userPermissions = $user->permissions->pluck('id')->toArray();
         
-        return view('users.edit', compact('user', 'branches', 'divisions', 'roles', 'userRoles'));
+        return view('users.edit', compact('user', 'branches', 'divisions', 'roles', 'permissions', 'userRoles', 'userPermissions'));
     }
 
     public function update(Request $request, User $user)
@@ -93,6 +105,11 @@ class UserController extends Controller
         // Prevent self-deletion protection
         if ($user->id === auth()->id() && $request->is_active === 'No') {
             return redirect()->back()->withErrors(['is_active' => 'You cannot deactivate your own account.']);
+        }
+
+        // Prevent removal of all permissions from super-admin
+        if ($user->hasRole('super-admin') && !$request->filled('roles') && !$request->filled('permissions')) {
+            return redirect()->back()->withErrors(['roles' => 'Super admin must have at least one role or permission assigned.']);
         }
 
         $request->validate([
@@ -104,7 +121,9 @@ class UserController extends Controller
             'is_super_admin' => 'required|in:Yes,No',
             'is_active' => 'required|in:Yes,No',
             'roles' => 'array',
-            'roles.*' => 'exists:roles,id'
+            'roles.*' => 'exists:roles,id',
+            'permissions' => 'array',
+            'permissions.*' => 'exists:permissions,id'
         ]);
 
         $updateData = [
@@ -123,12 +142,13 @@ class UserController extends Controller
 
         $user->update($updateData);
 
-        // Sync roles if provided
-        if ($request->has('roles')) {
-            $user->syncRoles($request->roles);
-        }
+        // Sync roles if provided, otherwise clear all roles
+        $user->syncRoles($request->roles ?? []);
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+        // Sync individual permissions if provided, otherwise clear all permissions
+        $user->syncPermissions($request->permissions ?? []);
+
+        return redirect()->route('users.index')->with('success', 'User updated successfully with assigned roles and permissions.');
     }
 
     public function destroy(User $user)
