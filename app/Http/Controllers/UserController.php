@@ -23,8 +23,6 @@ class UserController extends Controller
         $this->middleware('can:delete users')->only(['destroy']);
     }
 
-class UserController extends Controller
-{
     public function index(Request $request)
     {
         $users = QueryBuilder::for(User::class)
