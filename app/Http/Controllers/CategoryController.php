@@ -2,57 +2,58 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
-    public function index()
-    {
-        // Minimal stub view to satisfy route listing and autoload
-        if (view()->exists('categories.index')) {
-            return view('categories.index');
-        }
-
-        return response('Category index stub', 200);
-    }
+   public function index()
+{
+    $categories = Category::paginate(10); // or ->simplePaginate(10)
+    return view('categories.index', compact('categories'));
+}
 
     public function create()
     {
-        if (view()->exists('categories.create')) {
-            return view('categories.create');
-        }
-        return response('Category create stub', 200);
+        return view('categories.create');
     }
 
     public function store(Request $request)
     {
-        // Minimal stub: redirect back
-        return redirect()->back();
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'nullable|string|max:255',
+        ]);
+
+        Category::create($request->all());
+
+        return redirect()->route('categories.index')
+            ->with('success', 'Category created successfully.');
     }
 
-    public function show($id)
+    public function edit(Category $category)
     {
-        if (view()->exists('categories.show')) {
-            return view('categories.show');
-        }
-        return response('Category show stub', 200);
+        return view('categories.edit', compact('category'));
     }
 
-    public function edit($id)
+    public function update(Request $request, Category $category)
     {
-        if (view()->exists('categories.edit')) {
-            return view('categories.edit');
-        }
-        return response('Category edit stub', 200);
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'nullable|string|max:255',
+        ]);
+
+        $category->update($request->all());
+
+        return redirect()->route('categories.index')
+            ->with('success', 'Category updated successfully.');
     }
 
-    public function update(Request $request, $id)
+    public function destroy(Category $category)
     {
-        return redirect()->back();
-    }
+        $category->delete();
 
-    public function destroy($id)
-    {
-        return redirect()->back();
+        return redirect()->route('categories.index')
+            ->with('success', 'Category deleted successfully.');
     }
 }

@@ -18,8 +18,8 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
-                <form method="POST" action="{{ route('categories.update', $category->id) }}"
-                    enctype="multipart/form-data">
+
+                <form method="POST" action="{{ route('categories.update', $category->id) }}">
                     @csrf
                     @method('PUT')
 
@@ -52,6 +52,7 @@
                         </button>
                     </div>
                 </form>
+
             </div>
         </div>
     </div>

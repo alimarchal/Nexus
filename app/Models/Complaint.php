@@ -46,6 +46,21 @@ class Complaint extends Model
         'reopen_reason',
         'priority_change_reason',
         'status_change_reason',
+        // Harassment specific supplemental fields (only used when category = Harassment)
+        'harassment_incident_date',
+        'harassment_location',
+        'harassment_witnesses',
+        'harassment_reported_to',
+        'harassment_details',
+        'harassment_confidential',
+        'harassment_sub_category',
+        'harassment_employee_number',
+        'harassment_employee_phone',
+        'harassment_abuser_employee_number',
+        'harassment_abuser_name',
+        'harassment_abuser_phone',
+        'harassment_abuser_email',
+        'harassment_abuser_relationship',
     ];
 
     protected $casts = [
@@ -54,6 +69,8 @@ class Complaint extends Model
         'closed_at' => 'datetime',
         'expected_resolution_date' => 'datetime',
         'sla_breached' => 'boolean',
+        'harassment_incident_date' => 'datetime',
+        'harassment_confidential' => 'boolean',
     ];
 
     // Relationships
@@ -125,6 +142,11 @@ class Complaint extends Model
     public function metrics(): HasOne
     {
         return $this->hasOne(ComplaintMetric::class);
+    }
+
+    public function witnesses(): HasMany
+    {
+        return $this->hasMany(ComplaintWitness::class);
     }
 
     // Spatie Query Builder

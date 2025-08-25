@@ -17,6 +17,7 @@ use App\Models\ComplaintWatcher;
 use App\Models\ComplaintMetric;
 use App\Models\ComplaintStatusType;
 use App\Models\ComplaintTemplate;
+use App\Models\ComplaintWitness;
 use App\View\Components\Division;
 use Illuminate\Http\Request;
 use App\Helpers\FileStorageHelper;
@@ -200,6 +201,29 @@ class ComplaintController extends Controller
 
             // Create complaint record (includes region_id / division_id / branch_id which are nullable)
             $complaint = Complaint::create($validated);
+
+            // Persist witnesses if harassment category and witnesses provided
+            if (!empty($validated['category_id'])) {
+                $cat = ComplaintCategory::find($validated['category_id']);
+                if ($cat && strcasecmp($cat->category_name, 'Harassment') === 0) {
+                    // Structured witnesses from request (validated via StoreComplaintRequest)
+                    $witnesses = $request->input('witnesses', []);
+                    if (is_array($witnesses)) {
+                        foreach ($witnesses as $w) {
+                            if (!empty($w['name'])) {
+                                ComplaintWitness::create([
+                                    'complaint_id' => $complaint->id,
+                                    'employee_number' => $w['employee_number'] ?? null,
+                                    'name' => $w['name'],
+                                    'phone' => $w['phone'] ?? null,
+                                    'email' => $w['email'] ?? null,
+                                    'statement' => $w['statement'] ?? null,
+                                ]);
+                            }
+                        }
+                    }
+                }
+            }
 
             // Create folder path for attachments
             $folderName = 'Complaints/' . $complaint->complaint_number;

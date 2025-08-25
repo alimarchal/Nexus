@@ -28,6 +28,8 @@ use App\Http\Controllers\PrintedStationeryController;
 use App\Http\Controllers\ComplaintAttachmentController;
 use App\Http\Controllers\ComplaintStatusTypeController;
 use App\Http\Controllers\StationeryTransactionController;
+use App\Http\Controllers\EmployeeResourceController;
+
 
 
 
@@ -125,6 +127,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::resource('product/dispatch-registers', DispatchRegisterController::class);
 
+
+// Employee Resources
+Route::resource('products/employee-resources', EmployeeResourceController::class)
+    ->names('employee_resources');
 
 
 
