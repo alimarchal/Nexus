@@ -112,19 +112,30 @@
                             <td class="py-1 px-2 text-left">{{ $resource->category?->name ?? '-' }}</td>
                             <td class="py-1 px-2 text-center">
                                 @if ($resource->attachment)
-                                <div class="flex justify-center space-x-2">
-                                    <a href="{{ route('file.download', $resource->attachment) }}"
-                                        class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded">
-                                        Download
+                                <div class="flex justify-center gap-1">
+                                    <a href="{{ route('file.download', $resource->attachment) }}" title="Download"
+                                        class="inline-flex items-center justify-center w-7 h-7 bg-blue-600 hover:bg-blue-500 text-white rounded">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M12 3v12m0 0 4-4m-4 4-4-4m8 8H8" />
+                                        </svg>
+                                        <span class="sr-only">Download</span>
                                     </a>
-                                    <a href="{{ route('file.view', $resource->attachment) }}"
-                                        class="inline-flex items-center px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs font-medium rounded"
-                                        target="_blank">
-                                        View
+                                    <a href="{{ route('file.view', $resource->attachment) }}" target="_blank"
+                                        title="View"
+                                        class="inline-flex items-center justify-center w-7 h-7 bg-gray-600 hover:bg-gray-500 text-white rounded">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M2.25 12s3-7.5 9.75-7.5S21.75 12 21.75 12s-3 7.5-9.75 7.5S2.25 12 2.25 12Z" />
+                                            <circle cx="12" cy="12" r="3.25" />
+                                        </svg>
+                                        <span class="sr-only">View</span>
                                     </a>
                                 </div>
                                 @else
-                                <span class="text-gray-400 text-sm">No file</span>
+                                <span class="text-gray-400 text-sm">—</span>
                                 @endif
                             </td>
                             <td class="py-1 px-2 text-center">

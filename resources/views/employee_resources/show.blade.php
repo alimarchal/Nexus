@@ -62,10 +62,25 @@
                     <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Attachment</h3>
                     @if($resource->attachment)
                     <div class="flex space-x-2">
-                        <a href="{{ route('file.download', $resource->attachment) }}"
-                            class="inline-flex items-center px-3 py-1 bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold rounded">Download</a>
-                        <a href="{{ route('file.view', $resource->attachment) }}" target="_blank"
-                            class="inline-flex items-center px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs font-semibold rounded">View</a>
+                        <a href="{{ route('file.download', $resource->attachment) }}" title="Download"
+                            class="inline-flex items-center justify-center w-8 h-8 bg-blue-600 hover:bg-blue-500 text-white rounded">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M12 3v12m0 0 4-4m-4 4-4-4m8 8H8" />
+                            </svg>
+                            <span class="sr-only">Download</span>
+                        </a>
+                        <a href="{{ route('file.view', $resource->attachment) }}" target="_blank" title="View"
+                            class="inline-flex items-center justify-center w-8 h-8 bg-gray-600 hover:bg-gray-500 text-white rounded">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="1.8">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M2.25 12s3-7.5 9.75-7.5S21.75 12 21.75 12s-3 7.5-9.75 7.5S2.25 12 2.25 12Z" />
+                                <circle cx="12" cy="12" r="3.25" />
+                            </svg>
+                            <span class="sr-only">View</span>
+                        </a>
                     </div>
                     @else
                     <p class="text-gray-400 text-sm">No attachment.</p>
