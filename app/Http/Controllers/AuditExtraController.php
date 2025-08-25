@@ -844,7 +844,7 @@ class AuditExtraController extends Controller
             'likelihood' => 'nullable|in:low,medium,high',
             'impact' => 'nullable|in:low,medium,high',
             'risk_level' => 'nullable|in:low,medium,high,critical',
-            'status' => 'nullable|in:identified,assessed,treated,retired',
+            'status' => 'nullable|in:open,identified,assessed,treated,retired',
             'owner_user_id' => 'nullable|exists:users,id'
         ]);
         $data['audit_id'] = $audit->id;
@@ -878,7 +878,7 @@ class AuditExtraController extends Controller
             'likelihood' => 'nullable|in:low,medium,high',
             'impact' => 'nullable|in:low,medium,high',
             'risk_level' => 'nullable|in:low,medium,high,critical',
-            'status' => 'nullable|in:identified,assessed,treated,retired',
+            'status' => 'nullable|in:open,identified,assessed,treated,retired',
             'owner_user_id' => 'nullable|exists:users,id'
         ]);
         $risk->update($data);
