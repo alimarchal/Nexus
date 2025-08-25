@@ -18,6 +18,7 @@ class ComplaintMetric extends Model
     protected $fillable = [
         'complaint_id',
         'time_to_first_response',
+        'first_response_at',
         'time_to_resolution',
         'reopened_count',
         'escalation_count',
@@ -27,6 +28,7 @@ class ComplaintMetric extends Model
 
     protected $casts = [
         'time_to_first_response' => 'integer',
+        'first_response_at' => 'datetime',
         'time_to_resolution' => 'integer',
         'reopened_count' => 'integer',
         'escalation_count' => 'integer',
@@ -97,6 +99,16 @@ class ComplaintMetric extends Model
     public function getFormattedResolutionTimeAttribute(): string
     {
         return $this->formatMinutes($this->time_to_resolution);
+    }
+
+    public function getFormattedHandlingDurationAttribute(): string
+    {
+        // Handling duration = total time to resolution minus time to first response
+        if (!$this->time_to_first_response || !$this->time_to_resolution) {
+            return 'N/A';
+        }
+        $handling = max(0, $this->time_to_resolution - $this->time_to_first_response);
+        return $this->formatMinutes($handling);
     }
 
     private function formatMinutes(?int $minutes): string

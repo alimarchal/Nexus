@@ -48,6 +48,16 @@
                     </svg>
                     Back to List
                 </a>
+                <button id="structured-pdf-btn"
+                    class="inline-flex items-center px-4 py-2 bg-indigo-700 hover:bg-indigo-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
+                    title="Generate printable PDF (excludes binary attachments)">
+                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4v12m0 0l-3.5-3.5M12 16l3.5-3.5M6 20h12" />
+                    </svg>
+                    Download Structured PDF
+                </button>
             </div>
         </div>
     </x-slot>
@@ -104,6 +114,425 @@
                                         $complaint->description }}</p>
                                 </div>
                             </div>
+
+                            @if(strcasecmp($complaint->category,'Harassment')===0)
+                            <!-- Harassment Details -->
+                            <div
+                                class="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-6 border border-rose-100 shadow-sm">
+                                <div class="flex items-center mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-600 mr-2"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8c-1.1 0-2 .9-2 2m2-2a2 2 0 110 4m0-4v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <h4 class="text-lg font-semibold text-gray-800">Harassment Details</h4>
+                                    @if($complaint->harassment_confidential)
+                                    <span
+                                        class="ml-3 px-2 py-1 text-xs rounded-full bg-red-100 text-red-700 font-medium">Confidential</span>
+                                    @endif
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    @if($complaint->harassment_sub_category)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Sub Category</label>
+                                        <p class="text-gray-900 font-semibold">{{ $complaint->harassment_sub_category }}
+                                        </p>
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_incident_date)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Incident Date &
+                                            Time</label>
+                                        <p class="text-gray-900 font-semibold">{{
+                                            $complaint->harassment_incident_date?->format('M d, Y H:i') }}</p>
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_location)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Location</label>
+                                        <p class="text-gray-900">{{ $complaint->harassment_location }}</p>
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_employee_number || $complaint->harassment_employee_phone)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Victim
+                                            Employee</label>
+                                        <p class="text-gray-900 text-sm">Number: <span class="font-semibold">{{
+                                                $complaint->harassment_employee_number ?? 'N/A' }}</span></p>
+                                        @if($complaint->harassment_employee_phone)
+                                        <p class="text-gray-900 text-sm">Phone: <span class="font-semibold">{{
+                                                $complaint->harassment_employee_phone }}</span></p>
+                                        @endif
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_abuser_name ||
+                                    $complaint->harassment_abuser_employee_number)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Alleged
+                                            Abuser</label>
+                                        @if($complaint->harassment_abuser_name)
+                                        <p class="text-gray-900 font-semibold">{{ $complaint->harassment_abuser_name }}
+                                        </p>
+                                        @endif
+                                        <p class="text-gray-900 text-sm">Emp #: <span class="font-semibold">{{
+                                                $complaint->harassment_abuser_employee_number ?? 'N/A' }}</span></p>
+                                        @if($complaint->harassment_abuser_relationship)
+                                        <p class="text-gray-700 text-xs mt-1">Relationship: {{
+                                            $complaint->harassment_abuser_relationship }}</p>
+                                        @endif
+                                        @if($complaint->harassment_abuser_email)
+                                        <p class="text-gray-700 text-xs">Email: {{ $complaint->harassment_abuser_email
+                                            }}</p>
+                                        @endif
+                                        @if($complaint->harassment_abuser_phone)
+                                        <p class="text-gray-700 text-xs">Phone: {{ $complaint->harassment_abuser_phone
+                                            }}</p>
+                                        @endif
+                                    </div>
+                                    @endif
+                                    @if($complaint->harassment_details)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100 md:col-span-2">
+                                        <label class="text-xs font-medium text-gray-500 block mb-1">Incident
+                                            Details</label>
+                                        <p class="text-gray-900 whitespace-pre-wrap text-sm leading-relaxed">{{
+                                            $complaint->harassment_details }}</p>
+                                    </div>
+                                    @endif
+                                </div>
+                                @php $witnesses = $complaint->witnesses; @endphp
+                                @if($witnesses->count())
+                                <div class="mt-6">
+                                    <h5 class="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                                        <svg class="w-4 h-4 text-rose-500 mr-1" xmlns="http://www.w3.org/2000/svg"
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14v7m-5-3h10" />
+                                        </svg>
+                                        Witnesses ({{ $witnesses->count() }})
+                                    </h5>
+                                    <div class="space-y-3">
+                                        @foreach($witnesses as $w)
+                                        <div class="bg-white rounded-lg p-3 border border-gray-100 shadow-sm">
+                                            <div class="flex flex-wrap justify-between text-sm">
+                                                <div class="font-medium text-gray-800">{{ $w->name }}</div>
+                                                @if($w->employee_number)
+                                                <div class="text-xs text-gray-500">Emp #: {{ $w->employee_number }}
+                                                </div>
+                                                @endif
+                                            </div>
+                                            <div
+                                                class="mt-1 grid grid-cols-1 md:grid-cols-3 gap-2 text-xs text-gray-600">
+                                                @if($w->email)<div>Email: {{ $w->email }}</div>@endif
+                                                @if($w->phone)<div>Phone: {{ $w->phone }}</div>@endif
+                                            </div>
+                                            @if($w->statement)
+                                            <div class="mt-2 text-xs text-gray-700 whitespace-pre-wrap">{{ $w->statement
+                                                }}</div>
+                                            @endif
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                            @endif
+
+
+                            @if(strcasecmp($complaint->category, 'Grievance') === 0)
+                            <!-- Grievance Details Section -->
+                            <div
+                                class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl p-6 border border-amber-100 shadow-sm">
+
+                                <!-- Section Header -->
+                                <div class="flex items-center mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-amber-600 mr-2"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                                    </svg>
+                                    <h4 class="text-lg font-bold text-black">GRIEVANCE DETAILS</h4>
+                                    @if($complaint->grievance_acknowledgment)
+                                    <span
+                                        class="ml-3 px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800 font-bold">
+                                        ACKNOWLEDGED
+                                    </span>
+                                    @endif
+                                </div>
+
+                                <!-- Grievance Details Grid -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                    <!-- Employee ID -->
+                                    @if($complaint->grievance_employee_id)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Employee
+                                            ID</label>
+                                        <p class="text-black font-bold text-sm">{{ $complaint->grievance_employee_id }}
+                                        </p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Employment Start Date with Service Calculation -->
+                                    @if($complaint->grievance_employment_start_date)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Employment
+                                            Start Date</label>
+                                        <p class="text-black font-bold text-sm">
+                                            {{ $complaint->grievance_employment_start_date->format('M d, Y') }}
+                                        </p>
+
+                                        @php
+                                        $startDate = $complaint->grievance_employment_start_date;
+                                        $currentDate = now();
+                                        $service = $startDate->diff($currentDate);
+
+                                        $serviceText = '';
+                                        if ($service->y > 0) {
+                                        $serviceText .= $service->y . ' year' . ($service->y > 1 ? 's' : '');
+                                        }
+                                        if ($service->m > 0) {
+                                        if ($serviceText) $serviceText .= ', ';
+                                        $serviceText .= $service->m . ' month' . ($service->m > 1 ? 's' : '');
+                                        }
+                                        if ($service->d > 0) {
+                                        if ($serviceText) $serviceText .= ', ';
+                                        $serviceText .= $service->d . ' day' . ($service->d > 1 ? 's' : '');
+                                        }
+
+                                        if (!$serviceText) {
+                                        $serviceText = 'Less than 1 day';
+                                        }
+                                        @endphp
+                                        <p class="text-xs text-black mt-1">
+                                            <span class="font-bold">Service:</span> {{ $serviceText }}
+                                            <span class="text-gray-800">({{ $service->days }} total days)</span>
+                                        </p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Department / Position -->
+                                    @if($complaint->grievance_department_position)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 md:col-span-2">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Department
+                                            / Position</label>
+                                        <p class="text-black font-semibold">{{ $complaint->grievance_department_position
+                                            }}</p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Supervisor Name -->
+                                    @if($complaint->grievance_supervisor_name)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 md:col-span-2">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Immediate
+                                            Supervisor Name</label>
+                                        <p class="text-black font-semibold">{{ $complaint->grievance_supervisor_name }}
+                                        </p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Grievance Type -->
+                                    @if($complaint->grievance_type)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Grievance
+                                            Type</label>
+                                        <p class="text-black font-bold">{{ $complaint->grievance_type }}</p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Policy Violated -->
+                                    @if($complaint->grievance_policy_violated)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Policy
+                                            Violated</label>
+                                        <p class="text-black font-bold">{{ $complaint->grievance_policy_violated }}</p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Previous Attempts -->
+                                    @if(!is_null($complaint->grievance_previous_attempts))
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Previous
+                                            Attempts to Resolve</label>
+                                        <p class="text-black font-bold">{{ $complaint->grievance_previous_attempts ?
+                                            'YES' : 'NO' }}</p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Previous Attempts Details -->
+                                    @if($complaint->grievance_previous_attempts_details)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 md:col-span-2">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Previous
+                                            Attempts Details</label>
+                                        <p class="text-black leading-relaxed text-sm">{{
+                                            $complaint->grievance_previous_attempts_details }}</p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Desired Outcome -->
+                                    @if($complaint->grievance_desired_outcome)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 md:col-span-2">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Desired
+                                            Outcome / Remedy</label>
+                                        <p class="text-black leading-relaxed text-sm">{{
+                                            $complaint->grievance_desired_outcome }}</p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Subject / Respondent -->
+                                    @if($complaint->grievance_subject_name || $complaint->grievance_subject_position)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 md:col-span-2">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Subject
+                                            / Respondent</label>
+                                        <p class="text-black text-sm">Name: <span class="font-bold">{{
+                                                $complaint->grievance_subject_name ?? 'N/A' }}</span></p>
+                                        @if($complaint->grievance_subject_position)
+                                        <p class="text-black text-sm">Position: <span class="font-bold">{{
+                                                $complaint->grievance_subject_position }}</span></p>
+                                        @endif
+                                        @if($complaint->grievance_subject_relationship)
+                                        <p class="text-black text-xs mt-1">Relationship: <span class="font-semibold">{{
+                                                $complaint->grievance_subject_relationship }}</span></p>
+                                        @endif
+                                    </div>
+                                    @endif
+
+                                    <!-- Process Flags -->
+                                    @if(!is_null($complaint->grievance_union_representation) ||
+                                    !is_null($complaint->grievance_anonymous) ||
+                                    !is_null($complaint->grievance_acknowledgment))
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 md:col-span-2">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-2 uppercase tracking-wide">Process
+                                            Flags</label>
+                                        <div class="flex flex-wrap gap-2">
+                                            @if(!is_null($complaint->grievance_union_representation))
+                                            <span
+                                                class="px-3 py-1 text-xs rounded-full font-bold {{ $complaint->grievance_union_representation ? 'bg-amber-600 text-white' : 'bg-gray-200 text-black' }}">
+                                                UNION REPRESENTATION: {{ $complaint->grievance_union_representation ?
+                                                'YES' : 'NO' }}
+                                            </span>
+                                            @endif
+                                            @if(!is_null($complaint->grievance_anonymous))
+                                            <span
+                                                class="px-3 py-1 text-xs rounded-full font-bold {{ $complaint->grievance_anonymous ? 'bg-amber-600 text-white' : 'bg-gray-200 text-black' }}">
+                                                ANONYMOUS: {{ $complaint->grievance_anonymous ? 'YES' : 'NO' }}
+                                            </span>
+                                            @endif
+                                            @if(!is_null($complaint->grievance_acknowledgment))
+                                            <span
+                                                class="px-3 py-1 text-xs rounded-full font-bold {{ $complaint->grievance_acknowledgment ? 'bg-amber-600 text-white' : 'bg-gray-200 text-black' }}">
+                                                ACKNOWLEDGMENT: {{ $complaint->grievance_acknowledgment ? 'YES' : 'NO'
+                                                }}
+                                            </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    <!-- Timeline / Pattern -->
+                                    @if($complaint->grievance_first_occurred_date ||
+                                    $complaint->grievance_most_recent_date || $complaint->grievance_pattern_frequency)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 md:col-span-2">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Timeline
+                                            / Pattern</label>
+                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                                            @if($complaint->grievance_first_occurred_date)
+                                            <div>
+                                                <p class="text-black text-xs font-bold">FIRST OCCURRED</p>
+                                                <p class="text-black font-bold">{{
+                                                    optional($complaint->grievance_first_occurred_date)->format('M d,
+                                                    Y') }}</p>
+                                            </div>
+                                            @endif
+                                            @if($complaint->grievance_most_recent_date)
+                                            <div>
+                                                <p class="text-black text-xs font-bold">MOST RECENT</p>
+                                                <p class="text-black font-bold">{{
+                                                    optional($complaint->grievance_most_recent_date)->format('M d, Y')
+                                                    }}</p>
+                                            </div>
+                                            @endif
+                                            @if($complaint->grievance_pattern_frequency)
+                                            <div>
+                                                <p class="text-black text-xs font-bold">PATTERN/FREQUENCY</p>
+                                                <p class="text-black font-bold">{{
+                                                    $complaint->grievance_pattern_frequency }}</p>
+                                            </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @endif
+
+                                    <!-- Performance Impact -->
+                                    @if($complaint->grievance_performance_effect)
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 md:col-span-2">
+                                        <label
+                                            class="text-xs font-bold text-black block mb-1 uppercase tracking-wide">Impact
+                                            on Performance / Well-being</label>
+                                        <p class="text-black leading-relaxed text-sm">{{
+                                            $complaint->grievance_performance_effect }}</p>
+                                    </div>
+                                    @endif
+
+                                    <!-- Witnesses -->
+                                    @php $grievanceWitnesses = $complaint->witnesses; @endphp
+                                    @if($grievanceWitnesses->count())
+                                    <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-200 md:col-span-2">
+                                        <label
+                                            class="text-xs font-bold text-black mb-3 flex items-center uppercase tracking-wide">
+                                            WITNESSES ({{ $grievanceWitnesses->count() }})
+                                        </label>
+                                        <div class="space-y-3 max-h-80 overflow-y-auto pr-2">
+                                            @foreach($grievanceWitnesses as $w)
+                                            <div class="p-3 border border-gray-300 rounded-lg bg-gray-50">
+                                                <div class="flex items-start justify-between">
+                                                    <div>
+                                                        <p class="text-black text-sm font-bold flex items-center">
+                                                            <span
+                                                                class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-600 text-white text-xs mr-2 font-bold">
+                                                                {{ $loop->iteration }}
+                                                            </span>
+                                                            {{ $w->name }}
+                                                        </p>
+                                                        <div class="grid grid-cols-2 gap-2 text-xs text-black mt-1">
+                                                            @if($w->employee_number)
+                                                            <p><span class="font-bold">EMP #:</span> {{
+                                                                $w->employee_number }}</p>
+                                                            @endif
+                                                            @if($w->phone)
+                                                            <p><span class="font-bold">PHONE:</span> {{ $w->phone }}</p>
+                                                            @endif
+                                                            @if($w->email)
+                                                            <p class="col-span-2"><span class="font-bold">EMAIL:</span>
+                                                                {{ $w->email }}</p>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @if($w->statement)
+                                                <p class="mt-2 text-xs text-black">
+                                                    <span class="font-bold">STATEMENT:</span> {{ $w->statement }}
+                                                </p>
+                                                @endif
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
 
                             <!-- Complainant Information -->
                             @if($complaint->complainant_name || $complaint->complainant_email ||
@@ -376,6 +805,19 @@
                                                 \Carbon\CarbonInterval::minutes($computedResolutionMinutes)->cascade()->forHumans(short:true)
                                                 }}</p>
                                         </div>
+
+                                    </div>
+                                    @endif
+                                    @if($complaint->metrics->time_to_first_response &&
+                                    $complaint->metrics->time_to_resolution)
+                                    <div
+                                        class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm border-l-4 border-indigo-400">
+                                        <div>
+                                            <span class="text-sm font-medium text-gray-600">Handling Duration (Post
+                                                First Response)</span>
+                                            <p class="text-lg font-bold text-indigo-600">{{
+                                                $complaint->metrics->formatted_handling_duration }}</p>
+                                        </div>
                                     </div>
                                     @endif
                                     <div class="grid grid-cols-3 gap-3">
@@ -573,16 +1015,31 @@
                                         <time class="text-xs text-gray-500">{{ $history->performed_at->format('M d, Y
                                             H:i') }}</time>
                                     </div>
-                                    @if($history->old_value || $history->new_value)
+                                    @php
+                                    // Map any lingering numeric user IDs in historical records (pre-change) to names
+                                    // for reassignment histories
+                                    $oldDisplay = $history->old_value;
+                                    $newDisplay = $history->new_value;
+                                    if ($history->action_type === 'Reassigned') {
+                                    $userMap = $users->keyBy('id');
+                                    if (is_numeric($oldDisplay)) {
+                                    $oldDisplay = ($userMap[$oldDisplay]->name ?? ('User #'.$oldDisplay));
+                                    }
+                                    if (is_numeric($newDisplay)) {
+                                    $newDisplay = ($userMap[$newDisplay]->name ?? ('User #'.$newDisplay));
+                                    }
+                                    }
+                                    @endphp
+                                    @if($oldDisplay || $newDisplay)
                                     <div class="mt-2 text-xs text-gray-600 dark:text-gray-300">
-                                        @if($history->old_value && $history->new_value)
+                                        @if($oldDisplay && $newDisplay)
                                         <span class="font-medium text-gray-700 dark:text-gray-200">{{
-                                            $history->old_value }}</span>
+                                            $oldDisplay }}</span>
                                         <span class="mx-1 text-gray-400">→</span>
-                                        <span class="font-medium text-gray-900 dark:text-white">{{ $history->new_value
+                                        <span class="font-medium text-gray-900 dark:text-white">{{ $newDisplay
                                             }}</span>
-                                        @elseif($history->new_value)
-                                        <span class="font-medium text-gray-900 dark:text-white">{{ $history->new_value
+                                        @elseif($newDisplay)
+                                        <span class="font-medium text-gray-900 dark:text-white">{{ $newDisplay
                                             }}</span>
                                         @endif
                                     </div>
@@ -1196,123 +1653,306 @@
 
     @push('scripts')
     <script>
-        (function() {
-        function initTabs() {
-            console.log('Initializing tab functionality...');
-
-            // Tab functionality
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabContents = document.querySelectorAll('.tab-content');
-
-            console.log('Found tab buttons:', tabButtons.length);
-            console.log('Found tab contents:', tabContents.length);
-
-            if (tabButtons.length === 0) {
-                console.error('No tab buttons found! Check if elements have .tab-button class');
-                return;
-            }
-
-            // Initialize tabs - hide all then show history by default
-            if (tabContents.length > 0) {
-                tabContents.forEach(content => {
-                    content.style.display = 'none';
-                });
-
+        // Clean tab initialization (legacy snapshot PDF code removed)
+        (function(){
+            function initTabs(){
+                const tabButtons = document.querySelectorAll('.tab-button');
+                const tabContents = document.querySelectorAll('.tab-content');
+                if(!tabButtons.length) return;
+                tabContents.forEach(c=>c.style.display='none');
                 const historyTab = document.getElementById('history-tab');
-                if (historyTab) {
-                    historyTab.style.display = 'block';
-                }
-            }
-
-            // Add click/keyboard listeners, but avoid duplicate listeners
-            tabButtons.forEach((button, index) => {
-                if (button.dataset.tabInit) return; // already initialized
-                button.dataset.tabInit = '1';
-
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    const tabName = this.getAttribute('data-tab');
-                    if (!tabName) return;
-
-                    // Remove active classes from all tab buttons
-                    tabButtons.forEach(btn => {
-                        btn.classList.remove('border-indigo-500', 'text-indigo-600');
-                        btn.classList.add('border-transparent', 'text-gray-500');
+                if(historyTab) historyTab.style.display='block';
+                tabButtons.forEach(btn=>{
+                    if(btn.dataset.tabInit) return; btn.dataset.tabInit='1';
+                    btn.addEventListener('click', e=>{
+                        e.preventDefault();
+                        const tabName = btn.getAttribute('data-tab');
+                        tabButtons.forEach(b=>{ b.classList.remove('border-indigo-500','text-indigo-600'); b.classList.add('border-transparent','text-gray-500'); });
+                        tabContents.forEach(tc=>tc.style.display='none');
+                        btn.classList.add('border-indigo-500','text-indigo-600');
+                        btn.classList.remove('border-transparent','text-gray-500');
+                        const tgt = document.getElementById(tabName+'-tab');
+                        if(tgt) tgt.style.display='block';
                     });
-
-                    // Hide all tab contents
-                    tabContents.forEach(content => {
-                        content.style.display = 'none';
-                    });
-
-                    // Activate clicked button
-                    this.classList.remove('border-transparent', 'text-gray-500');
-                    this.classList.add('border-indigo-500', 'text-indigo-600');
-
-                    // Show corresponding tab content
-                    const targetTab = document.getElementById(tabName + '-tab');
-                    if (targetTab) {
-                        targetTab.style.display = 'block';
-                    } else {
-                        console.error('Target tab not found:', tabName + '-tab');
-                    }
+                    btn.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); btn.click(); }});
                 });
-
-                // Keyboard support
-                button.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        this.click();
-                    }
-                });
-            });
-
-            // Escalation modal functionality
-            const escalateBtn = document.getElementById('escalate-btn');
-            const escalationModal = document.getElementById('escalation-modal');
-            const cancelEscalation = document.getElementById('cancel-escalation');
-
-            if (escalateBtn && escalationModal) {
-                if (!escalateBtn.dataset.modalInit) {
-                    escalateBtn.dataset.modalInit = '1';
-                    escalateBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        escalationModal.classList.remove('hidden');
-                    });
-                }
             }
+            if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initTabs); else initTabs();
+        })();
+    </script>
 
-            if (cancelEscalation && escalationModal) {
-                if (!cancelEscalation.dataset.modalInit) {
-                    cancelEscalation.dataset.modalInit = '1';
-                    cancelEscalation.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        escalationModal.classList.add('hidden');
-                    });
-                }
-            }
-
-            if (escalationModal && !escalationModal.dataset.outsideInit) {
-                escalationModal.dataset.outsideInit = '1';
-                escalationModal.addEventListener('click', function(e) {
-                    if (e.target === escalationModal) {
-                        escalationModal.classList.add('hidden');
-                    }
+    <!-- Structured PDF generator (black & white, bank branding) -->
+    <script>
+        (function(){
+            function loadScriptOnce(id, src){
+                return new Promise((res, rej)=>{
+                    if (document.getElementById(id)) return res(true);
+                    const s=document.createElement('script'); s.id=id; s.src=src; s.onload=()=>res(true); s.onerror=()=>rej(new Error('Failed '+src)); document.head.appendChild(s);
                 });
             }
 
-            console.log('Tab functionality initialized successfully');
-        }
+            async function ensureLibs(){
+                // Load jsPDF (with fallback) & autotable if missing
+                async function attemptLoad(id, primary, fallback){
+                    try { await loadScriptOnce(id, primary);} catch(e){ if(fallback){ await loadScriptOnce(id+'-fallback', fallback);} else throw e; }
+                }
+                if(!(window.jspdf && window.jspdf.jsPDF)){
+                    await attemptLoad('jspdf-core','https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js');
+                }
+                if(!(window.jspdf && window.jspdf.jsPDF)) throw new Error('jsPDF not loaded');
+                if(!window.jspdf.jsPDF.API.autoTable){
+                    await attemptLoad('jspdf-autotable','https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js','https://unpkg.com/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js');
+                }
+            }
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initTabs);
-        } else {
-            // Document is already loaded — initialize immediately
-            initTabs();
-        }
-    })();
+            function fmtDate(dt){
+                if(!dt) return '-';
+                try { return new Date(dt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); } catch(e){ return dt; }
+            }
+
+            function textWrap(str){ return (str||'').toString(); }
+
+            function addSectionTitle(doc, title, y){
+                doc.setFontSize(12); doc.setTextColor(30); doc.setFont('helvetica','bold'); doc.text(title.toUpperCase(), 40, y); doc.setFont('helvetica','normal'); return y+8; }
+
+            function footer(doc, complaint){
+                const pageCount = doc.getNumberOfPages();
+                for (let i=1;i<=pageCount;i++){
+                    doc.setPage(i);
+                    const txt = `Complaint # ${complaint.complaint_number || '-'} | ID ${complaint.id || '-'} | Page ${i} of ${pageCount}`;
+                    doc.setFontSize(8); doc.setTextColor(90);
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const textWidth = doc.getTextWidth(txt);
+                    doc.text(txt, (pageWidth/2)-(textWidth/2), doc.internal.pageSize.getHeight()-12);
+                }
+            }
+
+            async function buildStructuredPdf(){
+                const btn = document.getElementById('structured-pdf-btn');
+                if(!btn) return;
+                if(btn.dataset.init) return; btn.dataset.init='1';
+                btn.addEventListener('click', async ()=>{
+                    try {
+                        btn.disabled=true; btn.classList.add('opacity-50'); btn.textContent='Building...';
+                        await ensureLibs();
+                        const { jsPDF } = window.jspdf;
+                        const url = @json(route('complaints.full',$complaint));
+                        const res = await fetch(url,{headers:{'Accept':'application/json'}});
+                        if(!res.ok) throw new Error('Fetch failed');
+                        const data = await res.json();
+                        const c = data.complaint || {};
+                        const doc = new jsPDF('p','pt');
+
+                        // Header
+                        // Header / Branding
+                        doc.setFont('helvetica','bold');
+                        doc.setFontSize(16); doc.setTextColor(20); doc.text('THE BANK OF AZAD JAMMU AND KASHMIR', 40, 40);
+                        doc.setFontSize(13); doc.text('COMPLAINT REPORT', 40, 60);
+                        doc.setFont('helvetica','normal');
+                        doc.setFontSize(9); doc.setTextColor(70);
+                        doc.text('Generated: '+fmtDate(data.exported_at), 40, 74);
+                        doc.text('Complaint #: '+(c.complaint_number||'-'), 300, 74);
+                        doc.text('Status: '+(c.status||'-'), 480, 74);
+
+                        // Divider line
+                        doc.setDrawColor(0); doc.setLineWidth(0.5); doc.line(40, 78, 555, 78);
+
+                        let y = 95;
+                        // Summary table
+                        const summaryRows = [
+                            ['Number', c.complaint_number || '-','Status', c.status || '-'],
+                            ['Title', c.title || '-','Priority', c.priority || '-'],
+                            ['Category', c.category || '-','Source', c.source || '-'],
+                            ['Created', fmtDate(c.created_at),'Expected Due', fmtDate(c.expected_resolution_date)],
+                            ['Assigned To', c.assigned_to?.name || '-','Assigned At', fmtDate(c.assigned_at)],
+                            ['Branch', c.branch?.name || '-','Region', c.region?.name || '-'],
+                            ['Division', c.division?.short_name || c.division?.name || '-','SLA Breached', c.sla_breached? 'Yes':'No']
+                        ];
+                        // Summary table (slightly reduced total width to avoid fractional overflow warnings)
+                        doc.autoTable({
+                            startY:y,
+                            head:[['FIELD','VALUE','FIELD','VALUE']],
+                            body:summaryRows,
+                            styles:{fontSize:8,cellPadding:3, lineColor:[0,0,0], lineWidth:0.1, overflow:'linebreak'},
+                            headStyles:{fillColor:[0,0,0], textColor:[255,255,255], fontStyle:'bold', halign:'left'},
+                            columnStyles:{0:{cellWidth:94},1:{cellWidth:172},2:{cellWidth:94},3:{cellWidth:146}},
+                            tableWidth:510,
+                            theme:'grid'
+                        });
+                        y = doc.lastAutoTable.finalY + 15;
+
+                        // Complainant
+                        y = addSectionTitle(doc,'Complainant', y);
+                        doc.autoTable({ startY:y, body:[
+                            ['Name', c.complainant_name || '-'],
+                            ['Email', c.complainant_email || '-'],
+                            ['Phone', c.complainant_phone || '-'],
+                            ['Account #', c.complainant_account_number || '-']
+                        ], styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, theme:'grid', headStyles:{fillColor:[0,0,0]}, head:[] });
+                        y = doc.lastAutoTable.finalY + 15;
+
+                        // Description
+                        y = addSectionTitle(doc,'Description', y);
+                        const desc = textWrap(c.description); const split = doc.splitTextToSize(desc || '-', 515); doc.setFontSize(9); doc.text(split, 40, y); y += (split.length*11)+10;
+
+                        // Harassment details (if category is Harassment)
+                        if((c.category||'').toLowerCase()==='harassment'){
+                            y = addSectionTitle(doc,'Harassment Details', y);
+                            const hRows = [
+                                ['Incident Date', fmtDate(c.harassment_incident_date), 'Location', c.harassment_location || '-'],
+                                ['Sub Category', c.harassment_sub_category || '-', 'Confidential', c.harassment_confidential? 'Yes':'No'],
+                                ['Victim Emp #', c.harassment_employee_number || '-', 'Victim Phone', c.harassment_employee_phone || '-'],
+                                ['Abuser Name', c.harassment_abuser_name || '-', 'Abuser Emp #', c.harassment_abuser_employee_number || '-'],
+                                ['Abuser Phone', c.harassment_abuser_phone || '-', 'Abuser Email', c.harassment_abuser_email || '-'],
+                                ['Relationship', c.harassment_abuser_relationship || '-', '', '']
+                            ];
+                            doc.autoTable({
+                                startY:y,
+                                head:[['FIELD','VALUE','FIELD','VALUE']],
+                                body:hRows,
+                                styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1, overflow:'linebreak'},
+                                headStyles:{fillColor:[0,0,0], textColor:[255,255,255]},
+                                columnStyles:{0:{cellWidth:94},1:{cellWidth:172},2:{cellWidth:94},3:{cellWidth:146}},
+                                tableWidth:510,
+                                theme:'grid'
+                            });
+                            y = doc.lastAutoTable.finalY + 15;
+                            if(c.harassment_details){
+                                doc.setFontSize(9); doc.setTextColor(60); const hs = doc.splitTextToSize('Details: '+c.harassment_details, 515); doc.text(hs,40,y); y += hs.length*11 + 10;
+                            }
+                        }
+
+                        // Grievance details (if category is Grievance)
+                        if((c.category||'').toLowerCase()==='grievance'){
+                            y = addSectionTitle(doc,'Grievance Details', y);
+                            const gRows = [
+                                ['Employee ID', c.grievance_employee_id || '-', 'Type', c.grievance_type || '-'],
+                                ['Employment Start', fmtDate(c.grievance_employment_start_date), 'Policy Violated', c.grievance_policy_violated || '-'],
+                                ['Prev Attempts', c.grievance_previous_attempts==null?'-':(c.grievance_previous_attempts? 'Yes':'No'), 'Subject Name', c.grievance_subject_name || '-'],
+                                ['Subject Position', c.grievance_subject_position || '-', 'Relationship', c.grievance_subject_relationship || '-'],
+                                ['Union Representation', c.grievance_union_representation==null?'-':(c.grievance_union_representation?'Yes':'No'), 'Anonymous', c.grievance_anonymous==null?'-':(c.grievance_anonymous?'Yes':'No')],
+                                ['Acknowledgment', c.grievance_acknowledgment==null?'-':(c.grievance_acknowledgment?'Yes':'No'), 'First Occurred', fmtDate(c.grievance_first_occurred_date)],
+                                ['Most Recent', fmtDate(c.grievance_most_recent_date), 'Pattern/Frequency', c.grievance_pattern_frequency || '-']
+                            ];
+                            doc.autoTable({
+                                startY:y,
+                                head:[['FIELD','VALUE','FIELD','VALUE']],
+                                body:gRows,
+                                styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1, overflow:'linebreak'},
+                                headStyles:{fillColor:[0,0,0], textColor:[255,255,255]},
+                                columnStyles:{0:{cellWidth:94},1:{cellWidth:172},2:{cellWidth:94},3:{cellWidth:146}},
+                                tableWidth:510,
+                                theme:'grid'
+                            });
+                            y = doc.lastAutoTable.finalY + 15;
+                            if(c.grievance_previous_attempts_details){
+                                const pa = doc.splitTextToSize('Previous Attempts Details: '+c.grievance_previous_attempts_details, 515); doc.setFontSize(9); doc.text(pa,40,y); y += pa.length*11 + 8;
+                            }
+                            if(c.grievance_desired_outcome){
+                                const dox = doc.splitTextToSize('Desired Outcome: '+c.grievance_desired_outcome, 515); doc.setFontSize(9); doc.text(dox,40,y); y += dox.length*11 + 8;
+                            }
+                            if(c.grievance_performance_effect){
+                                const pe = doc.splitTextToSize('Performance Impact: '+c.grievance_performance_effect, 515); doc.setFontSize(9); doc.text(pe,40,y); y += pe.length*11 + 10;
+                            }
+                        }
+
+                        // Metrics
+                        if(c.metrics){
+                            y = addSectionTitle(doc,'Performance Metrics', y);
+                            const m = c.metrics;
+                            const metricRows = [
+                                ['Time to First Response (min)', m.time_to_first_response ?? '-'],
+                                ['Time to Resolution (min)', m.time_to_resolution ?? '-']
+                            ];
+                            if(m.handling_duration !== undefined && m.handling_duration !== null){
+                                metricRows.push(['Handling Duration (min)', m.handling_duration]);
+                            }
+                            metricRows.push(['Reopened Count', m.reopened_count ?? 0]);
+                            metricRows.push(['Escalation Count', m.escalation_count ?? 0]);
+                            metricRows.push(['Assignment Count', m.assignment_count ?? 0]);
+                            metricRows.push(['Customer Satisfaction', m.customer_satisfaction_score ?? '-']);
+                            doc.autoTable({ startY:y, body:metricRows, styles:{fontSize:8, cellPadding:3, lineColor:[0,0,0], lineWidth:0.1}, theme:'grid' });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Histories
+                        if(Array.isArray(c.histories) && c.histories.length){
+                            y = addSectionTitle(doc,'History', y);
+                            const historyRows = c.histories.slice(0,150).map(h=>[
+                                fmtDate(h.performed_at), h.action_type, h.performed_by?.name || '-', h.old_value || '-', h.new_value || '-', (h.comments||'').substring(0,80)
+                            ]);
+                            doc.autoTable({ startY:y, head:[['WHEN','ACTION','BY','OLD','NEW','COMMENTS']], body:historyRows, styles:{fontSize:7,cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Comments
+                        if(Array.isArray(c.comments) && c.comments.length){
+                            y = addSectionTitle(doc,'Comments', y);
+                            const commentRows = c.comments.slice(0,100).map(cm=>[
+                                fmtDate(cm.created_at), cm.creator?.name || '-', (cm.comment_type||'-'), (cm.comment_text||'').substring(0,120)
+                            ]);
+                            doc.autoTable({ startY:y, head:[['WHEN','BY','TYPE','COMMENT']], body:commentRows, styles:{fontSize:7,cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Assignments
+                        if(Array.isArray(c.assignments) && c.assignments.length){
+                            y = addSectionTitle(doc,'Assignments', y);
+                            const assignRows = c.assignments.map(a=>[
+                                fmtDate(a.assigned_at), a.assigned_to?.name || '-', a.assigned_by?.name || '-', a.assignment_type, a.is_active? 'Active':'Inactive'
+                            ]);
+                            doc.autoTable({ startY:y, head:[['WHEN','TO','BY','TYPE','ACTIVE']], body:assignRows, styles:{fontSize:7, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Escalations
+                        if(Array.isArray(c.escalations) && c.escalations.length){
+                            y = addSectionTitle(doc,'Escalations', y);
+                            const escRows = c.escalations.map(e=>[
+                                e.escalation_level, fmtDate(e.escalated_at), e.escalated_from?.name || '-', e.escalated_to?.name || '-', (e.escalation_reason||'').substring(0,60)
+                            ]);
+                            doc.autoTable({ startY:y, head:[['LEVEL','WHEN','FROM','TO','REASON']], body:escRows, styles:{fontSize:7, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Watchers
+                        if(Array.isArray(c.watchers) && c.watchers.length){
+                            y = addSectionTitle(doc,'Watchers', y);
+                            const wRows = c.watchers.map(w=>[ w.user?.name || '-', w.user?.email || '-' ]);
+                            doc.autoTable({ startY:y, head:[['NAME','EMAIL']], body:wRows, styles:{fontSize:8, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Witnesses
+                        if(Array.isArray(c.witnesses) && c.witnesses.length){
+                            y = addSectionTitle(doc,'Witnesses', y);
+                            const witRows = c.witnesses.map(w=>[ w.name, w.employee_number||'-', w.phone||'-', w.email||'-', (w.statement||'').substring(0,50) ]);
+                            doc.autoTable({ startY:y, head:[['NAME','EMP #','PHONE','EMAIL','STATEMENT']], body:witRows, styles:{fontSize:7, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Category Reference
+                        if(Array.isArray(data.categories) && data.categories.length){
+                            y = addSectionTitle(doc,'Category Reference', y);
+                            const catRows = data.categories.map(cat=>[cat.category_name, cat.default_priority, cat.sla_hours, cat.is_active?'Yes':'No']);
+                            doc.autoTable({ startY:y, head:[['NAME','DEFAULT PRIORITY','SLA HOURS','ACTIVE']], body:catRows.slice(0,40), styles:{fontSize:7, cellPadding:2, lineColor:[0,0,0], lineWidth:0.1}, headStyles:{fillColor:[0,0,0], textColor:[255,255,255]} });
+                            y = doc.lastAutoTable.finalY + 15;
+                        }
+
+                        // Footer page numbers
+                        footer(doc, c);
+
+                        doc.save('complaint-'+(c.complaint_number||c.id||'export')+'.pdf');
+                    } catch(e){
+                        console.error(e);
+                        alert('Failed to build structured PDF: '+e.message);
+                    } finally {
+                        btn.disabled=false; btn.classList.remove('opacity-50'); btn.textContent='Download Structured PDF';
+                    }
+                });
+            }
+            if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', buildStructuredPdf); } else { buildStructuredPdf(); }
+        })();
     </script>
 
     <!-- Load SweetAlert2 -->

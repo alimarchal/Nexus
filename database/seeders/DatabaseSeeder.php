@@ -25,6 +25,12 @@ class DatabaseSeeder extends Seeder
             ComplaintStatusTypeSeeder::class,
             ComplaintCategorySeeder::class,
             PrintedStationerySeeder::class,
+            AuditTypeSeeder::class,
+            AuditTagSeeder::class,
+            AuditChecklistItemSeeder::class,
+            AuditRiskSeeder::class,
+            AuditDemoSeeder::class,
+            AuditSampleSeeder::class,
         ]);
     }
 }

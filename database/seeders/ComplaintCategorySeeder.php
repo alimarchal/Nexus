@@ -55,12 +55,19 @@ class ComplaintCategorySeeder extends Seeder
                 'sla_hours' => 12, // escalate faster than standard service issues
                 'is_active' => true,
             ],
+            [
+                'category_name' => 'Grievance',
+                'description' => 'Employee or customer grievance requiring formal review and possible mediation.',
+                'default_priority' => 'Medium',
+                'sla_hours' => 36,
+                'is_active' => true,
+            ],
         ];
 
         foreach ($categories as $data) {
             ComplaintCategory::firstOrCreate(
-                ['category_name' => $data['category_name'], 'complaint_id' => null],
-                array_merge($data, ['complaint_id' => null])
+                ['category_name' => $data['category_name']],
+                array_merge($data)
             );
         }
     }

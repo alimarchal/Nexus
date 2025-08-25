@@ -53,6 +53,49 @@ return new class extends Migration {
 
             // SLA (Service Level Agreement) monitoring
             $table->timestamp('expected_resolution_date')->nullable(); // Target deadline
+            $table->dateTime('harassment_incident_date')->nullable();
+            $table->string('harassment_location', 150)->nullable();
+            $table->string('harassment_witnesses', 255)->nullable();
+            $table->string('harassment_reported_to', 150)->nullable();
+            $table->text('harassment_details')->nullable();
+            $table->boolean('harassment_confidential')->default(false);
+            $table->string('harassment_sub_category', 150)->nullable();
+            $table->string('harassment_employee_number', 50)->nullable();
+            $table->string('harassment_employee_phone', 50)->nullable();
+            $table->string('harassment_abuser_employee_number', 50)->nullable();
+            $table->string('harassment_abuser_name', 150)->nullable();
+            $table->string('harassment_abuser_phone', 50)->nullable();
+            $table->string('harassment_abuser_email', 150)->nullable();
+            $table->string('harassment_abuser_relationship', 100)->nullable();
+
+            // Grievance 
+            $table->string('grievance_employee_id', 50)->nullable();
+            $table->string('grievance_department_position', 150)->nullable();
+            $table->string('grievance_supervisor_name', 150)->nullable();
+            $table->date('grievance_employment_start_date')->nullable();
+
+            $table->string('grievance_type', 100)->nullable();
+            $table->string('grievance_policy_violated', 255)->nullable();
+            $table->enum('grievance_previous_attempts', ['Yes', 'No'])->nullable();
+            $table->text('grievance_previous_attempts_details')->nullable();
+            $table->text('grievance_desired_outcome')->nullable();
+
+            $table->string('grievance_subject_name', 150)->nullable();
+            $table->string('grievance_subject_position', 150)->nullable();
+            $table->string('grievance_subject_relationship', 100)->nullable();
+
+            $table->boolean('grievance_union_representation')->default(false);
+            $table->boolean('grievance_anonymous')->default(false);
+            $table->boolean('grievance_acknowledgment')->default(false);
+
+            $table->date('grievance_first_occurred_date')->nullable();
+            $table->date('grievance_most_recent_date')->nullable();
+            $table->string('grievance_pattern_frequency', 50)->nullable();
+            $table->string('grievance_performance_effect', 50)->nullable();
+
+            // Optional simple index for reporting
+
+
             $table->boolean('sla_breached')->default(false); // Performance tracking
             $table->text('reopen_reason')->nullable();
             $table->string('priority_change_reason', 500)->nullable();
@@ -65,6 +108,7 @@ return new class extends Migration {
             $table->timestamps();
 
             // Database performance optimization
+            $table->index('grievance_type');
             $table->index(['status', 'priority']); // Common filtering
             $table->index('complaint_number'); // Lookup optimization
             $table->index('assigned_to'); // Assignment queries

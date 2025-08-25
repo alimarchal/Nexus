@@ -55,12 +55,55 @@ class ComplaintController extends Controller
                 AllowedFilter::exact('source'),
                 AllowedFilter::partial('category'),
                 AllowedFilter::exact('branch_id'),
-                AllowedFilter::exact('assigned_to'),
+                // Assigned to (supports special 'unassigned' token)
+                AllowedFilter::callback('assigned_to', function ($query, $value) {
+                    if ($value === 'unassigned') {
+                        $query->whereNull('assigned_to');
+                    } elseif (is_numeric($value)) {
+                        $query->where('assigned_to', $value);
+                    }
+                }),
                 AllowedFilter::exact('assigned_by'),
                 AllowedFilter::exact('resolved_by'),
                 AllowedFilter::exact('sla_breached'),
+                AllowedFilter::exact('region_id'),
+                AllowedFilter::exact('division_id'),
                 AllowedFilter::partial('complainant_name'),
                 AllowedFilter::partial('complainant_email'),
+                // Escalated filter: 1 => has escalations, 0 => none
+                AllowedFilter::callback('escalated', function ($query, $value) {
+                    if ($value === '1') {
+                        $query->whereHas('escalations');
+                    } elseif ($value === '0') {
+                        $query->whereDoesntHave('escalations');
+                    }
+                }),
+                // Harassment only (category = Harassment)
+                AllowedFilter::callback('harassment_only', function ($query, $value) {
+                    if (in_array($value, ['1', 'true', 1, true], true)) {
+                        $query->whereRaw('LOWER(category) = ?', ['harassment']);
+                    }
+                }),
+                // Has witnesses
+                AllowedFilter::callback('has_witnesses', function ($query, $value) {
+                    if ($value === '1') {
+                        $query->whereHas('witnesses');
+                    } elseif ($value === '0') {
+                        $query->whereDoesntHave('witnesses');
+                    }
+                }),
+                // Harassment confidentiality flag
+                AllowedFilter::callback('harassment_confidential', function ($query, $value) {
+                    if ($value === '1') {
+                        $query->where('harassment_confidential', true);
+                    } elseif ($value === '0') {
+                        $query->where(function ($q) {
+                            $q->where('harassment_confidential', false)->orWhereNull('harassment_confidential');
+                        });
+                    }
+                }),
+                // Harassment sub category
+                AllowedFilter::partial('harassment_sub_category'),
                 AllowedFilter::callback('date_from', function ($query, $value) {
                     $query->whereDate('created_at', '>=', $value);
                 }),
@@ -113,6 +156,10 @@ class ComplaintController extends Controller
         $branches = Branch::orderBy('name')->get();
         $users = User::active()->orderBy('name')->get();
         $statusTypes = ComplaintStatusType::active()->orderBy('name')->get();
+        // Added: categories, regions, divisions for dropdown filters in index view
+        $categories = ComplaintCategory::orderBy('category_name')->get();
+        $regions = \App\Models\Region::orderBy('name')->get();
+        $divisions = \App\Models\Division::orderBy('short_name')->orderBy('name')->get();
 
         // Get statistics for dashboard
         $statistics = [
@@ -126,7 +173,16 @@ class ComplaintController extends Controller
             'sla_breached' => Complaint::where('sla_breached', true)->count(),
         ];
 
-        return view('complaints.index', compact('complaints', 'branches', 'users', 'statusTypes', 'statistics'));
+        return view('complaints.index', compact(
+            'complaints',
+            'branches',
+            'users',
+            'statusTypes',
+            'statistics',
+            'categories',
+            'regions',
+            'divisions'
+        ));
     }
 
     /**
@@ -202,23 +258,27 @@ class ComplaintController extends Controller
             // Create complaint record (includes region_id / division_id / branch_id which are nullable)
             $complaint = Complaint::create($validated);
 
-            // Persist witnesses if harassment category and witnesses provided
+            // Persist witnesses if harassment or grievance category and witnesses provided
             if (!empty($validated['category_id'])) {
                 $cat = ComplaintCategory::find($validated['category_id']);
-                if ($cat && strcasecmp($cat->category_name, 'Harassment') === 0) {
-                    // Structured witnesses from request (validated via StoreComplaintRequest)
-                    $witnesses = $request->input('witnesses', []);
-                    if (is_array($witnesses)) {
-                        foreach ($witnesses as $w) {
-                            if (!empty($w['name'])) {
-                                ComplaintWitness::create([
-                                    'complaint_id' => $complaint->id,
-                                    'employee_number' => $w['employee_number'] ?? null,
-                                    'name' => $w['name'],
-                                    'phone' => $w['phone'] ?? null,
-                                    'email' => $w['email'] ?? null,
-                                    'statement' => $w['statement'] ?? null,
-                                ]);
+                if ($cat && (strcasecmp($cat->category_name, 'Harassment') === 0 || strcasecmp($cat->category_name, 'Grievance') === 0)) {
+                    $groupedSets = [
+                        $request->input('witnesses', []), // harassment witness fields
+                        $request->input('grievance_witnesses', []) // grievance witness fields
+                    ];
+                    foreach ($groupedSets as $witnesses) {
+                        if (is_array($witnesses)) {
+                            foreach ($witnesses as $w) {
+                                if (!empty($w['name'])) {
+                                    ComplaintWitness::create([
+                                        'complaint_id' => $complaint->id,
+                                        'employee_number' => $w['employee_number'] ?? null,
+                                        'name' => $w['name'],
+                                        'phone' => $w['phone'] ?? null,
+                                        'email' => $w['email'] ?? null,
+                                        'statement' => $w['statement'] ?? null,
+                                    ]);
+                                }
                             }
                         }
                     }
@@ -261,21 +321,7 @@ class ComplaintController extends Controller
                 ]);
             }
 
-            // Create complaint category if provided
-            if ($request->filled('category_id')) {
-                $categoryData = ComplaintCategory::find($request->category_id);
-                if ($categoryData) {
-                    ComplaintCategory::create([
-                        'complaint_id' => $complaint->id,
-                        'category_name' => $categoryData->category_name,
-                        'parent_category_id' => $categoryData->parent_category_id,
-                        'description' => $categoryData->description,
-                        'default_priority' => $categoryData->default_priority,
-                        'sla_hours' => $categoryData->sla_hours,
-                        'is_active' => true,
-                    ]);
-                }
-            }
+            // (Removed) Previously duplicated complaint category row tied to complaint.
 
             // Create assignment record if assigned
             if ($complaint->assigned_to) {
@@ -394,10 +440,7 @@ class ComplaintController extends Controller
                 $query->with('creator')->latest();
             },
 
-            // Complaint categories with parent category and creator info, ordered by most recent first
-            'categories' => function ($query) {
-                $query->with(['parent', 'creator'])->latest();
-            },
+            // (Removed categories relationship after decoupling)
 
             // Assignment history with assignment details, ordered by most recent first
             'assignments' => function ($query) {
@@ -415,7 +458,9 @@ class ComplaintController extends Controller
             },
 
             // Performance metrics and SLA tracking data
-            'metrics'
+            'metrics',
+            // Witnesses for harassment complaints
+            'witnesses'
         ]);
 
         // Fetch additional reference data needed for complaint management forms
@@ -437,7 +482,103 @@ class ComplaintController extends Controller
 
         // Return the complaint detail view with all loaded data
         // The view will have access to the fully loaded complaint model and all reference data
+        // Preprocess history display values (avoid Blade inline PHP that caused parse issues previously)
+        if ($complaint->histories && $complaint->histories->count()) {
+            // Build a simple id->name map once
+            $userNameMap = User::pluck('name', 'id');
+            foreach ($complaint->histories as $h) {
+                $oldVal = $h->old_value;
+                $newVal = $h->new_value;
+                if ($h->action_type === 'Reassigned') {
+                    if (is_numeric($oldVal)) {
+                        $oldVal = $userNameMap[$oldVal] ?? ('User #' . $oldVal);
+                    }
+                    if (is_numeric($newVal)) {
+                        $newVal = $userNameMap[$newVal] ?? ('User #' . $newVal);
+                    }
+                }
+                // Attach non-persistent attributes for Blade rendering
+                $h->display_old_value = $oldVal;
+                $h->display_new_value = $newVal;
+            }
+        }
         return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates', 'branches', 'regions', 'divisions'));
+    }
+
+    /**
+     * Return a full JSON snapshot of a complaint with ALL related entities (assignments, escalations,
+     * histories, comments, attachments, watchers, metrics, witnesses, status types mapping, category tree, templates)
+     * for offline analysis / export. Intended for admin/internal use.
+     */
+    public function fullData(Complaint $complaint)
+    {
+        $complaint->load([
+            'branch',
+            'region',
+            'division',
+            'assignedTo',
+            'assignedBy',
+            'resolvedBy',
+            'histories.status',
+            'histories.performedBy',
+            'comments.creator',
+            'attachments.creator',
+            'assignments.assignedTo',
+            'assignments.assignedBy',
+            'escalations.escalatedFrom',
+            'escalations.escalatedTo',
+            'watchers.user',
+            'metrics',
+            'witnesses'
+        ]);
+
+        // Compute handling duration (post first response) on-the-fly for export
+        if ($complaint->metrics && $complaint->metrics->time_to_first_response !== null && $complaint->metrics->time_to_resolution !== null) {
+            $handling = max(0, $complaint->metrics->time_to_resolution - $complaint->metrics->time_to_first_response);
+            $complaint->metrics->setAttribute('handling_duration', $handling);
+        }
+
+        // Map any legacy numeric user IDs in reassignment histories to user names (server-side for PDF consistency)
+        if ($complaint->histories && $complaint->histories->count()) {
+            $numericUserIds = [];
+            foreach ($complaint->histories as $h) {
+                if ($h->action_type === 'Reassigned') {
+                    if (is_numeric($h->old_value)) {
+                        $numericUserIds[] = (int) $h->old_value;
+                    }
+                    if (is_numeric($h->new_value)) {
+                        $numericUserIds[] = (int) $h->new_value;
+                    }
+                }
+            }
+            if ($numericUserIds) {
+                $userNameMap = User::whereIn('id', array_unique($numericUserIds))->pluck('name', 'id');
+                foreach ($complaint->histories as $h) {
+                    if ($h->action_type === 'Reassigned') {
+                        if (is_numeric($h->old_value)) {
+                            $h->old_value = $userNameMap[(int) $h->old_value] ?? ('User #' . $h->old_value);
+                        }
+                        if (is_numeric($h->new_value)) {
+                            $h->new_value = $userNameMap[(int) $h->new_value] ?? ('User #' . $h->new_value);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Optionally include reference lookups
+        $statusTypes = ComplaintStatusType::select('id', 'name', 'code')->get();
+        $templates = ComplaintTemplate::select('id', 'template_name', 'template_subject', 'category_id')->get();
+        $categories = ComplaintCategory::select('id', 'category_name', 'parent_category_id', 'sla_hours', 'default_priority', 'is_active')->get();
+
+        return response()->json([
+            'complaint' => $complaint,
+            'status_types' => $statusTypes,
+            'templates' => $templates,
+            'categories' => $categories,
+            'exported_at' => now()->toIso8601String(),
+            'version' => '1.1'
+        ]);
     }
 
     /**
@@ -1050,6 +1191,12 @@ class ComplaintController extends Controller
                         default => $newVal,
                     };
                 }
+
+                // For user assignment changes convert IDs to human readable names (avoid leaking raw IDs in history)
+                if ($field === 'assigned_to') {
+                    $oldVal = $oldVal ? (User::find($oldVal)?->name ?? "User #{$oldVal}") : 'Unassigned';
+                    $newVal = $newVal ? (User::find($newVal)?->name ?? "User #{$newVal}") : 'Unassigned';
+                }
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
                     'action_type' => $actionType,
@@ -1090,14 +1237,25 @@ class ComplaintController extends Controller
             $origStatus === 'Open' &&
             $newStatus !== 'Open'
         ) {
-            $timeToResponse = $complaint->created_at->diffInMinutes(now());
-            $metrics->update(['time_to_first_response' => $timeToResponse]);
+            $firstResponseAt = now();
+            $timeToResponse = $complaint->created_at->diffInMinutes($firstResponseAt);
+            $metrics->update([
+                'time_to_first_response' => $timeToResponse,
+                'first_response_at' => $firstResponseAt,
+            ]);
+        }
+
+        // Lazy backfill first_response_at if historical data exists without timestamp
+        if ($metrics->time_to_first_response && !$metrics->first_response_at) {
+            $backfill = $complaint->created_at->copy()->addMinutes($metrics->time_to_first_response);
+            $metrics->update(['first_response_at' => $backfill]);
         }
 
         // Calculate or refresh time to resolution when entering Resolved/Closed
         if (in_array($newStatus, ['Resolved', 'Closed'])) {
             $resolvedAt = $complaint->resolved_at ?? now();
             $ttr = $complaint->created_at->diffInMinutes($resolvedAt);
+            // Optionally compute handling duration separately if a definition change is desired.
             if (!$metrics->time_to_resolution || $metrics->time_to_resolution != $ttr) {
                 $metrics->update(['time_to_resolution' => $ttr]);
             }
@@ -1378,8 +1536,17 @@ class ComplaintController extends Controller
                 'user_id' => auth()->id()
             ]);
 
-            return redirect()->back()
-                ->with('error', 'Failed to export complaints. Please try again.');
+            $filename = 'complaints_export_error_' . now()->format('Y_m_d_H_i_s') . '.csv';
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            ];
+            return response()->stream(function () use ($e) {
+                $handle = fopen('php://output', 'w');
+                fputcsv($handle, ['Export Failed']);
+                fputcsv($handle, ['Message', app()->environment('local') ? $e->getMessage() : 'An error occurred generating the export']);
+                fclose($handle);
+            }, 200, $headers);
         }
     }
 
@@ -1392,116 +1559,455 @@ class ComplaintController extends Controller
     public function analytics(Request $request)
     {
         try {
-            // Date range filter (ensure Carbon instances)
-            if ($request->filled('date_from')) {
-                try {
-                    $dateFrom = Carbon::parse($request->input('date_from'))->startOfDay();
-                } catch (\Exception $e) {
-                    $dateFrom = now()->subMonth()->startOfDay();
-                }
-            } else {
-                $dateFrom = now()->subMonth()->startOfDay();
-            }
+            [$dateFrom, $dateTo] = $this->resolveDateRange($request);
 
-            if ($request->filled('date_to')) {
-                try {
-                    $dateTo = Carbon::parse($request->input('date_to'))->endOfDay();
-                } catch (\Exception $e) {
-                    $dateTo = now()->endOfDay();
-                }
-            } else {
-                $dateTo = now()->endOfDay();
-            }
+            // Build a base filtered query (re-usable clone per aggregation)
+            $baseQuery = Complaint::query();
+            $this->applyAnalyticsFilters($baseQuery, $request, $dateFrom, $dateTo);
 
-            // Basic statistics
-            $totalComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])->count();
-            $resolvedComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
-                ->whereIn('status', ['Resolved', 'Closed'])->count();
-            $openComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
-                ->whereIn('status', ['Open', 'In Progress', 'Pending'])->count();
-            $overdueComplaints = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $totalComplaints = (clone $baseQuery)->count();
+            $resolvedComplaints = (clone $baseQuery)->whereIn('status', ['Resolved', 'Closed'])->count();
+            $openComplaints = (clone $baseQuery)->whereIn('status', ['Open', 'In Progress', 'Pending'])->count();
+            $overdueComplaints = (clone $baseQuery)
                 ->where('expected_resolution_date', '<', now())
-                ->whereNotIn('status', ['Resolved', 'Closed'])->count();
+                ->whereNotIn('status', ['Resolved', 'Closed'])
+                ->count();
 
-            // Status distribution
-            $statusDistribution = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $unassignedComplaints = (clone $baseQuery)->whereNull('assigned_to')->count();
+            $escalatedComplaints = (clone $baseQuery)->whereHas('escalations')->count();
+            $harassmentComplaints = (clone $baseQuery)->whereRaw('LOWER(category) = ?', ['harassment'])->count();
+            $harassmentConfidential = (clone $baseQuery)->where('harassment_confidential', true)->count();
+            $withWitnesses = (clone $baseQuery)->whereHas('witnesses')->count();
+            $slaBreached = (clone $baseQuery)->where('sla_breached', true)->count();
+
+            $statusDistribution = (clone $baseQuery)
                 ->selectRaw('status, COUNT(*) as count')
                 ->groupBy('status')
                 ->get();
 
-            // Priority distribution
-            $priorityDistribution = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $priorityDistribution = (clone $baseQuery)
                 ->selectRaw('priority, COUNT(*) as count')
                 ->groupBy('priority')
                 ->get();
 
-            // Source distribution
-            $sourceDistribution = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $sourceDistribution = (clone $baseQuery)
                 ->selectRaw('source, COUNT(*) as count')
                 ->groupBy('source')
                 ->get();
 
-            // Branch performance
-            $branchPerformance = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $branchPerformance = (clone $baseQuery)
                 ->join('branches', 'complaints.branch_id', '=', 'branches.id')
                 ->selectRaw('branches.name as branch_name, COUNT(*) as total_complaints,
                     SUM(CASE WHEN complaints.status IN ("Resolved", "Closed") THEN 1 ELSE 0 END) as resolved_complaints')
                 ->groupBy('branches.id', 'branches.name')
                 ->get();
 
-            // User performance
-            $userPerformance = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
+            $userPerformance = (clone $baseQuery)
                 ->join('users', 'complaints.assigned_to', '=', 'users.id')
                 ->selectRaw('users.name as user_name, COUNT(*) as assigned_complaints,
                     SUM(CASE WHEN complaints.status IN ("Resolved", "Closed") THEN 1 ELSE 0 END) as resolved_complaints')
                 ->groupBy('users.id', 'users.name')
                 ->get();
 
-            // Average resolution time
             $avgResolutionTime = ComplaintMetric::join('complaints', 'complaint_metrics.complaint_id', '=', 'complaints.id')
                 ->whereBetween('complaints.created_at', [$dateFrom, $dateTo])
                 ->whereNotNull('time_to_resolution')
+                ->when($request->filled('filter.category'), function ($q) use ($request) {
+                    $q->where('complaints.category', 'like', '%' . $request->input('filter.category') . '%');
+                })
                 ->avg('time_to_resolution');
 
-            // SLA performance
-            $slaBreached = Complaint::whereBetween('created_at', [$dateFrom, $dateTo])
-                ->where('sla_breached', true)->count();
             $slaCompliance = $totalComplaints > 0 ? (($totalComplaints - $slaBreached) / $totalComplaints) * 100 : 100;
 
-            // Monthly trend (last 12 months)
-            $monthlyTrend = Complaint::selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
-                ->where('created_at', '>=', now()->subYear())
+            // Monthly trend constrained within selected date range (group by month)
+            $monthlyTrend = Complaint::query()
+                ->when($dateFrom, fn($q) => $q->where('created_at', '>=', $dateFrom))
+                ->when($dateTo, fn($q) => $q->where('created_at', '<=', $dateTo))
+                ->tap(function ($q) use ($request) {
+                    // Apply the same non-date filters for consistency
+                    $this->applyAnalyticsFilters($q, $request, null, null, true); // skip date in second pass
+                })
+                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count')
                 ->groupBy('year', 'month')
                 ->orderBy('year')
                 ->orderBy('month')
                 ->get();
 
-            return view('complaints.analytics', compact(
-                'totalComplaints',
-                'resolvedComplaints',
-                'openComplaints',
-                'overdueComplaints',
-                'statusDistribution',
-                'priorityDistribution',
-                'sourceDistribution',
-                'branchPerformance',
-                'userPerformance',
-                'avgResolutionTime',
-                'slaCompliance',
-                'monthlyTrend',
-                'dateFrom',
-                'dateTo'
-            ));
+            // Provide initial payload to Blade (JS will enhance later)
+            $initialPayload = [
+                'total' => $totalComplaints,
+                'resolved' => $resolvedComplaints,
+                'open' => $openComplaints,
+                'overdue' => $overdueComplaints,
+                'unassigned' => $unassignedComplaints,
+                'escalated' => $escalatedComplaints,
+                'harassment' => $harassmentComplaints,
+                'harassment_confidential' => $harassmentConfidential,
+                'with_witnesses' => $withWitnesses,
+                'sla_breached' => $slaBreached,
+                'avg_resolution_time_minutes' => $avgResolutionTime,
+                'sla_compliance' => $slaCompliance,
+            ];
 
+            // Extended distributions & rankings
+            $categoryDistribution = (clone $baseQuery)
+                ->selectRaw('category, COUNT(*) as count')
+                ->groupBy('category')
+                ->orderByDesc('count')
+                ->get();
+            $harassmentSubCategoryDistribution = (clone $baseQuery)
+                ->whereRaw('LOWER(category) = ?', ['harassment'])
+                ->whereNotNull('harassment_sub_category')
+                ->selectRaw('harassment_sub_category as sub_category, COUNT(*) as count')
+                ->groupBy('harassment_sub_category')
+                ->orderByDesc('count')
+                ->get();
+            $topResolvers = (clone $baseQuery)
+                ->whereIn('status', ["Resolved", "Closed"])
+                ->whereNotNull('resolved_by')
+                ->join('users as resolver', 'complaints.resolved_by', '=', 'resolver.id')
+                ->selectRaw('resolver.name as user_name, COUNT(*) as resolved_count')
+                ->groupBy('resolver.id', 'resolver.name')
+                ->orderByDesc('resolved_count')
+                ->limit(5)
+                ->get();
+            $topWatchers = (clone $baseQuery)
+                ->join('complaint_watchers', 'complaint_watchers.complaint_id', '=', 'complaints.id')
+                ->join('users as watcher', 'complaint_watchers.user_id', '=', 'watcher.id')
+                ->selectRaw('watcher.name as user_name, COUNT(DISTINCT complaints.id) as watched_complaints')
+                ->groupBy('watcher.id', 'watcher.name')
+                ->orderByDesc('watched_complaints')
+                ->limit(5)
+                ->get();
+            $categoryResolutionRates = (clone $baseQuery)
+                ->selectRaw('category, COUNT(*) as total, SUM(CASE WHEN status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved')
+                ->groupBy('category')
+                ->get()
+                ->map(function ($r) {
+                    $r->resolution_rate = $r->total > 0 ? round(($r->resolved / $r->total) * 100, 1) : 0;
+                    return $r;
+                });
+
+            return view('complaints.analytics', [
+                'totalComplaints' => $totalComplaints,
+                'resolvedComplaints' => $resolvedComplaints,
+                'openComplaints' => $openComplaints,
+                'overdueComplaints' => $overdueComplaints,
+                'statusDistribution' => $statusDistribution,
+                'priorityDistribution' => $priorityDistribution,
+                'sourceDistribution' => $sourceDistribution,
+                'branchPerformance' => $branchPerformance,
+                'userPerformance' => $userPerformance,
+                'avgResolutionTime' => $avgResolutionTime,
+                'slaCompliance' => $slaCompliance,
+                'monthlyTrend' => $monthlyTrend,
+                'dateFrom' => $dateFrom,
+                'dateTo' => $dateTo,
+                'initialPayload' => $initialPayload,
+                'categoryDistribution' => $categoryDistribution,
+                'harassmentSubCategoryDistribution' => $harassmentSubCategoryDistribution,
+                'topResolvers' => $topResolvers,
+                'topWatchers' => $topWatchers,
+                'categoryResolutionRates' => $categoryResolutionRates,
+            ]);
         } catch (\Exception $e) {
             Log::error('Error generating complaint analytics', [
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id()
             ]);
-
-            return redirect()->back()
-                ->with('error', 'Failed to generate analytics. Please try again.');
+            return redirect()->back()->with('error', 'Failed to generate analytics. Please try again.');
         }
+    }
+
+    /**
+     * JSON endpoint for dynamic analytics dashboard updates
+     */
+    public function analyticsData(Request $request)
+    {
+        try {
+            [$dateFrom, $dateTo] = $this->resolveDateRange($request);
+            $baseQuery = Complaint::query();
+            $this->applyAnalyticsFilters($baseQuery, $request, $dateFrom, $dateTo);
+
+            $total = (clone $baseQuery)->count();
+            $resolved = (clone $baseQuery)->whereIn('status', ['Resolved', 'Closed'])->count();
+            $open = (clone $baseQuery)->whereIn('status', ['Open', 'In Progress', 'Pending'])->count();
+            $overdue = (clone $baseQuery)->where('expected_resolution_date', '<', now())
+                ->whereNotIn('status', ['Resolved', 'Closed'])->count();
+            $unassigned = (clone $baseQuery)->whereNull('assigned_to')->count();
+            $escalated = (clone $baseQuery)->whereHas('escalations')->count();
+            $harassment = (clone $baseQuery)->whereRaw('LOWER(category) = ?', ['harassment'])->count();
+            $harassment_confidential = (clone $baseQuery)->where('harassment_confidential', true)->count();
+            $with_witnesses = (clone $baseQuery)->whereHas('witnesses')->count();
+            $sla_breached = (clone $baseQuery)->where('sla_breached', true)->count();
+
+            $avgResolutionTime = ComplaintMetric::join('complaints', 'complaint_metrics.complaint_id', '=', 'complaints.id')
+                ->whereBetween('complaints.created_at', [$dateFrom, $dateTo])
+                ->whereNotNull('time_to_resolution')
+                ->avg('time_to_resolution');
+
+            $sla_compliance = $total > 0 ? (($total - $sla_breached) / $total) * 100 : 100;
+
+            $statusDistribution = (clone $baseQuery)
+                ->selectRaw('status, COUNT(*) as count')
+                ->groupBy('status')->get();
+            $priorityDistribution = (clone $baseQuery)
+                ->selectRaw('priority, COUNT(*) as count')
+                ->groupBy('priority')->get();
+            $sourceDistribution = (clone $baseQuery)
+                ->selectRaw('source, COUNT(*) as count')
+                ->groupBy('source')->get();
+
+            $monthlyTrend = Complaint::query()
+                ->when($dateFrom, fn($q) => $q->where('created_at', '>=', $dateFrom))
+                ->when($dateTo, fn($q) => $q->where('created_at', '<=', $dateTo))
+                ->tap(function ($q) use ($request) {
+                    $this->applyAnalyticsFilters($q, $request, null, null, true);
+                })
+                ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, COUNT(*) as count, SUM(CASE WHEN status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved_count')
+                ->groupBy('year', 'month')
+                ->orderBy('year')
+                ->orderBy('month')
+                ->get();
+
+            // Extended datasets for JSON
+            $categoryDistribution = (clone $baseQuery)
+                ->selectRaw('category, COUNT(*) as count')
+                ->groupBy('category')
+                ->orderByDesc('count')
+                ->get();
+            $harassmentSubCategoryDistribution = (clone $baseQuery)
+                ->whereRaw('LOWER(category) = ?', ['harassment'])
+                ->whereNotNull('harassment_sub_category')
+                ->selectRaw('harassment_sub_category as sub_category, COUNT(*) as count')
+                ->groupBy('harassment_sub_category')
+                ->orderByDesc('count')
+                ->get();
+            $topResolvers = (clone $baseQuery)
+                ->whereIn('status', ["Resolved", "Closed"])
+                ->whereNotNull('resolved_by')
+                ->join('users as resolver', 'complaints.resolved_by', '=', 'resolver.id')
+                ->selectRaw('resolver.name as user_name, COUNT(*) as resolved_count')
+                ->groupBy('resolver.id', 'resolver.name')
+                ->orderByDesc('resolved_count')
+                ->limit(5)
+                ->get();
+            $topWatchers = (clone $baseQuery)
+                ->join('complaint_watchers', 'complaint_watchers.complaint_id', '=', 'complaints.id')
+                ->join('users as watcher', 'complaint_watchers.user_id', '=', 'watcher.id')
+                ->selectRaw('watcher.name as user_name, COUNT(DISTINCT complaints.id) as watched_complaints')
+                ->groupBy('watcher.id', 'watcher.name')
+                ->orderByDesc('watched_complaints')
+                ->limit(5)
+                ->get();
+            $categoryResolutionRates = (clone $baseQuery)
+                ->selectRaw('category, COUNT(*) as total, SUM(CASE WHEN status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved')
+                ->groupBy('category')
+                ->get()
+                ->map(function ($r) {
+                    $r->resolution_rate = $r->total > 0 ? round(($r->resolved / $r->total) * 100, 1) : 0;
+                    return $r;
+                });
+
+            $branchPerformance = (clone $baseQuery)
+                ->leftJoin('branches', 'complaints.branch_id', '=', 'branches.id')
+                ->selectRaw('COALESCE(branches.name, "(None)") as branch_name, COUNT(*) as total_complaints, SUM(CASE WHEN complaints.status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved_complaints')
+                ->groupBy('branch_name')
+                ->orderByDesc('total_complaints')
+                ->limit(10)
+                ->get();
+            $userPerformance = (clone $baseQuery)
+                ->leftJoin('users', 'complaints.assigned_to', '=', 'users.id')
+                ->selectRaw('COALESCE(users.name, "(Unassigned)") as user_name, COUNT(*) as assigned_complaints, SUM(CASE WHEN complaints.status IN ("Resolved","Closed") THEN 1 ELSE 0 END) as resolved_complaints')
+                ->groupBy('user_name')
+                ->orderByDesc('assigned_complaints')
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'metrics' => compact(
+                    'total',
+                    'resolved',
+                    'open',
+                    'overdue',
+                    'unassigned',
+                    'escalated',
+                    'harassment',
+                    'harassment_confidential',
+                    'with_witnesses',
+                    'sla_breached',
+                    'avgResolutionTime',
+                    'sla_compliance'
+                ),
+                'statusDistribution' => $statusDistribution,
+                'priorityDistribution' => $priorityDistribution,
+                'sourceDistribution' => $sourceDistribution,
+                'monthlyTrend' => $monthlyTrend,
+                'categoryDistribution' => $categoryDistribution,
+                'harassmentSubCategoryDistribution' => $harassmentSubCategoryDistribution,
+                'topResolvers' => $topResolvers,
+                'topWatchers' => $topWatchers,
+                'categoryResolutionRates' => $categoryResolutionRates,
+                'branchPerformance' => $branchPerformance,
+                'userPerformance' => $userPerformance,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('analyticsData failure', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Analytics generation failed'], 500);
+        }
+    }
+
+    /**
+     * Apply analytics filters to a query (shared by view + JSON endpoint)
+     * $dateFrom/$dateTo can be null to skip date filters (when building monthly trend second pass)
+     */
+    protected function applyAnalyticsFilters($query, Request $request, $dateFrom = null, $dateTo = null, $skipDate = false)
+    {
+        if (!$skipDate && $dateFrom && $dateTo) {
+            $query->whereBetween('complaints.created_at', [$dateFrom, $dateTo]);
+        }
+        $filter = $request->input('filter', []);
+        if (!is_array($filter))
+            return;
+
+        $like = function ($value) {
+            return '%' . $value . '%';
+        };
+
+        foreach ($filter as $key => $value) {
+            if ($value === '' || $value === null)
+                continue;
+            switch ($key) {
+                case 'id':
+                    $query->where('id', $value);
+                    break;
+                case 'complaint_number':
+                    $query->where('complaint_number', 'like', $like($value));
+                    break;
+                case 'title':
+                    $query->where('title', 'like', $like($value));
+                    break;
+                case 'status':
+                    $query->where('status', $value);
+                    break;
+                case 'priority':
+                    $query->where('priority', $value);
+                    break;
+                case 'source':
+                    $query->where('source', $value);
+                    break;
+                case 'category':
+                    $query->where('category', 'like', $like($value));
+                    break;
+                case 'branch_id':
+                    $query->where('branch_id', $value);
+                    break;
+                case 'assigned_to':
+                    if ($value === 'unassigned') {
+                        $query->whereNull('assigned_to');
+                    } elseif (is_numeric($value)) {
+                        $query->where('assigned_to', $value);
+                    }
+                    break;
+                case 'assigned_by':
+                    $query->where('assigned_by', $value);
+                    break;
+                case 'resolved_by':
+                    $query->where('resolved_by', $value);
+                    break;
+                case 'sla_breached':
+                    $query->where('sla_breached', (bool) $value);
+                    break;
+                case 'region_id':
+                    $query->where('region_id', $value);
+                    break;
+                case 'division_id':
+                    $query->where('division_id', $value);
+                    break;
+                case 'complainant_name':
+                    $query->where('complainant_name', 'like', $like($value));
+                    break;
+                case 'complainant_email':
+                    $query->where('complainant_email', 'like', $like($value));
+                    break;
+                case 'escalated':
+                    if ($value === '1') {
+                        $query->whereHas('escalations');
+                    } elseif ($value === '0') {
+                        $query->whereDoesntHave('escalations');
+                    }
+                    break;
+                case 'harassment_only':
+                    if (in_array($value, ['1', 'true', 1, true], true)) {
+                        $query->whereRaw('LOWER(category) = ?', ['harassment']);
+                    }
+                    break;
+                case 'has_witnesses':
+                    if ($value === '1') {
+                        $query->whereHas('witnesses');
+                    } elseif ($value === '0') {
+                        $query->whereDoesntHave('witnesses');
+                    }
+                    break;
+                case 'harassment_confidential':
+                    if ($value === '1') {
+                        $query->where('harassment_confidential', true);
+                    } elseif ($value === '0') {
+                        $query->where(function ($q) {
+                            $q->where('harassment_confidential', false)->orWhereNull('harassment_confidential');
+                        });
+                    }
+                    break;
+                case 'harassment_sub_category':
+                    $query->where('harassment_sub_category', 'like', $like($value));
+                    break;
+                case 'date_from':
+                    $query->whereDate('complaints.created_at', '>=', $value);
+                    break; // individual overrides (if provided outside main range)
+                case 'date_to':
+                    $query->whereDate('complaints.created_at', '<=', $value);
+                    break;
+                case 'assigned_date_from':
+                    $query->whereDate('complaints.assigned_at', '>=', $value);
+                    break;
+                case 'assigned_date_to':
+                    $query->whereDate('complaints.assigned_at', '<=', $value);
+                    break;
+                case 'resolved_date_from':
+                    $query->whereDate('complaints.resolved_at', '>=', $value);
+                    break;
+                case 'resolved_date_to':
+                    $query->whereDate('complaints.resolved_at', '<=', $value);
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Resolve date range with sane defaults
+     */
+    protected function resolveDateRange(Request $request): array
+    {
+        if ($request->filled('date_from')) {
+            try {
+                $dateFrom = Carbon::parse($request->input('date_from'))->startOfDay();
+            } catch (\Exception $e) {
+                $dateFrom = now()->subMonth()->startOfDay();
+            }
+        } else {
+            $dateFrom = now()->subMonth()->startOfDay();
+        }
+
+        if ($request->filled('date_to')) {
+            try {
+                $dateTo = Carbon::parse($request->input('date_to'))->endOfDay();
+            } catch (\Exception $e) {
+                $dateTo = now()->endOfDay();
+            }
+        } else {
+            $dateTo = now()->endOfDay();
+        }
+        return [$dateFrom, $dateTo];
     }
 
     /**

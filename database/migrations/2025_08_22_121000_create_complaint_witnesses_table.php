@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->string('phone', 50)->nullable();
             $table->string('email', 150)->nullable();
             $table->text('statement')->nullable();
+            $table->userTracking();
             $table->timestamps();
 
             $table->foreign('complaint_id')->references('id')->on('complaints')->cascadeOnDelete();

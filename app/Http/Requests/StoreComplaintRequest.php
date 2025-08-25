@@ -232,6 +232,32 @@ class StoreComplaintRequest extends FormRequest
             'witnesses.*.phone' => ['nullable', 'string', 'max:50'],
             'witnesses.*.email' => ['nullable', 'email', 'max:150'],
             'witnesses.*.statement' => ['nullable', 'string', 'max:2000'],
+            // Grievance specific fields
+            'grievance_employee_id' => ['nullable', 'string', 'max:50'],
+            'grievance_department_position' => ['nullable', 'string', 'max:150'],
+            'grievance_supervisor_name' => ['nullable', 'string', 'max:150'],
+            'grievance_employment_start_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'grievance_type' => ['nullable', 'string', 'max:100'],
+            'grievance_policy_violated' => ['nullable', 'string', 'max:255'],
+            'grievance_previous_attempts' => ['nullable', Rule::in(['Yes', 'No'])],
+            'grievance_previous_attempts_details' => ['nullable', 'string', 'max:5000'],
+            'grievance_desired_outcome' => ['nullable', 'string', 'max:5000'],
+            'grievance_subject_name' => ['nullable', 'string', 'max:150'],
+            'grievance_subject_position' => ['nullable', 'string', 'max:150'],
+            'grievance_subject_relationship' => ['nullable', 'string', 'max:100'],
+            'grievance_union_representation' => ['nullable', 'boolean'],
+            'grievance_anonymous' => ['nullable', 'boolean'],
+            'grievance_acknowledgment' => ['nullable', 'boolean'],
+            'grievance_first_occurred_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'grievance_most_recent_date' => ['nullable', 'date', 'before_or_equal:today', 'after_or_equal:grievance_first_occurred_date'],
+            'grievance_pattern_frequency' => ['nullable', 'string', 'max:50'],
+            'grievance_performance_effect' => ['nullable', 'string', 'max:50'],
+            'grievance_witnesses' => ['nullable', 'array', 'max:10'],
+            'grievance_witnesses.*.employee_number' => ['nullable', 'string', 'max:50'],
+            'grievance_witnesses.*.name' => ['required_with:grievance_witnesses', 'string', 'max:150'],
+            'grievance_witnesses.*.phone' => ['nullable', 'string', 'max:50'],
+            'grievance_witnesses.*.email' => ['nullable', 'email', 'max:150'],
+            'grievance_witnesses.*.statement' => ['nullable', 'string', 'max:2000'],
         ];
     }
 
@@ -259,6 +285,20 @@ class StoreComplaintRequest extends FormRequest
             'category_id' => 'complaint category',
             'watchers.*' => 'watcher',
             'template_id' => 'template'
+            ,
+            'grievance_employee_id' => 'grievance employee id',
+            'grievance_department_position' => 'grievance department/position',
+            'grievance_supervisor_name' => 'grievance supervisor name',
+            'grievance_employment_start_date' => 'employment start date',
+            'grievance_type' => 'grievance type',
+            'grievance_policy_violated' => 'policy or procedure allegedly violated',
+            'grievance_previous_attempts' => 'previous informal attempts',
+            'grievance_previous_attempts_details' => 'previous attempts details',
+            'grievance_desired_outcome' => 'desired outcome',
+            'grievance_subject_name' => 'subject/respondent name',
+            'grievance_subject_position' => 'subject/respondent position',
+            'grievance_subject_relationship' => 'subject/respondent relationship',
+            'grievance_acknowledgment' => 'grievance policy acknowledgment'
         ];
     }
 
@@ -337,6 +377,29 @@ class StoreComplaintRequest extends FormRequest
             'harassment_abuser_email.email' => 'Abuser email must be valid.',
             'harassment_abuser_email.max' => 'Abuser email may not exceed 150 characters.',
             'harassment_abuser_relationship.max' => 'Abuser relationship may not exceed 100 characters.'
+            ,
+            // Grievance
+            'grievance_employee_id.max' => 'Employee ID may not exceed 50 characters.',
+            'grievance_department_position.max' => 'Department/Position may not exceed 150 characters.',
+            'grievance_supervisor_name.max' => 'Supervisor name may not exceed 150 characters.',
+            'grievance_employment_start_date.before_or_equal' => 'Employment start date cannot be in the future.',
+            'grievance_type.max' => 'Grievance type may not exceed 100 characters.',
+            'grievance_policy_violated.max' => 'Policy/procedure field may not exceed 255 characters.',
+            'grievance_previous_attempts.in' => 'Previous attempts value must be Yes or No.',
+            'grievance_previous_attempts_details.max' => 'Previous attempts details may not exceed 5000 characters.',
+            'grievance_desired_outcome.max' => 'Desired outcome may not exceed 5000 characters.',
+            'grievance_subject_name.max' => 'Subject name may not exceed 150 characters.',
+            'grievance_subject_position.max' => 'Subject position may not exceed 150 characters.',
+            'grievance_subject_relationship.max' => 'Subject relationship may not exceed 100 characters.',
+            'grievance_first_occurred_date.before_or_equal' => 'First occurred date cannot be in the future.',
+            'grievance_most_recent_date.before_or_equal' => 'Most recent incident date cannot be in the future.',
+            'grievance_most_recent_date.after_or_equal' => 'Most recent incident date cannot be before the first occurred date.',
+            'grievance_pattern_frequency.max' => 'Pattern frequency may not exceed 50 characters.',
+            'grievance_performance_effect.max' => 'Effect on performance may not exceed 50 characters.',
+            'grievance_witnesses.max' => 'No more than 10 grievance witnesses may be added.',
+            'grievance_witnesses.*.name.required_with' => 'Each grievance witness requires a name.',
+            'grievance_witnesses.*.email.email' => 'Grievance witness email must be valid.',
+            'grievance_acknowledgment.required' => 'You must acknowledge the grievance policy.'
         ];
     }
 
@@ -444,10 +507,14 @@ class StoreComplaintRequest extends FormRequest
 
             // Conditional harassment field requirements
             $isHarassment = false;
+            $isGrievance = false;
             if ($this->filled('category_id')) {
                 $cat = \App\Models\ComplaintCategory::find($this->input('category_id'));
                 if ($cat && strcasecmp($cat->category_name, 'Harassment') === 0) {
                     $isHarassment = true;
+                }
+                if ($cat && strcasecmp($cat->category_name, 'Grievance') === 0) {
+                    $isGrievance = true;
                 }
             }
 
@@ -462,6 +529,22 @@ class StoreComplaintRequest extends FormRequest
                     if (!$this->filled($field)) {
                         $validator->errors()->add($field, $message);
                     }
+                }
+            }
+            if ($isGrievance) {
+                // Required grievance core fields
+                $requiredGrievance = [
+                    'grievance_employee_id' => 'Employee ID is required for grievance complaints.',
+                    'grievance_acknowledgment' => 'Acknowledgment of grievance policy is required.',
+                ];
+                foreach ($requiredGrievance as $field => $message) {
+                    if (!$this->filled($field)) {
+                        $validator->errors()->add($field, $message);
+                    }
+                }
+                // If previous attempts is Yes, details required
+                if ($this->input('grievance_previous_attempts') === 'Yes' && !$this->filled('grievance_previous_attempts_details')) {
+                    $validator->errors()->add('grievance_previous_attempts_details', 'Please provide details of previous informal attempts.');
                 }
             }
         });

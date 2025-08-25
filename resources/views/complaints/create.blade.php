@@ -219,6 +219,7 @@
                                         Time <span class="text-red-600">*</span>:</label>
                                     <input type="datetime-local" name="harassment_incident_date"
                                         id="harassment_incident_date" value="{{ old('harassment_incident_date') }}"
+                                        max="{{ now()->format('Y-m-d\TH:i') }}"
                                         class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
                                         required>
                                     @error('harassment_incident_date')<span class="text-red-500 text-sm">{{ $message
@@ -291,6 +292,287 @@
                                 </div>
                                 <div id="witnesses-wrapper" class="space-y-4"></div>
                                 <template id="witness-template">
+                                    <div class="witness-item border rounded bg-white shadow-sm">
+                                        <div
+                                            class="flex items-center justify-between px-3 py-2 border-b bg-gray-50 rounded-t">
+                                            <span class="text-xs font-semibold text-gray-700">Witness <span
+                                                    class="witness-number"></span></span>
+                                            <div class="flex items-center gap-2">
+                                                <button type="button"
+                                                    class="toggle-witness text-gray-500 hover:text-gray-700 text-xs"
+                                                    title="Collapse">−</button>
+                                                <button type="button"
+                                                    class="remove-witness text-red-500 hover:text-red-600 text-xs"
+                                                    title="Remove">✕</button>
+                                            </div>
+                                        </div>
+                                        <div class="witness-body p-3 grid grid-cols-1 md:grid-cols-5 gap-3">
+                                            <div>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Employee
+                                                    No</label>
+                                                <input type="text" data-field="employee_number"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs" />
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Name
+                                                    <span class="text-red-600">*</span></label>
+                                                <input type="text" data-field="name" required
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs" />
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Phone</label>
+                                                <input type="text" data-field="phone"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs" />
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Email</label>
+                                                <input type="email" data-field="email"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs" />
+                                            </div>
+                                            <div>
+                                                <label
+                                                    class="block text-gray-700 text-xxs uppercase tracking-wide text-[10px]">Statement</label>
+                                                <textarea rows="1" data-field="statement"
+                                                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 text-xs"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                        <!-- Grievance supplemental fields (hidden unless Grievance selected) -->
+                        <div id="grievance-section" class="hidden border rounded p-4 bg-amber-50 mb-6">
+                            <h4 class="font-semibold text-amber-700 mb-2">Grievance Details (Required)</h4>
+                            <p class="text-xs text-amber-700 mb-4">Provide clear, factual information regarding the
+                                workplace grievance. Include any prior informal resolution attempts and desired outcome.
+                            </p>
+                            <!-- Employee Information -->
+                            <div class="mb-6 border rounded p-3 bg-white/60">
+                                <h5 class="font-semibold text-gray-700 mb-3 text-sm">Employee Information</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Employee ID <span
+                                                class="text-red-600">*</span></label>
+                                        <input type="text" name="grievance_employee_id" id="grievance_employee_id"
+                                            value="{{ old('grievance_employee_id') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_employee_id')<span class="text-red-500 text-xs">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Department / Position</label>
+                                        <input type="text" name="grievance_department_position"
+                                            value="{{ old('grievance_department_position') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_department_position')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Supervisor Name</label>
+                                        <input type="text" name="grievance_supervisor_name"
+                                            value="{{ old('grievance_supervisor_name') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_supervisor_name')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Employment Start Date</label>
+                                        <input type="date" name="grievance_employment_start_date"
+                                            value="{{ old('grievance_employment_start_date') }}"
+                                            max="{{ now()->format('Y-m-d') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_employment_start_date')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Grievance Details -->
+                            <div class="mb-6 border rounded p-3 bg-white/60">
+                                <h5 class="font-semibold text-gray-700 mb-3 text-sm">Grievance Details</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Grievance Type</label>
+                                        @php($grievanceTypes = ['Policy Violation','Pay/Benefits','Working
+                                        Conditions','Discrimination','Performance Management','Safety','Other'])
+                                        <select name="grievance_type" id="grievance_type"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                            <option value="">Select Type</option>
+                                            @foreach($grievanceTypes as $gt)
+                                            <option value="{{ $gt }}" {{ old('grievance_type')===$gt ? 'selected' : ''
+                                                }}>{{ $gt }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('grievance_type')<span class="text-red-500 text-xs">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label class="block text-gray-700 text-xs">Policy / Procedure Allegedly
+                                            Violated</label>
+                                        <input type="text" name="grievance_policy_violated"
+                                            value="{{ old('grievance_policy_violated') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_policy_violated')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Previous Informal Attempts?</label>
+                                        <div class="flex gap-4 mt-1 text-xs">
+                                            <label class="flex items-center gap-1"><input type="radio"
+                                                    name="grievance_previous_attempts" value="Yes" {{
+                                                    old('grievance_previous_attempts')==='Yes' ? 'checked' : '' }}
+                                                    class="text-indigo-600"> Yes</label>
+                                            <label class="flex items-center gap-1"><input type="radio"
+                                                    name="grievance_previous_attempts" value="No" {{
+                                                    old('grievance_previous_attempts')==='No' ? 'checked' : '' }}
+                                                    class="text-indigo-600"> No</label>
+                                        </div>
+                                        @error('grievance_previous_attempts')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                    <div class="md:col-span-3">
+                                        <label class="block text-gray-700 text-xs">If Yes, Provide Details</label>
+                                        <textarea name="grievance_previous_attempts_details"
+                                            id="grievance_previous_attempts_details" rows="2"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('grievance_previous_attempts_details') }}</textarea>
+                                        @error('grievance_previous_attempts_details')<span
+                                            class="text-red-500 text-xs">{{ $message }}</span>@enderror
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-xs">Desired Outcome / Resolution</label>
+                                    <textarea name="grievance_desired_outcome" rows="3"
+                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('grievance_desired_outcome') }}</textarea>
+                                    @error('grievance_desired_outcome')<span class="text-red-500 text-xs">{{ $message
+                                        }}</span>@enderror
+                                </div>
+                            </div>
+                            <!-- Subject / Respondent Information -->
+                            <div class="mb-6 border rounded p-3 bg-white/60">
+                                <h5 class="font-semibold text-gray-700 mb-3 text-sm">Subject / Respondent Information
+                                </h5>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Name (Person / Department)</label>
+                                        <input type="text" name="grievance_subject_name"
+                                            value="{{ old('grievance_subject_name') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_subject_name')<span class="text-red-500 text-xs">{{ $message
+                                            }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Position / Role</label>
+                                        <input type="text" name="grievance_subject_position"
+                                            value="{{ old('grievance_subject_position') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_subject_position')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Relationship to Complainant</label>
+                                        <input type="text" name="grievance_subject_relationship"
+                                            value="{{ old('grievance_subject_relationship') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_subject_relationship')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Process Fields -->
+                            <div class="mb-6 border rounded p-3 bg-white/60">
+                                <h5 class="font-semibold text-gray-700 mb-3 text-sm">Process</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                                    <label class="flex items-center gap-2"><input type="checkbox"
+                                            name="grievance_union_representation" value="1" {{
+                                            old('grievance_union_representation') ? 'checked' : '' }}
+                                            class="text-indigo-600"> Union Representation Requested</label>
+                                    <label class="flex items-center gap-2"><input type="checkbox"
+                                            name="grievance_anonymous" value="1" {{ old('grievance_anonymous')
+                                            ? 'checked' : '' }} class="text-indigo-600"> Request Anonymous
+                                        Handling</label>
+                                    <label class="flex items-center gap-2"><input type="checkbox"
+                                            name="grievance_acknowledgment" id="grievance_acknowledgment" value="1" {{
+                                            old('grievance_acknowledgment') ? 'checked' : '' }} class="text-indigo-600">
+                                        I acknowledge the grievance policy <span class="text-red-600">*</span></label>
+                                </div>
+                                @error('grievance_acknowledgment')<span class="text-red-500 text-xs">{{ $message
+                                    }}</span>@enderror
+                            </div>
+                            <!-- Timeline -->
+                            <div class="mb-6 border rounded p-3 bg-white/60">
+                                <h5 class="font-semibold text-gray-700 mb-3 text-sm">Timeline</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Date First Occurred</label>
+                                        <input type="date" name="grievance_first_occurred_date"
+                                            value="{{ old('grievance_first_occurred_date') }}"
+                                            max="{{ now()->format('Y-m-d') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_first_occurred_date')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Most Recent Incident</label>
+                                        <input type="date" name="grievance_most_recent_date"
+                                            value="{{ old('grievance_most_recent_date') }}"
+                                            max="{{ now()->format('Y-m-d') }}"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                        @error('grievance_most_recent_date')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Pattern Frequency</label>
+                                        @php($patternFreq = ['One-time','Ongoing','Recurring'])
+                                        <select name="grievance_pattern_frequency"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                            <option value="">Select</option>
+                                            @foreach($patternFreq as $pf)
+                                            <option value="{{ $pf }}" {{ old('grievance_pattern_frequency')===$pf
+                                                ? 'selected' : '' }}>{{ $pf }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('grievance_pattern_frequency')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-xs">Effect on Job Performance</label>
+                                        @php($effects = ['None','Minor','Moderate','Severe'])
+                                        <select name="grievance_performance_effect"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                            <option value="">Select</option>
+                                            @foreach($effects as $ef)
+                                            <option value="{{ $ef }}" {{ old('grievance_performance_effect')===$ef
+                                                ? 'selected' : '' }}>{{ $ef }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('grievance_performance_effect')<span class="text-red-500 text-xs">{{
+                                            $message }}</span>@enderror
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Witnesses (reuse logic) -->
+                            <div class="mb-6">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h5 class="font-semibold text-gray-700 flex items-center gap-2">Witnesses <span
+                                            class="text-gray-500 text-xs font-normal">(<span
+                                                id="grievance-witness-count">0</span> / 10)</span></h5>
+                                    <button type="button" id="grievance-add-witness-btn"
+                                        class="inline-flex items-center gap-1 px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-xs rounded shadow">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Add Witness
+                                    </button>
+                                </div>
+                                <div id="grievance-witnesses-wrapper" class="space-y-4"></div>
+                                <template id="grievance-witness-template">
                                     <div class="witness-item border rounded bg-white shadow-sm">
                                         <div
                                             class="flex items-center justify-between px-3 py-2 border-b bg-gray-50 rounded-t">
@@ -526,11 +808,20 @@
             const categoryField = document.getElementById('category_id');
             const harassmentSection = document.getElementById('harassment-section');
             const harassmentRequiredFields = ['harassment_sub_category','harassment_incident_date','harassment_location','harassment_details'];
+            const grievanceSection = document.getElementById('grievance-section');
+            const grievanceRequiredFields = ['grievance_employee_id','grievance_acknowledgment'];
+            const incidentDateField = document.getElementById('harassment_incident_date');
             const witnessWrapper = document.getElementById('witnesses-wrapper');
             const witnessTemplate = document.getElementById('witness-template');
             const addWitnessBtn = document.getElementById('add-witness-btn');
             let witnessCount = 0;
             const witnessCountEl = document.getElementById('witness-count');
+            // Grievance witness elements
+            const grievanceWitnessWrapper = document.getElementById('grievance-witnesses-wrapper');
+            const grievanceWitnessTemplate = document.getElementById('grievance-witness-template');
+            const grievanceAddWitnessBtn = document.getElementById('grievance-add-witness-btn');
+            let grievanceWitnessCount = 0;
+            const grievanceWitnessCountEl = document.getElementById('grievance-witness-count');
 
             function updateWitnessNumbers(){
                 const items = witnessWrapper ? witnessWrapper.querySelectorAll('.witness-item') : [];
@@ -564,8 +855,43 @@
                 updateWitnessNumbers();
             }
 
+            function updateGrievanceWitnessNumbers(){
+                const items = grievanceWitnessWrapper ? grievanceWitnessWrapper.querySelectorAll('.witness-item') : [];
+                items.forEach((item, idx) => {
+                    const numSpan = item.querySelector('.witness-number');
+                    if(numSpan) numSpan.textContent = idx+1;
+                    item.querySelectorAll('[data-field]').forEach(el => {
+                        const field = el.getAttribute('data-field');
+                        el.name = `grievance_witnesses[${idx}][${field}]`;
+                    });
+                });
+                grievanceWitnessCount = items.length;
+                if(grievanceWitnessCountEl) grievanceWitnessCountEl.textContent = grievanceWitnessCount;
+            }
+
+            function addGrievanceWitness(data={}){
+                if(!grievanceWitnessWrapper || !grievanceWitnessTemplate) return;
+                if(grievanceWitnessCount >= 10) return;
+                const clone = grievanceWitnessTemplate.content.cloneNode(true);
+                const container = clone.querySelector('.witness-item');
+                container.querySelectorAll('[data-field]').forEach(el => { const field = el.getAttribute('data-field'); if(data[field]) el.value = data[field]; });
+                const removeBtn = container.querySelector('.remove-witness');
+                removeBtn && removeBtn.addEventListener('click', () => { container.remove(); updateGrievanceWitnessNumbers(); });
+                const toggleBtn = container.querySelector('.toggle-witness');
+                const body = container.querySelector('.witness-body');
+                toggleBtn && toggleBtn.addEventListener('click', () => {
+                    if(body.classList.contains('hidden')){ body.classList.remove('hidden'); toggleBtn.textContent='−'; }
+                    else { body.classList.add('hidden'); toggleBtn.textContent='+'; }
+                });
+                grievanceWitnessWrapper.appendChild(clone);
+                updateGrievanceWitnessNumbers();
+            }
+
             if(addWitnessBtn){
                 addWitnessBtn.addEventListener('click', () => addWitness());
+            }
+            if(grievanceAddWitnessBtn){
+                grievanceAddWitnessBtn.addEventListener('click', () => addGrievanceWitness());
             }
 
             // Rehydrate old witness inputs if validation failed
@@ -574,18 +900,31 @@
                     addWitness(@json($w));
                 @endforeach
             @endif
+            @if(is_array(old('grievance_witnesses')))
+                @foreach(old('grievance_witnesses') as $idx => $w)
+                    addGrievanceWitness(@json($w));
+                @endforeach
+            @endif
 
             function toggleHarassmentSection(){
                 if(!categoryField) return;
                 const opt = categoryField.options[categoryField.selectedIndex];
                 const name = opt ? (opt.text || '').toLowerCase() : '';
                 const isHarassment = name.startsWith('harassment');
+                const isGrievance = name.startsWith('grievance');
                 if(isHarassment){
                     harassmentSection.classList.remove('hidden');
                     harassmentRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.setAttribute('required','required'); }});
                 } else {
                     harassmentSection.classList.add('hidden');
                     harassmentRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.removeAttribute('required'); }});
+                }
+                if(isGrievance){
+                    grievanceSection.classList.remove('hidden');
+                    grievanceRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.setAttribute('required','required'); }});
+                } else {
+                    grievanceSection.classList.add('hidden');
+                    grievanceRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.removeAttribute('required'); }});
                 }
             }
 
@@ -656,6 +995,23 @@
             toggleHarassmentSection();
             if(priorityField && priorityField.value){
                 recalcFromPriority(false); // initial fill if empty / allowed
+            }
+
+            // Enforce no-future incident date (defensive client-side)
+            if(incidentDateField){
+                function clampIncident(){
+                    const max = new Date();
+                    const val = incidentDateField.value ? new Date(incidentDateField.value) : null;
+                    if(val && val.getTime() > max.getTime()){
+                        // Set to current local datetime (truncate seconds)
+                        const now = new Date();
+                        now.setSeconds(0,0);
+                        const local = new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+                        incidentDateField.value = local;
+                    }
+                }
+                incidentDateField.addEventListener('change', clampIncident);
+                incidentDateField.addEventListener('blur', clampIncident);
             }
         })();
     </script>

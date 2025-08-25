@@ -48,237 +48,73 @@
                 <form method="GET" action="{{ route('complaints.index') }}">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <!-- Filter by ID -->
-                        <div>
-                            <label for="filter[id]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complaint ID</label>
-                            <input type="number" name="filter[id]" id="filter[id]" value="{{ request('filter.id') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter complaint ID">
-                        </div>
+                        <x-input-filters name="id" label="Complaint ID" type="number" />
 
                         <!-- Filter by Complaint Number -->
-                        <div>
-                            <label for="filter[complaint_number]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complaint
-                                Number</label>
-                            <input type="text" name="filter[complaint_number]" id="filter[complaint_number]"
-                                value="{{ request('filter.complaint_number') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter complaint number">
-                        </div>
+                        <x-input-filters name="complaint_number" label="Complaint Number" />
 
                         <!-- Filter by Title -->
-                        <div>
-                            <label for="filter[title]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
-                            <input type="text" name="filter[title]" id="filter[title]"
-                                value="{{ request('filter.title') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter title">
-                        </div>
+                        <x-input-filters name="title" label="Title" />
 
                         <!-- Filter by Status -->
-                        <div>
-                            <label for="filter[status]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                            <select name="filter[status]" id="filter[status]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Statuses</option>
-                                <option value="Open" {{ request('filter.status')==='Open' ? 'selected' : '' }}>Open
-                                </option>
-                                <option value="In Progress" {{ request('filter.status')==='In Progress' ? 'selected'
-                                    : '' }}>In
-                                    Progress</option>
-                                <option value="Pending" {{ request('filter.status')==='Pending' ? 'selected' : '' }}>
-                                    Pending
-                                </option>
-                                <option value="Resolved" {{ request('filter.status')==='Resolved' ? 'selected' : '' }}>
-                                    Resolved
-                                </option>
-                                <option value="Closed" {{ request('filter.status')==='Closed' ? 'selected' : '' }}>
-                                    Closed
-                                </option>
-                                <option value="Reopened" {{ request('filter.status')==='Reopened' ? 'selected' : '' }}>
-                                    Reopened
-                                </option>
-                            </select>
-                        </div>
+                        <x-status-select />
 
                         <!-- Filter by Priority -->
-                        <div>
-                            <label for="filter[priority]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Priority</label>
-                            <select name="filter[priority]" id="filter[priority]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Priorities</option>
-                                <option value="Low" {{ request('filter.priority')==='Low' ? 'selected' : '' }}>Low
-                                </option>
-                                <option value="Medium" {{ request('filter.priority')==='Medium' ? 'selected' : '' }}>
-                                    Medium
-                                </option>
-                                <option value="High" {{ request('filter.priority')==='High' ? 'selected' : '' }}>High
-                                </option>
-                                <option value="Critical" {{ request('filter.priority')==='Critical' ? 'selected' : ''
-                                    }}>
-                                    Critical</option>
-                            </select>
-                        </div>
+                        <x-priority-select />
 
                         <!-- Filter by Source -->
-                        <div>
-                            <label for="filter[source]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Source</label>
-                            <select name="filter[source]" id="filter[source]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Sources</option>
-                                <option value="Email" {{ request('filter.source')==='Email' ? 'selected' : '' }}>Email
-                                </option>
-                                <option value="Phone" {{ request('filter.source')==='Phone' ? 'selected' : '' }}>Phone
-                                </option>
-                                <option value="Website" {{ request('filter.source')==='Website' ? 'selected' : '' }}>
-                                    Website</option>
-                                <option value="Walk-in" {{ request('filter.source')==='Walk-in' ? 'selected' : '' }}>
-                                    Walk-in</option>
-                                <option value="Social Media" {{ request('filter.source')==='Social Media' ? 'selected'
-                                    : '' }}>Social Media</option>
-                            </select>
-                        </div>
+                        <x-source-select />
 
                         <!-- Filter by Category -->
-                        <div>
-                            <label for="filter[category]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-                            <input type="text" name="filter[category]" id="filter[category]"
-                                value="{{ request('filter.category') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter category">
-                        </div>
+                        <x-category-select />
 
                         <!-- Filter by Branch -->
-                        <div>
-                            <label for="filter[branch_id]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Branch</label>
-                            <select name="filter[branch_id]" id="filter[branch_id]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Branches</option>
-                                @foreach($branches ?? [] as $branch)
-                                <option value="{{ $branch->id }}" {{ request('filter.branch_id')==$branch->id ?
-                                    'selected' : ''
-                                    }}>
-                                    {{ $branch->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-branch-select />
+
+                        <!-- Filter by Region -->
+                        <x-regions />
+
+                        <!-- Filter by Division -->
+                        <x-division />
 
                         <!-- Filter by Assigned To -->
-                        <div>
-                            <label for="filter[assigned_to]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assigned To</label>
-                            <select name="filter[assigned_to]" id="filter[assigned_to]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Users</option>
-                                <option value="unassigned" {{ request('filter.assigned_to')==='unassigned' ? 'selected'
-                                    : '' }}>Unassigned</option>
-                                @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}" {{ request('filter.assigned_to')==$user->id ? 'selected'
-                                    : ''
-                                    }}>
-                                    {{ $user->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-user-select name="assigned_to" label="Assigned To" :includeUnassigned="true" />
 
                         <!-- Filter by Assigned By -->
-                        <div>
-                            <label for="filter[assigned_by]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Assigned By</label>
-                            <select name="filter[assigned_by]" id="filter[assigned_by]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Users</option>
-                                @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}" {{ request('filter.assigned_by')==$user->id ? 'selected'
-                                    : ''
-                                    }}>
-                                    {{ $user->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-user-select name="assigned_by" label="Assigned By" />
 
                         <!-- Filter by Resolved By -->
-                        <div>
-                            <label for="filter[resolved_by]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Resolved By</label>
-                            <select name="filter[resolved_by]" id="filter[resolved_by]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All Users</option>
-                                @foreach($users ?? [] as $user)
-                                <option value="{{ $user->id }}" {{ request('filter.resolved_by')==$user->id ? 'selected'
-                                    : ''
-                                    }}>
-                                    {{ $user->name }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-user-select name="resolved_by" label="Resolved By" />
 
                         <!-- Filter by SLA Breached -->
-                        <div>
-                            <label for="filter[sla_breached]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">SLA Status</label>
-                            <select name="filter[sla_breached]" id="filter[sla_breached]"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                <option value="">All SLA Status</option>
-                                <option value="1" {{ request('filter.sla_breached')==='1' ? 'selected' : '' }}>SLA
-                                    Breached</option>
-                                <option value="0" {{ request('filter.sla_breached')==='0' ? 'selected' : '' }}>Within
-                                    SLA</option>
-                            </select>
-                        </div>
+                        <x-sla-breached-select />
+
+                        <!-- Filter: Escalated -->
+                        <x-escalated-select />
+
+                        <!-- Filter: Harassment Only -->
+                        <x-harassment-only-select />
+
+                        <!-- Filter: Has Witnesses -->
+                        <x-witnesses-select />
+
+                        <!-- Filter: Confidential -->
+                        <x-harassment-confidential-select />
+
+                        <!-- Filter: Harassment Sub Category -->
+                        <x-harassment-sub-category-select />
 
                         <!-- Filter by Complainant Name -->
-                        <div>
-                            <label for="filter[complainant_name]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complainant
-                                Name</label>
-                            <input type="text" name="filter[complainant_name]" id="filter[complainant_name]"
-                                value="{{ request('filter.complainant_name') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter complainant name">
-                        </div>
+                        <x-input-filters name="complainant_name" label="Complainant Name" />
 
                         <!-- Filter by Complainant Email -->
-                        <div>
-                            <label for="filter[complainant_email]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Complainant
-                                Email</label>
-                            <input type="email" name="filter[complainant_email]" id="filter[complainant_email]"
-                                value="{{ request('filter.complainant_email') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                placeholder="Enter complainant email">
-                        </div>
+                        <x-input-filters name="complainant_email" label="Complainant Email" type="email" />
 
                         <!-- Filter by Date From -->
-                        <div>
-                            <label for="filter[date_from]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Created Date
-                                From</label>
-                            <input type="date" name="filter[date_from]" id="filter[date_from]"
-                                value="{{ request('filter.date_from') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                        </div>
+                        <x-date-from />
 
                         <!-- Filter by Date To -->
-                        <div>
-                            <label for="filter[date_to]"
-                                class="block text-sm font-medium text-gray-700 dark:text-gray-300">Created Date
-                                To</label>
-                            <input type="date" name="filter[date_to]" id="filter[date_to]"
-                                value="{{ request('filter.date_to') }}"
-                                class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                        </div>
+                        <x-date-to />
 
                         <!-- Filter by Assigned Date From -->
                         <div>
@@ -337,15 +173,20 @@
                                     : '' }}>Complaint Number (Z-A)</option>
                                 <option value="title" {{ request('sort')==='title' ? 'selected' : '' }}>Title (A-Z)
                                 </option>
-                                <option value="-title" {{ request('sort')==='-title' ? 'selected' : '' }}>Title (Z-A)
+                                <option value="-title" {{ request('sort')==='-title' ? 'selected' : '' }}>Title
+                                    (Z-A)
                                 </option>
-                                <option value="status" {{ request('sort')==='status' ? 'selected' : '' }}>Status (A-Z)
+                                <option value="status" {{ request('sort')==='status' ? 'selected' : '' }}>Status
+                                    (A-Z)
                                 </option>
-                                <option value="-status" {{ request('sort')==='-status' ? 'selected' : '' }}>Status (Z-A)
+                                <option value="-status" {{ request('sort')==='-status' ? 'selected' : '' }}>Status
+                                    (Z-A)
                                 </option>
-                                <option value="priority" {{ request('sort')==='priority' ? 'selected' : '' }}>Priority
+                                <option value="priority" {{ request('sort')==='priority' ? 'selected' : '' }}>
+                                    Priority
                                     (A-Z)</option>
-                                <option value="-priority" {{ request('sort')==='-priority' ? 'selected' : '' }}>Priority
+                                <option value="-priority" {{ request('sort')==='-priority' ? 'selected' : '' }}>
+                                    Priority
                                     (Z-A)</option>
                                 <option value="created_at" {{ request('sort')==='created_at' ? 'selected' : '' }}>
                                     Created (Oldest)</option>
@@ -364,7 +205,8 @@
                                 <option value="-resolved_at" {{ request('sort')==='-resolved_at' ? 'selected' : '' }}>
                                     Resolved (Latest)</option>
                                 <option value="expected_resolution_date" {{ request('sort')==='expected_resolution_date'
-                                    ? 'selected' : '' }}>Expected Resolution (Earliest)</option>
+                                    ? 'selected' : '' }}>Expected
+                                    Resolution (Earliest)</option>
                                 <option value="-expected_resolution_date" {{
                                     request('sort')==='-expected_resolution_date' ? 'selected' : '' }}>Expected
                                     Resolution (Latest)</option>
@@ -456,12 +298,13 @@
                         <tr class="bg-green-800 text-white uppercase text-sm">
                             <th class="py-3 px-2 text-center">#</th>
                             <th class="py-3 px-2 text-left">Complaint Details</th>
+                            <th class="py-3 px-2 text-center">Category</th>
                             <th class="py-3 px-2 text-center">Status</th>
                             <th class="py-3 px-2 text-center">Priority</th>
                             <th class="py-3 px-2 text-center">Assigned To</th>
                             <th class="py-3 px-2 text-center">Source</th>
                             <th class="py-3 px-2 text-center">Created</th>
-                            <th class="py-3 px-2 text-center">SLA</th>
+                            <th class="py-3 px-2 text-center">SLA (DUE)</th>
                             <th class="py-3 px-2 text-center">Esc</th>
                             <th class="py-3 px-2 text-center">Actions</th>
                         </tr>
@@ -491,6 +334,15 @@
                                     </div>
                                     @endif
                                 </div>
+                            </td>
+                            <td class="py-3 px-2 text-center">
+                                @if($complaint->category)
+                                <span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                    {{ Str::limit($complaint->category, 22) }}
+                                </span>
+                                @else
+                                <span class="text-gray-400 text-xs">-</span>
+                                @endif
                             </td>
                             <td class="py-3 px-2 text-center">
                                 <span class="px-2 py-1 rounded-full text-xs font-semibold
@@ -533,7 +385,7 @@
                                 <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ $complaint->source }}</span>
                             </td>
                             <td class="py-3 px-2 text-center">
-                                <div class="text-sm">{{ $complaint->created_at->format('M d, Y') }}</div>
+                                <div class="text-sm">{{ $complaint->created_at->format('d M Y') }}</div>
                                 <div class="text-xs text-gray-500">{{ $complaint->created_at->diffForHumans() }}
                                 </div>
                             </td>
@@ -544,10 +396,9 @@
                                 </span>
                                 @elseif($complaint->expected_resolution_date)
                                 <div class="text-xs">
-                                    <div class="text-gray-600">Due:</div>
                                     <div
                                         class="{{ $complaint->expected_resolution_date->isPast() ? 'text-red-600' : 'text-green-600' }}">
-                                        {{ $complaint->expected_resolution_date->format('M d') }}
+                                        {{ $complaint->expected_resolution_date->format('d M Y') }}
                                     </div>
                                 </div>
                                 @else
@@ -606,15 +457,16 @@
         </div>
     </div>
 
-
-
-
     @push('modals')
-    <!-- Bulk selection scripts removed -->
-
     <script>
-        const targetDiv = document.getElementById("filters");
+        document.addEventListener('DOMContentLoaded', function() {
+            const targetDiv = document.getElementById("filters");
             const btn = document.getElementById("toggle");
+
+            // Add CSS for smooth transitions
+            const style = document.createElement('style');
+            style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`;
+            document.head.appendChild(style);
 
             function showFilters() {
                 targetDiv.style.display = 'block';
@@ -634,75 +486,64 @@
                 }, 300);
             }
 
-            btn.onclick = function(event) {
+            // Toggle filter visibility
+            btn.addEventListener('click', function(event) {
                 event.stopPropagation();
-                if (targetDiv.style.display === "none") {
+                if (targetDiv.style.display === "none" || !targetDiv.style.display) {
                     showFilters();
                 } else {
                     hideFilters();
                 }
-            };
+            });
 
             // Hide filters when clicking outside
             document.addEventListener('click', function(event) {
-                if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
+                if (targetDiv.style.display === 'block' && 
+                    !targetDiv.contains(event.target) && 
+                    !btn.contains(event.target)) {
                     hideFilters();
                 }
             });
-            // Function to open the modal and show the full description
-            function openModal(description) {
-                // Set the description content in the modal
-                document.getElementById('modalDescription').innerText = description;
 
-                // Show the modal
-                document.getElementById('descriptionModal').classList.remove('hidden');
-            }
-
-            // Function to close the modal
-            function closeModal() {
-                // Hide the modal
-                document.getElementById('descriptionModal').classList.add('hidden');
-            }
-
-
-            // Prevent clicks inside the filter from closing it
+            // Prevent clicks inside filter from closing it
             targetDiv.addEventListener('click', function(event) {
                 event.stopPropagation();
             });
+        });
 
-            // Add CSS for smooth transitions
-            const style = document.createElement('style');
-            style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`;
-            document.head.appendChild(style);
-    </script>
-    <script>
-        function toggleDescription(link) {
-                var preview = link.previousElementSibling.previousElementSibling;
-                var fullDescription = link.previousElementSibling;
-
-                preview.style.display = 'none';
-                fullDescription.style.display = 'inline';
-                link.style.display = 'none';
+        // Modal functions for description display
+        function openModal(description) {
+            const modal = document.getElementById('descriptionModal');
+            if (modal) {
+                document.getElementById('modalDescription').innerText = description;
+                modal.classList.remove('hidden');
             }
-    </script>
-    <script>
-        function toggleDescription(link) {
-                const fullText = link.previousElementSibling; // Get the full description span
-                const previewText = fullText.previousElementSibling; // Get the preview text span
+        }
 
-                // Toggle the visibility of the full text and preview text
-                if (fullText.style.display !== "none") {
-                    fullText.style.display = "none"; // Hide full text
-                    previewText.style.display = "block"; // Show preview text
-                    link.innerText = "Read more"; // Change link text
-                } else {
-                    fullText.style.display = "block"; // Show full text
-                    previewText.style.display = "none"; // Hide preview text
-                    link.innerText = "Read less"; // Change link text
-                }
+        function closeModal() {
+            const modal = document.getElementById('descriptionModal');
+            if (modal) {
+                modal.classList.add('hidden');
             }
-    </script>
+        }
 
-    <!-- Action button scripts removed -->
+        // Toggle description function (unified version)
+        function toggleDescription(link) {
+            const fullText = link.previousElementSibling;
+            const previewText = fullText ? fullText.previousElementSibling : null;
+            
+            if (!fullText || !previewText) return;
+
+            if (fullText.style.display !== "none") {
+                fullText.style.display = "none";
+                previewText.style.display = "block";
+                link.innerText = "Read more";
+            } else {
+                fullText.style.display = "block";
+                previewText.style.display = "none";
+                link.innerText = "Read less";
+            }
+        }
+    </script>
     @endpush
 </x-app-layout>

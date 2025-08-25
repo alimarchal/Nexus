@@ -61,6 +61,26 @@ class Complaint extends Model
         'harassment_abuser_phone',
         'harassment_abuser_email',
         'harassment_abuser_relationship',
+        // Grievance specific fields
+        'grievance_employee_id',
+        'grievance_department_position',
+        'grievance_supervisor_name',
+        'grievance_employment_start_date',
+        'grievance_type',
+        'grievance_policy_violated',
+        'grievance_previous_attempts',
+        'grievance_previous_attempts_details',
+        'grievance_desired_outcome',
+        'grievance_subject_name',
+        'grievance_subject_position',
+        'grievance_subject_relationship',
+        'grievance_union_representation',
+        'grievance_anonymous',
+        'grievance_acknowledgment',
+        'grievance_first_occurred_date',
+        'grievance_most_recent_date',
+        'grievance_pattern_frequency',
+        'grievance_performance_effect',
     ];
 
     protected $casts = [
@@ -71,6 +91,12 @@ class Complaint extends Model
         'sla_breached' => 'boolean',
         'harassment_incident_date' => 'datetime',
         'harassment_confidential' => 'boolean',
+        'grievance_union_representation' => 'boolean',
+        'grievance_anonymous' => 'boolean',
+        'grievance_acknowledgment' => 'boolean',
+        'grievance_employment_start_date' => 'date',
+        'grievance_first_occurred_date' => 'date',
+        'grievance_most_recent_date' => 'date',
     ];
 
     // Relationships
@@ -119,10 +145,6 @@ class Complaint extends Model
         return $this->hasMany(ComplaintAttachment::class);
     }
 
-    public function categories(): HasMany
-    {
-        return $this->hasMany(ComplaintCategory::class);
-    }
 
     public function assignments(): HasMany
     {
@@ -197,7 +219,6 @@ class Complaint extends Model
             AllowedInclude::relationship('histories'),
             AllowedInclude::relationship('comments'),
             AllowedInclude::relationship('attachments'),
-            AllowedInclude::relationship('categories'),
             AllowedInclude::relationship('assignments'),
             AllowedInclude::relationship('escalations'),
             AllowedInclude::relationship('watchers'),
