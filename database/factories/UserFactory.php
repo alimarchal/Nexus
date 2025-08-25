@@ -4,8 +4,6 @@ namespace Database\Factories;
 
 use App\Models\Team;
 use App\Models\User;
-use App\Models\Branch;
-use App\Models\Division;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -28,13 +26,6 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
-        // Get or create branch and division for proper relationships
-        $branch = Branch::inRandomOrder()->first() ?: Branch::factory()->create();
-        $branchId = Branch::pluck('id')->random(null);
-        $branch = $branchId ? Branch::find($branchId) : Branch::factory()->create();
-        $divisionId = Division::pluck('id')->random(null);
-        $division = $divisionId ? Division::find($divisionId) : Division::factory()->create();
-
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
@@ -45,9 +36,6 @@ class UserFactory extends Factory
             'remember_token' => Str::random(10),
             'profile_photo_path' => null,
             'current_team_id' => null,
-            'branch_id' => $branch->id,
-            'division_id' => $division->id,
-            'is_active' => fake()->randomElement(['Yes', 'No']),
         ];
     }
 
