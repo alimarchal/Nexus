@@ -171,7 +171,7 @@ class StoreComplaintRequest extends FormRequest
             'harassment_incident_date' => [
                 'nullable',
                 'date',
-                'before_or_equal:today'
+                'before_or_equal:now'
             ],
             'harassment_location' => [
                 'nullable',
