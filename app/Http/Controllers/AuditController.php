@@ -143,7 +143,7 @@ class AuditController extends Controller
             if ($request->filled('risk.title')) {
                 // Sanitize provided quick risk status
                 $quickRiskStatus = $request->input('risk.status');
-                $allowedRiskStatuses = ['identified', 'assessed', 'treated', 'retired'];
+                $allowedRiskStatuses = ['open', 'identified', 'assessed', 'treated', 'retired'];
                 if (!in_array($quickRiskStatus, $allowedRiskStatuses, true)) {
                     $quickRiskStatus = 'identified';
                 }
@@ -331,7 +331,7 @@ class AuditController extends Controller
             // Quick risk create on update (decoupled from documents)
             if ($request->filled('risk.title')) {
                 $quickRiskStatus = $request->input('risk.status');
-                $allowedRiskStatuses = ['identified', 'assessed', 'treated', 'retired'];
+                $allowedRiskStatuses = ['open', 'identified', 'assessed', 'treated', 'retired'];
                 if (!in_array($quickRiskStatus, $allowedRiskStatuses, true)) {
                     $quickRiskStatus = 'identified';
                 }

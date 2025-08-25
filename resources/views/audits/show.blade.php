@@ -1532,7 +1532,7 @@
                             <div>
                                 <label class="block text-xs font-semibold mb-1">Status</label>
                                 <select name="status" class="w-full border-gray-300 rounded-md text-sm">
-                                    @foreach(['identified','assessed','treated','retired'] as $v)
+                                    @foreach(['open','identified','assessed','treated','retired'] as $v)
                                     <option value="{{ $v }}">{{ Str::headline($v) }}</option>
                                     @endforeach
                                 </select>
