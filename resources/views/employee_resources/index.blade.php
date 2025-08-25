@@ -85,14 +85,14 @@
                 <table class="min-w-max w-full table-auto text-sm">
                     <thead>
                         <tr class="bg-green-800 text-white uppercase text-sm">
-                            <th class="py-2 px-2 text-center">Reference #</th>
-                            <th class="py-2 px-2 text-left">Date</th>
-                            <th class="py-2 px-2 text-left">Division</th>
-                            <th class="py-2 px-2 text-left">Resource No</th>
-                            <th class="py-2 px-2 text-left">Category</th>
-                            <th class="py-2 px-2 text-left">Title</th>
-                            <th class="py-2 px-2 text-center">Attachment</th>
-                            <th class="py-2 px-2 text-center print:hidden">Actions</th>
+                            <th class="py-2 px-2 text-center whitespace-nowrap">Reference #</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Date</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Division</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Resource No</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Title</th>
+                            <th class="py-2 px-2 text-left whitespace-nowrap">Category</th>
+                            <th class="py-2 px-2 text-center whitespace-nowrap">Attachment</th>
+                            <th class="py-2 px-2 text-center whitespace-nowrap print:hidden">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="text-black text-md leading-normal font-extrabold">
@@ -105,10 +105,11 @@
                                     ?? '-' }}</abbr>
                             </td>
                             <td class="py-1 px-2 text-left">{{ $resource->resource_no }}</td>
-                            <td class="py-1 px-2 text-left">{{ $resource->category?->name ?? '-' }}</td>
                             <td class="py-1 px-2 text-left">
-                                <div class="w-96 break-words leading-relaxed">{{ $resource->title }}</div>
+                                <div class="max-w-xs truncate" title="{{ $resource->title }}">{{ $resource->title }}
+                                </div>
                             </td>
+                            <td class="py-1 px-2 text-left">{{ $resource->category?->name ?? '-' }}</td>
                             <td class="py-1 px-2 text-center">
                                 @if ($resource->attachment)
                                 <div class="flex justify-center space-x-2">
@@ -127,17 +128,17 @@
                                 @endif
                             </td>
                             <td class="py-1 px-2 text-center">
-                                <div class="flex justify-center space-x-2">
+                                <div class="flex justify-center gap-1 flex-wrap max-w-[150px]">
                                     <a href="{{ route('employee_resources.show', $resource) }}"
-                                        class="inline-flex items-center px-3 py-1 bg-gray-700 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">View</a>
+                                        class="px-2 py-0.5 bg-gray-700 text-white rounded text-xs hover:bg-gray-600">View</a>
                                     <a href="{{ route('employee_resources.edit', $resource) }}"
-                                        class="inline-flex items-center px-3 py-1 bg-blue-800 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">Edit</a>
+                                        class="px-2 py-0.5 bg-blue-700 text-white rounded text-xs hover:bg-blue-600">Edit</a>
                                     <form method="POST" action="{{ route('employee_resources.destroy', $resource) }}"
-                                        onsubmit="return confirm('Delete this resource?');">
+                                        onsubmit="return confirm('Delete this resource?');" class="inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
-                                            class="inline-flex items-center px-3 py-1 bg-red-700 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">Del</button>
+                                            class="px-2 py-0.5 bg-red-700 text-white rounded text-xs hover:bg-red-600">Del</button>
                                     </form>
                                 </div>
                             </td>
