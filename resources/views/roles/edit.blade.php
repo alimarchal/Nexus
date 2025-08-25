@@ -39,6 +39,22 @@
                         </div>
                     </div>
 
+                    <!-- Permissions Section -->
+                    <div class="mt-6">
+                        <x-label value="Permissions" class="mb-3" />
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto bg-gray-50 dark:bg-gray-700 p-4 rounded-md border">
+                            @foreach($permissions as $permission)
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
+                                        {{ in_array($permission->id, old('permissions', $rolePermissions)) ? 'checked' : '' }}
+                                        class="rounded border-gray-300 dark:border-gray-700 text-blue-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                    <span class="ml-2 text-gray-700 dark:text-gray-300 text-sm">{{ $permission->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <small class="text-gray-500 dark:text-gray-400 mt-2 block">Modify permissions assigned to this role. Changes will affect all users with this role.</small>
+                    </div>
+
                     <div class="flex items-center justify-end mt-4">
                         <x-button class="ml-4">
                             Update

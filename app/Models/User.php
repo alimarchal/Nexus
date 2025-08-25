@@ -14,6 +14,9 @@ use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\CausesActivity;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedInclude;
+use Spatie\QueryBuilder\AllowedSort;
 
 class User extends Authenticatable
 {
@@ -121,5 +124,43 @@ class User extends Authenticatable
     public function division()
     {
         return $this->belongsTo(Division::class);
+    }
+
+    // Spatie Query Builder support
+    public static function getAllowedFilters(): array
+    {
+        return [
+            AllowedFilter::partial('name'),
+            AllowedFilter::partial('email'),
+            AllowedFilter::exact('is_active'),
+            AllowedFilter::exact('branch_id'),
+            AllowedFilter::exact('division_id'),
+            AllowedFilter::callback('role', function ($query, $value) {
+                return $query->whereHas('roles', function ($q) use ($value) {
+                    $q->where('name', $value);
+                });
+            }),
+        ];
+    }
+
+    public static function getAllowedSorts(): array
+    {
+        return [
+            AllowedSort::field('name'),
+            AllowedSort::field('email'),
+            AllowedSort::field('created_at'),
+            AllowedSort::field('updated_at'),
+            AllowedSort::field('is_active'),
+        ];
+    }
+
+    public static function getAllowedIncludes(): array
+    {
+        return [
+            AllowedInclude::relationship('branch'),
+            AllowedInclude::relationship('division'),
+            AllowedInclude::relationship('roles'),
+            AllowedInclude::relationship('permissions'),
+        ];
     }
 }
