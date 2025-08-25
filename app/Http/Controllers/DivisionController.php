@@ -5,9 +5,21 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreDivisionRequest;
 use App\Http\Requests\UpdateDivisionRequest;
 use App\Models\Division;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Routing\Controllers\HasMiddleware;
 
-class DivisionController extends Controller
+class DivisionController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role_or_permission:view divisions', only: ['index', 'show']),
+            new Middleware('role_or_permission:create divisions', only: ['create', 'store']),
+            new Middleware('role_or_permission:edit divisions', only: ['edit', 'update']),
+            new Middleware('role_or_permission:delete divisions', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */

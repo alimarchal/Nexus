@@ -13,6 +13,7 @@
                 </svg>
                 Search & Filter
             </button>
+            @can('create audits')
             <a href="{{ route('audits.create') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -20,6 +21,7 @@
                 </svg>
                 New Audit
             </a>
+            @endcan
             <a href="javascript:window.location.reload();"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -286,8 +288,10 @@
                             </td>
                             <td class="py-3 px-2 text-center">{{ $audit->score ?? '-' }}</td>
                             <td class="py-3 px-2 text-center">
+                                @can('view audits')
                                 <a href="{{ route('audits.show',$audit) }}"
                                     class="inline-flex items-center px-3 py-1 text-white bg-blue-600 hover:bg-blue-700 rounded-md text-xs font-semibold">View</a>
+                                @endcan
                             </td>
                         </tr>
                         @endforeach

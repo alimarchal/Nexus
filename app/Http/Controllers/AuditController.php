@@ -18,9 +18,23 @@ use App\Helpers\FileStorageHelper;
 use Illuminate\Http\Request;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Routing\Controllers\HasMiddleware;
 
-class AuditController extends Controller
+class AuditController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role_or_permission:view audits', only: ['index', 'show']),
+            new Middleware('role_or_permission:create audits', only: ['create', 'store']),
+            new Middleware('role_or_permission:edit audits', only: ['edit', 'update']),
+            new Middleware('role_or_permission:delete audits', only: ['destroy']),
+            new Middleware('role_or_permission:conduct audits', only: ['conduct']),
+            new Middleware('role_or_permission:review audits', only: ['review']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */
