@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Region;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,6 +18,7 @@ class DistrictFactory extends Factory
     public function definition(): array
     {
         return [
+            'region_id' => Region::factory(),
             'name' => $this->faker->unique()->city() . ' District',
         ];
     }
