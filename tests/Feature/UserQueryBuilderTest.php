@@ -216,9 +216,22 @@ test('query parameters persist across pagination', function () {
 
     $response->assertSuccessful();
     // Check that pagination links contain the filter and sort parameters
-    $response->assertSeeText('filter%5Bis_active%5D=Yes');
-    $response->assertSeeText('sort=name');
-});
+    $crawler = new \Symfony\Component\DomCrawler\Crawler($response->getContent());
+    $links = $crawler->filter('a')->each(function ($node) {
+        return $node->attr('href');
+    });
+    $foundFilter = false;
+    $foundSort = false;
+    foreach ($links as $link) {
+        if ($link && strpos($link, 'filter%5Bis_active%5D=Yes') !== false) {
+            $foundFilter = true;
+        }
+        if ($link && strpos($link, 'sort=name') !== false) {
+            $foundSort = true;
+        }
+    }
+    $this->assertTrue($foundFilter, 'Pagination links should contain filter[is_active]=Yes');
+    $this->assertTrue($foundSort, 'Pagination links should contain sort=name');
 
 test('invalid filters are ignored', function () {
     $response = $this->actingAs($this->superAdmin)
