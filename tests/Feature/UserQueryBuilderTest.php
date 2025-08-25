@@ -118,11 +118,18 @@ test('can sort users by name ascending', function () {
         ->get(route('users.index', ['sort' => 'name']));
 
     $response->assertSuccessful();
-    $content = $response->getContent();
-    $johnPosition = strpos($content, 'John Doe');
-    $janePosition = strpos($content, 'Jane Smith');
-    
-    $this->assertLessThan($janePosition, $johnPosition);
+    // Parse the HTML and get the user names in order as they appear in the table
+    $userNames = $response->crawler()
+        ->filter('table tbody tr td') // Adjust selector if needed
+        ->each(function ($node) {
+            return trim($node->text());
+        });
+    // Filter only the expected user names
+    $filteredNames = array_values(array_filter($userNames, function ($name) {
+        return in_array($name, ['John Doe', 'Jane Smith', 'Test Admin']);
+    }));
+    // Assert the order
+    $this->assertEquals(['John Doe', 'Jane Smith', 'Test Admin'], $filteredNames);
 });
 
 test('can sort users by name descending', function () {
