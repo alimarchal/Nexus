@@ -4,15 +4,15 @@ A comprehensive Laravel-based business management system designed for organizati
 
 ## 📋 Project Overview
 
-Nexus is a full-featured web application built with Laravel 12 that provides:
+Nexus is a web application built with Laravel 12 that provides:
 
 - **Audit Management System** - Complete audit lifecycle management with findings, risks, and compliance tracking
-- **Complaint Management** - Handle customer complaints with categorization, escalation, and resolution tracking
+- **Complaint Management** - Handle complaints with categorization, escalation, and resolution tracking
 - **Branch & Regional Management** - Manage organizational structure with regions, districts, and branches
 - **Stationery Management** - Track printed materials, transactions, and dispatch registers
 - **Employee Resources** - Manage employee resources and organizational divisions
-- **User Management** - Role-based access control with comprehensive permissions
-- **Reporting & Analytics** - Generate various business reports and insights
+- **User Management** - Role-based access control using Spatie permissions
+- **Dashboard & Reporting** - Administrative dashboard with reporting capabilities
 
 ## 🔧 System Requirements
 
@@ -114,12 +114,13 @@ This command will:
 - Drop all existing tables (if any)
 - Run all migrations to create the database structure
 - Seed the database with essential data including:
-  - Regions, districts, and branches
-  - User roles and permissions
-  - Complaint categories and status types
-  - Audit types and checklists
-  - Division structures
-  - Sample data for development
+  - Regions, districts, and branches (from RegionSeeder, DistrictSeeder, BranchSeeder)
+  - User roles and permissions (from RolesAndPermissionsSeeder)
+  - Complaint categories and status types (from ComplaintCategorySeeder, ComplaintStatusTypeSeeder)
+  - Audit types, tags, and checklist items (from AuditTypeSeeder, AuditTagSeeder, AuditChecklistItemSeeder)
+  - Division structures (from DivisionSeeder)
+  - Contact data and printed stationery (from ContactSeeder, PrintedStationerySeeder)
+  - Sample audit data for development (from AuditDemoSeeder, AuditSampleSeeder)
 
 ### 7. Storage Link
 
@@ -176,22 +177,6 @@ npm run dev
 
 This will start Vite development server with hot module replacement.
 
-### Queue Workers (if using queues)
-
-Start queue workers for background job processing:
-
-```bash
-php artisan queue:work
-```
-
-### Scheduled Tasks (if applicable)
-
-For scheduled tasks, add to your crontab:
-
-```bash
-* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
-```
-
 ## 🛠 Common Artisan Commands
 
 Here are frequently used Laravel Artisan commands for this project:
@@ -241,28 +226,6 @@ php artisan route:list
 php artisan serve --host=0.0.0.0 --port=8000
 ```
 
-### User Management
-```bash
-# Create new user (if applicable)
-php artisan make:user
-
-# List permissions and roles (Spatie)
-php artisan permission:show
-```
-
-### Queue Management
-```bash
-# Process queue jobs
-php artisan queue:work
-
-# Restart queue workers
-php artisan queue:restart
-
-# Failed jobs
-php artisan queue:failed
-php artisan queue:retry all
-```
-
 ## 📁 Project Structure
 
 ```
@@ -272,21 +235,29 @@ Nexus/
 │   │   ├── AuditController.php    # Audit management
 │   │   ├── ComplaintController.php # Complaint handling
 │   │   ├── BranchController.php   # Branch management
-│   │   └── ...
+│   │   ├── DashboardController.php # Dashboard functionality
+│   │   ├── UserController.php     # User management
+│   │   ├── RoleController.php     # Role management
+│   │   └── ...                    # Other controllers
 │   ├── Models/                    # Eloquent models
-│   ├── Policies/                  # Authorization policies
+│   │   ├── Audit.php             # Audit model
+│   │   ├── Complaint.php         # Complaint model
+│   │   ├── Branch.php            # Branch model
+│   │   ├── User.php              # User model
+│   │   └── ...                    # Other models
 │   └── Providers/                 # Service providers
 ├── database/
 │   ├── migrations/                # Database migrations
 │   └── seeders/                   # Database seeders
-│       ├── DatabaseSeeder.php     # Main seeder
-│       ├── BranchSeeder.php       # Branch data
-│       ├── AuditSeeder.php        # Audit sample data
-│       └── ...
+│       ├── DatabaseSeeder.php     # Main seeder orchestrator
+│       ├── BranchSeeder.php       # Branch and organizational data
+│       ├── AuditTypeSeeder.php    # Audit configuration data
+│       ├── ComplaintCategorySeeder.php # Complaint configuration
+│       └── ...                    # Other seeders
 ├── resources/
 │   ├── views/                     # Blade templates
-│   ├── js/                        # JavaScript files
-│   └── css/                       # CSS files
+│   ├── js/                        # JavaScript files (Vite)
+│   └── css/                       # CSS files (Tailwind)
 ├── routes/
 │   ├── web.php                    # Web routes
 │   └── api.php                    # API routes
@@ -297,35 +268,39 @@ Nexus/
 
 ### Key Modules
 
-1. **Audit Management** (`app/Http/Controllers/Audit*.php`)
-   - Audit lifecycle management
-   - Findings and risk tracking
-   - Compliance monitoring
+1. **Audit Management** (`AuditController.php`, `AuditExtraController.php`, etc.)
+   - Audit lifecycle management with multiple specialized controllers
+   - Findings, risks, and compliance tracking
+   - Audit types, tags, and checklist items
 
-2. **Complaint System** (`app/Http/Controllers/Complaint*.php`)
+2. **Complaint System** (`ComplaintController.php`, `ComplaintAttachmentController.php`, etc.)
    - Complaint registration and tracking
    - Category and status management
-   - Escalation workflows
+   - Assignment and escalation workflows
 
-3. **Branch Management** (`app/Http/Controllers/Branch*.php`, `Region*.php`, `District*.php`)
-   - Organizational structure
-   - Regional management
-   - Branch targets and performance
+3. **Branch Management** (`BranchController.php`, `RegionController.php`, `DistrictController.php`)
+   - Organizational structure management
+   - Regional and district administration
+   - Branch targets and daily position tracking
 
-4. **User Management** (`app/Http/Controllers/User*.php`, `Role*.php`)
-   - Authentication and authorization
-   - Role-based access control
-   - Permission management
+4. **User Management** (`UserController.php`, `RoleController.php`, `PermissionController.php`)
+   - Authentication and authorization using Laravel Jetstream
+   - Role-based access control with Spatie Laravel Permission
+   - User module access management
 
-## 🌐 Deployment Guidelines
+5. **Stationery Management** (`PrintedStationeryController.php`, `StationeryTransactionController.php`, `DispatchRegisterController.php`)
+   - Printed materials tracking
+   - Transaction management
+   - Dispatch register functionality
 
-### Production Environment Setup
+## 🌐 Production Deployment Guidelines
+
+### Basic Production Setup
 
 1. **Server Requirements**
    - Web server (Apache/Nginx)
    - PHP 8.2+ with required extensions
    - Database server (MySQL recommended)
-   - Redis (for caching and queues)
    - SSL certificate
 
 2. **Environment Configuration**
@@ -339,10 +314,6 @@ Nexus/
    DB_DATABASE=nexus_production
    DB_USERNAME=secure_username
    DB_PASSWORD=secure_password
-   
-   CACHE_DRIVER=redis
-   QUEUE_CONNECTION=redis
-   SESSION_DRIVER=redis
    ```
 
 3. **Deployment Steps**
@@ -396,28 +367,6 @@ Nexus/
            include fastcgi_params;
        }
    }
-   ```
-
-5. **Queue Workers (Production)**
-   ```bash
-   # Install Supervisor
-   sudo apt install supervisor
-   
-   # Create worker configuration
-   sudo nano /etc/supervisor/conf.d/nexus-worker.conf
-   ```
-
-   Supervisor configuration:
-   ```ini
-   [program:nexus-worker]
-   process_name=%(program_name)s_%(process_num)02d
-   command=php /var/www/Nexus/artisan queue:work --sleep=3 --tries=3
-   autostart=true
-   autorestart=true
-   user=www-data
-   numprocs=8
-   redirect_stderr=true
-   stdout_logfile=/var/www/Nexus/storage/logs/worker.log
    ```
 
 ## 🔍 Troubleshooting
@@ -501,21 +450,16 @@ php artisan optimize:clear
 
 ### Debugging Tools
 
-1. **Laravel Debugbar** (if installed)
-   ```bash
-   composer require barryvdh/laravel-debugbar --dev
-   ```
-
-2. **Log Monitoring**
+1. **Log Monitoring**
    ```bash
    # Watch logs in real-time
    tail -f storage/logs/laravel.log
    
-   # Using Laravel Pail (if installed)
+   # Using Laravel Pail (available as dev dependency)
    php artisan pail
    ```
 
-3. **Database Debugging**
+2. **Database Debugging**
    ```bash
    # Database tinker
    php artisan tinker
