@@ -98,7 +98,16 @@
                         <img src="{{ url('icons-images/complaint.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
-
+                <a href="{{ route('audits.index') }}"
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Audit::count() }}</div>
+                            <div class="mt-1 text-base font-extrabold text-black">Audits</div>
+                        </div>
+                        <img src="{{ url('icons-images/audits.png') }}" alt="Audit" class="h-16 w-16">
+                    </div>
+                </a>
 
                 <a href={{ route('employee_resources.index') }}
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
