@@ -107,9 +107,13 @@ class UserController extends Controller
             return redirect()->back()->withErrors(['is_active' => 'You cannot deactivate your own account.']);
         }
 
-        // Prevent removal of all permissions from super-admin
-        if ($user->hasRole('super-admin') && !$request->filled('roles') && !$request->filled('permissions')) {
-            return redirect()->back()->withErrors(['roles' => 'Super admin must have at least one role or permission assigned.']);
+        // Prevent removal of super-admin role from a super-admin user
+        if ($user->hasRole('super-admin')) {
+            $submittedRoleIds = $request->input('roles', []);
+            $superAdminRole = Role::where('name', 'super-admin')->first();
+            if ($superAdminRole && (!in_array($superAdminRole->id, $submittedRoleIds))) {
+                return redirect()->back()->withErrors(['roles' => 'You cannot remove the super-admin role from a super-admin user.']);
+            }
         }
 
         $request->validate([
