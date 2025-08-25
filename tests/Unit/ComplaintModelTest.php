@@ -196,55 +196,71 @@ describe('Complaint Model - Relationships', function () {
     it('has many histories', function () {
         $complaint = Complaint::factory()->create();
         
+        // Create a complaint status type first
+        $statusType = \App\Models\ComplaintStatusType::factory()->create([
+            'name' => 'Status Change',
+            'code' => 'SC',
+            'is_active' => true,
+        ]);
+        
         $history = $complaint->histories()->create([
-            'action_type' => 'status_change',
+            'action_type' => 'Status Changed',
             'old_value' => 'Open',
             'new_value' => 'In Progress',
-            'changed_by' => $this->admin->id,
+            'status_id' => $statusType->id,
+            'performed_by' => $this->admin->id,
+            'created_by' => $this->admin->id,
+            'updated_by' => $this->admin->id,
         ]);
         
         expect($complaint->histories)->toHaveCount(1);
         expect($complaint->histories->first())->toBeInstanceOf(ComplaintHistory::class);
-        expect($complaint->histories->first()->id)->toBe($history->id);
+        expect($complaint->histories->first()->action_type)->toBe('Status Changed');
     });
 
     it('has many comments', function () {
         $complaint = Complaint::factory()->create();
         
         $comment = $complaint->comments()->create([
-            'comment' => 'Test comment',
-            'commented_by' => $this->admin->id,
+            'comment_text' => 'Test comment',
+            'comment_type' => 'Internal',
+            'is_private' => false,
+            'created_by' => $this->admin->id,
+            'updated_by' => $this->admin->id,
         ]);
         
         expect($complaint->comments)->toHaveCount(1);
         expect($complaint->comments->first())->toBeInstanceOf(ComplaintComment::class);
-        expect($complaint->comments->first()->comment)->toBe('Test comment');
+        expect($complaint->comments->first()->comment_text)->toBe('Test comment');
     });
 
     it('has many attachments', function () {
         $complaint = Complaint::factory()->create();
         
         $attachment = $complaint->attachments()->create([
-            'original_name' => 'test.pdf',
+            'file_name' => 'test.pdf',
             'file_path' => 'complaints/test.pdf',
             'file_size' => 1024,
-            'mime_type' => 'application/pdf',
-            'uploaded_by' => $this->admin->id,
+            'file_type' => 'application/pdf',
+            'created_by' => $this->admin->id,
+            'updated_by' => $this->admin->id,
         ]);
         
         expect($complaint->attachments)->toHaveCount(1);
         expect($complaint->attachments->first())->toBeInstanceOf(ComplaintAttachment::class);
-        expect($complaint->attachments->first()->original_name)->toBe('test.pdf');
+        expect($complaint->attachments->first()->file_name)->toBe('test.pdf');
     });
 
     it('has many escalations', function () {
         $complaint = Complaint::factory()->create();
         
         $escalation = $complaint->escalations()->create([
+            'escalated_from' => $this->user->id,
             'escalated_to' => $this->admin->id,
-            'escalated_by' => $this->user->id,
-            'escalation_reason' => 'Urgent review needed',
             'escalation_level' => 1,
+            'escalation_reason' => 'Urgent review needed',
+            'created_by' => $this->user->id,
+            'updated_by' => $this->user->id,
         ]);
         
         expect($complaint->escalations)->toHaveCount(1);
@@ -269,15 +285,17 @@ describe('Complaint Model - Relationships', function () {
         $complaint = Complaint::factory()->create();
         
         $metrics = $complaint->metrics()->create([
-            'response_time_hours' => 24,
-            'resolution_time_hours' => 72,
+            'time_to_first_response' => 60, // 1 hour in minutes
+            'time_to_resolution' => 1440, // 24 hours in minutes
             'escalation_count' => 1,
-            'comment_count' => 3,
-            'attachment_count' => 2,
+            'assignment_count' => 3,
+            'reopened_count' => 2,
+            'created_by' => $this->admin->id,
+            'updated_by' => $this->admin->id,
         ]);
         
         expect($complaint->metrics)->toBeInstanceOf(ComplaintMetric::class);
-        expect($complaint->metrics->response_time_hours)->toBe(24);
+        expect($complaint->metrics->time_to_first_response)->toBe(60);
     });
 
     it('has many witnesses', function () {

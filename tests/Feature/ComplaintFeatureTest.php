@@ -4,6 +4,7 @@ use App\Models\User;
 use App\Models\Branch;
 use App\Models\Region;
 use App\Models\Division;
+use App\Models\District;
 use App\Models\Complaint;
 use App\Models\ComplaintHistory;
 use App\Models\ComplaintComment;
@@ -23,10 +24,12 @@ beforeEach(function () {
     
     // Create organizational structure
     $this->region = Region::factory()->create(['name' => 'Test Region']);
+    $this->district = District::factory()->create(['name' => 'Test District', 'region_id' => $this->region->id]);
     $this->division = Division::factory()->create(['name' => 'Test Division']);
     $this->branch = Branch::factory()->create([
         'name' => 'Test Branch',
-        'region_id' => $this->region->id
+        'region_id' => $this->region->id,
+        'district_id' => $this->district->id,
     ]);
 });
 
