@@ -128,17 +128,42 @@
                                 @endif
                             </td>
                             <td class="py-1 px-2 text-center">
-                                <div class="flex justify-center gap-1 flex-wrap max-w-[150px]">
-                                    <a href="{{ route('employee_resources.show', $resource) }}"
-                                        class="px-2 py-0.5 bg-gray-700 text-white rounded text-xs hover:bg-gray-600">View</a>
-                                    <a href="{{ route('employee_resources.edit', $resource) }}"
-                                        class="px-2 py-0.5 bg-blue-700 text-white rounded text-xs hover:bg-blue-600">Edit</a>
+                                <div class="flex justify-center gap-1 flex-wrap max-w-[140px]">
+                                    <!-- View -->
+                                    <a href="{{ route('employee_resources.show', $resource) }}" title="View"
+                                        class="inline-flex items-center justify-center w-7 h-7 bg-gray-700 hover:bg-gray-600 text-white rounded transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M2.25 12c0 0 3-7.5 9.75-7.5S21.75 12 21.75 12s-3 7.5-9.75 7.5S2.25 12 2.25 12Z" />
+                                            <circle cx="12" cy="12" r="3.25" />
+                                        </svg>
+                                        <span class="sr-only">View</span>
+                                    </a>
+                                    <!-- Edit -->
+                                    <a href="{{ route('employee_resources.edit', $resource) }}" title="Edit"
+                                        class="inline-flex items-center justify-center w-7 h-7 bg-blue-700 hover:bg-blue-600 text-white rounded transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="1.8">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                d="M16.862 4.487 19.5 7.125m-2.638-2.638-9.9 9.9c-.42.42-.63.63-.81.863a6 6 0 0 0-.57.84c-.17.3-.3.62-.57 1.26l-.742 1.78m12.292-15.643-2.638-2.638m0 0L8.737 8.737m8.125-4.25 2.625 2.625" />
+                                        </svg>
+                                        <span class="sr-only">Edit</span>
+                                    </a>
+                                    <!-- Delete -->
                                     <form method="POST" action="{{ route('employee_resources.destroy', $resource) }}"
-                                        onsubmit="return confirm('Delete this resource?');" class="inline">
+                                        class="inline" onsubmit="return confirm('Delete this resource?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit"
-                                            class="px-2 py-0.5 bg-red-700 text-white rounded text-xs hover:bg-red-600">Del</button>
+                                        <button type="submit" title="Delete"
+                                            class="inline-flex items-center justify-center w-7 h-7 bg-red-700 hover:bg-red-600 text-white rounded transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="1.8">
+                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                    d="M3 6h18M9 6V4.5A1.5 1.5 0 0 1 10.5 3h3A1.5 1.5 0 0 1 15 4.5V6m4 0-.805 12.076A2 2 0 0 1 16.203 20H7.797a2 2 0 0 1-1.992-1.924L5 6m4 4v6m6-6v6" />
+                                            </svg>
+                                            <span class="sr-only">Delete</span>
+                                        </button>
                                     </form>
                                 </div>
                             </td>
