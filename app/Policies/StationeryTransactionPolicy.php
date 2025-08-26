@@ -13,7 +13,8 @@ class StationeryTransactionPolicy
      */
     public function viewAny(User $user): bool
     {
-        return false;
+        // Allow authenticated users to view stationery transactions
+        return $user->is_active === 'Yes';
     }
 
     /**
@@ -21,7 +22,8 @@ class StationeryTransactionPolicy
      */
     public function view(User $user, StationeryTransaction $stationeryTransaction): bool
     {
-        return false;
+        // Allow authenticated users to view individual stationery transactions and their attachments
+        return $user->is_active === 'Yes';
     }
 
     /**
