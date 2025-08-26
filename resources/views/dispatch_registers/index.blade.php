@@ -162,7 +162,7 @@
                                 <td class="py-1 px-2 text-center">{{ $dispatch->address ?? '-' }}</td>
                                 <td class="py-1 px-2 text-center">
                                     @if ($dispatch->attachment && Storage::disk('public')->exists($dispatch->attachment))
-                                        <a href="{{ asset('storage/' . $dispatch->attachment) }}"
+                                        <a href="{{ route('file.download', $dispatch->attachment) }}"
                                            class="text-blue-600 hover:underline" target="_blank" download>
                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none"
                                                  viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
