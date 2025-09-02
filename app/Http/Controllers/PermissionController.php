@@ -4,10 +4,21 @@ namespace App\Http\Controllers;
 
 use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
-use App\Models\BranchTarget;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use stdClass;
 
-class PermissionController extends Controller
+class PermissionController extends Controller implements HasMiddleware
 {
+    public static function middleware()
+    {
+        return [
+            new Middleware('role_or_permission:view permissions', only: ['index', 'show']),
+            new Middleware('role_or_permission:create permissions', only: ['create', 'store']),
+            new Middleware('role_or_permission:edit permissions', only: ['edit', 'update']),
+            new Middleware('role_or_permission:delete permissions', only: ['destroy']),
+        ];
+    }
     // Show the form for creating a new permission
     public function create()
     {
@@ -25,6 +36,7 @@ class PermissionController extends Controller
         // Create the permission
         Permission::create([
             'name' => $request->name,
+            'guard_name' => 'web',
         ]);
 
         // Redirect with success message
@@ -33,24 +45,24 @@ class PermissionController extends Controller
 
     // Display a listing of the permissions with pagination
     public function index(Request $request)
-{
-    $query = Permission::query();
+    {
+        $query = Permission::with('roles');
 
-    // Apply filters based on request inputs
-    if ($name = $request->input('filter.name')) {
-        $query->where('name', 'LIKE', '%' . $name . '%');
+        // Apply filters based on request inputs
+        if ($name = $request->input('filter.name')) {
+            $query->where('name', 'LIKE', '%' . $name . '%');
+        }
+
+        if ($createdAt = $request->input('filter.created_at')) {
+            $query->whereDate('created_at', $createdAt);
+        }
+
+        // Paginate the filtered results
+        $permissions = $query->paginate(10);
+
+        // Return the view with permissions data
+        return view('permissions.index', compact('permissions'));
     }
-
-    if ($createdAt = $request->input('filter.created_at')) {
-        $query->whereDate('created_at', $createdAt);
-    }
-
-    // Paginate the filtered results
-    $permissions = $query->paginate(10);
-
-    // Return the view with permissions data
-    return view('permissions.index', compact('permissions'));
-}
 
 
 
@@ -71,6 +83,7 @@ class PermissionController extends Controller
         // Update the permission
         $permission->update([
             'name' => $request->name,
+            'guard_name' => 'web',
         ]);
 
         // Redirect with success message
@@ -80,6 +93,13 @@ class PermissionController extends Controller
     // Remove the specified permission from storage
     public function destroy(Permission $permission)
     {
+        // Prevent deletion of critical permissions
+        $criticalPermissions = ['view users', 'edit users', 'create users', 'delete users', 'view roles', 'edit roles'];
+
+        if (in_array($permission->name, $criticalPermissions)) {
+            return redirect()->back()->withErrors(['permission' => 'Cannot delete critical system permission: ' . $permission->name]);
+        }
+
         // Delete the permission
         $permission->delete();
 

@@ -89,6 +89,7 @@
                                 <tr class="bg-blue-800 text-white uppercase text-sm">
                                     <th class="py-2 px-2 text-center">Name</th>
                                     <th class="py-2 px-2 text-center">Guard Name</th>
+                                    <th class="py-2 px-2 text-center">Permissions</th>
                                     <th class="py-2 px-2 text-center print:hidden">Actions</th>
                                 </tr>
                             </thead>
@@ -97,6 +98,22 @@
                                     <tr class="border-b border-gray-200 hover:bg-gray-100">
                                         <td class="py-1 px-2 text-center">{{ $role->name }}</td>
                                         <td class="py-1 px-2 text-center">{{ $role->guard_name }}</td>
+                                        <td class="py-1 px-2 text-center">
+                                            @if($role->permissions->count() > 0)
+                                                @foreach($role->permissions->take(3) as $permission)
+                                                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1 mb-1">
+                                                        {{ $permission->name }}
+                                                    </span>
+                                                @endforeach
+                                                @if($role->permissions->count() > 3)
+                                                    <span class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+                                                        +{{ $role->permissions->count() - 3 }} more
+                                                    </span>
+                                                @endif
+                                            @else
+                                                <span class="text-gray-500 text-xs">No permissions</span>
+                                            @endif
+                                        </td>
                                         <td class="py-1 px-2 text-center">
                                             <a href="{{ route('roles.edit', $role) }}"
                                                 class="inline-flex items-center px-4 py-2 bg-green-800 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
