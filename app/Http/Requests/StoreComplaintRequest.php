@@ -523,6 +523,7 @@ class StoreComplaintRequest extends FormRequest
                     'harassment_sub_category' => 'Sub category is required for harassment complaints.',
                     'harassment_incident_date' => 'Incident date is required for harassment complaints.',
                     'harassment_location' => 'Location is required for harassment complaints.',
+              
                     'harassment_details' => 'Details/evidence summary is required for harassment complaints.'
                 ];
                 foreach ($requiredFields as $field => $message) {
