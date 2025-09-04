@@ -912,20 +912,63 @@
                 const name = opt ? (opt.text || '').toLowerCase() : '';
                 const isHarassment = name.startsWith('harassment');
                 const isGrievance = name.startsWith('grievance');
+                
+                // First, remove required attributes from ALL conditional fields to prevent validation issues
+                harassmentRequiredFields.forEach(id=>{ 
+                    const el=document.getElementById(id); 
+                    if(el){ 
+                        el.removeAttribute('required'); 
+                        // Also clear custom validity to prevent stale validation messages
+                        el.setCustomValidity('');
+                    }
+                });
+                grievanceRequiredFields.forEach(id=>{ 
+                    const el=document.getElementById(id); 
+                    if(el){ 
+                        el.removeAttribute('required'); 
+                        el.setCustomValidity('');
+                    }
+                });
+                
+                // Hide all conditional sections first
+                if(harassmentSection) harassmentSection.classList.add('hidden');
+                if(grievanceSection) grievanceSection.classList.add('hidden');
+                
+                // Then show and enable the appropriate section
                 if(isHarassment){
                     harassmentSection.classList.remove('hidden');
-                    harassmentRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.setAttribute('required','required'); }});
-                } else {
-                    harassmentSection.classList.add('hidden');
-                    harassmentRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.removeAttribute('required'); }});
-                }
-                if(isGrievance){
+                    harassmentRequiredFields.forEach(id=>{ 
+                        const el=document.getElementById(id); 
+                        if(el){ 
+                            el.setAttribute('required','required'); 
+                        }
+                    });
+                } else if(isGrievance){
                     grievanceSection.classList.remove('hidden');
-                    grievanceRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.setAttribute('required','required'); }});
-                } else {
-                    grievanceSection.classList.add('hidden');
-                    grievanceRequiredFields.forEach(id=>{ const el=document.getElementById(id); if(el){ el.removeAttribute('required'); }});
+                    grievanceRequiredFields.forEach(id=>{ 
+                        const el=document.getElementById(id); 
+                        if(el){ 
+                            el.setAttribute('required','required'); 
+                        }
+                    });
                 }
+            }
+
+            // Add form submission validation to prevent issues with hidden required fields
+            const form = document.querySelector('form[method="POST"]');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    // Before submitting, ensure no hidden required fields cause validation issues
+                    const hiddenRequiredFields = form.querySelectorAll('input[required], select[required], textarea[required]');
+                    hiddenRequiredFields.forEach(field => {
+                        const fieldContainer = field.closest('#harassment-section, #grievance-section');
+                        if (fieldContainer && fieldContainer.classList.contains('hidden')) {
+                            // Temporarily remove required attribute from hidden fields during submission
+                            field.removeAttribute('required');
+                            field.setCustomValidity('');
+                        }
+                    });
+                });
             }
 
             // Utility: format a future datetime-local value from hours offset
@@ -977,9 +1020,10 @@
 
             if(categoryField){
                 categoryField.addEventListener('change', () => {
+                    // Immediately toggle sections to prevent validation issues
+                    toggleHarassmentSection();
                     maybeAdoptDefaultPriority();
                     // Do NOT auto-change expected date here; only priority drives it now.
-                    toggleHarassmentSection();
                 });
             }
 
