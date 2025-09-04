@@ -220,10 +220,10 @@ class StoreComplaintRequest extends FormRequest
 
             // Abuser details (for harassment cases)
             'harassment_abuser_employee_number' => ['nullable', 'string', 'max:50'],
-            'harassment_abuser_name' => ['nullable', 'string', 'max:150'],
-            'harassment_abuser_phone' => ['nullable', 'string', 'max:50'],
+            'harassment_abuser_name' => ['required', 'string', 'max:150'],
+            'harassment_abuser_phone' => ['required', 'string', 'max:50'],
             'harassment_abuser_email' => ['nullable', 'email', 'max:150'],
-            'harassment_abuser_relationship' => ['nullable', 'string', 'max:100'],
+            'harassment_abuser_relationship' => ['required', 'string', 'max:100'],
 
             // Witnesses dynamic arrays
             'witnesses' => ['nullable', 'array', 'max:10'],

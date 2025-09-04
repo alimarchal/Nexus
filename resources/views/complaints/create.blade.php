@@ -133,7 +133,7 @@
                                 @enderror
                             </div>
                             <div>
-                                <label for="expected_resolution_date" class="block text-gray-700">Expected Resolution
+                               <label for="expected_resolution_date" class="block text-gray-700">Expected Resolution
                                     Date <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <input type="datetime-local" name="expected_resolution_date"
                                     id="expected_resolution_date" value="{{ old('expected_resolution_date') }}"
