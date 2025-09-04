@@ -133,7 +133,7 @@
                                 @enderror
                             </div>
                             <div>
-                                <label for="expected_resolution_date" class="block text-gray-700">Expected Resolution
+                               <label for="expected_resolution_date" class="block text-gray-700">Expected Resolution
                                     Date <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
                                 <input type="datetime-local" name="expected_resolution_date"
                                     id="expected_resolution_date" value="{{ old('expected_resolution_date') }}"
@@ -155,45 +155,66 @@
                                         class="text-gray-500 text-xs font-normal">(Optional)</span></h5>
                                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Employee No (Optional)</label>
-                                        <input type="text" name="harassment_abuser_employee_number"
+                                        <label for="harassment_abuser_employee_number" class="block text-gray-700 text-xs">Employee No (Optional)</label>
+                                        <input type="text" name="harassment_abuser_employee_number" id="harassment_abuser_employee_number"
                                             value="{{ old('harassment_abuser_employee_number') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"/>
                                         @error('harassment_abuser_employee_number')<span class="text-red-500 text-xs">{{
                                             $message }}</span>@enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Name (Optional)</label>
-                                        <input type="text" name="harassment_abuser_name"
-                                            value="{{ old('harassment_abuser_name') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                        @error('harassment_abuser_name')<span class="text-red-500 text-xs">{{ $message
-                                            }}</span>@enderror
+                                        <div>
+            <label for="harassment_abuser_name" class="block text-gray-700 text-xs">
+             Name <span class="text-red-600">*</span>
+                        </label>
+                    <input type="text" 
+                     name="harassment_abuser_name" 
+                       id="harassment_abuser_name"
+                      value="{{ old('harassment_abuser_name') }}"
+                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                    required>
+                    @error('harassment_abuser_name')
+                    <span class="text-red-500 text-sm">{{ $message }}</span>
+                   @enderror
+                  </div>
+
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Phone (Optional)</label>
-                                        <input type="text" name="harassment_abuser_phone"
-                                            value="{{ old('harassment_abuser_phone') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                        @error('harassment_abuser_phone')<span class="text-red-500 text-xs">{{ $message
-                                            }}</span>@enderror
+                                            <label for="harassment_abuser_phone" class="block text-gray-700 text-xs ">
+                                           Phone <span class="text-red-600">*</span>
+                                               </label>
+                                              <input type="text" 
+                                               name="harassment_abuser_phone" 
+                                                 id="harassment_abuser_phone"
+                                                  value="{{ old('harassment_abuser_phone') }}"
+                                                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                                      required>
+                                                      @error('harassment_abuser_phone')
+                                                   <span class="text-red-500 text-sm">{{ $message }}</span>
+                                                          @enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Email (Optional)</label>
-                                        <input type="email" name="harassment_abuser_email"
+                                        <label for="harassment_abuser_email" class="block text-gray-700 text-xs">Email (Optional)</label>
+                                        <input type="email" name="harassment_abuser_email" id="harassment_abuser_email"
                                             value="{{ old('harassment_abuser_email') }}"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
                                         @error('harassment_abuser_email')<span class="text-red-500 text-xs">{{ $message
                                             }}</span>@enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Relationship (Optional)</label>
-                                        <input type="text" name="harassment_abuser_relationship"
-                                            value="{{ old('harassment_abuser_relationship') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                                            placeholder="e.g. Supervisor, Colleague" />
-                                        @error('harassment_abuser_relationship')<span class="text-red-500 text-xs">{{
-                                            $message }}</span>@enderror
+                                        <label for="harassment_abuser_relationship" class="block text-gray-700 text-xs">
+                             Relationship <span class="text-red-600">*</span>:
+                           </label>
+                            <input type="text" 
+                             name="harassment_abuser_relationship" 
+                            id="harassment_abuser_relationship"
+                            value="{{ old('harassment_abuser_relationship') }}"
+                          placeholder="e.g. Supervisor, Colleague"
+                           class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                          required>
+                           @error('harassment_abuser_relationship')
+                          <span class="text-red-500 text-sm">{{ $message }}</span>
+                           @enderror
                                     </div>
                                 </div>
                             </div>
@@ -236,14 +257,18 @@
                                         }}</span>@enderror
                                 </div>
                                 <div>
-                                    <label for="harassment_employee_number" class="block text-gray-700">Employee No
-                                        (Victim) <span
-                                            class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                    <input type="text" name="harassment_employee_number" id="harassment_employee_number"
-                                        value="{{ old('harassment_employee_number') }}"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                    @error('harassment_employee_number')<span class="text-red-500 text-sm">{{ $message
-                                        }}</span>@enderror
+                                     <label for="harassment_employee_number" class="block text-gray-700 text-xs">
+                              Employee No (Victim) <span class="text-red-600">*</span>:
+                               </label>
+                           <input type="text" 
+                           name="harassment_employee_number" 
+                            id="harassment_employee_number"
+                            value="{{ old('harassment_employee_number') }}"
+                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                             required>
+                            @error('harassment_employee_number')
+                            <span class="text-red-500 text-sm">{{ $message }}</span>
+                              @enderror
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -257,13 +282,18 @@
                                         }}</span>@enderror
                                 </div>
                                 <div>
-                                    <label for="harassment_employee_phone" class="block text-gray-700">Victim Phone
-                                        <span class="text-gray-500 text-xs font-normal">(Optional)</span>:</label>
-                                    <input type="text" name="harassment_employee_phone" id="harassment_employee_phone"
-                                        value="{{ old('harassment_employee_phone') }}"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 mb-4">
-                                    @error('harassment_employee_phone')<span class="text-red-500 text-sm">{{ $message
-                                        }}</span>@enderror
+                                       <label for="harassment_employee_phone" class="block text-gray-700 text-xs">
+                                Victim Phone <span class="text-red-600">*</span>:
+                           </label>
+                          <input type="text" 
+                             name="harassment_employee_phone" 
+                           id="harassment_employee_phone"
+                           value="{{ old('harassment_employee_phone') }}"
+                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 mb-4"
+                              required>
+                       @error('harassment_employee_phone')
+                         <span class="text-red-500 text-sm">{{ $message }}</span>
+                             @enderror
                                     <label class="flex items-center mt-4">
                                         <input type="checkbox" name="harassment_confidential" value="1" {{
                                             old('harassment_confidential') ? 'checked' : '' }}
@@ -355,7 +385,7 @@
                                 <h5 class="font-semibold text-gray-700 mb-3 text-sm">Employee Information</h5>
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Employee ID <span
+                                        <label for="grievance_employee_id" class="block text-gray-700 text-xs">Employee ID <span
                                                 class="text-red-600">*</span></label>
                                         <input type="text" name="grievance_employee_id" id="grievance_employee_id"
                                             value="{{ old('grievance_employee_id') }}"
@@ -364,29 +394,41 @@
                                             }}</span>@enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Department / Position</label>
-                                        <input type="text" name="grievance_department_position"
-                                            value="{{ old('grievance_department_position') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                        @error('grievance_department_position')<span class="text-red-500 text-xs">{{
-                                            $message }}</span>@enderror
+                                       <label for="grievance_department_position" class="block text-gray-700 text-xs">
+                          Department / Position <span class="text-red-600">*</span>
+                           </label>
+                     <input type="text" 
+                       name="grievance_department_position" 
+                         id="grievance_department_position"
+                          value="{{ old('grievance_department_position') }}"
+                          class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                         required>
+                        @error('grievance_department_position')
+                        <span class="text-red-500 text-xs">{{ $message }}</span>
+                         @enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Supervisor Name</label>
-                                        <input type="text" name="grievance_supervisor_name"
+                                        <label for="grievance_supervisor_name" class="block text-gray-700 text-xs">Supervisor Name</label>
+                                        <input type="text" name="grievance_supervisor_name" id="grievance_supervisor_name"
                                             value="{{ old('grievance_supervisor_name') }}"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
                                         @error('grievance_supervisor_name')<span class="text-red-500 text-xs">{{
                                             $message }}</span>@enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Employment Start Date</label>
-                                        <input type="date" name="grievance_employment_start_date"
-                                            value="{{ old('grievance_employment_start_date') }}"
-                                            max="{{ now()->format('Y-m-d') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                        @error('grievance_employment_start_date')<span class="text-red-500 text-xs">{{
-                                            $message }}</span>@enderror
+                                         <label for="grievance_employment_start_date" class="block text-gray-700 text-xs">
+                           Employment Start Date <span class="text-red-600">*</span>
+                    </label>
+                    <input type="date" 
+                     name="grievance_employment_start_date" 
+                      id="grievance_employment_start_date"
+                     value="{{ old('grievance_employment_start_date') }}"
+                     max="{{ now()->format('Y-m-d') }}"
+                    class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                      required>
+                         @error('grievance_employment_start_date')
+                      <span class="text-red-500 text-xs">{{ $message }}</span>
+                            @enderror
                                     </div>
                                 </div>
                             </div>
@@ -395,11 +437,11 @@
                                 <h5 class="font-semibold text-gray-700 mb-3 text-sm">Grievance Details</h5>
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Grievance Type</label>
+                                        <label for="grievance_type" class="block text-gray-700 text-xs">Grievance Type <span class="text-red-600">*</span></label>
                                         @php($grievanceTypes = ['Policy Violation','Pay/Benefits','Working
                                         Conditions','Discrimination','Performance Management','Safety','Other'])
                                         <select name="grievance_type" id="grievance_type"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
                                             <option value="">Select Type</option>
                                             @foreach($grievanceTypes as $gt)
                                             <option value="{{ $gt }}" {{ old('grievance_type')===$gt ? 'selected' : ''
@@ -410,13 +452,18 @@
                                             }}</span>@enderror
                                     </div>
                                     <div class="md:col-span-3">
-                                        <label class="block text-gray-700 text-xs">Policy / Procedure Allegedly
-                                            Violated</label>
-                                        <input type="text" name="grievance_policy_violated"
-                                            value="{{ old('grievance_policy_violated') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                        @error('grievance_policy_violated')<span class="text-red-500 text-xs">{{
-                                            $message }}</span>@enderror
+                                       <label for="grievance_policy_violated" class="block text-gray-700 text-xs">
+                           Policy / Procedure Allegedly Violated <span class="text-red-600">*</span>
+                         </label>
+                       <input type="text" 
+                         name="grievance_policy_violated" 
+                          id="grievance_policy_violated"
+                           value="{{ old('grievance_policy_violated') }}"
+                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                             required>
+                          @error('grievance_policy_violated')
+                          <span class="text-red-500 text-xs">{{ $message }}</span>
+                             @enderror
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -436,8 +483,8 @@
                                             $message }}</span>@enderror
                                     </div>
                                     <div class="md:col-span-3">
-                                        <label class="block text-gray-700 text-xs">If Yes, Provide Details</label>
-                                        <textarea name="grievance_previous_attempts_details"
+                                        <label for="grievance_previous_attempts_details" class="block text-gray-700 text-xs">If Yes, Provide Details</label>
+                                        <textarea name="grievance_previous_attempts_details" id="grievance_previous_attempts_details"
                                             id="grievance_previous_attempts_details" rows="2"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('grievance_previous_attempts_details') }}</textarea>
                                         @error('grievance_previous_attempts_details')<span
@@ -445,11 +492,18 @@
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-gray-700 text-xs">Desired Outcome / Resolution</label>
-                                    <textarea name="grievance_desired_outcome" rows="3"
-                                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">{{ old('grievance_desired_outcome') }}</textarea>
-                                    @error('grievance_desired_outcome')<span class="text-red-500 text-xs">{{ $message
-                                        }}</span>@enderror
+                                    <label for="grievance_desired_outcome" class="block text-gray-700 text-xs">
+                              Desired Outcome / Resolution <span class="text-red-600">*</span>
+                           </label>
+                               <textarea 
+                             name="grievance_desired_outcome" 
+                             id="grievance_desired_outcome" 
+                              rows="3"
+                        class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                       required>{{ old('grievance_desired_outcome') }}</textarea>
+                           @error('grievance_desired_outcome')
+                          <span class="text-red-500 text-xs">{{ $message }}</span>
+                                @enderror
                                 </div>
                             </div>
                             <!-- Subject / Respondent Information -->
@@ -458,28 +512,46 @@
                                 </h5>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Name (Person / Department)</label>
-                                        <input type="text" name="grievance_subject_name"
-                                            value="{{ old('grievance_subject_name') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                        @error('grievance_subject_name')<span class="text-red-500 text-xs">{{ $message
-                                            }}</span>@enderror
+                                        <label for="grievance_subject_name" class="block text-gray-700 text-xs">
+                               Name (Person / Department) <span class="text-red-600">*</span>
+                              </label>
+                              <input type="text" 
+                                name="grievance_subject_name" 
+                                 id="grievance_subject_name"
+                                 value="{{ old('grievance_subject_name') }}"
+                                  class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                  required>
+                                    @error('grievance_subject_name')
+                                    <span class="text-red-500 text-xs">{{ $message }}</span>
+                                      @enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Position / Role</label>
-                                        <input type="text" name="grievance_subject_position"
-                                            value="{{ old('grievance_subject_position') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                        @error('grievance_subject_position')<span class="text-red-500 text-xs">{{
-                                            $message }}</span>@enderror
+                                       <label for="grievance_subject_position" class="block text-gray-700 text-xs">
+                                       Position / Role <span class="text-red-600">*</span>
+                                      </label>
+                                  <input type="text" 
+                                   name="grievance_subject_position" 
+                               id="grievance_subject_position"
+                               value="{{ old('grievance_subject_position') }}"
+                                class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                  required>
+                                     @error('grievance_subject_position')
+                                       <span class="text-red-500 text-xs">{{ $message }}</span>
+                                   @enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Relationship to Complainant</label>
-                                        <input type="text" name="grievance_subject_relationship"
-                                            value="{{ old('grievance_subject_relationship') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                        @error('grievance_subject_relationship')<span class="text-red-500 text-xs">{{
-                                            $message }}</span>@enderror
+                                         <label for="grievance_subject_relationship" class="block text-gray-700 text-xs">
+                                               Relationship to Complainant <span class="text-red-600">*</span>
+                                                  </label>
+                                                 <input type="text" 
+                                                  name="grievance_subject_relationship" 
+                                                 id="grievance_subject_relationship"
+                                                 value="{{ old('grievance_subject_relationship') }}"
+                                                   class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                                     required>
+                                                  @error('grievance_subject_relationship')
+                                              <span class="text-red-500 text-xs">{{ $message }}</span>
+                                               @enderror
                                     </div>
                                 </div>
                             </div>
@@ -508,17 +580,23 @@
                                 <h5 class="font-semibold text-gray-700 mb-3 text-sm">Timeline</h5>
                                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Date First Occurred</label>
-                                        <input type="date" name="grievance_first_occurred_date"
-                                            value="{{ old('grievance_first_occurred_date') }}"
+                                        <label for="grievance_first_occurred_date" class="block text-gray-700 text-xs">
+                                        Date First Occurred <span class="text-red-600">*</span>
+                                              </label>
+                                               <input type="date" 
+                                                  name="grievance_first_occurred_date" 
+                                             id="grievance_first_occurred_date"
+                                              value="{{ old('grievance_first_occurred_date') }}"
                                             max="{{ now()->format('Y-m-d') }}"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
-                                        @error('grievance_first_occurred_date')<span class="text-red-500 text-xs">{{
-                                            $message }}</span>@enderror
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                             required>
+                                             @error('grievance_first_occurred_date')
+                                              <span class="text-red-500 text-xs">{{ $message }}</span>
+                                               @enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Most Recent Incident</label>
-                                        <input type="date" name="grievance_most_recent_date"
+                                        <label for="grievance_most_recent_date" class="block text-gray-700 text-xs">Most Recent Incident</label>
+                                        <input type="date" name="grievance_most_recent_date" id="grievance_most_recent_date"
                                             value="{{ old('grievance_most_recent_date') }}"
                                             max="{{ now()->format('Y-m-d') }}"
                                             class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" />
@@ -526,24 +604,30 @@
                                             $message }}</span>@enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Pattern Frequency</label>
-                                        @php($patternFreq = ['One-time','Ongoing','Recurring'])
-                                        <select name="grievance_pattern_frequency"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
-                                            <option value="">Select</option>
-                                            @foreach($patternFreq as $pf)
-                                            <option value="{{ $pf }}" {{ old('grievance_pattern_frequency')===$pf
-                                                ? 'selected' : '' }}>{{ $pf }}</option>
-                                            @endforeach
-                                        </select>
-                                        @error('grievance_pattern_frequency')<span class="text-red-500 text-xs">{{
-                                            $message }}</span>@enderror
+                                       <label for="grievance_pattern_frequency" class="block text-gray-700 text-xs">
+                                        Pattern Frequency <span class="text-red-600">*</span>
+                                         </label>
+                                           @php($patternFreq = ['One-time','Ongoing','Recurring'])
+                                          <select name="grievance_pattern_frequency" 
+                                           id="grievance_pattern_frequency"
+                                          class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
+                                           required>
+                                           <option value="">Select</option>
+                                         @foreach($patternFreq as $pf)
+                                          <option value="{{ $pf }}" {{ old('grievance_pattern_frequency') === $pf ? 'selected' : '' }}>
+                                               {{ $pf }}
+                                                  </option>
+                                                @endforeach
+                                                   </select>
+                                             @error('grievance_pattern_frequency')
+                                           <span class="text-red-500 text-xs">{{ $message }}</span>
+                                     @enderror
                                     </div>
                                     <div>
-                                        <label class="block text-gray-700 text-xs">Effect on Job Performance</label>
+                                        <label for="grievance_performance_effect" class="block text-gray-700 text-xs">Effect on Job Performance<span class="text-red-600">*</span> </label>
                                         @php($effects = ['None','Minor','Moderate','Severe'])
-                                        <select name="grievance_performance_effect"
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200">
+                                        <select name="grievance_performance_effect" id="grievance_performance_effect"
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
                                             <option value="">Select</option>
                                             @foreach($effects as $ef)
                                             <option value="{{ $ef }}" {{ old('grievance_performance_effect')===$ef
@@ -807,9 +891,12 @@
             const expectedField = document.getElementById('expected_resolution_date');
             const categoryField = document.getElementById('category_id');
             const harassmentSection = document.getElementById('harassment-section');
-            const harassmentRequiredFields = ['harassment_sub_category','harassment_incident_date','harassment_location','harassment_details'];
+            const harassmentRequiredFields = ['harassment_sub_category','harassment_incident_date','harassment_location','harassment_details','harassment_employee_phone','harassment_employee_number',
+            'harassment_abuser_relationship','harassment_abuser_phone','harassment_abuser_name'];
             const grievanceSection = document.getElementById('grievance-section');
-            const grievanceRequiredFields = ['grievance_employee_id','grievance_acknowledgment'];
+            const grievanceRequiredFields = ['grievance_employee_id','grievance_acknowledgment','grievance_performance_effect',
+            'grievance_pattern_frequency','grievance_first_occurred_date','grievance_subject_relationship','grievance_subject_position',
+            'grievance_subject_name','grievance_desired_outcome','grievance_policy_violated','grievance_employment_start_date','grievance_department_position','grievance_type'];
             const incidentDateField = document.getElementById('harassment_incident_date');
             const witnessWrapper = document.getElementById('witnesses-wrapper');
             const witnessTemplate = document.getElementById('witness-template');
