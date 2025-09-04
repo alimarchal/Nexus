@@ -116,6 +116,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::resource('product/printed-stationeries', PrintedStationeryController::class);
     Route::resource('product/stationery-transactions', StationeryTransactionController::class);
+    Route::get('product/stationery-transactions/{stationeryTransaction}/download', [StationeryTransactionController::class, 'downloadDocument'])->name('stationery-transactions.download');
     //Report
     Route::get('reports/printed-stationeries', [ReportController::class, 'printedStationeries'])->name('report.printed-stationeries');
 
