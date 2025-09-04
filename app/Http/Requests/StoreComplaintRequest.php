@@ -543,7 +543,7 @@ class StoreComplaintRequest extends FormRequest
                     'grievance_employee_id' => 'Employee ID is required for grievance complaints.',
                     'grievance_acknowledgment' => 'Acknowledgment of grievance policy is required.',
                     'grievance_department_position' => 'Department/position is required for grievance complaints.',
-                'grievance_employment_start_date' => 'Employment start date is required for grievance complaints.',
+                    'grievance_employment_start_date' => 'Employment start date is required for grievance complaints.',
                 'grievance_policy_violated' => 'Policy violated is required for grievance complaints.',
                 'grievance_desired_outcome' => 'Desired outcome is required for grievance complaints.',
                 'grievance_subject_name' => 'Subject name is required for grievance complaints.',
