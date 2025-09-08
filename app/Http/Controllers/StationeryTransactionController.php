@@ -332,6 +332,31 @@ class StationeryTransactionController extends Controller
     }
 
     /**
+     * Download the supporting document for a stationery transaction.
+     */
+    public function downloadDocument(StationeryTransaction $stationeryTransaction)
+    {
+        // Check authorization
+        $this->authorize('view', $stationeryTransaction);
+        
+        // Check if document exists
+        if (!$stationeryTransaction->document_path) {
+            return redirect()->back()->with('error', 'No document found for this transaction.');
+        }
+
+        // Check if file exists in storage
+        if (!Storage::disk('public')->exists($stationeryTransaction->document_path)) {
+            return redirect()->back()->with('error', 'Document file not found.');
+        }
+
+        // Return download response
+        return Storage::disk('public')->download(
+            $stationeryTransaction->document_path, 
+            'transaction_' . $stationeryTransaction->id . '_document.' . pathinfo($stationeryTransaction->document_path, PATHINFO_EXTENSION)
+        );
+    }
+
+    /**
      * Calculate the new balance after a transaction.
      *
      * @param int $currentBalance

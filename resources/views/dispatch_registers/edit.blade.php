@@ -78,7 +78,7 @@
                             <div class="col-span-2">
                                 <x-label value="Attachment" />
                                 @if ($dispatchRegister->attachment && Storage::disk('public')->exists($dispatchRegister->attachment))
-                                    <a href="{{ asset('storage/' . $dispatchRegister->attachment) }}" target="_blank"
+                                    <a href="{{ route('file.view', $dispatchRegister->attachment) }}" target="_blank"
                                         class="text-blue-500 underline">
                                         View Attachment
                                     </a>
