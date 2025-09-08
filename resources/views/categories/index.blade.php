@@ -20,6 +20,7 @@
             </button>
 
             <!-- Add New Category -->
+            @can('create categories')
             <a href="{{ route('categories.create') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md
                        font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800
@@ -30,6 +31,7 @@
                 </svg>
                 <span class="hidden md:inline-block">Add Category</span>
             </a>
+            @endcan
 
             <!-- Refresh -->
             <a href="javascript:window.location.reload();"
@@ -94,12 +96,15 @@
                                     <td class="py-1 px-2 text-left">{{ $category->name }}</td>
                                     <td class="py-1 px-2 text-center">
                                         <div class="flex justify-center space-x-2">
+                                            @can('edit categories')
                                             <a href="{{ route('categories.edit', $category->id) }}"
                                                 class="inline-flex items-center px-3 py-1 bg-blue-800 text-white rounded-md
                                                        hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500
                                                        focus:ring-offset-2">
                                                 Edit
                                             </a>
+                                            @endcan
+                                            @can('delete categories')
                                             <form action="{{ route('categories.destroy', $category->id) }}"
                                                   method="POST" onsubmit="return confirm('Are you sure?')">
                                                 @csrf
@@ -111,6 +116,7 @@
                                                     Delete
                                                 </button>
                                             </form>
+                                            @endcan
                                         </div>
                                     </td>
                                 </tr>

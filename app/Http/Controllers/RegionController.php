@@ -6,10 +6,22 @@ use App\Models\Region;
 use Illuminate\Http\Request;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Routing\Controllers\HasMiddleware;
 
 
-class RegionController extends Controller
+class RegionController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role_or_permission:view regions', only: ['index', 'show']),
+            new Middleware('role_or_permission:create regions', only: ['create', 'store']),
+            new Middleware('role_or_permission:edit regions', only: ['edit', 'update']),
+            new Middleware('role_or_permission:delete regions', only: ['destroy']),
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      */public function index(Request $request)

@@ -64,6 +64,24 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit branches', 
             'delete branches',
             
+            // Region Management
+            'view regions',
+            'create regions',
+            'edit regions',
+            'delete regions',
+            
+            // Division Management
+            'view divisions',
+            'create divisions',
+            'edit divisions',
+            'delete divisions',
+            
+            // Category Management
+            'view categories',
+            'create categories',
+            'edit categories',
+            'delete categories',
+            
             // Report Management
             'view reports',
             'generate reports',

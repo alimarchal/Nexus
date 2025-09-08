@@ -17,7 +17,13 @@ class AuditChecklistItemFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'title' => $this->faker->sentence(4),
+            'criteria' => $this->faker->paragraph(),
+            'guidance' => $this->faker->sentence(),
+            'response_type' => $this->faker->randomElement(['yes_no', 'compliant_noncompliant', 'rating', 'text', 'numeric', 'evidence']),
+            'max_score' => $this->faker->numberBetween(5, 20),
+            'display_order' => $this->faker->numberBetween(1, 100),
+            'is_active' => true,
         ];
     }
 }

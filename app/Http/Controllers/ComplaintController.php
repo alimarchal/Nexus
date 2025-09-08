@@ -28,14 +28,28 @@ use Illuminate\Support\Facades\Auth;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Routing\Controllers\HasMiddleware;
 use Carbon\Carbon;
 
 /**
  * ComplaintController handles comprehensive CRUD operations for complaints
  * Manages file uploads, assignments, escalations, histories, and all related entities
  */
-class ComplaintController extends Controller
+class ComplaintController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role_or_permission:view complaints', only: ['index', 'show']),
+            new Middleware('role_or_permission:create complaints', only: ['create', 'store']),
+            new Middleware('role_or_permission:edit complaints', only: ['edit', 'update']),
+            new Middleware('role_or_permission:delete complaints', only: ['destroy']),
+            new Middleware('role_or_permission:assign complaints', only: ['store', 'update']),
+            new Middleware('role_or_permission:escalate complaints', only: ['escalate']),
+        ];
+    }
+
     /**
      * Display paginated list of complaints with advanced filtering capabilities
      * 

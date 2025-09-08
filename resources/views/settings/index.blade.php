@@ -88,6 +88,7 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-12 gap-6">
                 <!-- User Module Card -->
+                @can('view users')
                 <a href="settings/user-module"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -98,8 +99,10 @@
                         <img src="{{ url('icons-images/user1.png') }}" alt="Users" class="h-16 w-16">
                     </div>
                 </a>
+                @endcan
 
                 <!-- Branch Module Card -->
+                @can('view branches')
                 <a href="{{ route('settings.branchsetting') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -110,6 +113,8 @@
                         <img src="{{ url('icons-images/bankmodule.png') }}" alt="Branches" class="h-16 w-16">
                     </div>
                 </a>
+                @endcan
+                @can('view users')
                 <a href="{{ url('settings/user-module/managers') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
 
@@ -121,6 +126,8 @@
                         <img src="{{ url('icons-images/user.png') }}" alt="Users" class="h-16 w-16">
                     </div>
                 </a>
+                @endcan
+                @can('view branches')
                 <a
                     href="{{ route('branch-targets.index') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -131,6 +138,8 @@
                         <img src="{{ url('icons-images/branchtarget.png') }}" alt="Branches" class="h-16 w-16">
                     </div>
                 </a>
+                @endcan
+                @can('view categories')
                 <a
                     href="{{ route('categories.index') }}"class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -141,6 +150,7 @@
                         <img src="{{ url('icons-images/classification.png') }}" alt="Branches" class="h-16 w-16">
                     </div>
                 </a>
+                @endcan
 
 
             </div>
