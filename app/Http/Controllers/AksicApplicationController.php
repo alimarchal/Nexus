@@ -457,7 +457,26 @@ class AksicApplicationController extends Controller
      */
     public function show(AksicApplication $aksicApplication)
     {
-        //
+        // Load relationships for detailed view
+        $aksicApplication->load(['educations', 'statusLogs']);
+
+        return view('aksic-applications.show', compact('aksicApplication'));
+    }
+
+    /**
+     * Generate PDF for the specified application
+     */
+    public function downloadPdf(AksicApplication $aksicApplication)
+    {
+        // Load relationships for PDF generation
+        $aksicApplication->load(['educations', 'statusLogs']);
+
+        // Return JSON data for PDF generation
+        return response()->json([
+            'success' => true,
+            'application' => $aksicApplication,
+            'exported_at' => now()->toISOString()
+        ]);
     }
 
     /**

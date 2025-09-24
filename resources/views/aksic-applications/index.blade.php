@@ -224,7 +224,7 @@
                             <td class="py-1 px-2 text-left">{{ $application->district_name ?? '-' }}</td>
                             <td class="py-1 px-2 text-center">
                                 <div class="flex justify-center space-x-2">
-                                    <button
+                                    <a href="{{ route('aksic-applications.show', $application) }}"
                                         class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors duration-200"
                                         title="View Details">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -235,7 +235,7 @@
                                                 d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                         </svg>
                                         View
-                                    </button>
+                                    </a>
                                 </div>
                             </td>
                         </tr>
