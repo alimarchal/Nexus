@@ -107,6 +107,106 @@ class AksicApplicationController extends Controller
     }
 
     /**
+     * Update single application status back to the API
+     */
+    private function updateSingleApplicationStatus($applicationId)
+    {
+        try {
+            Log::info('Updating application status on API', ['application_id' => $applicationId]);
+
+            // Send status update to API for single application
+            $response = Http::withToken(config('app.aksic_api_token'))
+                ->withOptions([
+                    'verify' => false, // Disable SSL verification
+                    'timeout' => 30,
+                ])
+                ->post('https://sic.ajk.gov.pk/pmylp/api/bank/applications/status-update', [
+                    'applications' => [
+                        [
+                            'id' => $applicationId,
+                            'status' => 'In Progress',
+                            'remarks' => 'BANK AJK System Automatically Collected This Application'
+                        ]
+                    ]
+                ]);
+
+            if (!$response->successful()) {
+                Log::error('Failed to update application status on API', [
+                    'application_id' => $applicationId,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+                throw new \Exception("Failed to update status on API for application {$applicationId}: " . $response->body());
+            }
+
+            Log::info('Successfully updated application status on API', [
+                'application_id' => $applicationId,
+                'response' => $response->json()
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating application status on API', [
+                'application_id' => $applicationId,
+                'error' => $e->getMessage()
+            ]);
+            throw $e; // Re-throw to trigger transaction rollback
+        }
+    }
+
+    /**
+     * Update application statuses back to the API in batch
+     */
+    private function updateApplicationsStatusBatch($applicationIds)
+    {
+        try {
+            Log::info('Starting batch update of application statuses on API', [
+                'application_ids' => $applicationIds,
+                'count' => count($applicationIds)
+            ]);
+
+            // Prepare the status update payload
+            $statusUpdatePayload = [];
+            foreach ($applicationIds as $applicationId) {
+                $statusUpdatePayload[] = [
+                    'id' => $applicationId,
+                    'status' => 'In Progress',
+                    'remarks' => 'BANK AJK System Automatically Collected This Application'
+                ];
+            }
+
+            // Send batch status update to API
+            $response = Http::withToken(config('app.aksic_api_token'))
+                ->withOptions([
+                    'verify' => false, // Disable SSL verification
+                    'timeout' => 30,
+                ])
+                ->post('https://sic.ajk.gov.pk/pmylp/api/bank/applications/status-update', [
+                    'applications' => $statusUpdatePayload
+                ]);
+
+            if ($response->successful()) {
+                Log::info('Successfully updated application statuses on API (batch)', [
+                    'application_ids' => $applicationIds,
+                    'count' => count($statusUpdatePayload),
+                    'response' => $response->json()
+                ]);
+            } else {
+                Log::error('Failed to update application statuses on API (batch)', [
+                    'application_ids' => $applicationIds,
+                    'status' => $response->status(),
+                    'response' => $response->body()
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Error updating application statuses on API (batch)', [
+                'application_ids' => $applicationIds,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
      * Sync applications from external API
      */
     public function syncApplications()
@@ -148,6 +248,9 @@ class AksicApplicationController extends Controller
                 'failed' => 0,
                 'errors' => []
             ];
+
+            // Track successfully processed applications for batch status update
+            $successfullyProcessedIds = [];
 
             // Process each application in a transaction
             foreach ($applications as $appData) {
@@ -297,6 +400,9 @@ class AksicApplicationController extends Controller
 
                     DB::commit();
 
+                    // Add to successful applications list for batch status update
+                    $successfullyProcessedIds[] = $appData['id'];
+
                 } catch (\Exception $e) {
                     DB::rollBack();
                     $syncResults['failed']++;
@@ -309,6 +415,11 @@ class AksicApplicationController extends Controller
             }
 
             Log::info('AKSIC applications sync completed', $syncResults);
+
+            // Update status of all successfully processed applications in one batch call
+            if (!empty($successfullyProcessedIds)) {
+                $this->updateApplicationsStatusBatch($successfullyProcessedIds);
+            }
 
             return response()->json([
                 'success' => true,
