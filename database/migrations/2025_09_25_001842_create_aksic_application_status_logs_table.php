@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->string('changed_by_type')->nullable();
             $table->unsignedBigInteger('changed_by_id')->nullable();
             $table->text('remarks')->nullable();
+            $table->json('status_json')->nullable();
             $table->timestamps();
         });
     }

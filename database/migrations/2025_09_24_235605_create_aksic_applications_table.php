@@ -44,6 +44,7 @@ return new class extends Migration {
             $table->string('fee_branch_code')->nullable();
             $table->string('district_name')->nullable();
             $table->string('tehsil_name')->nullable();
+            $table->json('api_call_json')->nullable();
             $table->timestamps();
         });
     }

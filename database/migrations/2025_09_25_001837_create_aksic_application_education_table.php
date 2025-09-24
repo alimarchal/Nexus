@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('aksic_application_education', function (Blueprint $table) {
             $table->id();
+            $table->foreignUuid('aksic_application_id')->nullable()->constrained('aksic_applications')->nullOnDelete()->cascadeOnUpdate();
             $table->unsignedBigInteger(column: 'aksic_id');
             $table->unsignedBigInteger('applicant_id');
             $table->string('education_level');
@@ -19,7 +20,7 @@ return new class extends Migration {
             $table->string('institute')->nullable();
             $table->year('passing_year')->nullable();
             $table->string('grade_or_percentage')->nullable();
-
+            $table->json('educations_json')->nullable();
             $table->timestamps();
         });
     }
