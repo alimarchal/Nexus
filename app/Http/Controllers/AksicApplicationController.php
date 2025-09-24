@@ -11,11 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Spatie\QueryBuilder\QueryBuilder;
 use Spatie\QueryBuilder\AllowedFilter;
 use Carbon\Carbon;
-use App\Helpers\FileStorageHelper;
 
 class AksicApplicationController extends Controller
 {
@@ -60,51 +58,7 @@ class AksicApplicationController extends Controller
         return view('aksic-applications.index', compact('applications'));
     }
 
-    /**
-     * Download image from URL and store in private storage
-     */
-    private function downloadAndStoreImage($imageUrl, $folderPath, $fileName)
-    {
-        try {
-            if (!$imageUrl) {
-                return null;
-            }
 
-            // Download the image with SSL verification disabled
-            $response = Http::withOptions(['verify' => false])
-                ->timeout(30)
-                ->get($imageUrl);
-
-            if (!$response->successful()) {
-                Log::warning("Failed to download image from URL: {$imageUrl}");
-                return null;
-            }
-
-            // Get image content
-            $imageContent = $response->body();
-
-            // Get file extension from URL or default to jpg
-            $extension = pathinfo(parse_url($imageUrl, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
-            $fullFileName = $fileName . '.' . $extension;
-
-            // Store the file in private storage
-            $fullPath = $folderPath . '/' . $fullFileName;
-            Storage::disk('local')->put($fullPath, $imageContent);
-
-            Log::info("Successfully downloaded and stored image", [
-                'url' => $imageUrl,
-                'stored_path' => $fullPath
-            ]);
-
-            return $fullPath;
-
-        } catch (\Exception $e) {
-            Log::error("Error downloading image from URL: {$imageUrl}", [
-                'error' => $e->getMessage()
-            ]);
-            return null;
-        }
-    }
 
     /**
      * Update single application status back to the API
@@ -257,38 +211,6 @@ class AksicApplicationController extends Controller
                 try {
                     DB::beginTransaction();
 
-                    // Create folder structure for this applicant's files
-                    $applicantFolderPath = 'AKSIC/' . $appData['id'];
-
-                    // Download and store images from URLs
-                    $challanImagePath = null;
-                    $cnicFrontPath = null;
-                    $cnicBackPath = null;
-
-                    if (isset($appData['challan_image_url'])) {
-                        $challanImagePath = $this->downloadAndStoreImage(
-                            $appData['challan_image_url'],
-                            $applicantFolderPath,
-                            'challan_' . $appData['challan_image']
-                        );
-                    }
-
-                    if (isset($appData['cnic_front_url'])) {
-                        $cnicFrontPath = $this->downloadAndStoreImage(
-                            $appData['cnic_front_url'],
-                            $applicantFolderPath,
-                            'cnic_front_' . $appData['cnic_front']
-                        );
-                    }
-
-                    if (isset($appData['cnic_back_url'])) {
-                        $cnicBackPath = $this->downloadAndStoreImage(
-                            $appData['cnic_back_url'],
-                            $applicantFolderPath,
-                            'cnic_back_' . $appData['cnic_back']
-                        );
-                    }
-
                     // Map API data to our database structure
                     $applicationData = [
                         'applicant_id' => $appData['id'],
@@ -314,11 +236,11 @@ class AksicApplicationController extends Controller
                         'branch_id' => $appData['branch_id'],
                         'challan_branch_id' => $appData['challan_branch_id'],
                         'challan_fee' => $appData['challan_fee'],
-                        // Store local file paths instead of original filenames
-                        'challan_image' => $challanImagePath ?? $appData['challan_image'],
-                        'cnic_front' => $cnicFrontPath ?? $appData['cnic_front'],
-                        'cnic_back' => $cnicBackPath ?? $appData['cnic_back'],
-                        // Store original API URLs
+                        // Store original filenames from API
+                        'challan_image' => $appData['challan_image'],
+                        'cnic_front' => $appData['cnic_front'],
+                        'cnic_back' => $appData['cnic_back'],
+                        // Store original API URLs for direct access
                         'challan_image_url' => $appData['challan_image_url'] ?? null,
                         'cnic_front_url' => $appData['cnic_front_url'] ?? null,
                         'cnic_back_url' => $appData['cnic_back_url'] ?? null,
@@ -335,20 +257,6 @@ class AksicApplicationController extends Controller
                     $existingApp = AksicApplication::where('applicant_id', $appData['id'])->first();
 
                     if ($existingApp) {
-                        // Clean up old image files if they exist
-                        $oldImageFiles = [
-                            $existingApp->challan_image,
-                            $existingApp->cnic_front,
-                            $existingApp->cnic_back
-                        ];
-
-                        foreach ($oldImageFiles as $oldFile) {
-                            if ($oldFile && Storage::disk('local')->exists($oldFile)) {
-                                Storage::disk('local')->delete($oldFile);
-                                Log::info('Deleted old image file', ['file' => $oldFile]);
-                            }
-                        }
-
                         // Update existing application
                         $existingApp->update($applicationData);
                         $application = $existingApp;
