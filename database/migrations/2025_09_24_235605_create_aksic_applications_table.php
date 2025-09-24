@@ -38,6 +38,9 @@ return new class extends Migration {
             $table->string('challan_image')->nullable();
             $table->string('cnic_front')->nullable();
             $table->string('cnic_back')->nullable();
+            $table->text('challan_image_url')->nullable();
+            $table->text('cnic_front_url')->nullable();
+            $table->text('cnic_back_url')->nullable();
             $table->enum('fee_status', ['paid', 'unpaid'])->default('unpaid');
             $table->enum('status', ['NotCompleted', 'Pending', 'Forwarded', 'Approved', 'Rejected'])->default('Pending');
             $table->string('bank_status')->nullable();

@@ -123,4 +123,15 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | AKSIC API Configuration
+    |--------------------------------------------------------------------------
+    |
+    | This is the API token for AKSIC application synchronization
+    |
+    */
+
+    'aksic_api_token' => env('AKSIC_API_TOKEN'),
+
 ];

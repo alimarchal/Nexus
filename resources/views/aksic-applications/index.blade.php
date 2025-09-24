@@ -14,6 +14,15 @@
                 </svg>
                 Search
             </button>
+            <button id="syncBtn"
+                class="inline-flex items-center ml-2 px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span id="syncText">Sync API</span>
+            </button>
             <a href="javascript:window.location.reload();"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -245,6 +254,92 @@
         </div>
     </div>
 
+    <!-- Sync Modal -->
+    <div id="syncModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">AKSIC API Sync Status</h3>
+                    <button id="closeSyncModal" class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Loading State -->
+                <div id="syncLoading" class="text-center py-8">
+                    <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-600 mx-auto"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    <p class="text-gray-600 mt-2">Syncing applications from API...</p>
+                </div>
+
+                <!-- Results State -->
+                <div id="syncResults" class="hidden">
+                    <div class="mb-4">
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                <div>
+                                    <div id="totalCount" class="text-2xl font-bold text-blue-600">0</div>
+                                    <div class="text-sm text-gray-600">Total</div>
+                                </div>
+                                <div>
+                                    <div id="createdCount" class="text-2xl font-bold text-green-600">0</div>
+                                    <div class="text-sm text-gray-600">Created</div>
+                                </div>
+                                <div>
+                                    <div id="updatedCount" class="text-2xl font-bold text-yellow-600">0</div>
+                                    <div class="text-sm text-gray-600">Updated</div>
+                                </div>
+                                <div>
+                                    <div id="failedCount" class="text-2xl font-bold text-red-600">0</div>
+                                    <div class="text-sm text-gray-600">Failed</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="successMessage"
+                        class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative mb-4 hidden">
+                        <strong class="font-bold">Success!</strong>
+                        <span class="block sm:inline" id="successText"></span>
+                    </div>
+
+                    <div id="errorMessage"
+                        class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4 hidden">
+                        <strong class="font-bold">Error!</strong>
+                        <span class="block sm:inline" id="errorText"></span>
+                    </div>
+
+                    <div id="errorsList" class="hidden">
+                        <h4 class="font-semibold text-gray-900 mb-2">Errors:</h4>
+                        <div class="bg-red-50 border border-red-200 rounded-md p-3">
+                            <ul id="errorsListItems" class="list-disc list-inside text-sm text-red-700"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-6">
+                    <button id="refreshPageBtn"
+                        class="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
+                        Refresh Page
+                    </button>
+                    <button id="closeSyncModalBtn"
+                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('modals')
     <script>
         const targetDiv = document.getElementById("filters");
@@ -286,13 +381,113 @@
 
             // Prevent clicks inside the filter from closing it
             targetDiv.addEventListener('click', function(event) {
-                event.stopPropagagation();
+                event.stopPropagation();
             });
 
             // Add CSS for smooth transitions
             const style = document.createElement('style');
             style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`;
             document.head.appendChild(style);
+
+        // Sync Applications Functionality
+        const syncBtn = document.getElementById('syncBtn');
+        const syncModal = document.getElementById('syncModal');
+        const syncLoading = document.getElementById('syncLoading');
+        const syncResults = document.getElementById('syncResults');
+        const syncText = document.getElementById('syncText');
+
+        // Modal controls
+        document.getElementById('closeSyncModal').addEventListener('click', closeSyncModal);
+        document.getElementById('closeSyncModalBtn').addEventListener('click', closeSyncModal);
+        document.getElementById('refreshPageBtn').addEventListener('click', () => location.reload());
+
+        // Close modal when clicking outside
+        syncModal.addEventListener('click', function(e) {
+            if (e.target === syncModal) {
+                closeSyncModal();
+            }
+        });
+
+        function showSyncModal() {
+            syncModal.classList.remove('hidden');
+            syncLoading.classList.remove('hidden');
+            syncResults.classList.add('hidden');
+            document.getElementById('successMessage').classList.add('hidden');
+            document.getElementById('errorMessage').classList.add('hidden');
+            document.getElementById('errorsList').classList.add('hidden');
+            document.getElementById('refreshPageBtn').classList.add('hidden');
+        }
+
+        function closeSyncModal() {
+            syncModal.classList.add('hidden');
+            // Reset button state
+            syncBtn.disabled = false;
+            syncBtn.classList.remove('opacity-50');
+            syncText.textContent = 'Sync API';
+        }
+
+        function showSyncResults(data) {
+            syncLoading.classList.add('hidden');
+            syncResults.classList.remove('hidden');
+            
+            if (data.success) {
+                const results = data.results;
+                document.getElementById('totalCount').textContent = results.total || 0;
+                document.getElementById('createdCount').textContent = results.created || 0;
+                document.getElementById('updatedCount').textContent = results.updated || 0;
+                document.getElementById('failedCount').textContent = results.failed || 0;
+                
+                document.getElementById('successMessage').classList.remove('hidden');
+                document.getElementById('successText').textContent = data.message;
+                
+                if (results.errors && results.errors.length > 0) {
+                    document.getElementById('errorsList').classList.remove('hidden');
+                    const errorsList = document.getElementById('errorsListItems');
+                    errorsList.innerHTML = '';
+                    results.errors.forEach(error => {
+                        const li = document.createElement('li');
+                        li.textContent = error;
+                        errorsList.appendChild(li);
+                    });
+                }
+                
+                document.getElementById('refreshPageBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('errorMessage').classList.remove('hidden');
+                document.getElementById('errorText').textContent = data.message;
+            }
+        }
+
+        // Sync button click handler
+        syncBtn.addEventListener('click', function() {
+            // Disable button and show loading state
+            syncBtn.disabled = true;
+            syncBtn.classList.add('opacity-50');
+            syncText.textContent = 'Syncing...';
+            
+            // Show modal
+            showSyncModal();
+            
+            // Make API call
+            fetch('{{ route('aksic-applications.sync') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                showSyncResults(data);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showSyncResults({
+                    success: false,
+                    message: 'Network error occurred. Please try again.'
+                });
+            });
+        });
     </script>
     @endpush
 </x-app-layout>
