@@ -19,6 +19,7 @@ use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\ComplaintController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AksicApplicationController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\UserModuleController;
 use App\Http\Controllers\BranchTargetController;
@@ -76,6 +77,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::get('reports/accounts-regionwise-reports', [ReportController::class, 'accountsregionwisePositionReport'])->name('reports.accounts-regionwise-reports');
     Route::resource('/products/circulars', CircularController::class)->except(['destroy']);
+    Route::get('/products/aksic-2025', [AksicApplicationController::class, 'index'])->name('aksic-applications.index');
     // Route::resource('/products/complaints', ComplaintController::class);
     // Additional complaint-specific routes (placed BEFORE resource to avoid conflicts with {complaint} wildcard)
     Route::prefix('products/complaints')->name('complaints.')->group(function () {
