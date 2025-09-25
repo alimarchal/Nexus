@@ -255,86 +255,89 @@
     </div>
 
     <!-- Sync Modal -->
-    <div id="syncModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div class="mt-3">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-bold text-gray-900">AKSIC API Sync Status</h3>
-                    <button id="closeSyncModal" class="text-gray-400 hover:text-gray-600">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"></path>
+    <div id="syncModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="relative mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white max-w-2xl">
+                <div class="mt-3">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-bold text-gray-900">AKSIC API Sync Status</h3>
+                        <button id="closeSyncModal" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Loading State - Centered -->
+                    <div id="syncLoading" class="flex flex-col items-center justify-center py-16">
+                        <svg class="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg"
+                            fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
                         </svg>
-                    </button>
-                </div>
+                        <p class="text-gray-600 text-lg">Syncing applications from API...</p>
+                        <p class="text-gray-400 text-sm mt-2">Please wait while we process the data</p>
+                    </div>
 
-                <!-- Loading State -->
-                <div id="syncLoading" class="text-center py-8">
-                    <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-600 mx-auto"
-                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                        </circle>
-                        <path class="opacity-75" fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                        </path>
-                    </svg>
-                    <p class="text-gray-600 mt-2">Syncing applications from API...</p>
-                </div>
+                    <!-- Results State -->
+                    <div id="syncResults" class="hidden">
+                        <div class="mb-4">
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                    <div>
+                                        <div id="totalCount" class="text-2xl font-bold text-blue-600">0</div>
+                                        <div class="text-sm text-gray-600">Total</div>
+                                    </div>
+                                    <div>
+                                        <div id="createdCount" class="text-2xl font-bold text-green-600">0</div>
+                                        <div class="text-sm text-gray-600">Created</div>
+                                    </div>
+                                    <div>
+                                        <div id="updatedCount" class="text-2xl font-bold text-yellow-600">0</div>
+                                        <div class="text-sm text-gray-600">Updated</div>
+                                    </div>
+                                    <div>
+                                        <div id="failedCount" class="text-2xl font-bold text-red-600">0</div>
+                                        <div class="text-sm text-gray-600">Failed</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                <!-- Results State -->
-                <div id="syncResults" class="hidden">
-                    <div class="mb-4">
-                        <div class="bg-gray-50 rounded-lg p-4">
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                                <div>
-                                    <div id="totalCount" class="text-2xl font-bold text-blue-600">0</div>
-                                    <div class="text-sm text-gray-600">Total</div>
-                                </div>
-                                <div>
-                                    <div id="createdCount" class="text-2xl font-bold text-green-600">0</div>
-                                    <div class="text-sm text-gray-600">Created</div>
-                                </div>
-                                <div>
-                                    <div id="updatedCount" class="text-2xl font-bold text-yellow-600">0</div>
-                                    <div class="text-sm text-gray-600">Updated</div>
-                                </div>
-                                <div>
-                                    <div id="failedCount" class="text-2xl font-bold text-red-600">0</div>
-                                    <div class="text-sm text-gray-600">Failed</div>
-                                </div>
+                        <div id="successMessage"
+                            class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative mb-4 hidden">
+                            <strong class="font-bold">Success!</strong>
+                            <span class="block sm:inline" id="successText"></span>
+                        </div>
+
+                        <div id="errorMessage"
+                            class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4 hidden">
+                            <strong class="font-bold">Error!</strong>
+                            <span class="block sm:inline" id="errorText"></span>
+                        </div>
+
+                        <div id="errorsList" class="hidden">
+                            <h4 class="font-semibold text-gray-900 mb-2">Errors:</h4>
+                            <div class="bg-red-50 border border-red-200 rounded-md p-3">
+                                <ul id="errorsListItems" class="list-disc list-inside text-sm text-red-700"></ul>
                             </div>
                         </div>
                     </div>
 
-                    <div id="successMessage"
-                        class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded relative mb-4 hidden">
-                        <strong class="font-bold">Success!</strong>
-                        <span class="block sm:inline" id="successText"></span>
+                    <div class="flex justify-end mt-6">
+                        <button id="refreshPageBtn"
+                            class="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
+                            Refresh Page
+                        </button>
+                        <button id="closeSyncModalBtn"
+                            class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                            Close
+                        </button>
                     </div>
-
-                    <div id="errorMessage"
-                        class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4 hidden">
-                        <strong class="font-bold">Error!</strong>
-                        <span class="block sm:inline" id="errorText"></span>
-                    </div>
-
-                    <div id="errorsList" class="hidden">
-                        <h4 class="font-semibold text-gray-900 mb-2">Errors:</h4>
-                        <div class="bg-red-50 border border-red-200 rounded-md p-3">
-                            <ul id="errorsListItems" class="list-disc list-inside text-sm text-red-700"></ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-end mt-6">
-                    <button id="refreshPageBtn"
-                        class="hidden bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-2">
-                        Refresh Page
-                    </button>
-                    <button id="closeSyncModalBtn"
-                        class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
-                        Close
-                    </button>
                 </div>
             </div>
         </div>
@@ -424,6 +427,13 @@
             syncBtn.disabled = false;
             syncBtn.classList.remove('opacity-50');
             syncText.textContent = 'Sync API';
+            
+            // Auto-refresh the page if sync was completed successfully
+            if (!syncResults.classList.contains('hidden')) {
+                setTimeout(() => {
+                    location.reload();
+                }, 500); // Small delay for better UX
+            }
         }
 
         function showSyncResults(data) {
