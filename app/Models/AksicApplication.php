@@ -49,6 +49,8 @@ class AksicApplication extends Model
         'district_name',
         'tehsil_name',
         'api_call_json',
+        'applicant_choosed_branch_code',
+        'challan_branch_code'
     ];
 
     protected $casts = [

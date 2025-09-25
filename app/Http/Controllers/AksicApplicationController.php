@@ -316,6 +316,8 @@ class AksicApplicationController extends Controller
                         'fee_branch_code' => $appData['fee_branch']['branch_code'] ?? null,
                         'district_name' => $appData['district']['name'] ?? null,
                         'tehsil_name' => $appData['tehsil']['name'] ?? null,
+                        'applicant_choosed_branch_code' => $appData['applicant_choosed_branch_code'],
+                        'challan_branch_code' => $appData['challan_branch_code'],
                         'api_call_json' => $appData, // Store entire API response including URLs
                     ];
 
@@ -391,9 +393,9 @@ class AksicApplicationController extends Controller
             Log::info('AKSIC applications sync completed', $syncResults);
 
             // Update status of all successfully processed applications in one batch call
-            // if (!empty($successfullyProcessedIds)) {
-            //     $this->updateApplicationsStatusBatch($successfullyProcessedIds);
-            // }
+            if (!empty($successfullyProcessedIds)) {
+                $this->updateApplicationsStatusBatch($successfullyProcessedIds);
+            }
 
             return response()->json([
                 'success' => true,
