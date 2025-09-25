@@ -129,9 +129,17 @@ return [
     |--------------------------------------------------------------------------
     |
     | This is the API token for AKSIC application synchronization
+    | and configuration for downloading images locally
     |
     */
 
     'aksic_api_token' => env('AKSIC_API_TOKEN'),
+
+    /*
+    | Control whether to download images locally during sync
+    | Set to true to download and store images locally
+    | Set to false to only store API URLs
+    */
+    'aksic_download_images' => env('AKSIC_DOWNLOAD_IMAGES', true),
 
 ];

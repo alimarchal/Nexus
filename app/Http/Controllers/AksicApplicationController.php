@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\FileStorageHelper;
 use App\Http\Requests\StoreAksicApplicationRequest;
 use App\Http\Requests\UpdateAksicApplicationRequest;
 use App\Models\AksicApplication;
@@ -168,6 +169,11 @@ class AksicApplicationController extends Controller
         try {
             Log::info('Starting AKSIC applications sync from API');
 
+            // Configuration flag to control image downloading
+            $downloadImages = config('app.aksic_download_images', true); // Default to true
+
+            Log::info('Image download setting', ['download_images' => $downloadImages]);
+
             // Call the external API with SSL verification disabled for development
             $response = Http::withToken(config('app.aksic_api_token'))
                 ->withOptions([
@@ -211,6 +217,66 @@ class AksicApplicationController extends Controller
                 try {
                     DB::beginTransaction();
 
+                    // Download and store images locally (based on configuration flag)
+                    $localChallanImage = null;
+                    $localCnicFront = null;
+                    $localCnicBack = null;
+
+                    if ($downloadImages) {
+                        $folderName = 'aksic-applications/' . $appData['application_no'];
+
+                        // Download challan image
+                        if (!empty($appData['challan_image_url'])) {
+                            try {
+                                $localChallanImage = $this->downloadAndStoreImage(
+                                    $appData['challan_image_url'],
+                                    $appData['challan_image'],
+                                    $folderName
+                                );
+                            } catch (\Exception $e) {
+                                Log::warning('Failed to download challan image', [
+                                    'applicant_id' => $appData['id'],
+                                    'url' => $appData['challan_image_url'],
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        }
+
+                        // Download CNIC front image
+                        if (!empty($appData['cnic_front_url'])) {
+                            try {
+                                $localCnicFront = $this->downloadAndStoreImage(
+                                    $appData['cnic_front_url'],
+                                    $appData['cnic_front'],
+                                    $folderName
+                                );
+                            } catch (\Exception $e) {
+                                Log::warning('Failed to download CNIC front image', [
+                                    'applicant_id' => $appData['id'],
+                                    'url' => $appData['cnic_front_url'],
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        }
+
+                        // Download CNIC back image
+                        if (!empty($appData['cnic_back_url'])) {
+                            try {
+                                $localCnicBack = $this->downloadAndStoreImage(
+                                    $appData['cnic_back_url'],
+                                    $appData['cnic_back'],
+                                    $folderName
+                                );
+                            } catch (\Exception $e) {
+                                Log::warning('Failed to download CNIC back image', [
+                                    'applicant_id' => $appData['id'],
+                                    'url' => $appData['cnic_back_url'],
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        }
+                    }
+
                     // Map API data to our database structure
                     $applicationData = [
                         'applicant_id' => $appData['id'],
@@ -236,11 +302,11 @@ class AksicApplicationController extends Controller
                         'branch_id' => $appData['branch_id'],
                         'challan_branch_id' => $appData['challan_branch_id'],
                         'challan_fee' => $appData['challan_fee'],
-                        // Store original filenames from API
-                        'challan_image' => $appData['challan_image'],
-                        'cnic_front' => $appData['cnic_front'],
-                        'cnic_back' => $appData['cnic_back'],
-                        // Store original API URLs for direct access
+                        // Store local file paths if downloaded, otherwise original filenames from API
+                        'challan_image' => $downloadImages ? ($localChallanImage ?? $appData['challan_image']) : $appData['challan_image'],
+                        'cnic_front' => $downloadImages ? ($localCnicFront ?? $appData['cnic_front']) : $appData['cnic_front'],
+                        'cnic_back' => $downloadImages ? ($localCnicBack ?? $appData['cnic_back']) : $appData['cnic_back'],
+                        // Store original API URLs for reference
                         'challan_image_url' => $appData['challan_image_url'] ?? null,
                         'cnic_front_url' => $appData['cnic_front_url'] ?? null,
                         'cnic_back_url' => $appData['cnic_back_url'] ?? null,
@@ -325,9 +391,9 @@ class AksicApplicationController extends Controller
             Log::info('AKSIC applications sync completed', $syncResults);
 
             // Update status of all successfully processed applications in one batch call
-            if (!empty($successfullyProcessedIds)) {
-                $this->updateApplicationsStatusBatch($successfullyProcessedIds);
-            }
+            // if (!empty($successfullyProcessedIds)) {
+            //     $this->updateApplicationsStatusBatch($successfullyProcessedIds);
+            // }
 
             return response()->json([
                 'success' => true,
@@ -409,5 +475,69 @@ class AksicApplicationController extends Controller
     public function destroy(AksicApplication $aksicApplication)
     {
         //
+    }
+
+    /**
+     * Download and store image from URL using FileStorageHelper
+     */
+    private function downloadAndStoreImage(string $imageUrl, string $originalFilename, string $folderName): ?string
+    {
+        try {
+            // Get image content from URL with SSL verification disabled
+            $imageContent = file_get_contents($imageUrl, false, stream_context_create([
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                ],
+                'http' => [
+                    'timeout' => 30,
+                ]
+            ]));
+
+            if ($imageContent === false) {
+                throw new \Exception("Failed to download image from URL: {$imageUrl}");
+            }
+
+            // Get file extension from original filename or URL
+            $extension = pathinfo($originalFilename, PATHINFO_EXTENSION);
+            if (empty($extension)) {
+                // Try to get extension from URL
+                $extension = pathinfo(parse_url($imageUrl, PHP_URL_PATH), PATHINFO_EXTENSION);
+            }
+            if (empty($extension)) {
+                $extension = 'jpg'; // Default extension
+            }
+
+            // Create a temporary file from the downloaded content
+            $tempFilePath = tempnam(sys_get_temp_dir(), 'aksic_image_');
+            file_put_contents($tempFilePath, $imageContent);
+
+            // Create an UploadedFile instance from the temporary file
+            $uploadedFile = new \Illuminate\Http\UploadedFile(
+                $tempFilePath,
+                $originalFilename,
+                mime_content_type($tempFilePath),
+                null,
+                true // Mark as test file to avoid validation errors
+            );
+
+            // Use FileStorageHelper to store the file properly
+            $storedPath = FileStorageHelper::storeSinglePrivateFile(
+                $uploadedFile,
+                $folderName
+            );
+
+            // Clean up temporary file
+            unlink($tempFilePath);
+
+            return $storedPath;
+
+        } catch (\Exception $e) {
+            Log::error('Failed to download and store image', [
+                'url' => $imageUrl,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 }
