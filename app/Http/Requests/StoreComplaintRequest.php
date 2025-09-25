@@ -220,10 +220,10 @@ class StoreComplaintRequest extends FormRequest
 
             // Abuser details (for harassment cases)
             'harassment_abuser_employee_number' => ['nullable', 'string', 'max:50'],
-            'harassment_abuser_name' => ['required', 'string', 'max:150'],
-            'harassment_abuser_phone' => ['required', 'string', 'max:50'],
+            'harassment_abuser_name' => ['nullable', 'string', 'max:150'],
+            'harassment_abuser_phone' => ['nullable', 'string', 'max:50'],
             'harassment_abuser_email' => ['nullable', 'email', 'max:150'],
-            'harassment_abuser_relationship' => ['required', 'string', 'max:100'],
+            'harassment_abuser_relationship' => ['nullable', 'string', 'max:100'],
 
             // Witnesses dynamic arrays
             'witnesses' => ['nullable', 'array', 'max:10'],
@@ -523,8 +523,13 @@ class StoreComplaintRequest extends FormRequest
                     'harassment_sub_category' => 'Sub category is required for harassment complaints.',
                     'harassment_incident_date' => 'Incident date is required for harassment complaints.',
                     'harassment_location' => 'Location is required for harassment complaints.',
-              
-                    'harassment_details' => 'Details/evidence summary is required for harassment complaints.'
+                    'harassment_details' => 'Details/evidence summary is required for harassment complaints.',
+                     // new added required fields
+        'harassment_abuser_name' => 'Abuser name is required for harassment complaints.',
+        'harassment_abuser_phone' => 'Abuser phone is required for harassment complaints.',
+        'harassment_abuser_relationship' => 'Abuser relationship is required for harassment complaints.',
+        'harassment_employee_number' => 'Employee number is required for harassment complaints.',
+        'harassment_employee_phone' => 'Employee phone is required for harassment complaints.',
                 ];
                 foreach ($requiredFields as $field => $message) {
                     if (!$this->filled($field)) {
@@ -537,6 +542,16 @@ class StoreComplaintRequest extends FormRequest
                 $requiredGrievance = [
                     'grievance_employee_id' => 'Employee ID is required for grievance complaints.',
                     'grievance_acknowledgment' => 'Acknowledgment of grievance policy is required.',
+                    'grievance_department_position' => 'Department/position is required for grievance complaints.',
+                    'grievance_employment_start_date' => 'Employment start date is required for grievance complaints.',
+                'grievance_policy_violated' => 'Policy violated is required for grievance complaints.',
+                'grievance_desired_outcome' => 'Desired outcome is required for grievance complaints.',
+                'grievance_subject_name' => 'Subject name is required for grievance complaints.',
+                'grievance_subject_position' => 'Subject position is required for grievance complaints.',
+                'grievance_subject_relationship' => 'Subject relationship is required for grievance complaints.',
+                'grievance_first_occurred_date' => 'First occurred date is required for grievance complaints.',
+                'grievance_pattern_frequency' => 'Pattern/frequency is required for grievance complaints.',
+                'grievance_performance_effect' => 'Performance effect is required for grievance complaints.',
                 ];
                 foreach ($requiredGrievance as $field => $message) {
                     if (!$this->filled($field)) {
