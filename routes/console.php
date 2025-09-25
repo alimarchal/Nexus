@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 // Schedule AKSIC applications sync every 5 minutes
-Schedule::command('aksic:sync')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('aksic:sync')->everyTenSeconds()->withoutOverlapping();
