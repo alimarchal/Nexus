@@ -29,10 +29,10 @@ class AksicApplicationStatusLog extends Model
 
     /**
      * Get the application that this status log belongs to.
-     * Note: This uses aksic_id to match applicant_id in applications table
+     * Note: This uses applicant_id to match applicant_id in applications table
      */
     public function application(): BelongsTo
     {
-        return $this->belongsTo(AksicApplication::class, 'aksic_id', 'applicant_id');
+        return $this->belongsTo(AksicApplication::class, 'applicant_id', 'applicant_id');
     }
 }

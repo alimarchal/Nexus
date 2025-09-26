@@ -74,6 +74,6 @@ class AksicApplication extends Model
      */
     public function statusLogs(): HasMany
     {
-        return $this->hasMany(AksicApplicationStatusLog::class, 'aksic_id', 'applicant_id');
+        return $this->hasMany(AksicApplicationStatusLog::class, 'applicant_id', 'applicant_id');
     }
 }
