@@ -430,87 +430,44 @@
                                             required>
                                             <option value="">Select Status</option>
 
-                                            <!-- Initial Processing Statuses -->
-                                            <optgroup label="Initial Processing">
-                                                <option value="Application Received" {{ $aksicApplication->status ==
-                                                    'Application Received' ? 'selected' : '' }}>Application Received
-                                                </option>
-                                                <option value="Document Verification" {{ $aksicApplication->status ==
-                                                    'Document Verification' ? 'selected' : '' }}>Document Verification
-                                                </option>
-                                                <option value="Under Review" {{ $aksicApplication->status == 'Under
-                                                    Review' ? 'selected' : '' }}>Under Review</option>
-                                                <option value="Pending Documentation" {{ $aksicApplication->status ==
-                                                    'Pending Documentation' ? 'selected' : '' }}>Pending Documentation
-                                                </option>
-                                            </optgroup>
+                                            <!-- Core Banking Statuses -->
+                                            <option value="Application Received" {{ $aksicApplication->status ==
+                                                'Application Received' ? 'selected' : '' }}>Application Received
+                                            </option>
+                                            <option value="Under Review" {{ $aksicApplication->status == 'Under Review'
+                                                ? 'selected' : '' }}>Under Review</option>
+                                            <option value="Document Verification" {{ $aksicApplication->status ==
+                                                'Document Verification' ? 'selected' : '' }}>Document Verification
+                                            </option>
+                                            <option value="Credit Assessment" {{ $aksicApplication->status == 'Credit
+                                                Assessment' ? 'selected' : '' }}>Credit Assessment</option>
+                                            <option value="In Progress" {{ $aksicApplication->status == 'In Progress' ?
+                                                'selected' : '' }}>In Progress</option>
+                                            <option value="Conditional Approval" {{ $aksicApplication->status ==
+                                                'Conditional Approval' ? 'selected' : '' }}>Conditional Approval
+                                            </option>
+                                            <option value="Final Approval" {{ $aksicApplication->status == 'Final
+                                                Approval' ? 'selected' : '' }}>Final Approval</option>
+                                            <option value="Disbursed" {{ $aksicApplication->status == 'Disbursed' ?
+                                                'selected' : '' }}>Disbursed</option>
+                                            <option value="Rejected" {{ $aksicApplication->status == 'Rejected' ?
+                                                'selected' : '' }}>Rejected</option>
 
-                                            <!-- Assessment Statuses -->
-                                            <optgroup label="Assessment">
-                                                <option value="Credit Assessment" {{ $aksicApplication->status ==
-                                                    'Credit Assessment' ? 'selected' : '' }}>Credit Assessment</option>
-                                                <option value="Business Evaluation" {{ $aksicApplication->status ==
-                                                    'Business Evaluation' ? 'selected' : '' }}>Business Evaluation
-                                                </option>
-                                                <option value="Field Investigation" {{ $aksicApplication->status ==
-                                                    'Field Investigation' ? 'selected' : '' }}>Field Investigation
-                                                </option>
-                                                <option value="Collateral Verification" {{ $aksicApplication->status ==
-                                                    'Collateral Verification' ? 'selected' : '' }}>Collateral
-                                                    Verification</option>
-                                            </optgroup>
+                                            <!-- Legacy Statuses -->
+                                            <option value="Pending" {{ $aksicApplication->status == 'Pending' ?
+                                                'selected' : '' }}>Pending</option>
+                                            <option value="Approved" {{ $aksicApplication->status == 'Approved' ?
+                                                'selected' : '' }}>Approved</option>
+                                            <option value="Forwarded" {{ $aksicApplication->status == 'Forwarded' ?
+                                                'selected' : '' }}>Forwarded</option>
 
-                                            <!-- Decision Statuses -->
-                                            <optgroup label="Decision">
-                                                <option value="Committee Review" {{ $aksicApplication->status ==
-                                                    'Committee Review' ? 'selected' : '' }}>Committee Review</option>
-                                                <option value="Conditional Approval" {{ $aksicApplication->status ==
-                                                    'Conditional Approval' ? 'selected' : '' }}>Conditional Approval
-                                                </option>
-                                                <option value="Final Approval" {{ $aksicApplication->status == 'Final
-                                                    Approval' ? 'selected' : '' }}>Final Approval</option>
-                                            </optgroup>
 
-                                            <!-- Post-Approval Statuses -->
-                                            <optgroup label="Post-Approval">
-                                                <option value="Documentation Completion" {{ $aksicApplication->status ==
-                                                    'Documentation Completion' ? 'selected' : '' }}>Documentation
-                                                    Completion</option>
-                                                <option value="Disbursement Ready" {{ $aksicApplication->status ==
-                                                    'Disbursement Ready' ? 'selected' : '' }}>Disbursement Ready
-                                                </option>
-                                                <option value="Disbursed" {{ $aksicApplication->status == 'Disbursed' ?
-                                                    'selected' : '' }}>Disbursed</option>
-                                                <option value="Account Opened" {{ $aksicApplication->status == 'Account
-                                                    Opened' ? 'selected' : '' }}>Account Opened</option>
-                                            </optgroup>
 
-                                            <!-- Special Statuses -->
-                                            <optgroup label="Special Status">
-                                                <option value="On Hold" {{ $aksicApplication->status == 'On Hold' ?
-                                                    'selected' : '' }}>On Hold</option>
-                                                <option value="Returned to Applicant" {{ $aksicApplication->status ==
-                                                    'Returned to Applicant' ? 'selected' : '' }}>Returned to Applicant
-                                                </option>
-                                                <option value="Rejected" {{ $aksicApplication->status == 'Rejected' ?
-                                                    'selected' : '' }}>Rejected</option>
-                                                <option value="Cancelled" {{ $aksicApplication->status == 'Cancelled' ?
-                                                    'selected' : '' }}>Cancelled</option>
-                                                <option value="Expired" {{ $aksicApplication->status == 'Expired' ?
-                                                    'selected' : '' }}>Expired</option>
-                                            </optgroup>
 
-                                            <!-- Legacy Statuses (for backward compatibility) -->
-                                            <optgroup label="Legacy Status">
-                                                <option value="NotCompleted" {{ $aksicApplication->status ==
-                                                    'NotCompleted' ? 'selected' : '' }}>Not Completed (Legacy)</option>
-                                                <option value="Pending" {{ $aksicApplication->status == 'Pending' ?
-                                                    'selected' : '' }}>Pending (Legacy)</option>
-                                                <option value="Forwarded" {{ $aksicApplication->status == 'Forwarded' ?
-                                                    'selected' : '' }}>Forwarded (Legacy)</option>
-                                                <option value="Approved" {{ $aksicApplication->status == 'Approved' ?
-                                                    'selected' : '' }}>Approved (Legacy)</option>
-                                            </optgroup>
+
+
+
+
                                         </select>
                                     </div>
                                     <div class="mb-4">
@@ -547,27 +504,27 @@
                                             <div class="w-3 h-3 rounded-full 
                                                 @php
                                                     $status = $log->new_status;
-                                                    // Green for successful/completed statuses
-                                                    if (in_array($status, ['Final Approval', 'Disbursed', 'Account Opened', 'Approved', 'Conditional Approval'])) {
+                                                    // Green for approved/completed statuses
+                                                    if (in_array($status, ['Final Approval', 'Conditional Approval', 'Disbursed', 'Approved'])) {
                                                         echo 'bg-green-500';
                                                     } 
-                                                    // Red for negative/declined statuses
-                                                    elseif (in_array($status, ['Rejected', 'Cancelled', 'Expired'])) {
+                                                    // Red for rejected status
+                                                    elseif (in_array($status, ['Rejected'])) {
                                                         echo 'bg-red-500';
                                                     } 
-                                                    // Orange for hold/return statuses
-                                                    elseif (in_array($status, ['On Hold', 'Returned to Applicant', 'Pending Documentation'])) {
-                                                        echo 'bg-orange-500';
-                                                    } 
                                                     // Blue for assessment/processing statuses
-                                                    elseif (in_array($status, ['Credit Assessment', 'Business Evaluation', 'Field Investigation', 'Collateral Verification', 'Committee Review'])) {
+                                                    elseif (in_array($status, ['Credit Assessment', 'In Progress'])) {
                                                         echo 'bg-blue-500';
                                                     } 
-                                                    // Purple for documentation statuses
-                                                    elseif (in_array($status, ['Documentation Completion', 'Disbursement Ready'])) {
+                                                    // Orange for forwarded status
+                                                    elseif (in_array($status, ['Forwarded'])) {
+                                                        echo 'bg-orange-500';
+                                                    } 
+                                                    // Purple for document verification
+                                                    elseif (in_array($status, ['Document Verification'])) {
                                                         echo 'bg-purple-500';
                                                     } 
-                                                    // Yellow for initial/pending statuses (default)
+                                                    // Yellow for initial/review/pending statuses (default)
                                                     else {
                                                         echo 'bg-yellow-500';
                                                     }

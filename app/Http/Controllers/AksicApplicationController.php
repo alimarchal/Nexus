@@ -549,10 +549,33 @@ class AksicApplicationController extends Controller
             }
 
             // If API call successful, update local database
-            $aksicApplication->update([
-                'status' => $request->new_status,
+            $updateData = [
+                'bank_status' => $request->new_status, // Update bank_status as this is what we're managing from bank side
                 'updated_at' => now()
+            ];
+
+            // Define legacy statuses that should update the main status field
+            $legacyStatuses = ['Pending', 'Approved', 'Forwarded', 'Rejected'];
+
+            // If it's a legacy status, update the main status field
+            if (in_array($request->new_status, $legacyStatuses)) {
+                $updateData['status'] = $request->new_status;
+                Log::info('Legacy status detected, updating main status field', [
+                    'new_status' => $request->new_status
+                ]);
+            }
+
+            // Also update the main status if the API response includes it
+            if (isset($apiResponse['data']['status'])) {
+                $updateData['status'] = $apiResponse['data']['status'];
+            }
+
+            Log::info('Updating local application data', [
+                'application_id' => $aksicApplication->id,
+                'update_data' => $updateData
             ]);
+
+            $aksicApplication->update($updateData);
 
             // Create status log entry
             AksicApplicationStatusLog::create([
