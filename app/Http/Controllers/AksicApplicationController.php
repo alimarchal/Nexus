@@ -52,7 +52,7 @@ class AksicApplicationController extends Controller
                     $query->where('amount', '<=', $value);
                 })
             ])
-            ->with(['educations', 'statusLogs'])              // Eager load relationships
+            ->with(['educations', 'statusLogs', 'businessCategory', 'businessSubCategory'])              // Eager load relationships
             ->latest()                                        // Order by newest first
             ->paginate(10);                                   // Paginate results
 
@@ -433,7 +433,7 @@ class AksicApplicationController extends Controller
     public function show(AksicApplication $aksicApplication)
     {
         // Load relationships for detailed view
-        $aksicApplication->load(['educations', 'statusLogs']);
+        $aksicApplication->load(['educations', 'statusLogs', 'businessCategory', 'businessSubCategory']);
 
         return view('aksic-applications.show', compact('aksicApplication'));
     }

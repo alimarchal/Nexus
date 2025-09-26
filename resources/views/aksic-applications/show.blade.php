@@ -151,10 +151,12 @@
                                 <td colspan="3">{{ $aksicApplication->businessAddress }}</td>
                             </tr>
                             <tr>
-                                <th>Business Category ID</th>
-                                <td>{{ $aksicApplication->business_category_id }}</td>
-                                <th>Sub Category ID</th>
-                                <td>{{ $aksicApplication->business_sub_category_id }}</td>
+                                <th>Business Category</th>
+                                <td>{{ $aksicApplication->businessCategory?->name ?? 'Category ID: ' .
+                                    $aksicApplication->business_category_id }}</td>
+                                <th>Sub Category</th>
+                                <td>{{ $aksicApplication->businessSubCategory?->name ?? 'Sub-Category ID: ' .
+                                    $aksicApplication->business_sub_category_id }}</td>
                             </tr>
                             <tr>
                                 <th>Quota</th>

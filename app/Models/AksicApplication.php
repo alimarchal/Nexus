@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AksicApplication extends Model
@@ -75,5 +76,21 @@ class AksicApplication extends Model
     public function statusLogs(): HasMany
     {
         return $this->hasMany(AksicApplicationStatusLog::class, 'applicant_id', 'applicant_id');
+    }
+
+    /**
+     * Get the business category for this application.
+     */
+    public function businessCategory(): BelongsTo
+    {
+        return $this->belongsTo(AksicBusinessCategory::class, 'business_category_id');
+    }
+
+    /**
+     * Get the business sub-category for this application.
+     */
+    public function businessSubCategory(): BelongsTo
+    {
+        return $this->belongsTo(AksicBusinessCategory::class, 'business_sub_category_id');
     }
 }

@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             AuditRiskSeeder::class,
             AuditDemoSeeder::class,
             AuditSampleSeeder::class,
+            AksicBusinessCategorySeeder::class,
         ]);
     }
 }
