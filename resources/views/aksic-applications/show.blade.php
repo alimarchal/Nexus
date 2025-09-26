@@ -410,6 +410,201 @@
                         </div>
                     </div>
                     @endif
+
+                    <!-- Status Timeline and Update Section -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 border-b pb-2">Status
+                            Timeline & Updates</h3>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Status Update Form -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-medium text-gray-900 mb-4">Update Status</h4>
+                                <form id="statusUpdateForm">
+                                    @csrf
+                                    <div class="mb-4">
+                                        <label for="newStatus" class="block text-sm font-medium text-gray-700 mb-2">New
+                                            Status</label>
+                                        <select id="newStatus" name="status"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            required>
+                                            <option value="">Select Status</option>
+
+                                            <!-- Initial Processing Statuses -->
+                                            <optgroup label="Initial Processing">
+                                                <option value="Application Received" {{ $aksicApplication->status ==
+                                                    'Application Received' ? 'selected' : '' }}>Application Received
+                                                </option>
+                                                <option value="Document Verification" {{ $aksicApplication->status ==
+                                                    'Document Verification' ? 'selected' : '' }}>Document Verification
+                                                </option>
+                                                <option value="Under Review" {{ $aksicApplication->status == 'Under
+                                                    Review' ? 'selected' : '' }}>Under Review</option>
+                                                <option value="Pending Documentation" {{ $aksicApplication->status ==
+                                                    'Pending Documentation' ? 'selected' : '' }}>Pending Documentation
+                                                </option>
+                                            </optgroup>
+
+                                            <!-- Assessment Statuses -->
+                                            <optgroup label="Assessment">
+                                                <option value="Credit Assessment" {{ $aksicApplication->status ==
+                                                    'Credit Assessment' ? 'selected' : '' }}>Credit Assessment</option>
+                                                <option value="Business Evaluation" {{ $aksicApplication->status ==
+                                                    'Business Evaluation' ? 'selected' : '' }}>Business Evaluation
+                                                </option>
+                                                <option value="Field Investigation" {{ $aksicApplication->status ==
+                                                    'Field Investigation' ? 'selected' : '' }}>Field Investigation
+                                                </option>
+                                                <option value="Collateral Verification" {{ $aksicApplication->status ==
+                                                    'Collateral Verification' ? 'selected' : '' }}>Collateral
+                                                    Verification</option>
+                                            </optgroup>
+
+                                            <!-- Decision Statuses -->
+                                            <optgroup label="Decision">
+                                                <option value="Committee Review" {{ $aksicApplication->status ==
+                                                    'Committee Review' ? 'selected' : '' }}>Committee Review</option>
+                                                <option value="Conditional Approval" {{ $aksicApplication->status ==
+                                                    'Conditional Approval' ? 'selected' : '' }}>Conditional Approval
+                                                </option>
+                                                <option value="Final Approval" {{ $aksicApplication->status == 'Final
+                                                    Approval' ? 'selected' : '' }}>Final Approval</option>
+                                            </optgroup>
+
+                                            <!-- Post-Approval Statuses -->
+                                            <optgroup label="Post-Approval">
+                                                <option value="Documentation Completion" {{ $aksicApplication->status ==
+                                                    'Documentation Completion' ? 'selected' : '' }}>Documentation
+                                                    Completion</option>
+                                                <option value="Disbursement Ready" {{ $aksicApplication->status ==
+                                                    'Disbursement Ready' ? 'selected' : '' }}>Disbursement Ready
+                                                </option>
+                                                <option value="Disbursed" {{ $aksicApplication->status == 'Disbursed' ?
+                                                    'selected' : '' }}>Disbursed</option>
+                                                <option value="Account Opened" {{ $aksicApplication->status == 'Account
+                                                    Opened' ? 'selected' : '' }}>Account Opened</option>
+                                            </optgroup>
+
+                                            <!-- Special Statuses -->
+                                            <optgroup label="Special Status">
+                                                <option value="On Hold" {{ $aksicApplication->status == 'On Hold' ?
+                                                    'selected' : '' }}>On Hold</option>
+                                                <option value="Returned to Applicant" {{ $aksicApplication->status ==
+                                                    'Returned to Applicant' ? 'selected' : '' }}>Returned to Applicant
+                                                </option>
+                                                <option value="Rejected" {{ $aksicApplication->status == 'Rejected' ?
+                                                    'selected' : '' }}>Rejected</option>
+                                                <option value="Cancelled" {{ $aksicApplication->status == 'Cancelled' ?
+                                                    'selected' : '' }}>Cancelled</option>
+                                                <option value="Expired" {{ $aksicApplication->status == 'Expired' ?
+                                                    'selected' : '' }}>Expired</option>
+                                            </optgroup>
+
+                                            <!-- Legacy Statuses (for backward compatibility) -->
+                                            <optgroup label="Legacy Status">
+                                                <option value="NotCompleted" {{ $aksicApplication->status ==
+                                                    'NotCompleted' ? 'selected' : '' }}>Not Completed (Legacy)</option>
+                                                <option value="Pending" {{ $aksicApplication->status == 'Pending' ?
+                                                    'selected' : '' }}>Pending (Legacy)</option>
+                                                <option value="Forwarded" {{ $aksicApplication->status == 'Forwarded' ?
+                                                    'selected' : '' }}>Forwarded (Legacy)</option>
+                                                <option value="Approved" {{ $aksicApplication->status == 'Approved' ?
+                                                    'selected' : '' }}>Approved (Legacy)</option>
+                                            </optgroup>
+                                        </select>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label for="remarks"
+                                            class="block text-sm font-medium text-gray-700 mb-2">Remarks</label>
+                                        <textarea id="remarks" name="remarks" rows="3"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="Enter remarks..."></textarea>
+                                    </div>
+                                    <button type="submit" id="updateStatusBtn"
+                                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <span id="updateBtnText">Update Status</span>
+                                        <svg id="updateBtnSpinner"
+                                            class="hidden animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                                stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor"
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <!-- Status Timeline -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-medium text-gray-900 mb-4">Status Timeline</h4>
+                                <div class="space-y-4 max-h-96 overflow-y-auto" id="statusTimeline">
+                                    @if($aksicApplication->statusLogs->count() > 0)
+                                    @foreach($aksicApplication->statusLogs->sortByDesc('created_at') as $log)
+                                    <div class="flex items-start space-x-3 p-3 bg-white rounded-md border">
+                                        <div class="flex-shrink-0">
+                                            <div class="w-3 h-3 rounded-full 
+                                                @php
+                                                    $status = $log->new_status;
+                                                    // Green for successful/completed statuses
+                                                    if (in_array($status, ['Final Approval', 'Disbursed', 'Account Opened', 'Approved', 'Conditional Approval'])) {
+                                                        echo 'bg-green-500';
+                                                    } 
+                                                    // Red for negative/declined statuses
+                                                    elseif (in_array($status, ['Rejected', 'Cancelled', 'Expired'])) {
+                                                        echo 'bg-red-500';
+                                                    } 
+                                                    // Orange for hold/return statuses
+                                                    elseif (in_array($status, ['On Hold', 'Returned to Applicant', 'Pending Documentation'])) {
+                                                        echo 'bg-orange-500';
+                                                    } 
+                                                    // Blue for assessment/processing statuses
+                                                    elseif (in_array($status, ['Credit Assessment', 'Business Evaluation', 'Field Investigation', 'Collateral Verification', 'Committee Review'])) {
+                                                        echo 'bg-blue-500';
+                                                    } 
+                                                    // Purple for documentation statuses
+                                                    elseif (in_array($status, ['Documentation Completion', 'Disbursement Ready'])) {
+                                                        echo 'bg-purple-500';
+                                                    } 
+                                                    // Yellow for initial/pending statuses (default)
+                                                    else {
+                                                        echo 'bg-yellow-500';
+                                                    }
+                                                @endphp
+                                            "></div>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between">
+                                                <p class="text-sm font-medium text-gray-900">
+                                                    {{ $log->old_status }} → {{ $log->new_status }}
+                                                </p>
+                                                <time class="text-xs text-gray-500">{{ $log->created_at->format('M d, Y
+                                                    H:i') }}</time>
+                                            </div>
+                                            @if($log->remarks)
+                                            <p class="text-sm text-gray-600 mt-1">{{ $log->remarks }}</p>
+                                            @endif
+                                            <p class="text-xs text-gray-400 mt-1">
+                                                By: {{ $log->changed_by_type }} (ID: {{ $log->changed_by_id }})
+                                            </p>
+                                        </div>
+                                    </div>
+                                    @endforeach
+                                    @else
+                                    <div class="text-center text-gray-500 py-8">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor"
+                                            viewBox="0 0 48 48">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v28m16-28v28M8 20h32" />
+                                        </svg>
+                                        <p class="mt-2 text-sm">No status updates available</p>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -470,6 +665,89 @@
                 closeImageModal();
             }
         }
+
+        // Status Update Form Handler
+        document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const statusData = {
+                applicant_id: {{ $aksicApplication->applicant_id }},
+                status: formData.get('status'),
+                remarks: formData.get('remarks') || ''
+            };
+            
+            // Validate required fields
+            if (!statusData.status) {
+                alert('Please select a status');
+                return;
+            }
+            
+            // Show loading state
+            const updateBtn = document.getElementById('updateStatusBtn');
+            const btnText = document.getElementById('updateBtnText');
+            const spinner = document.getElementById('updateBtnSpinner');
+            
+            updateBtn.disabled = true;
+            btnText.textContent = 'Updating...';
+            spinner.classList.remove('hidden');
+            spinner.classList.add('inline');
+            
+            try {
+                // Update status through Laravel backend (which will handle external API call)
+                const response = await fetch('{{ route("aksic-applications.update-status", $aksicApplication) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        old_status: '{{ $aksicApplication->status }}',
+                        new_status: statusData.status,
+                        remarks: statusData.remarks,
+                        applicant_id: statusData.applicant_id
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Show success message
+                    const successDiv = document.createElement('div');
+                    successDiv.className = 'bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4';
+                    successDiv.innerHTML = '<span class="block sm:inline">Status updated successfully!</span>';
+                    document.getElementById('statusUpdateForm').insertBefore(successDiv, document.getElementById('statusUpdateForm').firstChild);
+                    
+                    // Clear form
+                    document.getElementById('statusUpdateForm').reset();
+                    
+                    // Refresh the page after 2 seconds
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                    
+                } else {
+                    const errorResult = await response.json();
+                    throw new Error(errorResult.message || 'Failed to update status');
+                }
+                
+            } catch (error) {
+                console.error('Status update error:', error);
+                
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4';
+                errorDiv.innerHTML = `<span class="block sm:inline">Error updating status: ${error.message}</span>`;
+                document.getElementById('statusUpdateForm').insertBefore(errorDiv, document.getElementById('statusUpdateForm').firstChild);
+            } finally {
+                // Reset button state
+                updateBtn.disabled = false;
+                btnText.textContent = 'Update Status';
+                spinner.classList.add('hidden');
+                spinner.classList.remove('inline');
+            }
+        });
     </script>
     @endpush
 </x-app-layout>

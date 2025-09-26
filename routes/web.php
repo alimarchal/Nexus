@@ -81,6 +81,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::post('/products/aksic-2025/sync', [AksicApplicationController::class, 'syncApplications'])->name('aksic-applications.sync');
     Route::get('/products/aksic-2025/{aksicApplication}', [AksicApplicationController::class, 'show'])->name('aksic-applications.show');
     Route::get('/products/aksic-2025/{aksicApplication}/pdf', [AksicApplicationController::class, 'downloadPdf'])->name('aksic-applications.pdf');
+    Route::post('/products/aksic-2025/{aksicApplication}/status-update', [AksicApplicationController::class, 'updateStatus'])->name('aksic-applications.update-status');
     // Route::resource('/products/complaints', ComplaintController::class);
     // Additional complaint-specific routes (placed BEFORE resource to avoid conflicts with {complaint} wildcard)
     Route::prefix('products/complaints')->name('complaints.')->group(function () {

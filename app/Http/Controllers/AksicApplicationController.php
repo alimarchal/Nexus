@@ -392,9 +392,9 @@ class AksicApplicationController extends Controller
             Log::info('AKSIC applications sync completed', $syncResults);
 
             // Update status of all successfully processed applications in one batch call
-            // if (!empty($successfullyProcessedIds)) {
-            //     $this->updateApplicationsStatusBatch($successfullyProcessedIds);
-            // }
+            if (!empty($successfullyProcessedIds)) {
+                $this->updateApplicationsStatusBatch($successfullyProcessedIds);
+            }
 
             return response()->json([
                 'success' => true,
@@ -476,6 +476,133 @@ class AksicApplicationController extends Controller
     public function destroy(AksicApplication $aksicApplication)
     {
         //
+    }
+
+    /**
+     * Update status of a specific AKSIC application
+     */
+    public function updateStatus(Request $request, AksicApplication $aksicApplication)
+    {
+        try {
+            $request->validate([
+                'old_status' => 'required|string',
+                'new_status' => 'required|string',
+                'remarks' => 'nullable|string',
+                'applicant_id' => 'required|integer'
+            ]);
+
+            Log::info('Starting status update', [
+                'application_id' => $aksicApplication->id,
+                'applicant_id' => $request->applicant_id,
+                'old_status' => $request->old_status,
+                'new_status' => $request->new_status,
+                'user_id' => auth()->id()
+            ]);
+
+            DB::beginTransaction();
+
+            // First, call the external API to update status
+            $apiResponse = null;
+            try {
+                $apiToken = config('app.aksic_api_token');
+                if (!$apiToken) {
+                    throw new \Exception('AKSIC API token not configured. Please set AKSIC_API_TOKEN in your environment file.');
+                }
+
+                Log::info('Calling external API for status update', [
+                    'applicant_id' => $request->applicant_id,
+                    'status' => $request->new_status,
+                    'remarks' => $request->remarks
+                ]);
+
+                $response = Http::withToken($apiToken)
+                    ->withOptions([
+                        'verify' => false, // Disable SSL verification
+                        'timeout' => 30,
+                    ])
+                    ->asForm() // Use form data instead of JSON as shown in Postman
+                    ->post("https://sic.ajk.gov.pk/pmylp/api/bank/applications/{$request->applicant_id}/status-update", [
+                        'status' => $request->new_status,
+                        'remarks' => $request->remarks
+                    ]);
+
+                if ($response->successful()) {
+                    $apiResponse = $response->json();
+                    Log::info('External API call successful', [
+                        'applicant_id' => $request->applicant_id,
+                        'api_response' => $apiResponse
+                    ]);
+                } else {
+                    Log::error('External API call failed', [
+                        'applicant_id' => $request->applicant_id,
+                        'status' => $response->status(),
+                        'response' => $response->body()
+                    ]);
+                    throw new \Exception('Failed to update status via external API: ' . $response->body());
+                }
+            } catch (\Exception $e) {
+                Log::error('External API call exception', [
+                    'applicant_id' => $request->applicant_id,
+                    'error' => $e->getMessage()
+                ]);
+                throw new \Exception('External API error: ' . $e->getMessage());
+            }
+
+            // If API call successful, update local database
+            $aksicApplication->update([
+                'status' => $request->new_status,
+                'updated_at' => now()
+            ]);
+
+            // Create status log entry
+            AksicApplicationStatusLog::create([
+                'aksic_application_id' => $aksicApplication->id,
+                'applicant_id' => $aksicApplication->applicant_id,
+                'old_status' => $request->old_status,
+                'new_status' => $request->new_status,
+                'changed_by_type' => 'User',
+                'changed_by_id' => auth()->id(),
+                'remarks' => $request->remarks,
+                'status_json' => [
+                    'api_response' => $apiResponse,
+                    'changed_at' => now()->toISOString(),
+                    'changed_by_user' => auth()->user()->name ?? 'System',
+                ],
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            DB::commit();
+
+            Log::info('Status updated successfully', [
+                'application_id' => $aksicApplication->id,
+                'applicant_id' => $aksicApplication->applicant_id,
+                'old_status' => $request->old_status,
+                'new_status' => $request->new_status,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status updated successfully',
+                'application' => $aksicApplication->fresh(['statusLogs']),
+                'api_response' => $apiResponse
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Failed to update status', [
+                'application_id' => $aksicApplication->id,
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update status: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
