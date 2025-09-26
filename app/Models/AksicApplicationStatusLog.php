@@ -12,6 +12,7 @@ class AksicApplicationStatusLog extends Model
     use HasFactory;
 
     protected $fillable = [
+        'aksic_application_id',
         'aksic_id',
         'applicant_id',
         'old_status',

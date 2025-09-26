@@ -13,8 +13,8 @@ return new class extends Migration {
         Schema::create('aksic_application_education', function (Blueprint $table) {
             $table->id();
             $table->foreignUuid('aksic_application_id')->nullable()->constrained('aksic_applications')->nullOnDelete()->cascadeOnUpdate();
-            $table->unsignedBigInteger(column: 'aksic_id');
-            $table->unsignedBigInteger('applicant_id');
+            $table->integer('aksic_id')->nullable();
+            $table->integer('applicant_id')->nullable();
             $table->string('education_level');
             $table->string('degree_title')->nullable();
             $table->string('institute')->nullable();
@@ -22,6 +22,10 @@ return new class extends Migration {
             $table->string('grade_or_percentage')->nullable();
             $table->json('educations_json')->nullable();
             $table->timestamps();
+
+            // Create foreign key constraint for applicant_id referencing aksic_applications.applicant_id
+            // Note: aksic_id is just a reference field from API, not a foreign key since it matches applicant_id
+            $table->foreign('applicant_id')->references('applicant_id')->on('aksic_applications')->nullOnDelete()->cascadeOnUpdate();
         });
     }
 

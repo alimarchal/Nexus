@@ -12,8 +12,9 @@ return new class extends Migration {
     {
         Schema::create('aksic_application_status_logs', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger(column: 'aksic_id');
-            $table->unsignedBigInteger('applicant_id');
+            $table->foreignUuid('aksic_application_id')->nullable()->constrained('aksic_applications')->nullOnDelete()->cascadeOnUpdate();
+            $table->integer('aksic_id')->nullable();
+            $table->integer('applicant_id')->nullable();
             $table->string('old_status');
             $table->string('new_status');
             $table->string('changed_by_type')->nullable();
@@ -21,6 +22,10 @@ return new class extends Migration {
             $table->text('remarks')->nullable();
             $table->json('status_json')->nullable();
             $table->timestamps();
+
+            // Create foreign key constraint for applicant_id referencing aksic_applications.applicant_id
+            // Note: aksic_id is just a reference field from API, not a foreign key since it matches applicant_id
+            $table->foreign('applicant_id')->references('applicant_id')->on('aksic_applications')->nullOnDelete()->cascadeOnUpdate();
         });
     }
 

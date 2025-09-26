@@ -362,6 +362,7 @@ class AksicApplicationController extends Controller
                     if (isset($appData['status_logs']) && is_array($appData['status_logs'])) {
                         foreach ($appData['status_logs'] as $statusLog) {
                             AksicApplicationStatusLog::create([
+                                'aksic_application_id' => $application->id,
                                 'aksic_id' => $appData['id'],
                                 'applicant_id' => $appData['id'],
                                 'old_status' => $statusLog['old_status'],
@@ -393,9 +394,9 @@ class AksicApplicationController extends Controller
             Log::info('AKSIC applications sync completed', $syncResults);
 
             // Update status of all successfully processed applications in one batch call
-            if (!empty($successfullyProcessedIds)) {
-                $this->updateApplicationsStatusBatch($successfullyProcessedIds);
-            }
+            // if (!empty($successfullyProcessedIds)) {
+            //     $this->updateApplicationsStatusBatch($successfullyProcessedIds);
+            // }
 
             return response()->json([
                 'success' => true,
