@@ -346,7 +346,6 @@ class AksicApplicationController extends Controller
                         foreach ($appData['educations'] as $education) {
                             AksicApplicationEducation::create([
                                 'aksic_application_id' => $application->id,
-                                'aksic_id' => $appData['id'],
                                 'applicant_id' => $appData['id'],
                                 'education_level' => $education['education_level'],
                                 'degree_title' => $education['degree_title'],
@@ -363,7 +362,6 @@ class AksicApplicationController extends Controller
                         foreach ($appData['status_logs'] as $statusLog) {
                             AksicApplicationStatusLog::create([
                                 'aksic_application_id' => $application->id,
-                                'aksic_id' => $appData['id'],
                                 'applicant_id' => $appData['id'],
                                 'old_status' => $statusLog['old_status'],
                                 'new_status' => $statusLog['new_status'],

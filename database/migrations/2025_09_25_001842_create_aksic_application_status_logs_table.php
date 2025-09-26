@@ -13,7 +13,6 @@ return new class extends Migration {
         Schema::create('aksic_application_status_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignUuid('aksic_application_id')->nullable()->constrained('aksic_applications')->nullOnDelete()->cascadeOnUpdate();
-            $table->integer('aksic_id')->nullable();
             $table->integer('applicant_id')->nullable();
             $table->string('old_status');
             $table->string('new_status');
