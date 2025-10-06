@@ -53,7 +53,7 @@ class AksicApplicationController extends Controller
                 })
             ])
             ->with(['educations', 'statusLogs', 'businessCategory', 'businessSubCategory'])              // Eager load relationships
-            ->latest()                                        // Order by newest first
+            ->oldest()                                        // Order by newest first
             ->paginate(10);                                   // Paginate results
 
         return view('aksic-applications.index', compact('applications'));

@@ -161,25 +161,28 @@
                 <table class="min-w-max w-full table-auto text-sm">
                     <thead>
                         <tr class="bg-green-800 text-white uppercase text-sm">
-                            <th class="py-2 px-2 text-center">App ID</th>
+                            <th class="py-2 px-2 text-center">#</th>
+                            <th class="py-2 px-2 text-left">Application No</th>
                             <th class="py-2 px-2 text-left">Date</th>
                             <th class="py-2 px-2 text-left">Name</th>
                             <th class="py-2 px-2 text-left">CNIC</th>
-                            <th class="py-2 px-2 text-left">Application No</th>
+                            <th class="py-2 px-2 text-right">Amount</th>
+                            <th class="py-2 px-2 text-left">District</th>
                             <th class="py-2 px-2 text-left">Business Name</th>
                             <th class="py-2 px-2 text-center">Status</th>
                             <th class="py-2 px-2 text-center">Fee Status</th>
-                            <th class="py-2 px-2 text-right">Amount</th>
-                            <th class="py-2 px-2 text-left">District</th>
+
                             <th class="py-2 px-2 text-center print:hidden">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="text-black text-md leading-normal font-extrabold">
-                        @foreach ($applications->sortByDesc('created_at')->values() as $index => $application)
+                        @foreach ($applications->values() as $index => $application)
                         <tr class="border-b border-gray-200 hover:bg-gray-100">
                             <td class="py-1 px-2 text-center">
-                                {{ $application->applicant_id }}
+                                {{ $loop->iteration }}
                             </td>
+                            <td class="py-1 px-2 text-left"> {{ $application->applicant_id }}-{{
+                                $application->application_no }}</td>
                             <td class="py-1 px-2 text-left">
                                 {{ $application->created_at->format('d-m-Y') }}
                             </td>
@@ -189,7 +192,15 @@
                                 </div>
                             </td>
                             <td class="py-1 px-2 text-left">{{ $application->cnic }}</td>
-                            <td class="py-1 px-2 text-left">{{ $application->application_no }}</td>
+                            <td class="py-1 px-2 text-right">
+                                @if($application->amount)
+                                {{ number_format($application->amount, 2) }}
+                                @else
+                                -
+                                @endif
+                            </td>
+                            <td class="py-1 px-2 text-left">{{ $application->district_name ?? '-' }}</td>
+
                             <td class="py-1 px-2 text-left">
                                 <div class="w-36 break-words leading-relaxed">
                                     {{ $application->businessName ?? '-' }}
@@ -214,27 +225,21 @@
                                     {{ ucfirst($application->fee_status) }}
                                 </span>
                             </td>
-                            <td class="py-1 px-2 text-right">
-                                @if($application->amount)
-                                {{ number_format($application->amount, 2) }}
-                                @else
-                                -
-                                @endif
-                            </td>
-                            <td class="py-1 px-2 text-left">{{ $application->district_name ?? '-' }}</td>
+
                             <td class="py-1 px-2 text-center">
                                 <div class="flex justify-center space-x-2">
                                     <a href="{{ route('aksic-applications.show', $application) }}"
-                                        class="inline-flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors duration-200"
-                                        title="View Details">
+                                        class="group inline-flex items-center px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm hover:shadow-md transform hover:scale-105 transition-all duration-200 ease-in-out"
+                                        title="View Application Details">
                                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                            stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                                            stroke-width="1.5" stroke="currentColor"
+                                            class="w-4 h-4 mr-1.5 group-hover:animate-pulse">
                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                 d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                 d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                         </svg>
-                                        View
+                                        <span class="tracking-wide">View</span>
                                     </a>
                                 </div>
                             </td>
