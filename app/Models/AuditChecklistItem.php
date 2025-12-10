@@ -19,17 +19,20 @@ class AuditChecklistItem extends Model
         'parent_id',
         'reference_code',
         'title',
+        'description',
         'criteria',
         'guidance',
         'response_type',
         'max_score',
         'display_order',
         'is_active',
+        'is_required',
         'metadata'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_required' => 'boolean',
         'metadata' => 'array'
     ];
 
