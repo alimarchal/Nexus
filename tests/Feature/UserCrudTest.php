@@ -84,7 +84,7 @@ test('super admin can store new user with roles', function () {
     $response = $this->actingAs($this->superAdmin)->post(route('users.store'), $userData);
 
     $response->assertRedirect(route('users.index'));
-    $response->assertSessionHas('success', 'User created successfully.');
+    $response->assertSessionHas('success', 'User created successfully with assigned roles and permissions.');
 
     $this->assertDatabaseHas('users', [
         'name' => 'Test User',
@@ -153,7 +153,7 @@ test('super admin can update user with role changes', function () {
     $response = $this->actingAs($this->superAdmin)->put(route('users.update', $user), $updateData);
 
     $response->assertRedirect(route('users.index'));
-    $response->assertSessionHas('success', 'User updated successfully.');
+    $response->assertSessionHas('success', 'User updated successfully with assigned roles and permissions.');
 
     $user->refresh();
     $this->assertEquals('Updated Name', $user->name);
