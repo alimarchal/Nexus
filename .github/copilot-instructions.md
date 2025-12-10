@@ -530,7 +530,7 @@ it('has emails', function (string $email) {
 
 === tailwindcss/v3 rules ===
 
-## Tailwind 3
+## Tailwind 4
 
-- Always use Tailwind CSS v3 - verify you're using only classes supported by this version.
+- Always use Tailwind CSS v4 - verify you're using only classes supported by this version.
 </laravel-boost-guidelines>
