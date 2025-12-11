@@ -1,9 +1,9 @@
 <x-app-layout>
     @push('header')
-        <link rel="stylesheet" href="{{ url('jsandcss/daterangepicker.min.css') }}">
-        <script src="{{ url('jsandcss/moment.min.js') }}"></script>
-        <script src="{{ url('jsandcss/knockout-3.5.1.js') }}" defer></script>
-        <script src="{{ url('jsandcss/daterangepicker.min.js') }}" defer></script>
+    <link rel="stylesheet" href="{{ url('jsandcss/daterangepicker.min.css') }}">
+    <script src="{{ url('jsandcss/moment.min.js') }}"></script>
+    <script src="{{ url('jsandcss/knockout-3.5.1.js') }}" defer></script>
+    <script src="{{ url('jsandcss/daterangepicker.min.js') }}" defer></script>
     @endpush
 
     <x-slot name="header">
@@ -37,10 +37,10 @@
                                 class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
                                 <option value="">Select a branch</option>
                                 @foreach (\App\Models\Branch::all() as $branch)
-                                    <option value="{{ $branch->id }}"
-                                        {{ request('filter.branch_id') == $branch->id ? 'selected' : '' }}>
-                                        {{ $branch->code . ' - ' . $branch->name }}
-                                    </option>
+                                <option value="{{ $branch->id }}" {{ request('filter.branch_id')==$branch->id ?
+                                    'selected' : '' }}>
+                                    {{ $branch->code . ' - ' . $branch->name }}
+                                </option>
                                 @endforeach
                             </select>
                         </div>
@@ -49,12 +49,11 @@
                             <select name="filter[fiscal_year]" id="fiscal_year"
                                 class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
                                 <option value="">Select a branch</option>
-                                @for ($i = 2025; $i <= 2099; $i++)
-                                    <option value="{{ $i }}"
-                                        {{ request('filter.fiscal_year') == $i ? 'selected' : '' }}>
-                                        {{ $i }}
+                                @for ($i = 2025; $i <= 2099; $i++) <option value="{{ $i }}" {{
+                                    request('filter.fiscal_year')==$i ? 'selected' : '' }}>
+                                    {{ $i }}
                                     </option>
-                                @endfor
+                                    @endfor
                             </select>
                         </div>
                         <div></div>
@@ -98,7 +97,7 @@
                         <img src="{{ url('icons-images/complaint.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
-<a href="{{ route('aksic-applications.index') }}"
+                <a href="{{ route('aksic-applications.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
@@ -109,7 +108,7 @@
                     </div>
                 </a>
 
-                <a href="{{ route('audits.index') }}"
+                {{-- <a href="{{ route('audits.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
                         <div>
@@ -118,7 +117,7 @@
                         </div>
                         <img src="{{ url('icons-images/audits.png') }}" alt="Audit" class="h-16 w-16">
                     </div>
-                </a>
+                </a> --}}
 
                 <a href={{ route('employee_resources.index') }}
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
@@ -132,7 +131,7 @@
                 </a>
 
 
-
+                {{--
                 <a href="{{ route('printed-stationeries.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -144,9 +143,9 @@
                         </div>
                         <img src="{{ url('icons-images/stationary.png') }}" alt="Account" class="h-16 w-16">
                     </div>
-                </a>
+                </a> --}}
 
-
+                {{--
                 <a href="{{ route('stationery-transactions.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -179,7 +178,7 @@
                         </div>
                         <img src="{{ url('icons-images/report.png') }}" alt="Account" class="h-16 w-16">
                     </div>
-                </a>
+                </a> --}}
 
 
 
@@ -194,8 +193,8 @@
     <button id="toggle"></button>
 
     @push('modals')
-        <script>
-            const targetDiv = document.getElementById("filters");
+    <script>
+        const targetDiv = document.getElementById("filters");
             const btn = document.getElementById("toggle");
 
             function showFilters() {
@@ -242,10 +241,10 @@
             }
         `;
             document.head.appendChild(style);
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script>
-            document.querySelectorAll('.delete-button').forEach(button => {
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        document.querySelectorAll('.delete-button').forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
 
@@ -266,6 +265,6 @@
                     });
                 });
             });
-        </script>
+    </script>
     @endpush
 </x-app-layout>

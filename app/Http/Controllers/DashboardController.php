@@ -28,16 +28,16 @@ class DashboardController extends Controller implements HasMiddleware
             abort(403); // Forbidden if no valid role
         }
         // Route to role-specific dashboard view
-        return match ($user->roles->first()->name) {
-            'branch' => view('dashboard.branches'),
-            'region' => view('dashboard.region'),
-            'division' => view('dashboard.division'),
-            'head-office' => view('dashboard.all'),
-            'super-admin' => view('dashboard.dashboard'),
-            default => abort(403)
-        };
+        // return match ($user->roles->first()->name) {
+        //     'branch' => view('dashboard.branches'),
+        //     'region' => view('dashboard.region'),
+        //     'division' => view('dashboard.division'),
+        //     'head-office' => view('dashboard.all'),
+        //     'super-admin' => view('dashboard.dashboard'),
+        //     default => abort(403)
+        // };
 
-//        return view('dashboard');
+        return view('dashboard');
     }
 
     public function daily_position(Request $request)
