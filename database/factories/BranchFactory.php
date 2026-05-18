@@ -20,6 +20,8 @@ class BranchFactory extends Factory
     public function definition(): array
     {
         return [
+            'region_id' => Region::factory(),
+            'district_id' => District::factory(),
             'code' => strtoupper($this->faker->unique()->lexify('??###')),
             'name' => $this->faker->streetName() . ' Branch',
             'address' => $this->faker->streetAddress(),
