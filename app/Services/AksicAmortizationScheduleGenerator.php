@@ -24,7 +24,7 @@ class AksicAmortizationScheduleGenerator
 
         for ($installmentNumber = 1; $installmentNumber <= $tenure && bccomp($principalOutstanding, '0', 6) === 1; $installmentNumber++) {
             $periodEnd = $periodStart->endOfMonth()->startOfDay();
-            $dueDate = $periodEnd->addDay();
+            $dueDate = $periodEnd;
             $daysInPeriod = $periodStart->diffInDays($periodEnd) + 1;
             $daysInYear = $periodStart->isLeapYear() ? 366 : 365;
             $product = bcdiv(bcmul($principalOutstanding, $totalInterestRate, 10), '100', 6);
@@ -52,7 +52,7 @@ class AksicAmortizationScheduleGenerator
             ];
 
             $principalOutstanding = $balanceAfterInstallment;
-            $periodStart = $dueDate;
+            $periodStart = $periodEnd->addDay();
         }
 
         return $rows;

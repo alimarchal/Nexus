@@ -124,7 +124,7 @@ class AksicController extends Controller implements HasMiddleware
         $rows = $this->scheduleGenerator->generate(
             (string) $aksic->principal_amount,
             (int) $aksic->tenure,
-            $aksic->disbursement_date->toDateString(),
+            ($aksic->sanction_date ?? $aksic->disbursement_date)->toDateString(),
             (string) $aksic->kibor_rate,
             (string) $aksic->spread_rate,
         );

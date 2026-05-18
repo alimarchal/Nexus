@@ -35,7 +35,7 @@ test('user can create aksic and amortization schedule is generated', function ()
     $this->assertDatabaseHas('aksic_amortizations', [
         'aksic_id' => $aksic->id,
         'installment_no' => 1,
-        'due_date' => '2026-06-01',
+        'due_date' => '2026-05-31',
         'days' => 21,
         'principal_amount_os' => '1000000.000000',
         'installment_per_month' => '16666.666666',
