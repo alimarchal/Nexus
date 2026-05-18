@@ -2,10 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\Division;
+use App\Models\Manager;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Manager>
+ * @extends Factory<Manager>
  */
 class ManagerFactory extends Factory
 {
@@ -17,7 +20,11 @@ class ManagerFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'division_id' => Division::factory(),
+            'manager_user_id' => User::factory(),
+            'title' => $this->faker->jobTitle(),
+            'created_by_user_id' => User::factory(),
+            'updated_by' => User::factory(),
         ];
     }
 }

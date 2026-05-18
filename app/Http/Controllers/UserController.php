@@ -2,19 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use App\Models\Branch;
-use App\Models\Division;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Routing\Controllers\Middleware;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\QueryBuilder\QueryBuilder;
-use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\AllowedSort;
-use Spatie\QueryBuilder\AllowedInclude;
 
 class UserController extends Controller implements HasMiddleware
 {
@@ -31,6 +27,9 @@ class UserController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        $branches = Branch::orderBy('name')->get();
+        $roles = Role::orderBy('name')->get();
+
         $users = QueryBuilder::for(User::class)
             ->allowedFilters(User::getAllowedFilters())
             ->allowedSorts(User::getAllowedSorts())
@@ -40,17 +39,16 @@ class UserController extends Controller implements HasMiddleware
             ->paginate(request('per_page', 10))
             ->appends(request()->query());
 
-        return view('users.index', compact('users'));
+        return view('users.index', compact('branches', 'roles', 'users'));
     }
 
     public function create()
     {
         $branches = Branch::all();
-        $divisions = Division::all();
         $roles = Role::all();
         $permissions = Permission::all();
 
-        return view('users.create', compact('branches', 'divisions', 'roles', 'permissions'));
+        return view('users.create', compact('branches', 'roles', 'permissions'));
     }
 
     public function store(Request $request)
@@ -60,20 +58,18 @@ class UserController extends Controller implements HasMiddleware
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'branch_id' => 'nullable|exists:branches,id',
-            'division_id' => 'nullable|exists:divisions,id',
             'is_super_admin' => 'required|in:Yes,No',
             'is_active' => 'required|in:Yes,No',
             'roles' => 'array',
             'roles.*' => 'exists:roles,id',
             'permissions' => 'array',
-            'permissions.*' => 'exists:permissions,id'
+            'permissions.*' => 'exists:permissions,id',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'branch_id' => $request->branch_id,
-            'division_id' => $request->division_id,
             'password' => Hash::make($request->password),
             'is_super_admin' => $request->is_super_admin,
             'is_active' => $request->is_active,
@@ -97,13 +93,12 @@ class UserController extends Controller implements HasMiddleware
     public function edit(User $user)
     {
         $branches = Branch::all();
-        $divisions = Division::all();
         $roles = Role::all();
         $permissions = Permission::all();
         $userRoles = $user->roles->pluck('id')->toArray();
         $userPermissions = $user->permissions->pluck('id')->toArray();
 
-        return view('users.edit', compact('user', 'branches', 'divisions', 'roles', 'permissions', 'userRoles', 'userPermissions'));
+        return view('users.edit', compact('user', 'branches', 'roles', 'permissions', 'userRoles', 'userPermissions'));
     }
 
     public function update(Request $request, User $user)
@@ -117,30 +112,28 @@ class UserController extends Controller implements HasMiddleware
         if ($user->hasRole('super-admin')) {
             $submittedRoleIds = $request->input('roles', []);
             $superAdminRole = Role::where('name', 'super-admin')->first();
-            if ($superAdminRole && (!in_array($superAdminRole->id, $submittedRoleIds))) {
+            if ($superAdminRole && (! in_array($superAdminRole->id, $submittedRoleIds))) {
                 return redirect()->back()->withErrors(['roles' => 'You cannot remove the super-admin role from a super-admin user.']);
             }
         }
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'email' => 'required|email|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8',
             'branch_id' => 'nullable|exists:branches,id',
-            'division_id' => 'nullable|exists:divisions,id',
             'is_super_admin' => 'required|in:Yes,No',
             'is_active' => 'required|in:Yes,No',
             'roles' => 'array',
             'roles.*' => 'exists:roles,id',
             'permissions' => 'array',
-            'permissions.*' => 'exists:permissions,id'
+            'permissions.*' => 'exists:permissions,id',
         ]);
 
         $updateData = [
             'name' => $request->name,
             'email' => $request->email,
             'branch_id' => $request->branch_id,
-            'division_id' => $request->division_id,
             'is_super_admin' => $request->is_super_admin,
             'is_active' => $request->is_active,
         ];
@@ -187,6 +180,7 @@ class UserController extends Controller implements HasMiddleware
         }
 
         $user->delete();
+
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
     }
 }

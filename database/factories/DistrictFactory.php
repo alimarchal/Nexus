@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\District;
+use App\Models\Region;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\District>
+ * @extends Factory<District>
  */
 class DistrictFactory extends Factory
 {
@@ -17,7 +19,8 @@ class DistrictFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->unique()->city() . ' District',
+            'region_id' => Region::factory(),
+            'name' => $this->faker->unique()->city().' District',
         ];
     }
 }

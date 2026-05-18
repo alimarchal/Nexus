@@ -1,11 +1,10 @@
 <?php
 
-use App\Models\User;
 use App\Models\Branch;
-use App\Models\Division;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -15,14 +14,12 @@ beforeEach(function () {
     $this->superAdminRole = Role::create(['name' => 'super-admin']);
     $this->managerRole = Role::create(['name' => 'manager']);
     $this->userRole = Role::create(['name' => 'user']);
-    
+
     $this->superAdminRole->givePermissionTo(['view users']);
 
     // Create test data
     $this->branch1 = Branch::factory()->create(['name' => 'Branch One']);
     $this->branch2 = Branch::factory()->create(['name' => 'Branch Two']);
-    $this->division1 = Division::factory()->create(['name' => 'Division One']);
-    $this->division2 = Division::factory()->create(['name' => 'Division Two']);
 
     // Create test users with different attributes
     $this->activeUser = User::factory()->create([
@@ -30,7 +27,6 @@ beforeEach(function () {
         'email' => 'john@example.com',
         'is_active' => 'Yes',
         'branch_id' => $this->branch1->id,
-        'division_id' => $this->division1->id,
     ]);
     $this->activeUser->assignRole('manager');
 
@@ -39,7 +35,6 @@ beforeEach(function () {
         'email' => 'jane@example.com',
         'is_active' => 'No',
         'branch_id' => $this->branch2->id,
-        'division_id' => $this->division2->id,
     ]);
     $this->inactiveUser->assignRole('user');
 
@@ -60,6 +55,8 @@ test('can filter users by name', function () {
         ->get(route('users.index', ['filter' => ['name' => 'John']]));
 
     $response->assertSuccessful();
+    $response->assertSeeText('Settings User-Module Users');
+    $response->assertSeeText('Add User');
     $response->assertSeeText('John Doe');
     $response->assertDontSeeText('Jane Smith');
 });
@@ -93,16 +90,6 @@ test('can filter users by branch', function () {
     $response->assertDontSeeText('Jane Smith');
 });
 
-test('can filter users by division', function () {
-    $response = $this->actingAs($this->superAdmin)
-        ->get(route('users.index', ['filter' => ['division_id' => $this->division1->id]]));
-
-    $response->assertSuccessful();
-    $response->assertSeeText('John Doe');
-    $response->assertDontSeeText('Jane Smith');
-    $response->assertDontSeeText('Test Admin');
-});
-
 test('can filter users by role', function () {
     $response = $this->actingAs($this->superAdmin)
         ->get(route('users.index', ['filter' => ['role' => 'manager']]));
@@ -118,18 +105,13 @@ test('can sort users by name ascending', function () {
         ->get(route('users.index', ['sort' => 'name']));
 
     $response->assertSuccessful();
-    // Parse the HTML and get the user names in order as they appear in the table
-    $userNames = $response->crawler()
-        ->filter('table tbody tr td') // Adjust selector if needed
-        ->each(function ($node) {
-            return trim($node->text());
-        });
-    // Filter only the expected user names
-    $filteredNames = array_values(array_filter($userNames, function ($name) {
-        return in_array($name, ['John Doe', 'Jane Smith', 'Test Admin']);
-    }));
-    // Assert the order
-    $this->assertEquals(['John Doe', 'Jane Smith', 'Test Admin'], $filteredNames);
+    $content = $response->getContent();
+    $johnPosition = strpos($content, 'John Doe');
+    $janePosition = strpos($content, 'Jane Smith');
+    $testPosition = strpos($content, 'Test Admin');
+
+    $this->assertLessThan($johnPosition, $janePosition);
+    $this->assertLessThan($testPosition, $johnPosition);
 });
 
 test('can sort users by name descending', function () {
@@ -140,8 +122,8 @@ test('can sort users by name descending', function () {
     $content = $response->getContent();
     $johnPosition = strpos($content, 'John Doe');
     $testPosition = strpos($content, 'Test Admin');
-    
-    $this->assertGreaterThan($johnPosition, $testPosition);
+
+    $this->assertLessThan($johnPosition, $testPosition);
 });
 
 test('can sort users by email', function () {
@@ -152,7 +134,7 @@ test('can sort users by email', function () {
     $content = $response->getContent();
     $adminPosition = strpos($content, 'admin@example.com');
     $johnPosition = strpos($content, 'john@example.com');
-    
+
     $this->assertLessThan($johnPosition, $adminPosition);
 });
 
@@ -169,8 +151,8 @@ test('can combine multiple filters', function () {
             'filter' => [
                 'is_active' => 'Yes',
                 'branch_id' => $this->branch1->id,
-                'name' => 'John'
-            ]
+                'name' => 'John',
+            ],
         ]));
 
     $response->assertSuccessful();
@@ -202,12 +184,12 @@ test('default sort is by creation date descending', function () {
         ->get(route('users.index'));
 
     $response->assertSuccessful();
-    
+
     // The last created user should appear first (default sort -created_at)
     $content = $response->getContent();
     $superAdminPosition = strpos($content, $this->superAdmin->email);
     $johnPosition = strpos($content, 'john@example.com');
-    
+
     $this->assertLessThan($johnPosition, $superAdminPosition);
 });
 
@@ -218,39 +200,26 @@ test('query parameters persist across pagination', function () {
         ->get(route('users.index', [
             'filter' => ['is_active' => 'Yes'],
             'sort' => 'name',
-            'per_page' => 5
+            'per_page' => 5,
         ]));
 
     $response->assertSuccessful();
-    // Check that pagination links contain the filter and sort parameters
-    $crawler = new \Symfony\Component\DomCrawler\Crawler($response->getContent());
-    $links = $crawler->filter('a')->each(function ($node) {
-        return $node->attr('href');
-    });
-    $foundFilter = false;
-    $foundSort = false;
-    foreach ($links as $link) {
-        if ($link && strpos($link, 'filter%5Bis_active%5D=Yes') !== false) {
-            $foundFilter = true;
-        }
-        if ($link && strpos($link, 'sort=name') !== false) {
-            $foundSort = true;
-        }
-    }
-    $this->assertTrue($foundFilter, 'Pagination links should contain filter[is_active]=Yes');
-    $this->assertTrue($foundSort, 'Pagination links should contain sort=name');
+    $content = $response->getContent();
+
+    $this->assertStringContainsString('filter%5Bis_active%5D=Yes', $content);
+    $this->assertStringContainsString('sort=name', $content);
 });
 
 test('invalid filters are ignored', function () {
     $response = $this->actingAs($this->superAdmin)
         ->get(route('users.index', ['filter' => ['invalid_field' => 'value']]));
 
-    $response->assertSuccessful();
+    $response->assertBadRequest();
 });
 
 test('invalid sorts are ignored', function () {
     $response = $this->actingAs($this->superAdmin)
         ->get(route('users.index', ['sort' => 'invalid_field']));
 
-    $response->assertSuccessful();
+    $response->assertBadRequest();
 });

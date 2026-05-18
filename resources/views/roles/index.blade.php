@@ -1,225 +1,75 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
-            Settings User-Module Roles
-        </h2>
-
-        <div class="flex justify-center items-center float-right">
-            <button id="toggle"
-                class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                Search
-            </button>
-            <a href="{{ route('roles.create') }}"
-                class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-                <span class="hidden md:inline-block">Add Role</span>
-            </a>
-            <a href="javascript:window.location.reload();"
-                class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="size-4">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-                </svg>
-            </a>
-            <a href="{{ route('user.module') }}"
-                class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                <!-- Arrow Left Icon SVG -->
-                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-            </a>
-        </div>
+        <x-page-header title="Settings User-Module Roles" :createRoute="route('roles.create')" createLabel="Add Role"
+            :showSearch="true" :showRefresh="true" backRoute="user.module" />
     </x-slot>
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-4">
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg" id="filters"
-            style="display: none">
-            <div class="p-6">
-                <form method="GET" action="{{ route('roles.index') }}">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <!-- Filter by Name -->
-                        <div>
-                            <x-label for="name" value="{{ __('Role Name') }}" />
-                            <input type="text" name="filter[name]" id="name"
-                                value="{{ request('filter.name') }}"
-                                class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full" />
-                        </div>
 
-                        <!-- Filter by Created Date -->
-                        <div>
-                            <x-label for="created_at" value="{{ __('Created Date') }}" />
-                            <input type="date" name="filter[created_at]" id="created_at"
-                                value="{{ request('filter.created_at') }}"
-                                class="border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full" />
-                        </div>
-                    </div>
+    <x-filter-section :action="route('roles.index')">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div>
+                <x-label for="filter_name" value="Role Name" />
+                <x-input id="filter_name" name="filter[name]" type="text" class="mt-1 block w-full"
+                    :value="request('filter.name')" />
+            </div>
 
-                    <!-- Submit Button -->
-                    <div class="mt-4">
-                        <x-button class="mc-bg-blue text-white hover:bg-green-800">
-                            {{ __('Apply Filters') }}
-                        </x-button>
-                    </div>
-                </form>
+            <div>
+                <x-label for="filter_created_at" value="Created Date" />
+                <x-input id="filter_created_at" name="filter[created_at]" type="date" class="mt-1 block w-full"
+                    :value="request('filter.created_at')" />
             </div>
         </div>
-    </div>
+    </x-filter-section>
 
+    <x-data-table :items="$roles" :headers="[
+        ['label' => '#', 'align' => 'text-center'],
+        ['label' => 'Name', 'align' => 'text-center'],
+        ['label' => 'Guard Name', 'align' => 'text-center'],
+        ['label' => 'Permissions', 'align' => 'text-center'],
+        ['label' => 'Actions', 'align' => 'text-center'],
+    ]" emptyMessage="No roles found."
+        :emptyRoute="route('roles.create')" emptyLinkText="Add a new role">
+        @foreach ($roles as $index => $role)
+            <tr class="border-b border-gray-200 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
+                <td class="px-2 py-1 text-center">
+                    {{ $roles->firstItem() + $index }}
+                </td>
+                <td class="px-2 py-1 text-center font-semibold">
+                    {{ $role->name }}
+                </td>
+                <td class="px-2 py-1 text-center">
+                    {{ $role->guard_name }}
+                </td>
+                <td class="px-2 py-1 text-center">
+                    <div class="flex flex-wrap justify-center gap-1">
+                        @forelse ($role->permissions->take(3) as $permission)
+                            <span class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
+                                {{ $permission->name }}
+                            </span>
+                        @empty
+                            <span class="text-xs text-gray-500 dark:text-gray-400">No permissions</span>
+                        @endforelse
 
-
-    <div class="py-6">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
-                <!-- Display session message -->
-                <x-status-message />
-
-                @if ($roles->count() > 0)
-                    <div class="relative overflow-x-auto rounded-lg">
-                        <table class="min-w-max w-full table-auto text-sm">
-                            <thead>
-                                <tr class="bg-blue-800 text-white uppercase text-sm">
-                                    <th class="py-2 px-2 text-center">Name</th>
-                                    <th class="py-2 px-2 text-center">Guard Name</th>
-                                    <th class="py-2 px-2 text-center">Permissions</th>
-                                    <th class="py-2 px-2 text-center print:hidden">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-black text-md leading-normal font-extrabold">
-                                @foreach ($roles as $role)
-                                    <tr class="border-b border-gray-200 hover:bg-gray-100">
-                                        <td class="py-1 px-2 text-center">{{ $role->name }}</td>
-                                        <td class="py-1 px-2 text-center">{{ $role->guard_name }}</td>
-                                        <td class="py-1 px-2 text-center">
-                                            @if($role->permissions->count() > 0)
-                                                @foreach($role->permissions->take(3) as $permission)
-                                                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1 mb-1">
-                                                        {{ $permission->name }}
-                                                    </span>
-                                                @endforeach
-                                                @if($role->permissions->count() > 3)
-                                                    <span class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
-                                                        +{{ $role->permissions->count() - 3 }} more
-                                                    </span>
-                                                @endif
-                                            @else
-                                                <span class="text-gray-500 text-xs">No permissions</span>
-                                            @endif
-                                        </td>
-                                        <td class="py-1 px-2 text-center">
-                                            <a href="{{ route('roles.edit', $role) }}"
-                                                class="inline-flex items-center px-4 py-2 bg-green-800 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                                                Edit
-                                            </a>
-                                            {{--  <form class="inline-block" method="POST" action="{{ route('roles.destroy', $role) }}">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 delete-button">
-                                                Delete
-                                            </button>
-                                        </form>  --}}
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                        @if ($role->permissions->count() > 3)
+                            <span class="inline-flex rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">
+                                +{{ $role->permissions->count() - 3 }} more
+                            </span>
+                        @endif
                     </div>
-                    <div class="px-2 py-2">
-                        {{ $roles->links() }}
+                </td>
+                <td class="px-2 py-1 text-center">
+                    <div class="flex justify-center space-x-2">
+                        <a href="{{ route('roles.edit', $role) }}"
+                            class="inline-flex h-8 w-8 items-center justify-center rounded-md text-green-600 transition-colors duration-150 hover:bg-green-100 hover:text-green-800"
+                            title="Edit">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </a>
                     </div>
-                @else
-                    <p class="text-gray-700 dark:text-gray-300 text-center py-4">
-                        No roles found.
-                        <a href="{{ route('roles.create') }}" class="text-blue-600 hover:underline">
-                            Add a new role
-                        </a>.
-                    </p>
-                @endif
-            </div>
-        </div>
-    </div>
-
-    @push('modals')
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-        <script>
-            document.querySelectorAll('.delete-button').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
-
-                    const form = this.closest('form');
-
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "You won't be able to revert this!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Yes, delete it!'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            form.submit(); // Submit the form if confirmed
-                        }
-                    });
-                });
-            });
-        </script>
-        <script>
-            const targetDiv = document.getElementById("filters");
-            const btn = document.getElementById("toggle");
-
-            function showFilters() {
-                targetDiv.style.display = 'block';
-                targetDiv.style.opacity = '0';
-                targetDiv.style.transform = 'translateY(-20px)';
-                setTimeout(() => {
-                    targetDiv.style.opacity = '1';
-                    targetDiv.style.transform = 'translateY(0)';
-                }, 10);
-            }
-
-            function hideFilters() {
-                targetDiv.style.opacity = '0';
-                targetDiv.style.transform = 'translateY(-20px)';
-                setTimeout(() => {
-                    targetDiv.style.display = 'none';
-                }, 300);
-            }
-
-            btn.onclick = function(event) {
-                event.stopPropagation();
-                if (targetDiv.style.display === "none") {
-                    showFilters();
-                } else {
-                    hideFilters();
-                }
-            };
-
-            // Hide filters when clicking outside
-            document.addEventListener('click', function(event) {
-                if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
-                    hideFilters();
-                }
-            });
-
-            // Prevent clicks inside the filter from closing it
-            targetDiv.addEventListener('click', function(event) {
-                event.stopPropagation();
-            });
-
-            // Add CSS for smooth transitions
-            const style = document.createElement('style');
-            style.textContent = `#filters {transition: opacity 0.3s ease, transform 0.3s ease;}`;
-            document.head.appendChild(style);
-        </script>
-    @endpush
+                </td>
+            </tr>
+        @endforeach
+    </x-data-table>
 </x-app-layout>

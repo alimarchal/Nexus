@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Spatie\Permission\Models\Permission;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Routing\Controllers\HasMiddleware;
-use stdClass;
+use Illuminate\Routing\Controllers\Middleware;
+use Spatie\Permission\Models\Permission;
 
 class PermissionController extends Controller implements HasMiddleware
 {
@@ -19,6 +18,7 @@ class PermissionController extends Controller implements HasMiddleware
             new Middleware('role_or_permission:delete permissions', only: ['destroy']),
         ];
     }
+
     // Show the form for creating a new permission
     public function create()
     {
@@ -50,7 +50,7 @@ class PermissionController extends Controller implements HasMiddleware
 
         // Apply filters based on request inputs
         if ($name = $request->input('filter.name')) {
-            $query->where('name', 'LIKE', '%' . $name . '%');
+            $query->where('name', 'LIKE', '%'.$name.'%');
         }
 
         if ($createdAt = $request->input('filter.created_at')) {
@@ -58,13 +58,11 @@ class PermissionController extends Controller implements HasMiddleware
         }
 
         // Paginate the filtered results
-        $permissions = $query->paginate(10);
+        $permissions = $query->paginate(10)->withQueryString();
 
         // Return the view with permissions data
         return view('permissions.index', compact('permissions'));
     }
-
-
 
     // Show the form for editing the specified permission
     public function edit(Permission $permission)
@@ -77,7 +75,7 @@ class PermissionController extends Controller implements HasMiddleware
     {
         // Validate the request
         $request->validate([
-            'name' => 'required|string|max:255|unique:permissions,name,' . $permission->id,
+            'name' => 'required|string|max:255|unique:permissions,name,'.$permission->id,
         ]);
 
         // Update the permission
@@ -97,7 +95,7 @@ class PermissionController extends Controller implements HasMiddleware
         $criticalPermissions = ['view users', 'edit users', 'create users', 'delete users', 'view roles', 'edit roles'];
 
         if (in_array($permission->name, $criticalPermissions)) {
-            return redirect()->back()->withErrors(['permission' => 'Cannot delete critical system permission: ' . $permission->name]);
+            return redirect()->back()->withErrors(['permission' => 'Cannot delete critical system permission: '.$permission->name]);
         }
 
         // Delete the permission

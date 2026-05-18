@@ -29,7 +29,8 @@
         .select2-container .select2-selection--single {
             height: auto;
             /* Reset the height if necessary */
-            padding: 0.7rem 1rem;
+            padding: 0.63rem 1rem;
+            margin-top: 0.25rem;
             /* This should match Tailwind's py-2 px-4 */
             line-height: 1.25;
             /* Adjust based on Tailwind's line height for consistency */
@@ -64,6 +65,20 @@
             top: 8px !important;
             right: 10px !important;
         }
+
+        .select2-container .select2-selection--single .select2-selection__clear {
+            color: #dc2626 !important;
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            line-height: 1 !important;
+            height: auto !important;
+            margin-top: 0 !important;
+            padding: 0 !important;
+        }
+
+        .select2-container .select2-selection--single .select2-selection__clear:hover {
+            color: #991b1b !important;
+        }
     </style>
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -96,13 +111,52 @@
     <script src="{{ url('select2/select2.min.js') }}" defer></script>
     <script>
         $(document).ready(function () {
-                $('.select2').select2();
+            window.initializeSelect2 = function (scope) {
+                const $scope = scope ? $(scope) : $(document);
+
+                $scope.find('select.select2').addBack('select.select2').each(function () {
+                    const $select = $(this);
+
+                    if ($select.hasClass('select2-hidden-accessible')) {
+                        return;
+                    }
+
+                    const hasEmptyOption = $select.find('option[value=""]').length > 0;
+
+                    $select.select2({
+                        placeholder: $select.data('placeholder') || 'Select an option',
+                        allowClear: $select.data('allow-clear') !== undefined ? Boolean($select.data('allow-clear')) : hasEmptyOption,
+                        width: '100%',
+                    });
+                });
+            };
+
+            window.initializeSelect2(document);
+
+            $('label').on('click', function (e) {
+                const forId = $(this).attr('for');
+
+                if (!forId) {
+                    return;
+                }
+
+                const $element = $('#' + forId);
+
+                if ($element.hasClass('select2') || $element.hasClass('select2-hidden-accessible')) {
+                    e.preventDefault();
+                    $element.select2('open');
+                }
             });
 
-            $('form').submit(function(){
-                // If x-button does not render as a traditional submit button, target it directly by ID or class
-                $('#submit-btn').attr('disabled', 'disabled');
+            document.addEventListener('livewire:navigated', function () {
+                window.initializeSelect2(document);
             });
+        });
+
+        $('form').submit(function(){
+            // If x-button does not render as a traditional submit button, target it directly by ID or class
+            $('#submit-btn').attr('disabled', 'disabled');
+        });
     </script>
     @stack('modals')
 

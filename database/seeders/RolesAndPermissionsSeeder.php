@@ -27,6 +27,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit users',
             'delete users',
 
+            // Manager Management
+            'view managers',
+            'create managers',
+            'edit managers',
+            'delete managers',
+
             // Role & Permission Management
             'view roles',
             'create roles',
@@ -117,6 +123,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $rolePermissions = [
             'branch' => [
                 'view users',
+                'view managers',
                 'view complaints',
                 'create complaints',
                 'edit complaints',
@@ -126,6 +133,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'region' => [
                 'view users',
                 'edit users',
+                'view managers',
                 'view complaints',
                 'create complaints',
                 'edit complaints',
@@ -141,6 +149,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view users',
                 'edit users',
                 'create users',
+                'view managers',
+                'create managers',
+                'edit managers',
                 'view complaints',
                 'create complaints',
                 'edit complaints',
@@ -164,6 +175,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'create users',
                 'edit users',
                 'delete users',
+                'view managers',
+                'create managers',
+                'edit managers',
+                'delete managers',
                 'view roles',
                 'edit roles',
                 'assign roles',
@@ -208,24 +223,28 @@ class RolesAndPermissionsSeeder extends Seeder
         }
 
         foreach (Branch::all() as $branch) {
-            $new_user = User::create([
-                'branch_id' => $branch->id,
-                'name' => 'Branch '.$branch->code.'-'.$branch->district_id.'-'.$branch->region_id,
-                'email' => 'manager'.$branch->code.'@'.'bankajk.com',
-                'password' => Hash::make('password@999'),
-                'email_verified_at' => now(),
-            ]);
+            $new_user = User::firstOrCreate(
+                ['email' => 'manager'.$branch->code.'@'.'bankajk.com'],
+                [
+                    'branch_id' => $branch->id,
+                    'name' => 'Branch '.$branch->code.'-'.$branch->district_id.'-'.$branch->region_id,
+                    'password' => Hash::make('password@999'),
+                    'email_verified_at' => now(),
+                ]
+            );
 
             $new_user->assignRole('branch');
         }
 
         // Create super admin
-        $user = User::create([
-            'name' => 'Ali Raza Marchal',
-            'email' => 'superadmin@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        $user = User::firstOrCreate(
+            ['email' => 'superadmin@example.com'],
+            [
+                'name' => 'Ali Raza Marchal',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
 
         $user->assignRole('super-admin');
     }

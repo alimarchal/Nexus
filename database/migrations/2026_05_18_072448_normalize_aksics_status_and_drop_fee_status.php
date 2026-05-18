@@ -17,7 +17,9 @@ return new class extends Migration
                 ->whereNotIn('status', ['Pending', 'Approved'])
                 ->update(['status' => 'Pending']);
 
-            DB::statement("ALTER TABLE aksics MODIFY status ENUM('Pending', 'Approved') NOT NULL DEFAULT 'Pending'");
+            if (DB::connection()->getDriverName() === 'mysql') {
+                DB::statement("ALTER TABLE aksics MODIFY status ENUM('Pending', 'Approved') NOT NULL DEFAULT 'Pending'");
+            }
         }
 
         Schema::table('aksics', function (Blueprint $table) {
@@ -39,7 +41,9 @@ return new class extends Migration
         });
 
         if (Schema::hasColumn('aksics', 'status')) {
-            DB::statement("ALTER TABLE aksics MODIFY status ENUM('NotCompleted', 'Pending', 'Forwarded', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending'");
+            if (DB::connection()->getDriverName() === 'mysql') {
+                DB::statement("ALTER TABLE aksics MODIFY status ENUM('NotCompleted', 'Pending', 'Forwarded', 'Approved', 'Rejected') NOT NULL DEFAULT 'Pending'");
+            }
         }
     }
 };

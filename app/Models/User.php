@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -20,15 +21,15 @@ use Spatie\QueryBuilder\AllowedSort;
 
 class User extends Authenticatable
 {
+    use CausesActivity;
     use HasApiTokens;
     use HasFactory;
     use HasProfilePhoto;
-    use Notifiable;
-    use TwoFactorAuthenticatable;
     use HasRoles;
-    use SoftDeletes;
-    use CausesActivity;
     use LogsActivity;
+    use Notifiable;
+    use SoftDeletes;
+    use TwoFactorAuthenticatable;
 
     /**
      * The attributes that are mass assignable.
@@ -78,8 +79,6 @@ class User extends Authenticatable
 
     /**
      * Get activity log options.
-     *
-     * @return \Spatie\Activitylog\LogOptions
      */
     public function getActivitylogOptions(): LogOptions
     {
@@ -93,7 +92,7 @@ class User extends Authenticatable
     /**
      * Define the relationship with the Branch model.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function branch()
     {
@@ -103,8 +102,8 @@ class User extends Authenticatable
     /**
      * Define a scope for filtering active users.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeActive($query)
     {
@@ -114,16 +113,12 @@ class User extends Authenticatable
     /**
      * Define a scope for filtering super admins.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     public function scopeSuperAdmin($query)
     {
         return $query->where('is_super_admin', 'Yes');
-    }
-    public function division()
-    {
-        return $this->belongsTo(Division::class);
     }
 
     // Spatie Query Builder support
@@ -134,7 +129,6 @@ class User extends Authenticatable
             AllowedFilter::partial('email'),
             AllowedFilter::exact('is_active'),
             AllowedFilter::exact('branch_id'),
-            AllowedFilter::exact('division_id'),
             AllowedFilter::callback('role', function ($query, $value) {
                 return $query->whereHas('roles', function ($q) use ($value) {
                     $q->where('name', $value);
@@ -158,7 +152,6 @@ class User extends Authenticatable
     {
         return [
             AllowedInclude::relationship('branch'),
-            AllowedInclude::relationship('division'),
             AllowedInclude::relationship('roles'),
             AllowedInclude::relationship('permissions'),
         ];
