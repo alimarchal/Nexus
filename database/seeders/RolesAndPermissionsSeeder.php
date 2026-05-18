@@ -3,13 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\Branch;
-use App\Models\District;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -18,7 +17,7 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Create comprehensive permissions for all modules
         $permissions = [
@@ -57,6 +56,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'delete audits',
             'conduct audits',
             'review audits',
+
+            // AKSIC Management
+            'view aksics',
+            'create aksics',
+            'edit aksics',
+            'delete aksics',
 
             // Branch Management
             'view branches',
@@ -116,7 +121,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'create complaints',
                 'edit complaints',
                 'view dashboard',
-                'view reports'
+                'view reports',
             ],
             'region' => [
                 'view users',
@@ -126,10 +131,11 @@ class RolesAndPermissionsSeeder extends Seeder
                 'edit complaints',
                 'assign complaints',
                 'view audits',
+                'view aksics',
                 'view branches',
                 'view dashboard',
                 'view reports',
-                'generate reports'
+                'generate reports',
             ],
             'division' => [
                 'view users',
@@ -143,12 +149,15 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view audits',
                 'create audits',
                 'edit audits',
+                'view aksics',
+                'create aksics',
+                'edit aksics',
                 'view branches',
                 'edit branches',
                 'view dashboard',
                 'view reports',
                 'generate reports',
-                'export reports'
+                'export reports',
             ],
             'head-office' => [
                 'view users',
@@ -171,6 +180,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'delete audits',
                 'conduct audits',
                 'review audits',
+                'view aksics',
+                'create aksics',
+                'edit aksics',
+                'delete aksics',
                 'view branches',
                 'create branches',
                 'edit branches',
@@ -181,9 +194,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'generate reports',
                 'export reports',
                 'view settings',
-                'edit settings'
+                'edit settings',
             ],
-            'super-admin' => Permission::all()->pluck('name')->toArray()
+            'super-admin' => Permission::all()->pluck('name')->toArray(),
         ];
 
         // Assign permissions to roles
@@ -197,8 +210,8 @@ class RolesAndPermissionsSeeder extends Seeder
         foreach (Branch::all() as $branch) {
             $new_user = User::create([
                 'branch_id' => $branch->id,
-                'name' => 'Branch ' . $branch->code . '-' . $branch->district_id . '-' . $branch->region_id,
-                'email' => 'manager' . $branch->code . '@' . 'bankajk.com',
+                'name' => 'Branch '.$branch->code.'-'.$branch->district_id.'-'.$branch->region_id,
+                'email' => 'manager'.$branch->code.'@'.'bankajk.com',
                 'password' => Hash::make('password@999'),
                 'email_verified_at' => now(),
             ]);
