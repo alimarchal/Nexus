@@ -8,20 +8,19 @@ use App\Http\Requests\UpdateAksicApplicationRequest;
 use App\Models\AksicApplication;
 use App\Models\AksicApplicationEducation;
 use App\Models\AksicApplicationStatusLog;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Spatie\QueryBuilder\QueryBuilder;
-use Spatie\QueryBuilder\AllowedFilter;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
 
 class AksicApplicationController extends Controller
 {
     /**
      * Display a listing of AKSIC applications with filtering capabilities
-     * 
-     * @param Request $request
+     *
      * @return \Illuminate\View\View
      */
     public function index(Request $request)
@@ -50,7 +49,7 @@ class AksicApplicationController extends Controller
                 }),
                 AllowedFilter::callback('amount_max', function ($query, $value) {
                     $query->where('amount', '<=', $value);
-                })
+                }),
             ])
             ->with(['educations', 'statusLogs', 'businessCategory', 'businessSubCategory'])              // Eager load relationships
             ->oldest()                                        // Order by newest first
@@ -58,8 +57,6 @@ class AksicApplicationController extends Controller
 
         return view('aksic-applications.index', compact('applications'));
     }
-
-
 
     /**
      * Update single application status back to the API
@@ -80,29 +77,29 @@ class AksicApplicationController extends Controller
                         [
                             'id' => $applicationId,
                             'status' => 'In Progress',
-                            'remarks' => 'BANK AJK System Automatically Collected This Application'
-                        ]
-                    ]
+                            'remarks' => 'BANK AJK System Automatically Collected This Application',
+                        ],
+                    ],
                 ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Failed to update application status on API', [
                     'application_id' => $applicationId,
                     'status' => $response->status(),
-                    'response' => $response->body()
+                    'response' => $response->body(),
                 ]);
-                throw new \Exception("Failed to update status on API for application {$applicationId}: " . $response->body());
+                throw new \Exception("Failed to update status on API for application {$applicationId}: ".$response->body());
             }
 
             Log::info('Successfully updated application status on API', [
                 'application_id' => $applicationId,
-                'response' => $response->json()
+                'response' => $response->json(),
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error updating application status on API', [
                 'application_id' => $applicationId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
             throw $e; // Re-throw to trigger transaction rollback
         }
@@ -116,7 +113,7 @@ class AksicApplicationController extends Controller
         try {
             Log::info('Starting batch update of application statuses on API', [
                 'application_ids' => $applicationIds,
-                'count' => count($applicationIds)
+                'count' => count($applicationIds),
             ]);
 
             // Prepare the status update payload
@@ -125,7 +122,7 @@ class AksicApplicationController extends Controller
                 $statusUpdatePayload[] = [
                     'id' => $applicationId,
                     'status' => 'In Progress',
-                    'remarks' => 'BANK AJK System Automatically Collected This Application'
+                    'remarks' => 'BANK AJK System Automatically Collected This Application',
                 ];
             }
 
@@ -136,27 +133,27 @@ class AksicApplicationController extends Controller
                     'timeout' => 30,
                 ])
                 ->post('https://sic.ajk.gov.pk/pmylp/api/bank/applications/status-update', [
-                    'applications' => $statusUpdatePayload
+                    'applications' => $statusUpdatePayload,
                 ]);
 
             if ($response->successful()) {
                 Log::info('Successfully updated application statuses on API (batch)', [
                     'application_ids' => $applicationIds,
                     'count' => count($statusUpdatePayload),
-                    'response' => $response->json()
+                    'response' => $response->json(),
                 ]);
             } else {
                 Log::error('Failed to update application statuses on API (batch)', [
                     'application_ids' => $applicationIds,
                     'status' => $response->status(),
-                    'response' => $response->body()
+                    'response' => $response->body(),
                 ]);
             }
 
         } catch (\Exception $e) {
             Log::error('Error updating application statuses on API (batch)', [
                 'application_ids' => $applicationIds,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -182,21 +179,23 @@ class AksicApplicationController extends Controller
                 ])
                 ->get('https://sic.ajk.gov.pk/pmylp/api/bank/applications');
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('API call failed', ['status' => $response->status(), 'body' => $response->body()]);
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to fetch applications from API. Status: ' . $response->status()
+                    'message' => 'Failed to fetch applications from API. Status: '.$response->status(),
                 ]);
             }
 
             $apiData = $response->json();
 
-            if (!$apiData['success'] || !isset($apiData['data']['count']) || $apiData['data']['count'] < 1) {
+            if (! $apiData['success'] || ! isset($apiData['data']['count']) || $apiData['data']['count'] < 1) {
                 Log::info('No applications found in API response');
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'No applications found in the API response.'
+                    'message' => 'No applications found in the API response.',
                 ]);
             }
 
@@ -206,7 +205,7 @@ class AksicApplicationController extends Controller
                 'updated' => 0,
                 'created' => 0,
                 'failed' => 0,
-                'errors' => []
+                'errors' => [],
             ];
 
             // Track successfully processed applications for batch status update
@@ -223,10 +222,10 @@ class AksicApplicationController extends Controller
                     $localCnicBack = null;
 
                     if ($downloadImages) {
-                        $folderName = 'aksic-applications/' . $appData['application_no'];
+                        $folderName = 'aksic-applications/'.$appData['application_no'];
 
                         // Download challan image
-                        if (!empty($appData['challan_image_url'])) {
+                        if (! empty($appData['challan_image_url'])) {
                             try {
                                 $localChallanImage = $this->downloadAndStoreImage(
                                     $appData['challan_image_url'],
@@ -237,13 +236,13 @@ class AksicApplicationController extends Controller
                                 Log::warning('Failed to download challan image', [
                                     'applicant_id' => $appData['id'],
                                     'url' => $appData['challan_image_url'],
-                                    'error' => $e->getMessage()
+                                    'error' => $e->getMessage(),
                                 ]);
                             }
                         }
 
                         // Download CNIC front image
-                        if (!empty($appData['cnic_front_url'])) {
+                        if (! empty($appData['cnic_front_url'])) {
                             try {
                                 $localCnicFront = $this->downloadAndStoreImage(
                                     $appData['cnic_front_url'],
@@ -254,13 +253,13 @@ class AksicApplicationController extends Controller
                                 Log::warning('Failed to download CNIC front image', [
                                     'applicant_id' => $appData['id'],
                                     'url' => $appData['cnic_front_url'],
-                                    'error' => $e->getMessage()
+                                    'error' => $e->getMessage(),
                                 ]);
                             }
                         }
 
                         // Download CNIC back image
-                        if (!empty($appData['cnic_back_url'])) {
+                        if (! empty($appData['cnic_back_url'])) {
                             try {
                                 $localCnicBack = $this->downloadAndStoreImage(
                                     $appData['cnic_back_url'],
@@ -271,7 +270,7 @@ class AksicApplicationController extends Controller
                                 Log::warning('Failed to download CNIC back image', [
                                     'applicant_id' => $appData['id'],
                                     'url' => $appData['cnic_back_url'],
-                                    'error' => $e->getMessage()
+                                    'error' => $e->getMessage(),
                                 ]);
                             }
                         }
@@ -381,10 +380,10 @@ class AksicApplicationController extends Controller
                 } catch (\Exception $e) {
                     DB::rollBack();
                     $syncResults['failed']++;
-                    $syncResults['errors'][] = "Application ID {$appData['id']}: " . $e->getMessage();
+                    $syncResults['errors'][] = "Application ID {$appData['id']}: ".$e->getMessage();
                     Log::error('Failed to sync application', [
                         'applicant_id' => $appData['id'],
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ]);
                 }
             }
@@ -392,21 +391,22 @@ class AksicApplicationController extends Controller
             Log::info('AKSIC applications sync completed', $syncResults);
 
             // Update status of all successfully processed applications in one batch call
-            if (!empty($successfullyProcessedIds)) {
+            if (! empty($successfullyProcessedIds)) {
                 $this->updateApplicationsStatusBatch($successfullyProcessedIds);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Sync completed successfully!',
-                'results' => $syncResults
+                'results' => $syncResults,
             ]);
 
         } catch (\Exception $e) {
             Log::error('AKSIC sync failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Sync failed: ' . $e->getMessage()
+                'message' => 'Sync failed: '.$e->getMessage(),
             ]);
         }
     }
@@ -444,14 +444,18 @@ class AksicApplicationController extends Controller
     public function downloadPdf(AksicApplication $aksicApplication)
     {
         // Load relationships for PDF generation
-        $aksicApplication->load(['educations', 'statusLogs']);
+        $aksicApplication->load(['educations', 'statusLogs', 'businessCategory', 'businessSubCategory']);
 
-        // Return JSON data for PDF generation
-        return response()->json([
-            'success' => true,
-            'application' => $aksicApplication,
-            'exported_at' => now()->toISOString()
-        ]);
+        // Generate PDF using dompdf
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('aksic-applications.pdf', compact('aksicApplication'));
+
+        // Set paper size and orientation
+        $pdf->setPaper('A4', 'portrait');
+
+        // Download the PDF with a meaningful filename
+        $filename = 'AKSIC_Application_'.$aksicApplication->application_no.'.pdf';
+
+        return $pdf->download($filename);
     }
 
     /**
@@ -488,7 +492,7 @@ class AksicApplicationController extends Controller
                 'old_status' => 'required|string',
                 'new_status' => 'required|string',
                 'remarks' => 'nullable|string',
-                'applicant_id' => 'required|integer'
+                'applicant_id' => 'required|integer',
             ]);
 
             Log::info('Starting status update', [
@@ -496,7 +500,7 @@ class AksicApplicationController extends Controller
                 'applicant_id' => $request->applicant_id,
                 'old_status' => $request->old_status,
                 'new_status' => $request->new_status,
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             DB::beginTransaction();
@@ -505,14 +509,14 @@ class AksicApplicationController extends Controller
             $apiResponse = null;
             try {
                 $apiToken = config('app.aksic_api_token');
-                if (!$apiToken) {
+                if (! $apiToken) {
                     throw new \Exception('AKSIC API token not configured. Please set AKSIC_API_TOKEN in your environment file.');
                 }
 
                 Log::info('Calling external API for status update', [
                     'applicant_id' => $request->applicant_id,
                     'status' => $request->new_status,
-                    'remarks' => $request->remarks
+                    'remarks' => $request->remarks,
                 ]);
 
                 $response = Http::withToken($apiToken)
@@ -523,35 +527,35 @@ class AksicApplicationController extends Controller
                     ->asForm() // Use form data instead of JSON as shown in Postman
                     ->post("https://sic.ajk.gov.pk/pmylp/api/bank/applications/{$request->applicant_id}/status-update", [
                         'status' => $request->new_status,
-                        'remarks' => $request->remarks
+                        'remarks' => $request->remarks,
                     ]);
 
                 if ($response->successful()) {
                     $apiResponse = $response->json();
                     Log::info('External API call successful', [
                         'applicant_id' => $request->applicant_id,
-                        'api_response' => $apiResponse
+                        'api_response' => $apiResponse,
                     ]);
                 } else {
                     Log::error('External API call failed', [
                         'applicant_id' => $request->applicant_id,
                         'status' => $response->status(),
-                        'response' => $response->body()
+                        'response' => $response->body(),
                     ]);
-                    throw new \Exception('Failed to update status via external API: ' . $response->body());
+                    throw new \Exception('Failed to update status via external API: '.$response->body());
                 }
             } catch (\Exception $e) {
                 Log::error('External API call exception', [
                     'applicant_id' => $request->applicant_id,
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ]);
-                throw new \Exception('External API error: ' . $e->getMessage());
+                throw new \Exception('External API error: '.$e->getMessage());
             }
 
             // If API call successful, update local database
             $updateData = [
                 'bank_status' => $request->new_status, // Update bank_status as this is what we're managing from bank side
-                'updated_at' => now()
+                'updated_at' => now(),
             ];
 
             // Define legacy statuses that should update the main status field
@@ -561,7 +565,7 @@ class AksicApplicationController extends Controller
             if (in_array($request->new_status, $legacyStatuses)) {
                 $updateData['status'] = $request->new_status;
                 Log::info('Legacy status detected, updating main status field', [
-                    'new_status' => $request->new_status
+                    'new_status' => $request->new_status,
                 ]);
             }
 
@@ -572,7 +576,7 @@ class AksicApplicationController extends Controller
 
             Log::info('Updating local application data', [
                 'application_id' => $aksicApplication->id,
-                'update_data' => $updateData
+                'update_data' => $updateData,
             ]);
 
             $aksicApplication->update($updateData);
@@ -592,7 +596,7 @@ class AksicApplicationController extends Controller
                     'changed_by_user' => auth()->user()->name ?? 'System',
                 ],
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
 
             DB::commit();
@@ -602,14 +606,14 @@ class AksicApplicationController extends Controller
                 'applicant_id' => $aksicApplication->applicant_id,
                 'old_status' => $request->old_status,
                 'new_status' => $request->new_status,
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Status updated successfully',
                 'application' => $aksicApplication->fresh(['statusLogs']),
-                'api_response' => $apiResponse
+                'api_response' => $apiResponse,
             ]);
 
         } catch (\Exception $e) {
@@ -618,12 +622,12 @@ class AksicApplicationController extends Controller
             Log::error('Failed to update status', [
                 'application_id' => $aksicApplication->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update status: ' . $e->getMessage()
+                'message' => 'Failed to update status: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -642,7 +646,7 @@ class AksicApplicationController extends Controller
                 ],
                 'http' => [
                     'timeout' => 30,
-                ]
+                ],
             ]));
 
             if ($imageContent === false) {
@@ -686,8 +690,9 @@ class AksicApplicationController extends Controller
         } catch (\Exception $e) {
             Log::error('Failed to download and store image', [
                 'url' => $imageUrl,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }

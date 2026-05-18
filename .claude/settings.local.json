@@ -6,9 +6,14 @@
       "Bash(vendor/bin/pint:*)",
       "mcp__laravel-boost__database-schema",
       "Bash(php artisan:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "mcp__laravel-boost__list-routes",
+      "mcp__laravel-boost__application-info",
+      "Bash(composer require:*)",
+      "Bash(php -l:*)"
     ]
   },
+  "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "laravel-boost",
     "herd"
