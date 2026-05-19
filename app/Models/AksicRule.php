@@ -70,6 +70,7 @@ class AksicRule extends Model
         return match ($quota) {
             'Male' => (string) $this->male_percentage,
             'Female' => (string) $this->female_percentage,
+            'Disabled' => (string) $this->special_person_percentage,
             'Special Person' => (string) $this->special_person_percentage,
             'Transgender' => (string) $this->transgender_percentage,
             default => '0',

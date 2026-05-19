@@ -34,8 +34,9 @@ class AksicRuleController extends Controller implements HasMiddleware
             ->allowedSorts(['district_name', 'population_percentage', 'proposed_beneficiaries', 'is_active', 'created_at']);
 
         $totalRuleIds = (clone $query)->pluck('id');
+        $populationPercentageTotal = (float) (clone $query)->sum('population_percentage');
         $totals = [
-            'population_percentage' => (float) (clone $query)->sum('population_percentage'),
+            'population_percentage' => abs($populationPercentageTotal - 100) <= 0.05 ? 100 : $populationPercentageTotal,
             'proposed_beneficiaries' => (int) (clone $query)->sum('proposed_beneficiaries'),
             'used' => AksicRule::query()
                 ->whereIn('id', $totalRuleIds)

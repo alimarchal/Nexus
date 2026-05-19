@@ -58,7 +58,7 @@ class AksicController extends Controller implements HasMiddleware
     {
         $aksic = DB::transaction(function () use ($request): Aksic {
             $data = $request->validated();
-            $data['gender'] = $data['quota'];
+            $data['gender'] = $this->resolveGender($data);
             $data['aksic_rule_id'] = AksicRule::query()
                 ->where('district_id', $data['district_id'])
                 ->where('is_active', true)
@@ -91,7 +91,7 @@ class AksicController extends Controller implements HasMiddleware
     {
         DB::transaction(function () use ($request, $aksic): void {
             $data = $request->validated();
-            $data['gender'] = $data['quota'];
+            $data['gender'] = $this->resolveGender($data);
             $data['aksic_rule_id'] = AksicRule::query()
                 ->where('district_id', $data['district_id'])
                 ->where('is_active', true)
@@ -149,5 +149,17 @@ class AksicController extends Controller implements HasMiddleware
 
         $aksic->amortizations()->forceDelete();
         $aksic->amortizations()->createMany($rows);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveGender(array $data): string
+    {
+        if (($data['quota'] ?? null) === 'Disabled') {
+            return (string) $data['gender'];
+        }
+
+        return (string) $data['quota'];
     }
 }

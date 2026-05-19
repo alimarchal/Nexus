@@ -78,8 +78,18 @@
         <x-label for="quota" value="Gender Quota" :required="true" />
         <select id="quota" name="quota" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
             <option value="">Select Quota</option>
-            @foreach (['Male', 'Female', 'Special Person', 'Transgender'] as $quota)
+            @foreach (['Male', 'Female', 'Disabled', 'Transgender'] as $quota)
                 <option value="{{ $quota }}" @selected(old('quota', $aksic->quota ?? '') === $quota)>{{ $quota }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <div id="disabled_gender_wrapper">
+        <x-label for="gender" value="Disabled Gender" :required="true" />
+        <select id="gender" name="gender" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
+            <option value="">Select Gender</option>
+            @foreach (['Male', 'Female'] as $gender)
+                <option value="{{ $gender }}" @selected(old('gender', $aksic->gender ?? '') === $gender)>{{ $gender }}</option>
             @endforeach
         </select>
     </div>
@@ -193,6 +203,9 @@
             const subCategoriesByParent = {{ Illuminate\Support\Js::from($subCategoriesByParent) }};
             const selectedSubCategoryId = String(@json((string) old('business_sub_category_id', $aksic->business_sub_category_id ?? '')));
             const district = document.getElementById('district_id');
+            const quota = document.getElementById('quota');
+            const disabledGenderWrapper = document.getElementById('disabled_gender_wrapper');
+            const gender = document.getElementById('gender');
             const businessType = document.getElementById('business_type');
             const startup = document.getElementById('is_startup_business');
             const rulesByDistrict = {{ Illuminate\Support\Js::from($rulesByDistrict) }};
@@ -240,15 +253,27 @@
                     : 'No active AKSIC rule for this district';
             }
 
+            function syncDisabledGender() {
+                const isDisabledQuota = quota.value === 'Disabled' || quota.value === 'Special Person';
+                disabledGenderWrapper.style.display = isDisabledQuota ? 'block' : 'none';
+                gender.required = isDisabledQuota;
+
+                if (!isDisabledQuota) {
+                    gender.value = '';
+                }
+            }
+
             kiborRate.addEventListener('input', updateTotalRate);
             spreadRate.addEventListener('input', updateTotalRate);
             businessCategory.addEventListener('change', loadBusinessSubCategories);
             businessType.addEventListener('change', syncStartupFlag);
             district.addEventListener('change', showDistrictRule);
+            quota.addEventListener('change', syncDisabledGender);
             updateTotalRate();
             loadBusinessSubCategories();
             syncStartupFlag();
             showDistrictRule();
+            syncDisabledGender();
         });
     </script>
 @endpush

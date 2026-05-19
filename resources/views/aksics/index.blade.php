@@ -53,7 +53,7 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Gender Quota</label>
                             <select name="filter[quota]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
                                 <option value="">All Quotas</option>
-                                @foreach (['Male', 'Female', 'Special Person', 'Transgender'] as $quota)
+                                @foreach (['Male', 'Female', 'Disabled', 'Special Person', 'Transgender'] as $quota)
                                     <option value="{{ $quota }}" @selected(request('filter.quota') === $quota)>{{ $quota }}</option>
                                 @endforeach
                             </select>
@@ -89,6 +89,7 @@
                                 <th class="py-2 px-2 text-left">CNIC</th>
                                 <th class="py-2 px-2 text-left">District</th>
                                 <th class="py-2 px-2 text-center">Quota</th>
+                                <th class="py-2 px-2 text-center">Gender</th>
                                 <th class="py-2 px-2 text-right">Principal</th>
                                 <th class="py-2 px-2 text-center">Tenure</th>
                                 <th class="py-2 px-2 text-center">Status</th>
@@ -105,6 +106,7 @@
                                     <td class="py-1 px-2 text-left">{{ $aksic->cnic }}</td>
                                     <td class="py-1 px-2 text-left">{{ $aksic->district_name ?? $aksic->district?->name ?? '-' }}</td>
                                     <td class="py-1 px-2 text-center">{{ $aksic->quota ?? '-' }}</td>
+                                    <td class="py-1 px-2 text-center">{{ $aksic->gender ?? '-' }}</td>
                                     <td class="py-1 px-2 text-right">{{ number_format((float) $aksic->principal_amount, 2) }}</td>
                                     <td class="py-1 px-2 text-center">{{ $aksic->tenure }}</td>
                                     <td class="py-1 px-2 text-center">{{ $aksic->status }}</td>

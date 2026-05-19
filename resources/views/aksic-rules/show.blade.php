@@ -42,7 +42,7 @@
                             <td class="px-2 py-2 border border-black">{{ number_format((float) $aksicRule->female_percentage, 2) }}%</td>
                         </tr>
                         <tr>
-                            <th class="px-2 py-2 border border-black">Special Person</th>
+                            <th class="px-2 py-2 border border-black">Disabled</th>
                             <td class="px-2 py-2 border border-black">{{ number_format((float) $aksicRule->special_person_percentage, 2) }}%</td>
                             <th class="px-2 py-2 border border-black">Transgender</th>
                             <td class="px-2 py-2 border border-black">{{ number_format((float) $aksicRule->transgender_percentage, 2) }}%</td>

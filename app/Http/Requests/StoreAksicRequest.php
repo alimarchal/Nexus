@@ -36,7 +36,8 @@ class StoreAksicRequest extends FormRequest
             'business_name' => ['nullable', 'string', 'max:255'],
             'business_type' => ['required', Rule::in(['Existing', 'Startup', 'New'])],
             'is_startup_business' => ['required', 'boolean'],
-            'quota' => ['required', Rule::in(['Male', 'Female', 'Special Person', 'Transgender'])],
+            'quota' => ['required', Rule::in(['Male', 'Female', 'Disabled', 'Special Person', 'Transgender'])],
+            'gender' => ['nullable', 'required_if:quota,Disabled,Special Person', Rule::in(['Male', 'Female'])],
             'business_address' => ['nullable', 'string'],
             'permanent_address' => ['nullable', 'string'],
             'business_category_id' => ['nullable', 'integer', 'exists:aksic_business_categories,id'],
@@ -118,11 +119,21 @@ class StoreAksicRequest extends FormRequest
         $quotaLimit = (int) floor($totalBeneficiaries * ($quotaPercentage / 100));
 
         $quotaUsage = Aksic::query()
-            ->where('quota', $this->input('quota'))
+            ->whereIn('quota', $this->quotaAliases($this->input('quota')))
             ->count();
 
         if ($quotaLimit > 0 && ($quotaUsage + 1) > $quotaLimit) {
             $validator->errors()->add('quota', "Selected quota is full. Limit: {$quotaLimit} beneficiaries.");
         }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function quotaAliases(string $quota): array
+    {
+        return $quota === 'Disabled' || $quota === 'Special Person'
+            ? ['Disabled', 'Special Person']
+            : [$quota];
     }
 }

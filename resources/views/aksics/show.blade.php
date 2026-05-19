@@ -106,7 +106,8 @@
                             <td class="px-2 py-2 border border-black">{{ $aksic->cnic }}</td>
                             <th class="px-2 py-2 border border-black">CNIC Issue Date</th>
                             <td class="px-2 py-2 border border-black">
-                                {{ $aksic->cnic_issue_date?->format('d-M-Y') ?? '-' }}</td>
+                                {{ $aksic->cnic_issue_date?->format('d-M-Y') ?? '-' }}
+                            </td>
                         </tr>
                         <tr>
                             <th class="px-2 py-2 border border-black">Date of Birth</th>
@@ -130,11 +131,20 @@
                         <tr class="bg-gray-50 dark:bg-gray-700 print:bg-gray-200">
                             <th class="px-2 py-2 border border-black">Branch</th>
                             <td class="px-2 py-2 border border-black">
-                                {{ $aksic->branch ? $aksic->branch->code . ' - ' . $aksic->branch->name : '-' }}</td>
+                                {{ $aksic->branch ? $aksic->branch->code . ' - ' . $aksic->branch->name : '-' }}
+                            </td>
                             <th class="px-2 py-2 border border-black">Quota</th>
                             <td class="px-2 py-2 border border-black">{{ $aksic->quota ?? '-' }}</td>
                         </tr>
                         <tr>
+                            <th class="px-2 py-2 border border-black">Gender</th>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->gender ?? '-' }}</td>
+                            <th class="px-2 py-2 border border-black">Disabled Quota</th>
+                            <td class="px-2 py-2 border border-black">
+                                {{ in_array($aksic->quota, ['Disabled', 'Special Person'], true) ? 'Yes' : 'No' }}
+                            </td>
+                        </tr>
+                        <tr class="bg-gray-50 dark:bg-gray-700 print:bg-gray-200">
                             <th class="px-2 py-2 border border-black">District Rule</th>
                             <td class="px-2 py-2 border border-black">
                                 {{ $aksic->aksicRule?->district_name ?? $aksic->district_name ?? $aksic->district?->name ?? '-' }}
@@ -144,37 +154,45 @@
                                 {{ $aksic->aksicRule ? number_format($aksic->aksicRule->proposed_beneficiaries) : '-' }}
                             </td>
                         </tr>
-                        <tr class="bg-gray-50 dark:bg-gray-700 print:bg-gray-200">
+                        <tr>
                             <th class="px-2 py-2 border border-black">Business Nature</th>
                             <td class="px-2 py-2 border border-black">{{ $aksic->business_type ?? '-' }}</td>
                             <th class="px-2 py-2 border border-black">Startup / New</th>
-                            <td class="px-2 py-2 border border-black">{{ $aksic->is_startup_business ? 'Yes' : 'No' }}</td>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->is_startup_business ? 'Yes' : 'No' }}
+                            </td>
                         </tr>
                         <tr>
                             <th class="px-2 py-2 border border-black">Site Visit Completed</th>
-                            <td class="px-2 py-2 border border-black">{{ $aksic->site_visit_completed ? 'Yes' : 'No' }}</td>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->site_visit_completed ? 'Yes' : 'No' }}
+                            </td>
                             <th class="px-2 py-2 border border-black">Site Visit Date</th>
-                            <td class="px-2 py-2 border border-black">{{ $aksic->site_visit_date?->format('d-M-Y') ?? '-' }}</td>
+                            <td class="px-2 py-2 border border-black">
+                                {{ $aksic->site_visit_date?->format('d-M-Y') ?? '-' }}
+                            </td>
                         </tr>
                         <tr>
                             <th class="px-2 py-2 border border-black">Principal Amount</th>
                             <td class="px-2 py-2 border border-black text-right">
-                                {{ number_format((float) $aksic->principal_amount, 2) }}</td>
+                                {{ number_format((float) $aksic->principal_amount, 2) }}
+                            </td>
                             <th class="px-2 py-2 border border-black">Tenure</th>
                             <td class="px-2 py-2 border border-black text-right">{{ $aksic->tenure }} Months</td>
                         </tr>
                         <tr class="bg-gray-50 dark:bg-gray-700 print:bg-gray-200">
                             <th class="px-2 py-2 border border-black">KIBOR</th>
                             <td class="px-2 py-2 border border-black text-right">
-                                {{ number_format((float) $aksic->kibor_rate, 2) }}%</td>
+                                {{ number_format((float) $aksic->kibor_rate, 2) }}%
+                            </td>
                             <th class="px-2 py-2 border border-black">Spread</th>
                             <td class="px-2 py-2 border border-black text-right">
-                                {{ number_format((float) $aksic->spread_rate, 2) }}%</td>
+                                {{ number_format((float) $aksic->spread_rate, 2) }}%
+                            </td>
                         </tr>
                         <tr>
                             <th class="px-2 py-2 border border-black">Total Rate</th>
                             <td class="px-2 py-2 border border-black text-right">
-                                {{ number_format((float) $aksic->total_rate, 2) }}%</td>
+                                {{ number_format((float) $aksic->total_rate, 2) }}%
+                            </td>
                             <th class="px-2 py-2 border border-black">Disbursement Date</th>
                             <td class="px-2 py-2 border border-black">{{ $aksic->disbursement_date?->format('d-M-Y') }}
                             </td>
@@ -182,7 +200,8 @@
                         <tr class="bg-gray-50 dark:bg-gray-700 print:bg-gray-200">
                             <th class="px-2 py-2 border border-black">Sanction Date</th>
                             <td class="px-2 py-2 border border-black">
-                                {{ $aksic->sanction_date?->format('d-M-Y') ?? '-' }}</td>
+                                {{ $aksic->sanction_date?->format('d-M-Y') ?? '-' }}
+                            </td>
                             <th class="px-2 py-2 border border-black">Created By</th>
                             <td class="px-2 py-2 border border-black">{{ $aksic->creator?->name ?? '-' }}</td>
                         </tr>
@@ -223,20 +242,27 @@
                                 <td class="px-2 py-2 border border-black text-left">{{ $row->due_date->format('d-M-Y') }}
                                 </td>
                                 <td class="px-2 py-2 border border-black text-right">
-                                    {{ number_format((float) $row->principal_amount_os, 2) }}</td>
+                                    {{ number_format((float) $row->principal_amount_os, 2) }}
+                                </td>
                                 <td class="px-2 py-2 border border-black text-right">
-                                    {{ number_format((float) $row->installment_per_month, 2) }}</td>
+                                    {{ number_format((float) $row->installment_per_month, 2) }}
+                                </td>
                                 <td class="px-2 py-2 border border-black text-right">
-                                    {{ number_format((float) $row->product, 2) }}</td>
+                                    {{ number_format((float) $row->product, 2) }}
+                                </td>
                                 <td class="px-2 py-2 border border-black text-right">
-                                    {{ number_format((float) $row->interest_rate_per_month, 2) }}</td>
+                                    {{ number_format((float) $row->interest_rate_per_month, 2) }}
+                                </td>
                                 <td class="px-2 py-2 border border-black text-right">
-                                    {{ number_format((float) $row->total_interest, 2) }}</td>
+                                    {{ number_format((float) $row->total_interest, 2) }}
+                                </td>
                                 <td class="px-2 py-2 border border-black text-center">{{ $row->days }}</td>
                                 <td class="px-2 py-2 border border-black text-right">
-                                    {{ number_format((float) $row->total_installment, 2) }}</td>
+                                    {{ number_format((float) $row->total_installment, 2) }}
+                                </td>
                                 <td class="px-2 py-2 border border-black text-right">
-                                    {{ number_format((float) $row->principal_balance_after_installment, 2) }}</td>
+                                    {{ number_format((float) $row->principal_balance_after_installment, 2) }}
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -244,20 +270,25 @@
                         <tr>
                             <td colspan="6" class="px-2 py-2 border border-black text-right">Totals</td>
                             <td class="px-2 py-2 border border-black text-right">
-                                {{ number_format((float) $aksic->amortizations->sum('total_interest'), 2) }}</td>
+                                {{ number_format((float) $aksic->amortizations->sum('total_interest'), 2) }}
+                            </td>
                             <td class="px-2 py-2 border border-black text-center">
-                                {{ $aksic->amortizations->sum('days') }}</td>
+                                {{ $aksic->amortizations->sum('days') }}
+                            </td>
                             <td class="px-2 py-2 border border-black text-right">
-                                {{ number_format((float) $aksic->amortizations->sum('total_installment'), 2) }}</td>
+                                {{ number_format((float) $aksic->amortizations->sum('total_installment'), 2) }}
+                            </td>
                             <td class="px-2 py-2 border border-black text-right">0.00</td>
                         </tr>
                         <tr class="bg-gray-200 dark:bg-gray-600 print:bg-gray-300">
                             <td colspan="3" class="px-2 py-2 border border-black text-right">Total Principal</td>
                             <td class="px-2 py-2 border border-black text-right">
-                                {{ number_format((float) $aksic->amortizations->sum('installment_per_month'), 2) }}</td>
+                                {{ number_format((float) $aksic->amortizations->sum('installment_per_month'), 2) }}
+                            </td>
                             <td colspan="2" class="px-2 py-2 border border-black text-right">Grand Total Payable</td>
                             <td colspan="3" class="px-2 py-2 border border-black text-right">
-                                {{ number_format((float) $aksic->amortizations->sum('total_installment'), 2) }}</td>
+                                {{ number_format((float) $aksic->amortizations->sum('total_installment'), 2) }}
+                            </td>
                             <td class="px-2 py-2 border border-black text-right">0.00</td>
                         </tr>
                     </tfoot>

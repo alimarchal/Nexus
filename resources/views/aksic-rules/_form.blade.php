@@ -44,7 +44,7 @@
     </div>
 
     <div>
-        <x-label for="special_person_percentage" value="Special Person %" :required="true" />
+        <x-label for="special_person_percentage" value="Disabled %" :required="true" />
         <x-input id="special_person_percentage" type="number" step="0.01" min="0" max="100" name="special_person_percentage"
             class="mt-1 block w-full" :value="old('special_person_percentage', $aksicRule->special_person_percentage ?? 2)" required />
     </div>

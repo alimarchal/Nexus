@@ -98,6 +98,14 @@
                         <div id="beneficiaryChart"></div>
                     </div>
                     <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                        <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-2">Gender Quota by District</h3>
+                        <div id="genderQuotaChart"></div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                        <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-2">Actual Gender Loans</h3>
+                        <div id="actualGenderChart"></div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
                         <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-2">Amount & Interest by District</h3>
                         <div id="amountChart"></div>
                     </div>
@@ -111,6 +119,15 @@
                             <th class="px-2 py-2 border border-black text-left">District</th>
                             <th class="px-2 py-2 border border-black text-right">Population %</th>
                             <th class="px-2 py-2 border border-black text-right">Proposed</th>
+                            <th class="px-2 py-2 border border-black text-right">Male 48%</th>
+                            <th class="px-2 py-2 border border-black text-right">Female 48%</th>
+                            <th class="px-2 py-2 border border-black text-right">Disabled 2%</th>
+                            <th class="px-2 py-2 border border-black text-right">Transgender 2%</th>
+                            <th class="px-2 py-2 border border-black text-right">Male Loans</th>
+                            <th class="px-2 py-2 border border-black text-right">Female Loans</th>
+                            <th class="px-2 py-2 border border-black text-right">Disabled Male</th>
+                            <th class="px-2 py-2 border border-black text-right">Disabled Female</th>
+                            <th class="px-2 py-2 border border-black text-right">Transgender Loans</th>
                             <th class="px-2 py-2 border border-black text-right">Loans Done</th>
                             <th class="px-2 py-2 border border-black text-right">Remaining</th>
                             <th class="px-2 py-2 border border-black text-right">Loan Amount</th>
@@ -125,6 +142,15 @@
                                 <td class="px-2 py-2 border border-black text-left">{{ $row['district'] }}</td>
                                 <td class="px-2 py-2 border border-black text-right">{{ number_format($row['population_percentage'], 2) }}%</td>
                                 <td class="px-2 py-2 border border-black text-right">{{ number_format($row['proposed_beneficiaries']) }}</td>
+                                <td class="px-2 py-2 border border-black text-right">{{ number_format($row['male_beneficiaries']) }}</td>
+                                <td class="px-2 py-2 border border-black text-right">{{ number_format($row['female_beneficiaries']) }}</td>
+                                <td class="px-2 py-2 border border-black text-right">{{ number_format($row['disabled_beneficiaries']) }}</td>
+                                <td class="px-2 py-2 border border-black text-right">{{ number_format($row['transgender_beneficiaries']) }}</td>
+                                <td class="px-2 py-2 border border-black text-right">{{ number_format($row['actual_male_loans']) }}</td>
+                                <td class="px-2 py-2 border border-black text-right">{{ number_format($row['actual_female_loans']) }}</td>
+                                <td class="px-2 py-2 border border-black text-right">{{ number_format($row['actual_disabled_male_loans']) }}</td>
+                                <td class="px-2 py-2 border border-black text-right">{{ number_format($row['actual_disabled_female_loans']) }}</td>
+                                <td class="px-2 py-2 border border-black text-right">{{ number_format($row['actual_transgender_loans']) }}</td>
                                 <td class="px-2 py-2 border border-black text-right">{{ number_format($row['loans_done']) }}</td>
                                 <td class="px-2 py-2 border border-black text-right">{{ number_format($row['remaining']) }}</td>
                                 <td class="px-2 py-2 border border-black text-right">{{ number_format($row['principal_amount'], 2) }}</td>
@@ -138,6 +164,15 @@
                             <td colspan="2" class="px-2 py-2 border border-black text-right">Totals</td>
                             <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['population_percentage'], 2) }}%</td>
                             <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['proposed_beneficiaries']) }}</td>
+                            <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['male_beneficiaries']) }}</td>
+                            <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['female_beneficiaries']) }}</td>
+                            <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['disabled_beneficiaries']) }}</td>
+                            <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['transgender_beneficiaries']) }}</td>
+                            <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['actual_male_loans']) }}</td>
+                            <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['actual_female_loans']) }}</td>
+                            <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['actual_disabled_male_loans']) }}</td>
+                            <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['actual_disabled_female_loans']) }}</td>
+                            <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['actual_transgender_loans']) }}</td>
                             <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['loans_done']) }}</td>
                             <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['remaining']) }}</td>
                             <td class="px-2 py-2 border border-black text-right">{{ number_format($totals['principal_amount'], 2) }}</td>
@@ -168,6 +203,49 @@
                     xaxis: { categories: chartData.districts },
                     yaxis: { labels: { formatter: value => Math.round(value).toLocaleString() } },
                     colors: ['#1e3a8a', '#15803d'],
+                    plotOptions: { bar: { columnWidth: '55%', borderRadius: 3 } },
+                    dataLabels: { enabled: false },
+                    legend: { position: 'top' }
+                }).render();
+
+                new ApexCharts(document.querySelector('#genderQuotaChart'), {
+                    chart: {
+                        type: 'bar',
+                        height: 340,
+                        stacked: true,
+                        toolbar: { show: false }
+                    },
+                    series: [
+                        { name: 'Male', data: chartData.maleBeneficiaries },
+                        { name: 'Female', data: chartData.femaleBeneficiaries },
+                        { name: 'Disabled', data: chartData.disabledBeneficiaries },
+                        { name: 'Transgender', data: chartData.transgenderBeneficiaries }
+                    ],
+                    xaxis: { categories: chartData.districts },
+                    yaxis: { labels: { formatter: value => Math.round(value).toLocaleString() } },
+                    colors: ['#1e3a8a', '#be185d', '#b45309', '#7c3aed'],
+                    plotOptions: { bar: { columnWidth: '55%', borderRadius: 3 } },
+                    dataLabels: { enabled: false },
+                    legend: { position: 'top' }
+                }).render();
+
+                new ApexCharts(document.querySelector('#actualGenderChart'), {
+                    chart: {
+                        type: 'bar',
+                        height: 340,
+                        stacked: true,
+                        toolbar: { show: false }
+                    },
+                    series: [
+                        { name: 'Male', data: chartData.actualMaleLoans },
+                        { name: 'Female', data: chartData.actualFemaleLoans },
+                        { name: 'Disabled Male', data: chartData.actualDisabledMaleLoans },
+                        { name: 'Disabled Female', data: chartData.actualDisabledFemaleLoans },
+                        { name: 'Transgender', data: chartData.actualTransgenderLoans }
+                    ],
+                    xaxis: { categories: chartData.districts },
+                    yaxis: { labels: { formatter: value => Math.round(value).toLocaleString() } },
+                    colors: ['#1e3a8a', '#be185d', '#0f766e', '#b45309', '#7c3aed'],
                     plotOptions: { bar: { columnWidth: '55%', borderRadius: 3 } },
                     dataLabels: { enabled: false },
                     legend: { position: 'top' }

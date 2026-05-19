@@ -142,43 +142,217 @@ class ReportController extends Controller implements HasMiddleware
             ->select('aksic_rules.id', DB::raw('COALESCE(SUM(aksic_amortizations.total_interest), 0) as interest_sum'))
             ->pluck('interest_sum', 'id');
 
-        $reportRows = $rules->map(function (AksicRule $rule) use ($interestByRule): array {
-            $principalAmount = (float) ($rule->principal_amount_sum ?? 0);
-            $interestAmount = (float) ($interestByRule[$rule->id] ?? 0);
+        $actualQuotaCountsByRule = DB::table('aksics')
+            ->select('aksic_rule_id', 'quota', 'gender', DB::raw('COUNT(*) as loans_count'))
+            ->whereNotNull('aksic_rule_id')
+            ->whereNull('deleted_at')
+            ->groupBy('aksic_rule_id', 'quota', 'gender')
+            ->get()
+            ->groupBy('aksic_rule_id');
+
+        $reportRows = $rules->map(function (AksicRule $rule) use ($interestByRule, $actualQuotaCountsByRule): array {
+            $principalAmountCents = $this->decimalAmountToCents($rule->principal_amount_sum ?? 0);
+            $interestAmountCents = $this->decimalAmountToCents($interestByRule[$rule->id] ?? 0);
+            $principalAmount = $this->centsToDecimal($principalAmountCents);
+            $interestAmount = $this->centsToDecimal($interestAmountCents);
             $loansDone = (int) $rule->aksics_count;
             $remaining = max(0, $rule->proposed_beneficiaries - $loansDone);
+            $quotaCounts = $this->allocateAksicGenderQuota($rule);
+            $actualQuotaCounts = $this->actualAksicQuotaCounts($actualQuotaCountsByRule->get($rule->id, collect()));
 
             return [
                 'district' => $rule->district_name,
+                'population_basis_points' => $this->decimalPercentToBasisPoints((string) $rule->population_percentage),
                 'population_percentage' => (float) $rule->population_percentage,
                 'proposed_beneficiaries' => $rule->proposed_beneficiaries,
+                'male_beneficiaries' => $quotaCounts['male'],
+                'female_beneficiaries' => $quotaCounts['female'],
+                'disabled_beneficiaries' => $quotaCounts['disabled'],
+                'transgender_beneficiaries' => $quotaCounts['transgender'],
+                'actual_male_loans' => $actualQuotaCounts['male'],
+                'actual_female_loans' => $actualQuotaCounts['female'],
+                'actual_disabled_male_loans' => $actualQuotaCounts['disabled_male'],
+                'actual_disabled_female_loans' => $actualQuotaCounts['disabled_female'],
+                'actual_transgender_loans' => $actualQuotaCounts['transgender'],
                 'loans_done' => $loansDone,
                 'remaining' => $remaining,
                 'principal_amount' => $principalAmount,
                 'interest_amount' => $interestAmount,
-                'total_payable' => $principalAmount + $interestAmount,
+                'total_payable' => $this->centsToDecimal($principalAmountCents + $interestAmountCents),
             ];
         });
 
+        $reportRows = $this->normalizeAksicPopulationPercentages($reportRows);
+        $populationPercentageTotal = $reportRows->sum('population_percentage');
+        $financialTotals = $this->normalizeAksicFinancialTotals($reportRows);
+
         $totals = [
-            'population_percentage' => $reportRows->sum('population_percentage'),
+            'population_percentage' => abs($populationPercentageTotal - 100) <= 0.05 ? 100 : $populationPercentageTotal,
             'proposed_beneficiaries' => $reportRows->sum('proposed_beneficiaries'),
+            'male_beneficiaries' => $reportRows->sum('male_beneficiaries'),
+            'female_beneficiaries' => $reportRows->sum('female_beneficiaries'),
+            'disabled_beneficiaries' => $reportRows->sum('disabled_beneficiaries'),
+            'transgender_beneficiaries' => $reportRows->sum('transgender_beneficiaries'),
+            'actual_male_loans' => $reportRows->sum('actual_male_loans'),
+            'actual_female_loans' => $reportRows->sum('actual_female_loans'),
+            'actual_disabled_male_loans' => $reportRows->sum('actual_disabled_male_loans'),
+            'actual_disabled_female_loans' => $reportRows->sum('actual_disabled_female_loans'),
+            'actual_transgender_loans' => $reportRows->sum('actual_transgender_loans'),
             'loans_done' => $reportRows->sum('loans_done'),
             'remaining' => $reportRows->sum('remaining'),
-            'principal_amount' => $reportRows->sum('principal_amount'),
-            'interest_amount' => $reportRows->sum('interest_amount'),
-            'total_payable' => $reportRows->sum('total_payable'),
+            'principal_amount' => $financialTotals['principal_amount'],
+            'interest_amount' => $financialTotals['interest_amount'],
+            'total_payable' => $financialTotals['total_payable'],
         ];
 
         $chartData = [
             'districts' => $reportRows->pluck('district')->values(),
             'proposed' => $reportRows->pluck('proposed_beneficiaries')->values(),
             'loansDone' => $reportRows->pluck('loans_done')->values(),
+            'maleBeneficiaries' => $reportRows->pluck('male_beneficiaries')->values(),
+            'femaleBeneficiaries' => $reportRows->pluck('female_beneficiaries')->values(),
+            'disabledBeneficiaries' => $reportRows->pluck('disabled_beneficiaries')->values(),
+            'transgenderBeneficiaries' => $reportRows->pluck('transgender_beneficiaries')->values(),
+            'actualMaleLoans' => $reportRows->pluck('actual_male_loans')->values(),
+            'actualFemaleLoans' => $reportRows->pluck('actual_female_loans')->values(),
+            'actualDisabledMaleLoans' => $reportRows->pluck('actual_disabled_male_loans')->values(),
+            'actualDisabledFemaleLoans' => $reportRows->pluck('actual_disabled_female_loans')->values(),
+            'actualTransgenderLoans' => $reportRows->pluck('actual_transgender_loans')->values(),
             'principalAmounts' => $reportRows->pluck('principal_amount')->map(fn ($value) => round($value, 2))->values(),
             'interestAmounts' => $reportRows->pluck('interest_amount')->map(fn ($value) => round($value, 2))->values(),
         ];
 
         return view('reports.aksic-rules-report', compact('reportRows', 'totals', 'chartData'));
+    }
+
+    private function allocateAksicGenderQuota(AksicRule $rule): array
+    {
+        $male = (int) round($rule->proposed_beneficiaries * ((float) $rule->male_percentage / 100));
+        $female = (int) round($rule->proposed_beneficiaries * ((float) $rule->female_percentage / 100));
+        $disabled = (int) round($rule->proposed_beneficiaries * ((float) $rule->special_person_percentage / 100));
+        $transgender = (int) round($rule->proposed_beneficiaries * ((float) $rule->transgender_percentage / 100));
+        $difference = $rule->proposed_beneficiaries - ($male + $female + $disabled + $transgender);
+
+        $transgender += $difference;
+
+        return [
+            'male' => $male,
+            'female' => $female,
+            'disabled' => max(0, $disabled),
+            'transgender' => max(0, $transgender),
+        ];
+    }
+
+    private function actualAksicQuotaCounts($rows): array
+    {
+        $counts = [
+            'male' => 0,
+            'female' => 0,
+            'disabled_male' => 0,
+            'disabled_female' => 0,
+            'transgender' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $quota = (string) $row->quota;
+            $gender = (string) $row->gender;
+            $count = (int) $row->loans_count;
+
+            if ($quota === 'Male') {
+                $counts['male'] += $count;
+            } elseif ($quota === 'Female') {
+                $counts['female'] += $count;
+            } elseif ($quota === 'Transgender') {
+                $counts['transgender'] += $count;
+            } elseif (in_array($quota, ['Disabled', 'Special Person'], true)) {
+                if ($gender === 'Female') {
+                    $counts['disabled_female'] += $count;
+                } else {
+                    $counts['disabled_male'] += $count;
+                }
+            }
+        }
+
+        return $counts;
+    }
+
+    private function normalizeAksicPopulationPercentages($reportRows)
+    {
+        $basisPointTotal = $reportRows->sum('population_basis_points');
+        $difference = 10000 - $basisPointTotal;
+
+        if ($reportRows->isEmpty() || abs($difference) > 5 || $difference === 0) {
+            return $reportRows->map(function (array $row): array {
+                $row['population_percentage'] = $row['population_basis_points'] / 100;
+
+                return $row;
+            });
+        }
+
+        $lastIndex = $reportRows->keys()->last();
+        $lastRow = $reportRows[$lastIndex];
+        $lastRow['population_basis_points'] += $difference;
+        $reportRows[$lastIndex] = $lastRow;
+
+        return $reportRows->map(function (array $row): array {
+            $row['population_percentage'] = $row['population_basis_points'] / 100;
+
+            return $row;
+        });
+    }
+
+    private function decimalPercentToBasisPoints(string $percentage): int
+    {
+        $normalized = trim($percentage);
+        [$whole, $decimal] = array_pad(explode('.', $normalized, 2), 2, '0');
+        $whole = preg_replace('/[^0-9-]/', '', $whole) ?: '0';
+        $decimal = preg_replace('/[^0-9]/', '', $decimal) ?: '0';
+
+        return ((int) $whole * 100) + (int) str_pad(substr($decimal, 0, 2), 2, '0');
+    }
+
+    private function decimalAmountToCents(string|int|float|null $amount): int
+    {
+        if ($amount === null) {
+            return 0;
+        }
+
+        $normalized = is_float($amount)
+            ? number_format($amount, 2, '.', '')
+            : trim((string) $amount);
+        $negative = str_starts_with($normalized, '-');
+        $normalized = ltrim($normalized, '-');
+        [$whole, $decimal] = array_pad(explode('.', $normalized, 2), 2, '0');
+        $whole = preg_replace('/[^0-9]/', '', $whole) ?: '0';
+        $decimal = preg_replace('/[^0-9]/', '', $decimal) ?: '0';
+        $cents = ((int) $whole * 100) + (int) str_pad(substr($decimal, 0, 2), 2, '0');
+
+        return $negative ? -$cents : $cents;
+    }
+
+    private function centsToDecimal(int $cents): float
+    {
+        return $cents / 100;
+    }
+
+    private function normalizeAksicFinancialTotals($reportRows): array
+    {
+        if ($reportRows->isEmpty()) {
+            return [
+                'principal_amount' => 0.0,
+                'interest_amount' => 0.0,
+                'total_payable' => 0.0,
+            ];
+        }
+
+        $principalCents = $reportRows->sum(fn (array $row): int => $this->decimalAmountToCents($row['principal_amount']));
+        $interestCents = $reportRows->sum(fn (array $row): int => $this->decimalAmountToCents($row['interest_amount']));
+
+        return [
+            'principal_amount' => $this->centsToDecimal($principalCents),
+            'interest_amount' => $this->centsToDecimal($interestCents),
+            'total_payable' => $this->centsToDecimal($principalCents + $interestCents),
+        ];
     }
 
     public function printedStationeries(Request $request)
