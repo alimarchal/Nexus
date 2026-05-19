@@ -135,6 +135,28 @@
                             <td class="px-2 py-2 border border-black">{{ $aksic->quota ?? '-' }}</td>
                         </tr>
                         <tr>
+                            <th class="px-2 py-2 border border-black">District Rule</th>
+                            <td class="px-2 py-2 border border-black">
+                                {{ $aksic->aksicRule?->district_name ?? $aksic->district_name ?? $aksic->district?->name ?? '-' }}
+                            </td>
+                            <th class="px-2 py-2 border border-black">Rule Beneficiaries</th>
+                            <td class="px-2 py-2 border border-black text-right">
+                                {{ $aksic->aksicRule ? number_format($aksic->aksicRule->proposed_beneficiaries) : '-' }}
+                            </td>
+                        </tr>
+                        <tr class="bg-gray-50 dark:bg-gray-700 print:bg-gray-200">
+                            <th class="px-2 py-2 border border-black">Business Nature</th>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->business_type ?? '-' }}</td>
+                            <th class="px-2 py-2 border border-black">Startup / New</th>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->is_startup_business ? 'Yes' : 'No' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="px-2 py-2 border border-black">Site Visit Completed</th>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->site_visit_completed ? 'Yes' : 'No' }}</td>
+                            <th class="px-2 py-2 border border-black">Site Visit Date</th>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->site_visit_date?->format('d-M-Y') ?? '-' }}</td>
+                        </tr>
+                        <tr>
                             <th class="px-2 py-2 border border-black">Principal Amount</th>
                             <td class="px-2 py-2 border border-black text-right">
                                 {{ number_format((float) $aksic->principal_amount, 2) }}</td>

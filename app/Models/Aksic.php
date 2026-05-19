@@ -27,7 +27,9 @@ class Aksic extends Model
         'phone',
         'business_name',
         'business_type',
+        'is_startup_business',
         'quota',
+        'gender',
         'business_address',
         'permanent_address',
         'business_category_id',
@@ -36,6 +38,7 @@ class Aksic extends Model
         'amount',
         'district_id',
         'tehsil_id',
+        'aksic_rule_id',
         'applicant_choosed_branch_id',
         'branch_id',
         'challan_branch_id',
@@ -57,6 +60,8 @@ class Aksic extends Model
         'tenure',
         'disbursement_date',
         'sanction_date',
+        'site_visit_completed',
+        'site_visit_date',
         'kibor_rate',
         'spread_rate',
         'total_rate',
@@ -75,6 +80,9 @@ class Aksic extends Model
             'tenure' => 'integer',
             'disbursement_date' => 'date',
             'sanction_date' => 'date',
+            'site_visit_completed' => 'boolean',
+            'site_visit_date' => 'date',
+            'is_startup_business' => 'boolean',
             'kibor_rate' => 'decimal:2',
             'spread_rate' => 'decimal:2',
             'total_rate' => 'decimal:2',
@@ -90,6 +98,8 @@ class Aksic extends Model
             AllowedFilter::exact('status'),
             AllowedFilter::exact('tier'),
             AllowedFilter::exact('branch_id'),
+            AllowedFilter::exact('district_id'),
+            AllowedFilter::exact('quota'),
             AllowedFilter::partial('name'),
             AllowedFilter::partial('father_name'),
             AllowedFilter::partial('cnic'),
@@ -131,5 +141,15 @@ class Aksic extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class);
+    }
+
+    public function aksicRule(): BelongsTo
+    {
+        return $this->belongsTo(AksicRule::class);
     }
 }

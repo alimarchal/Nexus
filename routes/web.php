@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AksicApplicationController;
 use App\Http\Controllers\AksicController;
+use App\Http\Controllers\AksicRuleController;
 use App\Http\Controllers\AuditActionUpdateController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\AuditExtraController;
@@ -68,6 +69,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('reports/deposit-advances-reports-branch', [ReportController::class, 'depositadvancesregionPositionReport'])->name('reports.deposit-advances-reports-branch');
     Route::get('reports/deposit-advances-reports-region', [ReportController::class, 'depositadvancesPositionReport'])->name('reports.deposit-advances-reports-region');
     Route::get('reports/accounts-branchwise-reports', [ReportController::class, 'accountsbranchwisePositionReport'])->name('reports.accounts-branchwise-reports');
+    Route::get('reports/aksic-rules-report', [ReportController::class, 'aksicRulesReport'])->name('reports.aksic-rules-report');
     Route::get('settings/user-module', [UserModuleController::class, 'index'])->name('user.module');
     Route::get('settings/user-module/users', [UserController::class, 'index'])->name('users.index');
     Route::get('settings/user-module/permissions', [PermissionController::class, 'index'])->name('permissions.index');
@@ -119,6 +121,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::resource('product/printed-stationeries', PrintedStationeryController::class);
     Route::resource('product/aksic', AksicController::class)->names('aksic');
+    Route::resource('product/aksic-rules', AksicRuleController::class)->parameters(['aksic-rules' => 'aksic_rule'])->names('aksic-rules');
     Route::resource('product/stationery-transactions', StationeryTransactionController::class);
     Route::get('product/stationery-transactions/{stationeryTransaction}/download', [StationeryTransactionController::class, 'downloadDocument'])->name('stationery-transactions.download');
     // Report

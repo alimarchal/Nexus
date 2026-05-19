@@ -45,9 +45,43 @@
     </div>
 
     <div>
-        <x-label for="business_type" value="Business Type" />
-        <x-input id="business_type" type="text" name="business_type" class="mt-1 block w-full"
-            :value="old('business_type', $aksic->business_type ?? '')" />
+        <x-label for="business_type" value="Business Type" :required="true" />
+        <select id="business_type" name="business_type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
+            <option value="">Select Business Type</option>
+            @foreach (['Existing', 'Startup', 'New'] as $businessType)
+                <option value="{{ $businessType }}" @selected(old('business_type', $aksic->business_type ?? '') === $businessType)>{{ $businessType }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    <div>
+        <x-label for="is_startup_business" value="Startup / New Business" :required="true" />
+        <select id="is_startup_business" name="is_startup_business" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
+            <option value="0" @selected((string) old('is_startup_business', isset($aksic) ? (int) $aksic->is_startup_business : 0) === '0')>No</option>
+            <option value="1" @selected((string) old('is_startup_business', isset($aksic) ? (int) $aksic->is_startup_business : 0) === '1')>Yes</option>
+        </select>
+    </div>
+
+    <div>
+        <x-label for="district_id" value="District" :required="true" />
+        <select id="district_id" name="district_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
+            <option value="">Select District</option>
+            @foreach ($districts as $district)
+                <option value="{{ $district->id }}" @selected((string) old('district_id', $aksic->district_id ?? '') === (string) $district->id)>
+                    {{ $district->name }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+    <div>
+        <x-label for="quota" value="Gender Quota" :required="true" />
+        <select id="quota" name="quota" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
+            <option value="">Select Quota</option>
+            @foreach (['Male', 'Female', 'Special Person', 'Transgender'] as $quota)
+                <option value="{{ $quota }}" @selected(old('quota', $aksic->quota ?? '') === $quota)>{{ $quota }}</option>
+            @endforeach
+        </select>
     </div>
 
     <div>
@@ -106,6 +140,20 @@
     </div>
 
     <div>
+        <x-label for="site_visit_completed" value="Site Visit Completed" :required="true" />
+        <select id="site_visit_completed" name="site_visit_completed" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
+            <option value="0" @selected((string) old('site_visit_completed', isset($aksic) ? (int) $aksic->site_visit_completed : 0) === '0')>No</option>
+            <option value="1" @selected((string) old('site_visit_completed', isset($aksic) ? (int) $aksic->site_visit_completed : 0) === '1')>Yes</option>
+        </select>
+    </div>
+
+    <div>
+        <x-label for="site_visit_date" value="Site Visit Date" />
+        <x-input id="site_visit_date" type="date" name="site_visit_date" class="mt-1 block w-full"
+            :value="old('site_visit_date', isset($aksic) && $aksic->site_visit_date ? $aksic->site_visit_date->format('Y-m-d') : '')" />
+    </div>
+
+    <div>
         <x-label for="kibor_rate" value="KIBOR Rate" :required="true" />
         <x-input id="kibor_rate" type="number" step="0.01" name="kibor_rate" class="mt-1 block w-full"
             :value="old('kibor_rate', $aksic->kibor_rate ?? '')" required />
@@ -144,6 +192,10 @@
             const businessSubCategory = document.getElementById('business_sub_category_id');
             const subCategoriesByParent = {{ Illuminate\Support\Js::from($subCategoriesByParent) }};
             const selectedSubCategoryId = String(@json((string) old('business_sub_category_id', $aksic->business_sub_category_id ?? '')));
+            const district = document.getElementById('district_id');
+            const businessType = document.getElementById('business_type');
+            const startup = document.getElementById('is_startup_business');
+            const rulesByDistrict = {{ Illuminate\Support\Js::from($rulesByDistrict) }};
 
             function updateTotalRate() {
                 const kibor = parseFloat(kiborRate.value);
@@ -177,11 +229,26 @@
                 });
             }
 
+            function syncStartupFlag() {
+                startup.value = ['Startup', 'New'].includes(businessType.value) ? '1' : '0';
+            }
+
+            function showDistrictRule() {
+                const selectedRule = rulesByDistrict[district.value];
+                district.title = selectedRule
+                    ? `${selectedRule.district_name}: ${selectedRule.proposed_beneficiaries} beneficiaries, ${selectedRule.population_percentage}% population`
+                    : 'No active AKSIC rule for this district';
+            }
+
             kiborRate.addEventListener('input', updateTotalRate);
             spreadRate.addEventListener('input', updateTotalRate);
             businessCategory.addEventListener('change', loadBusinessSubCategories);
+            businessType.addEventListener('change', syncStartupFlag);
+            district.addEventListener('change', showDistrictRule);
             updateTotalRate();
             loadBusinessSubCategories();
+            syncStartupFlag();
+            showDistrictRule();
         });
     </script>
 @endpush

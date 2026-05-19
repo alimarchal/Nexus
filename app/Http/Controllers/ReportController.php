@@ -2,27 +2,26 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AksicRule;
+use App\Models\Branch;
 use App\Models\DailyPosition;
 use App\Models\Division;
 use App\Models\PrintedStationery;
 use App\Models\Region;
+use App\Models\Report;
 use App\Models\StationeryTransaction;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use App\Models\Branch;
-use App\Models\Report;
-use Illuminate\Support\Facades\DB;
-use Spatie\QueryBuilder\AllowedFilter;
-use Spatie\QueryBuilder\QueryBuilder;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('role_or_permission:view reports', only: ['index', 'show']),
+            new Middleware('role_or_permission:view reports', only: ['index', 'show', 'aksicRulesReport']),
             new Middleware('role_or_permission:generate reports', only: ['generate', 'generateDailyPositions', 'generateStationeryReport']),
             new Middleware('role_or_permission:export reports', only: ['export', 'exportDailyPositions']),
         ];
@@ -84,7 +83,7 @@ class ReportController extends Controller implements HasMiddleware
     {
         // Fetch regions with branches and aggregate sums of deposit and advances, and count of branches
         $regions = Region::withCount('branches') // Add branch count
-            ->with(['branches' => function($query) use ($request) {
+            ->with(['branches' => function ($query) use ($request) {
                 // Apply filters (if any)
                 if ($request->has('filter.branch_id')) {
                     $query->where('id', $request->input('filter.branch_id'));
@@ -102,6 +101,7 @@ class ReportController extends Controller implements HasMiddleware
             // Aggregate data for each region
             $region->deposit_sum = $region->branches->sum('deposit');
             $region->advances_sum = $region->branches->sum('advances');
+
             return $region;
         });
 
@@ -117,9 +117,68 @@ class ReportController extends Controller implements HasMiddleware
     {
         return view('reports.accounts-branchwise-reports'); // Render the branch settings view
 
-    }public function accountsregionwisePositionReport()
+    }
+
+    public function accountsregionwisePositionReport()
     {
         return view('reports.accounts-regionwise-reports'); // Render the branch settings view
+    }
+
+    public function aksicRulesReport(Request $request)
+    {
+        $rules = AksicRule::query()
+            ->where('is_active', true)
+            ->withCount('aksics')
+            ->withSum('aksics as principal_amount_sum', 'principal_amount')
+            ->orderBy('district_name')
+            ->get();
+
+        $interestByRule = DB::table('aksic_rules')
+            ->leftJoin('aksics', 'aksics.aksic_rule_id', '=', 'aksic_rules.id')
+            ->leftJoin('aksic_amortizations', 'aksic_amortizations.aksic_id', '=', 'aksics.id')
+            ->whereNull('aksic_rules.deleted_at')
+            ->where('aksic_rules.is_active', true)
+            ->groupBy('aksic_rules.id')
+            ->select('aksic_rules.id', DB::raw('COALESCE(SUM(aksic_amortizations.total_interest), 0) as interest_sum'))
+            ->pluck('interest_sum', 'id');
+
+        $reportRows = $rules->map(function (AksicRule $rule) use ($interestByRule): array {
+            $principalAmount = (float) ($rule->principal_amount_sum ?? 0);
+            $interestAmount = (float) ($interestByRule[$rule->id] ?? 0);
+            $loansDone = (int) $rule->aksics_count;
+            $remaining = max(0, $rule->proposed_beneficiaries - $loansDone);
+
+            return [
+                'district' => $rule->district_name,
+                'population_percentage' => (float) $rule->population_percentage,
+                'proposed_beneficiaries' => $rule->proposed_beneficiaries,
+                'loans_done' => $loansDone,
+                'remaining' => $remaining,
+                'principal_amount' => $principalAmount,
+                'interest_amount' => $interestAmount,
+                'total_payable' => $principalAmount + $interestAmount,
+            ];
+        });
+
+        $totals = [
+            'population_percentage' => $reportRows->sum('population_percentage'),
+            'proposed_beneficiaries' => $reportRows->sum('proposed_beneficiaries'),
+            'loans_done' => $reportRows->sum('loans_done'),
+            'remaining' => $reportRows->sum('remaining'),
+            'principal_amount' => $reportRows->sum('principal_amount'),
+            'interest_amount' => $reportRows->sum('interest_amount'),
+            'total_payable' => $reportRows->sum('total_payable'),
+        ];
+
+        $chartData = [
+            'districts' => $reportRows->pluck('district')->values(),
+            'proposed' => $reportRows->pluck('proposed_beneficiaries')->values(),
+            'loansDone' => $reportRows->pluck('loans_done')->values(),
+            'principalAmounts' => $reportRows->pluck('principal_amount')->map(fn ($value) => round($value, 2))->values(),
+            'interestAmounts' => $reportRows->pluck('interest_amount')->map(fn ($value) => round($value, 2))->values(),
+        ];
+
+        return view('reports.aksic-rules-report', compact('reportRows', 'totals', 'chartData'));
     }
 
     public function printedStationeries(Request $request)
@@ -196,7 +255,7 @@ class ReportController extends Controller implements HasMiddleware
         $allMonths = [
             1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April',
             5 => 'May', 6 => 'June', 7 => 'July', 8 => 'August',
-            9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
+            9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December',
         ];
 
         // Get months in range for the report (for display)
@@ -209,17 +268,17 @@ class ReportController extends Controller implements HasMiddleware
         $shortMonthNames = [
             1 => 'JAN', 2 => 'FEB', 3 => 'MAR', 4 => 'APR',
             5 => 'MAY', 6 => 'JUN', 7 => 'JUL', 8 => 'AUG',
-            9 => 'SEP', 10 => 'OCT', 11 => 'NOV', 12 => 'DEC'
+            9 => 'SEP', 10 => 'OCT', 11 => 'NOV', 12 => 'DEC',
         ];
 
         // Generate date range description
-        $dateRangeText = $allMonths[$startMonth] . ' 1, ' . $year;
+        $dateRangeText = $allMonths[$startMonth].' 1, '.$year;
         if ($startMonth != $endMonth) {
             $lastDay = Carbon::create($year, $endMonth)->endOfMonth()->day;
-            $dateRangeText .= ' - ' . $allMonths[$endMonth] . ' ' . $lastDay . ', ' . $year;
+            $dateRangeText .= ' - '.$allMonths[$endMonth].' '.$lastDay.', '.$year;
         } else {
             $lastDay = Carbon::create($year, $endMonth)->endOfMonth()->day;
-            $dateRangeText .= ' - ' . $allMonths[$endMonth] . ' ' . $lastDay . ', ' . $year;
+            $dateRangeText .= ' - '.$allMonths[$endMonth].' '.$lastDay.', '.$year;
         }
 
         // Prepare monthly distribution data
@@ -233,7 +292,7 @@ class ReportController extends Controller implements HasMiddleware
                 'item_code' => $stationery->item_code,
                 'distribution_entity' => $distributionType === 'branch' ? 'Branch' :
                     ($distributionType === 'region' ? 'Region' : 'Division'),
-                'monthly_data' => []
+                'monthly_data' => [],
             ];
 
             // Initialize months in the selected range with zeros
@@ -270,7 +329,7 @@ class ReportController extends Controller implements HasMiddleware
             foreach ($monthlyDistribution as $item) {
                 if (isset($monthlyData[$item->printed_stationery_id]) &&
                     $item->month >= $startMonth && $item->month <= $endMonth) {
-                    $monthlyData[$item->printed_stationery_id]['monthly_data'][$item->month] = (int)$item->quantity;
+                    $monthlyData[$item->printed_stationery_id]['monthly_data'][$item->month] = (int) $item->quantity;
                 }
             }
         } catch (\Exception $e) {
@@ -279,7 +338,7 @@ class ReportController extends Controller implements HasMiddleware
         }
 
         // Get entity name for header display
-        $selectedEntityName = "All";
+        $selectedEntityName = 'All';
         if ($entityId) {
             if ($distributionType === 'branch' && $branch = Branch::find($entityId)) {
                 $selectedEntityName = $branch->name;
@@ -309,5 +368,4 @@ class ReportController extends Controller implements HasMiddleware
             'dateRangeType'
         ));
     }
-
 }

@@ -119,6 +119,17 @@
                     </div>
                 </a>
 
+                <a href="{{ route('aksic-rules.index') }}"
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-3xl font-bold leading-8">{{ \App\Models\AksicRule::count() }}</div>
+                            <div class="mt-1 text-base font-extrabold text-black">AKSIC Rules</div>
+                        </div>
+                        <img src="{{ url('icons-images/districts.png') }}" alt="AKSIC Rules" class="h-16 w-16">
+                    </div>
+                </a>
+
                 <a href="{{ route('audits.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">

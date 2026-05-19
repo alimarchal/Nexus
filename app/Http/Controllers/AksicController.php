@@ -6,7 +6,9 @@ use App\Http\Requests\StoreAksicRequest;
 use App\Http\Requests\UpdateAksicRequest;
 use App\Models\Aksic;
 use App\Models\AksicBusinessCategory;
+use App\Models\AksicRule;
 use App\Models\Branch;
+use App\Models\District;
 use App\Services\AksicAmortizationScheduleGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,7 +41,7 @@ class AksicController extends Controller implements HasMiddleware
             ->allowedFilters(Aksic::getAllowedFilters())
             ->allowedSorts(['application_no', 'name', 'cnic', 'principal_amount', 'status', 'created_at'])
             ->withCount('amortizations')
-            ->with(['branch'])
+            ->with(['branch', 'district', 'aksicRule'])
             ->defaultSort('-created_at')
             ->paginate(10)
             ->withQueryString();
@@ -56,6 +58,11 @@ class AksicController extends Controller implements HasMiddleware
     {
         $aksic = DB::transaction(function () use ($request): Aksic {
             $data = $request->validated();
+            $data['gender'] = $data['quota'];
+            $data['aksic_rule_id'] = AksicRule::query()
+                ->where('district_id', $data['district_id'])
+                ->where('is_active', true)
+                ->value('id');
             $data['total_rate'] = bcadd((string) $data['kibor_rate'], (string) $data['spread_rate'], 2);
 
             $aksic = Aksic::create($data);
@@ -70,7 +77,7 @@ class AksicController extends Controller implements HasMiddleware
 
     public function show(Aksic $aksic): View
     {
-        $aksic->load(['amortizations' => fn ($query) => $query->orderBy('installment_no'), 'branch', 'businessCategory', 'businessSubCategory', 'creator', 'updater']);
+        $aksic->load(['amortizations' => fn ($query) => $query->orderBy('installment_no'), 'branch', 'district', 'aksicRule', 'businessCategory', 'businessSubCategory', 'creator', 'updater']);
 
         return view('aksics.show', compact('aksic'));
     }
@@ -84,6 +91,11 @@ class AksicController extends Controller implements HasMiddleware
     {
         DB::transaction(function () use ($request, $aksic): void {
             $data = $request->validated();
+            $data['gender'] = $data['quota'];
+            $data['aksic_rule_id'] = AksicRule::query()
+                ->where('district_id', $data['district_id'])
+                ->where('is_active', true)
+                ->value('id');
             $data['total_rate'] = bcadd((string) $data['kibor_rate'], (string) $data['spread_rate'], 2);
 
             $aksic->update($data);
@@ -109,6 +121,12 @@ class AksicController extends Controller implements HasMiddleware
     {
         return [
             'branches' => Branch::query()->orderBy('name')->get(['id', 'name', 'code']),
+            'districts' => District::query()->orderBy('name')->get(['id', 'name']),
+            'rulesByDistrict' => AksicRule::query()
+                ->where('is_active', true)
+                ->orderBy('district_name')
+                ->get(['id', 'district_id', 'district_name', 'population_percentage', 'proposed_beneficiaries'])
+                ->keyBy('district_id'),
             'categories' => AksicBusinessCategory::query()->where('parent_id', 0)->orderBy('name')->get(['id', 'name', 'parent_id']),
             'subCategoriesByParent' => AksicBusinessCategory::query()
                 ->where('parent_id', '!=', 0)

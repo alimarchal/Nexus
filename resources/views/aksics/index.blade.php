@@ -15,6 +15,10 @@
                     Add AKSIC
                 </a>
             @endcan
+            <a href="{{ route('reports.aksic-rules-report') }}"
+                class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                Report
+            </a>
             <a href="javascript:window.location.reload();"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-950 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 Refresh
@@ -45,6 +49,15 @@
                         <x-input-filters name="application_no" label="Application No" type="text" />
                         <x-input-filters name="business_name" label="Business Name" type="text" />
                         <x-input-filters name="district_name" label="District" type="text" />
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Gender Quota</label>
+                            <select name="filter[quota]" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
+                                <option value="">All Quotas</option>
+                                @foreach (['Male', 'Female', 'Special Person', 'Transgender'] as $quota)
+                                    <option value="{{ $quota }}" @selected(request('filter.quota') === $quota)>{{ $quota }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <x-date-from />
                         <x-date-to />
                         <div>
@@ -74,6 +87,8 @@
                                 <th class="py-2 px-2 text-left">Application No</th>
                                 <th class="py-2 px-2 text-left">Name</th>
                                 <th class="py-2 px-2 text-left">CNIC</th>
+                                <th class="py-2 px-2 text-left">District</th>
+                                <th class="py-2 px-2 text-center">Quota</th>
                                 <th class="py-2 px-2 text-right">Principal</th>
                                 <th class="py-2 px-2 text-center">Tenure</th>
                                 <th class="py-2 px-2 text-center">Status</th>
@@ -88,6 +103,8 @@
                                     <td class="py-1 px-2 text-left">{{ $aksic->application_no }}</td>
                                     <td class="py-1 px-2 text-left">{{ $aksic->name }}</td>
                                     <td class="py-1 px-2 text-left">{{ $aksic->cnic }}</td>
+                                    <td class="py-1 px-2 text-left">{{ $aksic->district_name ?? $aksic->district?->name ?? '-' }}</td>
+                                    <td class="py-1 px-2 text-center">{{ $aksic->quota ?? '-' }}</td>
                                     <td class="py-1 px-2 text-right">{{ number_format((float) $aksic->principal_amount, 2) }}</td>
                                     <td class="py-1 px-2 text-center">{{ $aksic->tenure }}</td>
                                     <td class="py-1 px-2 text-center">{{ $aksic->status }}</td>
