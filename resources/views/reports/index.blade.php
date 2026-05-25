@@ -20,7 +20,7 @@
                         d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
             </a>
-            
+
         </div>
     </x-slot>
 
@@ -36,8 +36,7 @@
                                 class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
                                 <option value="">Select a branch</option>
                                 @foreach (\App\Models\Branch::all() as $branch)
-                                    <option value="{{ $branch->id }}"
-                                        {{ request('filter.branch_id') == $branch->id ? 'selected' : '' }}>
+                                    <option value="{{ $branch->id }}" {{ request('filter.branch_id') == $branch->id ? 'selected' : '' }}>
                                         {{ $branch->code . ' - ' . $branch->name }}
                                     </option>
                                 @endforeach
@@ -49,8 +48,7 @@
                                 class="select2 border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm block mt-1 w-full">
                                 <option value="">Select a branch</option>
                                 @for ($i = 2025; $i <= 2099; $i++)
-                                    <option value="{{ $i }}"
-                                        {{ request('filter.fiscal_year') == $i ? 'selected' : '' }}>
+                                    <option value="{{ $i }}" {{ request('filter.fiscal_year') == $i ? 'selected' : '' }}>
                                         {{ $i }}
                                     </option>
                                 @endfor
@@ -72,6 +70,21 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-12 mb-4 gap-6">
+
+                <a href="{{ route('reports.aksic-rules-report') }}"
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-2xl font-bold leading-8">AKSIC</div>
+                            <div class="mt-1 text-base font-extrabold text-black">Rules & Loans</div>
+                        </div>
+                        <img src="{{ url('icons-images/districts.png') }}" alt="AKSIC Report" class="h-16 w-16">
+                    </div>
+                </a>
+
+
+                <!-- Add more cards for other reports as needed 
+
                 <a href="{{ route('report.printed-stationeries') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -94,16 +107,7 @@
                         <img src="{{ url('icons-images/reportss.png') }}" alt="Report" class="h-16 w-16">
                     </div>
                 </a>
-                <a href="{{ route('reports.aksic-rules-report') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-2xl font-bold leading-8">AKSIC</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Rules & Loans</div>
-                        </div>
-                        <img src="{{ url('icons-images/districts.png') }}" alt="AKSIC Report" class="h-16 w-16">
-                    </div>
-                </a>
+
                 <a href="{{ route('reports.deposit-advances-reports-branch') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-12 sm:col-span-6 xl:col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -145,6 +149,7 @@
                     </div>
                 </a>
 
+                -->
 
             </div>
         </div>
@@ -160,7 +165,7 @@
 
     @push('modals')
         <script>
-            document.addEventListener("DOMContentLoaded", function() {
+            document.addEventListener("DOMContentLoaded", function () {
                 const targetDiv = document.getElementById("filters");
                 const btn = document.getElementById("toggle");
 
@@ -187,7 +192,7 @@
                     }, 300);
                 }
 
-                btn.onclick = function(event) {
+                btn.onclick = function (event) {
                     event.stopPropagation();
                     if (targetDiv.style.display === "none") {
                         showFilters();
@@ -197,7 +202,7 @@
                 };
 
                 // Hide filters when clicking outside
-                document.addEventListener('click', function(event) {
+                document.addEventListener('click', function (event) {
                     if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event
                         .target !== btn) {
                         hideFilters();
@@ -205,17 +210,17 @@
                 });
 
                 // Prevent clicks inside the filter from closing it
-                targetDiv.addEventListener('click', function(event) {
+                targetDiv.addEventListener('click', function (event) {
                     event.stopPropagation();
                 });
 
                 // Add CSS for smooth transitions
                 const style = document.createElement('style');
                 style.textContent = `
-            #filters {
-                transition: opacity 0.3s ease, transform 0.3s ease;
-            }
-        `;
+                        #filters {
+                            transition: opacity 0.3s ease, transform 0.3s ease;
+                        }
+                    `;
                 document.head.appendChild(style);
             });
         </script>

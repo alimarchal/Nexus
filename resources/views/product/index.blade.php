@@ -74,6 +74,21 @@
             <div class="grid grid-cols-12 mb-4 gap-6">
 
 
+                <a href="{{ route('aksic.index') }}"
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Aksic::count() }}</div>
+                            <div class="mt-1 text-base font-extrabold text-black">AKSIC</div>
+                        </div>
+                        <img src="{{ url('icons-images/logo (1).png') }}" alt="AKSIC" class="h-16 w-16">
+                    </div>
+                </a>
+
+
+
+                <!-- Add more cards for other resources as needed
+
                 <a href="{{ route('circulars.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -97,6 +112,9 @@
                         <img src="{{ url('icons-images/complaint.png') }}" alt="Account" class="h-16 w-16">
                     </div>
                 </a>
+
+
+               
                 <a href="{{ route('aksic-applications.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -107,18 +125,12 @@
                         <img src="{{ url('icons-images/logo (1).png') }}" alt="Audit" class="h-16 w-16">
                     </div>
                 </a>
+                 -->
 
-                <a href="{{ route('aksic.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Aksic::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">AKSIC</div>
-                        </div>
-                        <img src="{{ url('icons-images/logo (1).png') }}" alt="AKSIC" class="h-16 w-16">
-                    </div>
-                </a>
 
+
+
+                <!-- hide it 
                 <a href="{{ route('aksic-rules.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -130,6 +142,8 @@
                     </div>
                 </a>
 
+               
+
                 <a href="{{ route('audits.index') }}"
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                     <div class="p-5 flex justify-between">
@@ -140,6 +154,7 @@
                         <img src="{{ url('icons-images/audits.png') }}" alt="Audit" class="h-16 w-16">
                     </div>
                 </a>
+                 
 
                 <a href={{ route('employee_resources.index') }}
                     class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
@@ -202,7 +217,7 @@
                     </div>
                 </a>
 
-
+-->
 
 
             </div>
@@ -258,10 +273,10 @@
 
             const style = document.createElement('style');
             style.textContent = `
-                    #filters {
-                        transition: opacity 0.3s ease, transform 0.3s ease;
-                    }
-                `;
+                        #filters {
+                            transition: opacity 0.3s ease, transform 0.3s ease;
+                        }
+                    `;
             document.head.appendChild(style);
         </script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
