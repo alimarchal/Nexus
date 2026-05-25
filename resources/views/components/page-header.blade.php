@@ -47,6 +47,8 @@
             </button>
         @endif
 
+        {{ $slot }}
+
         @if ($showRefresh)
             <a href="javascript:window.location.reload();"
                 class="inline-flex items-center rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-950 focus:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-green-800">

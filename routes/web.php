@@ -120,6 +120,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/settings/categories', CategoryController::class);
 
     Route::resource('product/printed-stationeries', PrintedStationeryController::class);
+    Route::get('product/aksic-template', [AksicController::class, 'downloadTemplate'])->name('aksic.template');
+    Route::post('product/aksic-import', [AksicController::class, 'import'])->name('aksic.import');
+    Route::post('product/aksic/{aksic}/approve', [AksicController::class, 'approve'])->name('aksic.approve');
     Route::resource('product/aksic', AksicController::class)->names('aksic');
     Route::resource('product/aksic-rules', AksicRuleController::class)->parameters(['aksic-rules' => 'aksic_rule'])->names('aksic-rules');
     Route::resource('product/stationery-transactions', StationeryTransactionController::class);

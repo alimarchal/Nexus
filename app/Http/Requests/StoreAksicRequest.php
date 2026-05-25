@@ -10,6 +10,13 @@ use Illuminate\Validation\Rule;
 
 class StoreAksicRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'is_startup_business' => $this->input('business_type') === 'New',
+        ]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -34,7 +41,7 @@ class StoreAksicRequest extends FormRequest
             'dob' => ['nullable', 'date'],
             'phone' => ['nullable', 'string', 'max:255'],
             'business_name' => ['nullable', 'string', 'max:255'],
-            'business_type' => ['required', Rule::in(['Existing', 'Startup', 'New'])],
+            'business_type' => ['required', Rule::in(['Existing', 'New'])],
             'is_startup_business' => ['required', 'boolean'],
             'quota' => ['required', Rule::in(['Male', 'Female', 'Disabled', 'Special Person', 'Transgender'])],
             'gender' => ['nullable', 'required_if:quota,Disabled,Special Person', Rule::in(['Male', 'Female'])],
@@ -52,7 +59,7 @@ class StoreAksicRequest extends FormRequest
             'applicant_choosed_branch_code' => ['nullable', 'string', 'max:255'],
             'challan_branch_code' => ['nullable', 'string', 'max:255'],
             'challan_fee' => ['nullable', 'numeric', 'min:0'],
-            'status' => ['required', Rule::in(['Pending', 'Approved'])],
+            'status' => ['nullable', Rule::in(['Pending'])],
             'bank_status' => ['nullable', 'string', 'max:255'],
             'fee_branch_code' => ['nullable', 'string', 'max:255'],
             'district_name' => ['nullable', 'string', 'max:255'],
@@ -60,9 +67,12 @@ class StoreAksicRequest extends FormRequest
             'principal_amount' => ['required', 'numeric', 'gt:0'],
             'tenure' => ['required', 'integer', 'min:1', 'max:600'],
             'disbursement_date' => ['required', 'date'],
-            'sanction_date' => ['nullable', 'date'],
             'site_visit_completed' => ['required', 'boolean'],
             'site_visit_date' => ['nullable', 'date'],
+            'consent_entry' => ['nullable', Rule::in(['Yes', 'No'])],
+            'consent_date' => ['nullable', 'date'],
+            'liquid_security' => ['nullable', 'string'],
+            'personal_guarantees' => ['nullable', 'string'],
             'kibor_rate' => ['required', 'numeric', 'min:0', 'max:100'],
             'spread_rate' => ['required', 'numeric', 'min:0', 'max:100'],
         ];
@@ -92,8 +102,8 @@ class StoreAksicRequest extends FormRequest
             return;
         }
 
-        if ($rule->requires_business_nature && ! in_array($this->input('business_type'), ['Existing', 'Startup', 'New'], true)) {
-            $validator->errors()->add('business_type', 'Business nature must be Existing, Startup, or New.');
+        if ($rule->requires_business_nature && ! in_array($this->input('business_type'), ['Existing', 'New'], true)) {
+            $validator->errors()->add('business_type', 'Business nature must be Existing or New.');
         }
 
         if ($rule->requires_site_visit && $this->input('status') === 'Approved') {

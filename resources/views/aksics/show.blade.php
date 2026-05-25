@@ -1,4 +1,8 @@
 <x-app-layout>
+    @php
+        $canModifyAksic = $aksic->amortizations->isEmpty() || auth()->user()?->hasRole('super-admin');
+    @endphp
+
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block print:hidden">
             AKSIC Details: {{ $aksic->application_no }}
@@ -9,12 +13,15 @@
                 Print
             </button>
             @can('edit aksics')
+                @if ($canModifyAksic)
                 <a href="{{ route('aksic.edit', $aksic) }}"
                     class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                     Edit
                 </a>
+                @endif
             @endcan
             @can('delete aksics')
+                @if ($canModifyAksic)
                 <form method="POST" action="{{ route('aksic.destroy', $aksic) }}" class="inline-block"
                     onsubmit="return confirm('Delete this AKSIC record?')">
                     @csrf
@@ -24,6 +31,7 @@
                         Delete
                     </button>
                 </form>
+                @endif
             @endcan
             <a href="{{ route('aksic.index') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
@@ -156,10 +164,7 @@
                         </tr>
                         <tr>
                             <th class="px-2 py-2 border border-black">Business Nature</th>
-                            <td class="px-2 py-2 border border-black">{{ $aksic->business_type ?? '-' }}</td>
-                            <th class="px-2 py-2 border border-black">Startup / New</th>
-                            <td class="px-2 py-2 border border-black">{{ $aksic->is_startup_business ? 'Yes' : 'No' }}
-                            </td>
+                            <td colspan="3" class="px-2 py-2 border border-black">{{ $aksic->business_type ?? '-' }}</td>
                         </tr>
                         <tr>
                             <th class="px-2 py-2 border border-black">Site Visit Completed</th>
@@ -193,17 +198,35 @@
                             <td class="px-2 py-2 border border-black text-right">
                                 {{ number_format((float) $aksic->total_rate, 2) }}%
                             </td>
+                            <th class="px-2 py-2 border border-black">Total Interest</th>
+                            <td class="px-2 py-2 border border-black text-right">
+                                {{ $aksic->total_interest === null ? '-' : number_format((float) $aksic->total_interest, 2) }}
+                            </td>
+                        </tr>
+                        <tr>
                             <th class="px-2 py-2 border border-black">Disbursement Date</th>
                             <td class="px-2 py-2 border border-black">{{ $aksic->disbursement_date?->format('d-M-Y') }}
                             </td>
+                            <th class="px-2 py-2 border border-black">Consent Entry</th>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->consent_entry ?? '-' }}</td>
                         </tr>
                         <tr class="bg-gray-50 dark:bg-gray-700 print:bg-gray-200">
-                            <th class="px-2 py-2 border border-black">Sanction Date</th>
+                            <th class="px-2 py-2 border border-black">Consent Date</th>
                             <td class="px-2 py-2 border border-black">
-                                {{ $aksic->sanction_date?->format('d-M-Y') ?? '-' }}
+                                {{ $aksic->consent_date?->format('d-M-Y') ?? '-' }}
                             </td>
+                            <th class="px-2 py-2 border border-black">Liquid Security</th>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->liquid_security ?? '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th class="px-2 py-2 border border-black">Personal Guarantees</th>
+                            <td colspan="3" class="px-2 py-2 border border-black">{{ $aksic->personal_guarantees ?? '-' }}</td>
+                        </tr>
+                        <tr class="bg-gray-50 dark:bg-gray-700 print:bg-gray-200">
                             <th class="px-2 py-2 border border-black">Created By</th>
                             <td class="px-2 py-2 border border-black">{{ $aksic->creator?->name ?? '-' }}</td>
+                            <th class="px-2 py-2 border border-black">Updated By</th>
+                            <td class="px-2 py-2 border border-black">{{ $aksic->updater?->name ?? '-' }}</td>
                         </tr>
                         <tr>
                             <th class="px-2 py-2 border border-black">Business Address</th>

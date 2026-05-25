@@ -59,12 +59,16 @@ class Aksic extends Model
         'principal_amount',
         'tenure',
         'disbursement_date',
-        'sanction_date',
         'site_visit_completed',
         'site_visit_date',
+        'consent_entry',
+        'consent_date',
+        'liquid_security',
+        'personal_guarantees',
         'kibor_rate',
         'spread_rate',
         'total_rate',
+        'total_interest',
         'created_by',
         'updated_by',
     ];
@@ -79,13 +83,14 @@ class Aksic extends Model
             'principal_amount' => 'decimal:2',
             'tenure' => 'integer',
             'disbursement_date' => 'date',
-            'sanction_date' => 'date',
             'site_visit_completed' => 'boolean',
             'site_visit_date' => 'date',
+            'consent_date' => 'date',
             'is_startup_business' => 'boolean',
             'kibor_rate' => 'decimal:2',
             'spread_rate' => 'decimal:2',
             'total_rate' => 'decimal:2',
+            'total_interest' => 'decimal:6',
         ];
     }
 
