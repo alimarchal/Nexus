@@ -19,13 +19,13 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
                 <form method="POST" action="{{ route('users.update', $user->id) }}"
-                    x-data="{
+                    x-data='{
                         selectedRoleIds: @js(old('roles', $userRoles)),
                         roleMap: @js($roles->pluck('name', 'id')),
                         hasRole(name) {
                             return this.selectedRoleIds.some((id) => this.roleMap[id] === name);
                         },
-                    }">
+                    }'>
                     @csrf
                     @method('PUT')
                     <div class="mb-4">

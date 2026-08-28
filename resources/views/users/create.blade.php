@@ -21,13 +21,13 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
                
                 <form method="POST" action="{{ route('users.store') }}"
-                    x-data="{
+                    x-data='{
                         selectedRoleIds: @js(old('roles', [])),
                         roleMap: @js($roles->pluck('name', 'id')),
                         hasRole(name) {
                             return this.selectedRoleIds.some((id) => this.roleMap[id] === name);
                         },
-                    }">
+                    }'>
                     @csrf
                     <div class="mb-4">
                         <label class="block text-gray-700 dark:text-gray-300">Name:</label>
