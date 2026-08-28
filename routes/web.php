@@ -26,6 +26,7 @@ use App\Http\Controllers\DispatchRegisterController;
 use App\Http\Controllers\DistrictController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\EmployeeResourceController;
+use App\Http\Controllers\FileCategoryController;
 use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PrintedStationeryController;
@@ -118,6 +119,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('settings/user-module/managers', ManagerController::class);
 
     Route::resource('/settings/categories', CategoryController::class);
+    Route::resource('/settings/file-categories', FileCategoryController::class)->except(['show']);
 
     Route::resource('product/printed-stationeries', PrintedStationeryController::class);
     Route::get('product/aksic-template', [AksicController::class, 'downloadTemplate'])->name('aksic.template');

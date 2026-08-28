@@ -97,6 +97,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit categories',
             'delete categories',
 
+            // File Category Management (Bank FMS - shared master data for branch/region/division)
+            'view file categories',
+            'create file categories',
+            'edit file categories',
+            'delete file categories',
+
             // Report Management
             'view reports',
             'generate reports',
@@ -133,6 +139,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'edit complaints',
                 'view dashboard',
                 'view reports',
+                'view file categories',
             ],
             'region' => [
                 'view users',
@@ -149,6 +156,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view dashboard',
                 'view reports',
                 'generate reports',
+                'view file categories',
             ],
             'division' => [
                 'view users',
@@ -175,6 +183,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view reports',
                 'generate reports',
                 'export reports',
+                'view file categories',
+                'create file categories',
+                'edit file categories',
             ],
             'head-office' => [
                 'view users',
@@ -220,6 +231,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'export reports',
                 'view settings',
                 'edit settings',
+                'view file categories',
+                'create file categories',
+                'edit file categories',
+                'delete file categories',
             ],
             'super-admin' => Permission::all()->pluck('name')->toArray(),
         ];

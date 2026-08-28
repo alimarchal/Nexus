@@ -12,7 +12,7 @@ class StoreFileCategoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return $this->user()?->can('create file categories') ?? false;
     }
 
     /**
@@ -23,7 +23,9 @@ class StoreFileCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'category_code' => ['required', 'string', 'max:20', 'unique:file_categories,category_code'],
+            'category_name' => ['required', 'string', 'max:100'],
+            'is_active' => ['required', 'in:0,1'],
         ];
     }
 }

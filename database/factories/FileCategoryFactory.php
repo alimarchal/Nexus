@@ -18,7 +18,9 @@ class FileCategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'category_code' => 'FC-'.$this->faker->unique()->numberBetween(100, 999),
+            'category_name' => $this->faker->unique()->words(3, true),
+            'is_active' => '1',
         ];
     }
 }
