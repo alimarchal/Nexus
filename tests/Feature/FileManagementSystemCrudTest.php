@@ -122,3 +122,46 @@ test('authorized user can delete a document record', function () {
     $response->assertRedirect(route('file-management-systems.index'));
     $this->assertSoftDeleted('file_management_systems', ['id' => $document->id]);
 });
+
+test('authorized user can view a single document record', function () {
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $response = $this->actingAs($this->admin)->get(route('file-management-systems.show', $document));
+
+    $response->assertSuccessful();
+    $response->assertViewIs('file-management-systems.show');
+    $response->assertSee($document->digital_id);
+});
+
+test('branch role cannot view another branch document by guessing the url', function () {
+    $otherBranch = Branch::factory()->create();
+    $otherDocument = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $otherBranch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.show', $otherDocument))->assertNotFound();
+});
+
+test('uploaded pages are stored under the branch/digital-id folder', function () {
+    Storage::fake('public');
+
+    $this->actingAs($this->admin)->post(route('file-management-systems.store'), [
+        'file_category_id' => $this->fileCategory->id,
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'document_date' => '2026-08-01',
+        'title' => 'Folder Test',
+        'pages' => [UploadedFile::fake()->create('scan.pdf', 100, 'application/pdf')],
+    ]);
+
+    $fms = FileManagementSystem::where('title', 'Folder Test')->first();
+    $page = $fms->media->first();
+
+    expect($page->getPath())->toContain("Branch/{$this->branch->id}/{$fms->digital_id}");
+});

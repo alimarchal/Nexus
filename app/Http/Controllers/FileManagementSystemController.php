@@ -88,6 +88,23 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     }
 
     /**
+     * Display the specified resource.
+     */
+    public function show(FileManagementSystem $fileManagementSystem)
+    {
+        abort_unless(
+            FileManagementSystem::visibleTo(auth()->user())->whereKey($fileManagementSystem->id)->exists(),
+            404
+        );
+
+        $fileManagementSystem->load(['fileCategory', 'fileable', 'media']);
+
+        return view('file-management-systems.show', [
+            'fileManagementSystem' => $fileManagementSystem,
+        ]);
+    }
+
+    /**
      * Show the form for editing the specified resource.
      */
     public function edit(FileManagementSystem $fileManagementSystem)

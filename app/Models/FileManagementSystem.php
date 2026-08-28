@@ -81,7 +81,7 @@ class FileManagementSystem extends Model implements HasMedia
     public function scopeVisibleTo($query, User $user)
     {
         // Sees everything, no filter.
-        if ($user->is_super_admin === 'Yes' || $user->hasRole('head-office')) {
+        if ($user->is_super_admin === 'Yes' || $user->hasRole(['super-admin', 'head-office'])) {
             return $query;
         }
 

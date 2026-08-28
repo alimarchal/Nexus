@@ -121,7 +121,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::resource('/settings/categories', CategoryController::class);
     Route::resource('/settings/file-categories', FileCategoryController::class)->except(['show']);
-    Route::resource('/product/file-management-systems', FileManagementSystemController::class)->except(['show']);
+    Route::resource('/product/file-management-systems', FileManagementSystemController::class);
     Route::delete('/product/file-management-systems/{fileManagementSystem}/media/{media}', [FileManagementSystemController::class, 'destroyMedia'])->name('file-management-systems.media.destroy');
 
     Route::resource('product/printed-stationeries', PrintedStationeryController::class);

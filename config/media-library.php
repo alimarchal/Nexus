@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\FileManagementSystem;
+use App\Services\FileManagementSystemPathGenerator;
 use Spatie\ImageOptimizer\Optimizers\Avifenc;
 use Spatie\ImageOptimizer\Optimizers\Cwebp;
 use Spatie\ImageOptimizer\Optimizers\Gifsicle;
@@ -155,6 +157,7 @@ return [
         // Model::class => PathGenerator::class
         // or
         // 'model_morph_alias' => PathGenerator::class
+        FileManagementSystem::class => FileManagementSystemPathGenerator::class,
     ],
 
     /*
