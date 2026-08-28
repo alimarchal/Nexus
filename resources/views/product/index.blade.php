@@ -73,30 +73,31 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-12 mb-4 gap-6">
 
-
-                <a href="{{ route('aksic.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Aksic::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">AKSIC</div>
+                @can('view aksics')
+                    <a href="{{ route('aksic.index') }}"
+                        class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                        <div class="p-5 flex justify-between">
+                            <div>
+                                <div class="text-3xl font-bold leading-8">{{ \App\Models\Aksic::count() }}</div>
+                                <div class="mt-1 text-base font-extrabold text-black">AKSIC</div>
+                            </div>
+                            <img src="{{ url('icons-images/logo (1).png') }}" alt="AKSIC" class="h-16 w-16">
                         </div>
-                        <img src="{{ url('icons-images/logo (1).png') }}" alt="AKSIC" class="h-16 w-16">
-                    </div>
-                </a>
+                    </a>
+                @endcan
 
                 <!-- File Management System Card (scanned documents - branch/region/division/head-office) -->
                 @can('view file management systems')
-                <a href="{{ route('file-management-systems.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">{{ \App\Models\FileManagementSystem::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">File Management</div>
+                    <a href="{{ route('file-management-systems.index') }}"
+                        class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                        <div class="p-5 flex justify-between">
+                            <div>
+                                <div class="text-3xl font-bold leading-8">{{ $fileManagementSystemCount }}</div>
+                                <div class="mt-1 text-base font-extrabold text-black">File Management</div>
+                            </div>
+                            <img src="{{ url('icons-images/dispatch.png') }}" alt="File Management" class="h-16 w-16">
                         </div>
-                        <img src="{{ url('icons-images/dispatch.png') }}" alt="File Management" class="h-16 w-16">
-                    </div>
-                </a>
+                    </a>
                 @endcan
 
 
@@ -286,10 +287,10 @@
 
             const style = document.createElement('style');
             style.textContent = `
-                        #filters {
-                            transition: opacity 0.3s ease, transform 0.3s ease;
-                        }
-                    `;
+                            #filters {
+                                transition: opacity 0.3s ease, transform 0.3s ease;
+                            }
+                        `;
             document.head.appendChild(style);
         </script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

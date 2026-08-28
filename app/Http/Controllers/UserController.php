@@ -112,7 +112,7 @@ class UserController extends Controller implements HasMiddleware
         $headOffices = HeadOffice::orderBy('name')->get();
         $roles = Role::all();
         $permissions = Permission::all();
-        $userRoles = $user->roles->pluck('id')->toArray();
+        $userRoles = $user->roles->pluck('id')->map(fn (int $roleId): string => (string) $roleId)->all();
         $userPermissions = $user->permissions->pluck('id')->toArray();
 
         return view('users.edit', compact('user', 'branches', 'regions', 'divisions', 'headOffices', 'roles', 'permissions', 'userRoles', 'userPermissions'));
@@ -125,12 +125,12 @@ class UserController extends Controller implements HasMiddleware
             return redirect()->back()->withErrors(['is_active' => 'You cannot deactivate your own account.']);
         }
 
-        // Prevent removal of super-admin role from a super-admin user
-        if ($user->hasRole('super-admin')) {
+        // A super-admin may not remove their own role or demote the final super-admin.
+        if ($user->hasRole('super-admin') && ($user->is(auth()->user()) || User::role('super-admin')->count() <= 1)) {
             $submittedRoleIds = $request->input('roles', []);
             $superAdminRole = Role::where('name', 'super-admin')->first();
             if ($superAdminRole && (! in_array($superAdminRole->id, $submittedRoleIds))) {
-                return redirect()->back()->withErrors(['roles' => 'You cannot remove the super-admin role from a super-admin user.']);
+                return redirect()->back()->withErrors(['roles' => 'You cannot remove your own super-admin role or demote the final super-admin.']);
             }
         }
 

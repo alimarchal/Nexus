@@ -2,18 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\FileManagementSystem;
+use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function product()
+    public function product(): View
     {
-        return view('product.index');
-
-    }
-    public function branchSetting()
-    {
-        return view('product.daily-positions'); 
+        return view('product.index', [
+            'fileManagementSystemCount' => FileManagementSystem::visibleTo(auth()->user())->count(),
+        ]);
     }
 
+    public function branchSetting(): View
+    {
+        return view('product.daily-positions');
+    }
 }
