@@ -4,7 +4,7 @@
     'maxWidth' => 'max-w-7xl',
 ])
 
-<div class="{{ $maxWidth }} mx-auto mt-4 sm:px-6 lg:px-8">
+<div class="{{ $maxWidth }} mx-auto mt-4 sm:px-6 lg:px-8 mb-4">
     <div class="overflow-hidden bg-white shadow-xl dark:bg-gray-800 sm:rounded-lg" id="filters" style="display: none">
         <div class="p-6">
             <form method="{{ $method }}" action="{{ $action }}">
@@ -23,7 +23,7 @@
 
 @push('modals')
     <script>
-        (function() {
+        (function () {
             const targetDiv = document.getElementById('filters');
             const btn = document.getElementById('toggle');
 
@@ -49,7 +49,7 @@
                 }, 300);
             }
 
-            btn.onclick = function(event) {
+            btn.onclick = function (event) {
                 event.stopPropagation();
 
                 if (targetDiv.style.display === 'none') {
@@ -59,13 +59,13 @@
                 }
             };
 
-            document.addEventListener('click', function(event) {
+            document.addEventListener('click', function (event) {
                 if (targetDiv.style.display === 'block' && !targetDiv.contains(event.target) && event.target !== btn) {
                     hideFilters();
                 }
             });
 
-            targetDiv.addEventListener('click', function(event) {
+            targetDiv.addEventListener('click', function (event) {
                 event.stopPropagation();
             });
 
