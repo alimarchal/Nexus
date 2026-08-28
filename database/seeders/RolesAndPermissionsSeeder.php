@@ -133,6 +133,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $regionRole = Role::firstOrCreate(['name' => 'region']);
         $divisionRole = Role::firstOrCreate(['name' => 'division']);
         $headOfficeRole = Role::firstOrCreate(['name' => 'head-office']);
+        $presidentOfficeRole = Role::firstOrCreate(['name' => 'president-office']);
         $superAdmin = Role::firstOrCreate(['name' => 'super-admin']);
 
         // Define role permissions
@@ -236,7 +237,6 @@ class RolesAndPermissionsSeeder extends Seeder
                 'edit aksic rules',
                 'delete aksic rules',
                 'view branches',
-                'create branches',
                 'edit branches',
                 'delete branches',
                 'view dashboard',
@@ -257,6 +257,22 @@ class RolesAndPermissionsSeeder extends Seeder
             ],
             'super-admin' => Permission::all()->pluck('name')->toArray(),
         ];
+
+        $presidentOfficeRole->syncPermissions([
+            'view users',
+            'view managers',
+            'view complaints',
+            'view audits',
+            'view aksics',
+            'view aksic rules',
+            'view branches',
+            'view dashboard',
+            'view analytics',
+            'view reports',
+            'generate reports',
+            'view file categories',
+            'view file management systems',
+        ]);
 
         // Assign permissions to roles
         foreach ($rolePermissions as $roleName => $permissionNames) {

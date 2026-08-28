@@ -29,6 +29,7 @@ class FileManagementSystem extends Model implements HasMedia
      */
     protected $fillable = [
         'digital_id',
+        'file_no',
         'file_category_id',
         'fileable_type',
         'fileable_id',
@@ -116,5 +117,20 @@ class FileManagementSystem extends Model implements HasMedia
     public function scopeDocumentDateTo($query, string $date)
     {
         return $query->whereDate('document_date', '<=', $date);
+    }
+
+    public function scopeBranchId($query, string $branchId)
+    {
+        return $query->where('fileable_type', (new Branch)->getMorphClass())->where('fileable_id', $branchId);
+    }
+
+    public function scopeRegionId($query, string $regionId)
+    {
+        return $query->where('fileable_type', (new Region)->getMorphClass())->where('fileable_id', $regionId);
+    }
+
+    public function scopeDivisionId($query, string $divisionId)
+    {
+        return $query->where('fileable_type', (new Division)->getMorphClass())->where('fileable_id', $divisionId);
     }
 }

@@ -52,7 +52,9 @@
                                 <select name="fileable_type" x-model="fileableType"
                                     class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
                                     required>
-                                    <option value="branch">Branch</option>
+                                    @if ($canAssignBranch)
+                                        <option value="branch">Branch</option>
+                                    @endif
                                     <option value="region">Region</option>
                                     <option value="division">Division</option>
                                 </select>
@@ -99,6 +101,13 @@
                                 @error('fileable_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
                         @endif
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-700 dark:text-gray-300">File No <span class="text-gray-400 text-xs">(your own reference, e.g. HRMS/12/ABC)</span>:</label>
+                        <input type="text" name="file_no" value="{{ old('file_no', $fileManagementSystem->file_no) }}" maxlength="60"
+                            class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                        @error('file_no') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="mb-4">

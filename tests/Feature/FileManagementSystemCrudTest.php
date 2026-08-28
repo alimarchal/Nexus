@@ -3,6 +3,7 @@
 use App\Models\Branch;
 use App\Models\FileCategory;
 use App\Models\FileManagementSystem;
+use App\Models\Region;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -95,6 +96,46 @@ test('branch role can only manage their own branch scoped documents', function (
     $response->assertSuccessful();
     $response->assertSee($ownDocument->digital_id);
     $response->assertDontSee($otherDocument->digital_id);
+});
+
+test('authorized user can create a document record with a manual file no and filter by it', function () {
+    Storage::fake('public');
+
+    $this->actingAs($this->admin)->post(route('file-management-systems.store'), [
+        'file_category_id' => $this->fileCategory->id,
+        'file_no' => 'HRMS/12/ABC',
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'document_date' => '2026-08-01',
+        'title' => 'Test Document',
+        'pages' => [UploadedFile::fake()->create('scan.pdf', 100, 'application/pdf')],
+    ]);
+
+    $this->assertDatabaseHas('file_management_systems', ['file_no' => 'HRMS/12/ABC']);
+
+    $response = $this->actingAs($this->admin)->get(route('file-management-systems.index', ['filter' => ['file_no' => 'HRMS/12']]));
+
+    $response->assertSuccessful();
+    $response->assertSee('HRMS/12/ABC');
+});
+
+test('non super admin cannot manually assign a document to a branch', function () {
+    $regionRole = Role::firstOrCreate(['name' => 'region']);
+    $regionRole->givePermissionTo(['view file management systems', 'create file management systems']);
+    $regionUser = User::factory()->create(['branch_id' => null]);
+    $regionUser->assignRole('region');
+
+    $region = Region::factory()->create();
+
+    $response = $this->actingAs($regionUser)->post(route('file-management-systems.store'), [
+        'file_category_id' => $this->fileCategory->id,
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'document_date' => '2026-08-01',
+        'pages' => [UploadedFile::fake()->create('scan.pdf', 100, 'application/pdf')],
+    ]);
+
+    $response->assertSessionHasErrors('fileable_type');
 });
 
 test('user without delete permission cannot delete a document record', function () {

@@ -6,12 +6,17 @@
     </x-slot>
 
     <x-filter-section :action="route('file-management-systems.index')">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
-            x-data="{ fileableType: '{{ request('filter.fileable_type', '') }}' }">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
                 <x-label for="filter_digital_id" value="Digital ID" />
                 <x-input id="filter_digital_id" name="filter[digital_id]" type="text" class="mt-1 block w-full"
                     :value="request('filter.digital_id')" placeholder="Search by digital id..." />
+            </div>
+
+            <div>
+                <x-label for="filter_file_no" value="File No" />
+                <x-input id="filter_file_no" name="filter[file_no]" type="text" class="mt-1 block w-full"
+                    :value="request('filter.file_no')" placeholder="Search by file no..." />
             </div>
 
             <div>
@@ -35,56 +40,41 @@
             </div>
 
             <div>
-                <x-label for="filter_fileable_type" value="Org Unit Type" />
-                <select id="filter_fileable_type" name="filter[fileable_type]" x-model="fileableType"
-                    class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
-                    data-placeholder="All Types">
-                    <option value="">All Types</option>
-                    <option value="branch" {{ request('filter.fileable_type') === 'branch' ? 'selected' : '' }}>Branch
-                    </option>
-                    <option value="region" {{ request('filter.fileable_type') === 'region' ? 'selected' : '' }}>Region
-                    </option>
-                    <option value="division" {{ request('filter.fileable_type') === 'division' ? 'selected' : '' }}>
-                        Division</option>
-                </select>
-            </div>
-
-            <div x-show="fileableType === 'branch'">
                 <x-label for="filter_branch_id" value="Branch" />
-                <select id="filter_branch_id" name="filter[fileable_id]"
+                <select id="filter_branch_id" name="filter[branch_id]"
                     class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
                     data-placeholder="All Branches">
                     <option value="">All Branches</option>
                     @foreach ($branches as $branch)
-                        <option value="{{ $branch->id }}" {{ (string) request('filter.fileable_id') === (string) $branch->id ? 'selected' : '' }}>
+                        <option value="{{ $branch->id }}" {{ (string) request('filter.branch_id') === (string) $branch->id ? 'selected' : '' }}>
                             {{ $branch->code ? $branch->code . ' - ' : '' }}{{ $branch->name }}
                         </option>
                     @endforeach
                 </select>
             </div>
 
-            <div x-show="fileableType === 'region'">
+            <div>
                 <x-label for="filter_region_id" value="Region" />
-                <select id="filter_region_id" name="filter[fileable_id]"
+                <select id="filter_region_id" name="filter[region_id]"
                     class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
                     data-placeholder="All Regions">
                     <option value="">All Regions</option>
                     @foreach ($regions as $region)
-                        <option value="{{ $region->id }}" {{ (string) request('filter.fileable_id') === (string) $region->id ? 'selected' : '' }}>
+                        <option value="{{ $region->id }}" {{ (string) request('filter.region_id') === (string) $region->id ? 'selected' : '' }}>
                             {{ $region->name }}
                         </option>
                     @endforeach
                 </select>
             </div>
 
-            <div x-show="fileableType === 'division'">
+            <div>
                 <x-label for="filter_division_id" value="Division" />
-                <select id="filter_division_id" name="filter[fileable_id]"
+                <select id="filter_division_id" name="filter[division_id]"
                     class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
                     data-placeholder="All Divisions">
                     <option value="">All Divisions</option>
                     @foreach ($divisions as $division)
-                        <option value="{{ $division->id }}" {{ (string) request('filter.fileable_id') === (string) $division->id ? 'selected' : '' }}>
+                        <option value="{{ $division->id }}" {{ (string) request('filter.division_id') === (string) $division->id ? 'selected' : '' }}>
                             {{ $division->name }}
                         </option>
                     @endforeach
@@ -108,6 +98,7 @@
     <x-data-table :items="$fileManagementSystems" :headers="[
         ['label' => '#', 'align' => 'text-center'],
         ['label' => 'Digital ID', 'align' => 'text-center'],
+        ['label' => 'File No', 'align' => 'text-center'],
         ['label' => 'Category', 'align' => 'text-center'],
         ['label' => 'Org Unit', 'align' => 'text-center'],
         ['label' => 'Document Date', 'align' => 'text-center'],
@@ -123,6 +114,9 @@
                 </td>
                 <td class="px-2 py-1 text-center font-semibold">
                     {{ $fileManagementSystem->digital_id }}
+                </td>
+                <td class="px-2 py-1 text-center">
+                    {{ $fileManagementSystem->file_no ?? '-' }}
                 </td>
                 <td class="px-2 py-1 text-center">
                     {{ $fileManagementSystem->fileCategory->category_name ?? 'N/A' }}

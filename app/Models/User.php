@@ -38,6 +38,10 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'branch_id',
+        'region_id',
+        'division_id',
+        'head_office_id',
+        'is_president_office',
         'name',
         'email',
         'password',
@@ -75,6 +79,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_president_office' => 'boolean',
     ];
 
     /**
@@ -97,6 +102,36 @@ class User extends Authenticatable
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Define the relationship with the Region model.
+     *
+     * @return BelongsTo
+     */
+    public function region()
+    {
+        return $this->belongsTo(Region::class);
+    }
+
+    /**
+     * Define the relationship with the Division model.
+     *
+     * @return BelongsTo
+     */
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    /**
+     * Define the relationship with the HeadOffice model.
+     *
+     * @return BelongsTo
+     */
+    public function headOffice()
+    {
+        return $this->belongsTo(HeadOffice::class);
     }
 
     /**
@@ -129,6 +164,9 @@ class User extends Authenticatable
             AllowedFilter::partial('email'),
             AllowedFilter::exact('is_active'),
             AllowedFilter::exact('branch_id'),
+            AllowedFilter::exact('region_id'),
+            AllowedFilter::exact('division_id'),
+            AllowedFilter::exact('head_office_id'),
             AllowedFilter::callback('role', function ($query, $value) {
                 return $query->whereHas('roles', function ($q) use ($value) {
                     $q->where('name', $value);
@@ -152,6 +190,9 @@ class User extends Authenticatable
     {
         return [
             AllowedInclude::relationship('branch'),
+            AllowedInclude::relationship('region'),
+            AllowedInclude::relationship('division'),
+            AllowedInclude::relationship('headOffice'),
             AllowedInclude::relationship('roles'),
             AllowedInclude::relationship('permissions'),
         ];

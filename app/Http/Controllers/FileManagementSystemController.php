@@ -35,10 +35,12 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             ->visibleTo(auth()->user())
             ->allowedFilters([
                 AllowedFilter::exact('file_category_id'),
-                AllowedFilter::exact('fileable_type'),
-                AllowedFilter::exact('fileable_id'),
                 AllowedFilter::partial('digital_id'),
+                AllowedFilter::partial('file_no'),
                 AllowedFilter::partial('title'),
+                AllowedFilter::scope('branch_id'),
+                AllowedFilter::scope('region_id'),
+                AllowedFilter::scope('division_id'),
                 AllowedFilter::scope('document_date_from', 'documentDateFrom'),
                 AllowedFilter::scope('document_date_to', 'documentDateTo'),
             ])
@@ -175,6 +177,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             'regions' => Region::orderBy('name')->get(),
             'divisions' => Division::orderBy('name')->get(),
             'autoFileable' => $this->resolveFileableFromUser(),
+            'canAssignBranch' => auth()->user()->is_super_admin === 'Yes' || auth()->user()->hasRole('super-admin'),
         ];
     }
 

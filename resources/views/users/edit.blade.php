@@ -18,7 +18,14 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
-                <form method="POST" action="{{ route('users.update', $user->id) }}">
+                <form method="POST" action="{{ route('users.update', $user->id) }}"
+                    x-data="{
+                        selectedRoleIds: {{ json_encode(old('roles', $userRoles)) }},
+                        roleMap: {!! $roles->pluck('name', 'id')->toJson() !!},
+                        hasRole(name) {
+                            return this.selectedRoleIds.some((id) => this.roleMap[id] === name);
+                        },
+                    }">
                     @csrf
                     @method('PUT')
                     <div class="mb-4">
@@ -43,24 +50,11 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700 dark:text-gray-300">Branch:</label>
-                        <select name="branch_id" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                            <option value="">Select Branch</option>
-                            @foreach($branches as $branch)
-                                <option value="{{ $branch->id }}" {{ old('branch_id', $user->branch_id) == $branch->id ? 'selected' : '' }}>
-                                    {{ $branch->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('branch_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="mb-4">
                         <label class="block text-gray-700 dark:text-gray-300">Roles:</label>
                         <div class="mt-2">
                             @foreach($roles as $role)
                                 <label class="inline-flex items-center mr-4 mb-2">
-                                    <input type="checkbox" name="roles[]" value="{{ $role->id }}" 
+                                    <input type="checkbox" name="roles[]" value="{{ $role->id }}" x-model="selectedRoleIds"
                                         {{ in_array($role->id, old('roles', $userRoles)) ? 'checked' : '' }}
                                         class="form-checkbox h-4 w-4 text-indigo-600">
                                     <span class="ml-2 text-gray-700 dark:text-gray-300">{{ $role->name }}</span>
@@ -69,6 +63,66 @@
                         </div>
                         @error('roles') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
+
+                    <!-- Org Unit fields: shown based on the selected role(s) -->
+                    <div class="mb-4 space-y-4" x-show="!hasRole('president-office')" x-cloak>
+                        <div x-show="hasRole('branch')" x-transition>
+                            <label class="block text-gray-700 dark:text-gray-300">Branch:</label>
+                            <select name="branch_id" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">Select Branch</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}" {{ old('branch_id', $user->branch_id) == $branch->id ? 'selected' : '' }}>
+                                        {{ $branch->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('branch_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div x-show="hasRole('region')" x-transition>
+                            <label class="block text-gray-700 dark:text-gray-300">Region:</label>
+                            <select name="region_id" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">Select Region</option>
+                                @foreach($regions as $region)
+                                    <option value="{{ $region->id }}" {{ old('region_id', $user->region_id) == $region->id ? 'selected' : '' }}>
+                                        {{ $region->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('region_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div x-show="hasRole('division')" x-transition>
+                            <label class="block text-gray-700 dark:text-gray-300">Division:</label>
+                            <select name="division_id" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">Select Division</option>
+                                @foreach($divisions as $division)
+                                    <option value="{{ $division->id }}" {{ old('division_id', $user->division_id) == $division->id ? 'selected' : '' }}>
+                                        {{ $division->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('division_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div x-show="hasRole('head-office')" x-transition>
+                            <label class="block text-gray-700 dark:text-gray-300">Head Office:</label>
+                            <select name="head_office_id" class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                <option value="">Select Head Office</option>
+                                @foreach($headOffices as $headOffice)
+                                    <option value="{{ $headOffice->id }}" {{ old('head_office_id', $user->head_office_id) == $headOffice->id ? 'selected' : '' }}>
+                                        {{ $headOffice->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('head_office_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    <p class="mb-4 text-sm text-gray-500 dark:text-gray-400" x-show="hasRole('president-office')" x-cloak>
+                        President Office users are not scoped to a branch, region, division, or head office.
+                    </p>
+                    <input type="hidden" name="is_president_office" :value="hasRole('president-office') ? 1 : 0">
 
                     <!-- Individual Permissions Section -->
                     <div class="mb-4">

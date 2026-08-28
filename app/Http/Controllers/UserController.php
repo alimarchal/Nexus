@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
+use App\Models\Division;
+use App\Models\HeadOffice;
+use App\Models\Region;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -45,10 +48,13 @@ class UserController extends Controller implements HasMiddleware
     public function create()
     {
         $branches = Branch::all();
+        $regions = Region::orderBy('name')->get();
+        $divisions = Division::orderBy('name')->get();
+        $headOffices = HeadOffice::orderBy('name')->get();
         $roles = Role::all();
         $permissions = Permission::all();
 
-        return view('users.create', compact('branches', 'roles', 'permissions'));
+        return view('users.create', compact('branches', 'regions', 'divisions', 'headOffices', 'roles', 'permissions'));
     }
 
     public function store(Request $request)
@@ -58,6 +64,10 @@ class UserController extends Controller implements HasMiddleware
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'branch_id' => 'nullable|exists:branches,id',
+            'region_id' => 'nullable|exists:regions,id',
+            'division_id' => 'nullable|exists:divisions,id',
+            'head_office_id' => 'nullable|exists:head_offices,id',
+            'is_president_office' => 'nullable|boolean',
             'is_super_admin' => 'required|in:Yes,No',
             'is_active' => 'required|in:Yes,No',
             'roles' => 'array',
@@ -70,6 +80,10 @@ class UserController extends Controller implements HasMiddleware
             'name' => $request->name,
             'email' => $request->email,
             'branch_id' => $request->branch_id,
+            'region_id' => $request->region_id,
+            'division_id' => $request->division_id,
+            'head_office_id' => $request->head_office_id,
+            'is_president_office' => $request->boolean('is_president_office'),
             'password' => Hash::make($request->password),
             'is_super_admin' => $request->is_super_admin,
             'is_active' => $request->is_active,
@@ -93,12 +107,15 @@ class UserController extends Controller implements HasMiddleware
     public function edit(User $user)
     {
         $branches = Branch::all();
+        $regions = Region::orderBy('name')->get();
+        $divisions = Division::orderBy('name')->get();
+        $headOffices = HeadOffice::orderBy('name')->get();
         $roles = Role::all();
         $permissions = Permission::all();
         $userRoles = $user->roles->pluck('id')->toArray();
         $userPermissions = $user->permissions->pluck('id')->toArray();
 
-        return view('users.edit', compact('user', 'branches', 'roles', 'permissions', 'userRoles', 'userPermissions'));
+        return view('users.edit', compact('user', 'branches', 'regions', 'divisions', 'headOffices', 'roles', 'permissions', 'userRoles', 'userPermissions'));
     }
 
     public function update(Request $request, User $user)
@@ -122,6 +139,10 @@ class UserController extends Controller implements HasMiddleware
             'email' => 'required|email|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8',
             'branch_id' => 'nullable|exists:branches,id',
+            'region_id' => 'nullable|exists:regions,id',
+            'division_id' => 'nullable|exists:divisions,id',
+            'head_office_id' => 'nullable|exists:head_offices,id',
+            'is_president_office' => 'nullable|boolean',
             'is_super_admin' => 'required|in:Yes,No',
             'is_active' => 'required|in:Yes,No',
             'roles' => 'array',
@@ -134,6 +155,10 @@ class UserController extends Controller implements HasMiddleware
             'name' => $request->name,
             'email' => $request->email,
             'branch_id' => $request->branch_id,
+            'region_id' => $request->region_id,
+            'division_id' => $request->division_id,
+            'head_office_id' => $request->head_office_id,
+            'is_president_office' => $request->boolean('is_president_office'),
             'is_super_admin' => $request->is_super_admin,
             'is_active' => $request->is_active,
         ];
