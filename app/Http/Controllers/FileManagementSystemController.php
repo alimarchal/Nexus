@@ -11,6 +11,7 @@ use App\Models\FileManagementSystem;
 use App\Models\Region;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Str;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -83,7 +84,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         ]);
 
         foreach ($request->file('pages', []) as $page) {
-            $fileManagementSystem->addMedia($page)->toMediaCollection('pages');
+            $this->addPage($fileManagementSystem, $page);
         }
 
         return redirect()->route('file-management-systems.index')->with('success', 'Document record created successfully. Digital ID: '.$fileManagementSystem->digital_id);
@@ -111,6 +112,8 @@ class FileManagementSystemController extends Controller implements HasMiddleware
      */
     public function edit(FileManagementSystem $fileManagementSystem)
     {
+        $this->findVisible($fileManagementSystem);
+
         $fileManagementSystem->load(['fileCategory', 'fileable', 'media']);
 
         return view('file-management-systems.edit', [
@@ -124,6 +127,8 @@ class FileManagementSystemController extends Controller implements HasMiddleware
      */
     public function update(UpdateFileManagementSystemRequest $request, FileManagementSystem $fileManagementSystem)
     {
+        $this->findVisible($fileManagementSystem);
+
         $fileable = $this->resolveFileableFromUser() ?? [
             'type' => $request->fileable_type,
             'id' => $request->fileable_id,
@@ -136,7 +141,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         ]);
 
         foreach ($request->file('pages', []) as $page) {
-            $fileManagementSystem->addMedia($page)->toMediaCollection('pages');
+            $this->addPage($fileManagementSystem, $page);
         }
 
         return redirect()->route('file-management-systems.index')->with('success', 'Document record updated successfully.');
@@ -147,6 +152,8 @@ class FileManagementSystemController extends Controller implements HasMiddleware
      */
     public function destroy(FileManagementSystem $fileManagementSystem)
     {
+        $this->findVisible($fileManagementSystem);
+
         $fileManagementSystem->delete();
 
         return redirect()->route('file-management-systems.index')->with('success', 'Document record deleted successfully.');
@@ -158,6 +165,8 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     public function destroyMedia(FileManagementSystem $fileManagementSystem, int $media)
     {
         abort_unless(auth()->user()->can('edit file management systems'), 403);
+
+        $this->findVisible($fileManagementSystem);
 
         $fileManagementSystem->media()->where('id', $media)->firstOrFail()->delete();
 
@@ -216,5 +225,20 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             'division' => Division::find($fileableId),
             default => null,
         };
+    }
+
+    private function findVisible(FileManagementSystem $fileManagementSystem): FileManagementSystem
+    {
+        return FileManagementSystem::visibleTo(auth()->user())->findOrFail($fileManagementSystem->id);
+    }
+
+    private function addPage(FileManagementSystem $fileManagementSystem, mixed $page): void
+    {
+        $originalFilename = $page->getClientOriginalName();
+
+        $fileManagementSystem->addMedia($page)
+            ->usingFileName(Str::uuid().'_'.$originalFilename)
+            ->withCustomProperties(['original_filename' => $originalFilename])
+            ->toMediaCollection('pages');
     }
 }

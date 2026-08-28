@@ -81,32 +81,11 @@ class FileManagementSystem extends Model implements HasMedia
 
     public function scopeVisibleTo($query, User $user)
     {
-        // Sees everything, no filter.
-        if ($user->is_super_admin === 'Yes' || $user->hasRole(['super-admin', 'head-office'])) {
+        if ($user->is_super_admin === 'Yes' || $user->hasRole('super-admin')) {
             return $query;
         }
 
-        if ($user->hasRole('division') && $user->division_id) {
-            return $query->where(function ($q) use ($user) {
-                $q->where('fileable_type', (new Division)->getMorphClass())->where('fileable_id', $user->division_id)
-                    ->orWhereHasMorph('fileable', [Region::class], fn ($q2) => $q2->where('division_id', $user->division_id))
-                    ->orWhereHasMorph('fileable', [Branch::class], fn ($q2) => $q2->whereHas('region', fn ($q3) => $q3->where('division_id', $user->division_id)));
-            });
-        }
-
-        if ($user->hasRole('region') && $user->region_id) {
-            return $query->where(function ($q) use ($user) {
-                $q->where('fileable_type', (new Region)->getMorphClass())->where('fileable_id', $user->region_id)
-                    ->orWhereHasMorph('fileable', [Branch::class], fn ($q2) => $q2->where('region_id', $user->region_id));
-            });
-        }
-
-        if ($user->hasRole('branch') && $user->branch_id) {
-            return $query->where('fileable_type', (new Branch)->getMorphClass())->where('fileable_id', $user->branch_id);
-        }
-
-        // No matching role/scope — see nothing, not everything.
-        return $query->whereRaw('1 = 0');
+        return $query->where('created_by', $user->id);
     }
 
     public function scopeDocumentDateFrom($query, string $date)
