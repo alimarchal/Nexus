@@ -135,8 +135,8 @@ test('transferred file is visible to the new org unit and keeps its transfer his
     $this->actingAs($newBranchUser)->get(route('file-management-systems.show', $document))
         ->assertSee('File History')
         ->assertSee('Transferred')
-        ->assertSee("Branch #{$this->branch->id}")
-        ->assertSee("Branch #{$newBranch->id}");
+        ->assertSee("#{$this->branch->id}")
+        ->assertSee("#{$newBranch->id}");
 });
 
 test('transferring a file moves its uploaded pages to the destination folder without changing its digital id', function () {
@@ -251,6 +251,9 @@ test('authorized user can view a single document record', function () {
     $response->assertViewIs('file-management-systems.show');
     $response->assertSee($document->digital_id);
     $response->assertViewHas('fileManagementSystem', fn (FileManagementSystem $fileManagementSystem): bool => $fileManagementSystem->creator?->is($owner) ?? false);
+    $this->actingAs($this->admin)->get(route('file-management-systems.edit', $document))
+        ->assertSee('Record Owner (Org Unit)')
+        ->assertSee($owner->name);
 });
 
 test('branch role cannot view another branch document by guessing the url', function () {

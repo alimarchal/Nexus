@@ -121,7 +121,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         $this->findVisible($fileManagementSystem);
 
-        $fileManagementSystem->load(['fileCategory', 'fileable', 'media']);
+        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'media']);
 
         return view('file-management-systems.edit', [
             'fileManagementSystem' => $fileManagementSystem,

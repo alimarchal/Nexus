@@ -18,6 +18,29 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
+                <dl class="mb-6 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
+                    <div>
+                        <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Record Owner (Org Unit)</dt>
+                        <dd class="mt-1 text-gray-800 dark:text-gray-200">
+                            {{ $fileManagementSystem->fileable_label }}: {{ $fileManagementSystem->fileable_name ?? 'N/A' }}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Created By</dt>
+                        <dd class="mt-1 text-gray-800 dark:text-gray-200">
+                            {{ $fileManagementSystem->creator?->name ?? 'System' }}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Last Updated By</dt>
+                        <dd class="mt-1 text-gray-800 dark:text-gray-200">
+                            {{ $fileManagementSystem->updater?->name ?? 'System' }}
+                        </dd>
+                    </div>
+                </dl>
+
                 <form method="POST" action="{{ route('file-management-systems.update', $fileManagementSystem) }}"
                     enctype="multipart/form-data">
                     @csrf
@@ -166,9 +189,27 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         @foreach ($fileManagementSystem->media as $page)
                             <div class="border border-gray-200 dark:border-gray-700 rounded-md p-3 text-center">
-                                <a href="{{ $page->getUrl() }}" target="_blank"
-                                    class="text-blue-600 hover:underline text-sm break-all">
-                                    {{ $page->file_name }}
+                                <div class="mb-2 flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                    <span>Page {{ str_pad((string) $loop->iteration, 3, '0', STR_PAD_LEFT) }}</span>
+                                    <span>#{{ $loop->iteration }}</span>
+                                </div>
+
+                                <a href="{{ $page->getUrl() }}" target="_blank" class="block">
+                                    @if (str_starts_with((string) $page->mime_type, 'image/'))
+                                        <img src="{{ $page->getUrl() }}"
+                                            alt="{{ $page->getCustomProperty('original_filename', $page->file_name) }}"
+                                            class="mx-auto h-32 w-full rounded-md object-cover">
+                                    @else
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-32 w-16 text-gray-400" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                        </svg>
+                                    @endif
+
+                                    <p class="mt-2 break-all text-sm text-blue-600 hover:underline">
+                                        {{ $page->getCustomProperty('original_filename', $page->file_name) }}
+                                    </p>
                                 </a>
 
                                 @can('edit file management systems')
