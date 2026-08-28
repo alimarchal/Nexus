@@ -19,6 +19,8 @@ return new class extends Migration
         'create file management systems',
         'edit file management systems',
         'delete file management systems',
+        'transfer file management systems',
+        'approve file management transfers',
     ];
 
     public function up(): void
@@ -48,6 +50,11 @@ return new class extends Migration
 
             // Adds audit tracking columns such as created_by/updated_by to record who created or updated the record.
             $table->userTracking();
+
+            $table->foreignId('current_custodian_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
             // Adds a deleted_at column so records can be soft-deleted without being permanently removed from the database.
             $table->softDeletes();
@@ -86,7 +93,7 @@ return new class extends Migration
             ]);
         }
 
-        $editable = ['view file management systems', 'create file management systems', 'edit file management systems'];
+        $editable = ['view file management systems', 'create file management systems', 'edit file management systems', 'transfer file management systems'];
 
         $rolePermissions = [
             'branch' => $editable,

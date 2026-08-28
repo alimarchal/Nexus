@@ -22,7 +22,8 @@
                     <div>
                         <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Record Owner (Org Unit)</dt>
                         <dd class="mt-1 text-gray-800 dark:text-gray-200">
-                            {{ $fileManagementSystem->fileable_label }}: {{ $fileManagementSystem->fileable_name ?? 'N/A' }}
+                            {{ $fileManagementSystem->fileable_label }}:
+                            {{ $fileManagementSystem->fileable_name ?? 'N/A' }}
                         </dd>
                     </div>
 
@@ -31,6 +32,12 @@
                         <dd class="mt-1 text-gray-800 dark:text-gray-200">
                             {{ $fileManagementSystem->creator?->name ?? 'System' }}
                         </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Current Custodian</dt>
+                        <dd class="mt-1 text-gray-800 dark:text-gray-200">
+                            {{ $fileManagementSystem->currentCustodian?->name ?? 'Unassigned' }}</dd>
                     </div>
 
                     <div>
@@ -61,90 +68,10 @@
                     </div>
 
                     <div class="mb-4">
-                        @if ($autoFileable)
-                            <label class="block text-gray-700 dark:text-gray-300">Org Unit:</label>
-                            <input type="text" value="{{ \Illuminate\Support\Str::headline($autoFileable['type']) }}: {{ $autoFileable['label'] }}" disabled
-                                class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-200 dark:text-gray-500 rounded-md shadow-sm">
-                            <input type="hidden" name="fileable_type" value="{{ $autoFileable['type'] }}">
-                            <input type="hidden" name="fileable_id" value="{{ $autoFileable['id'] }}">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Automatically set to your assigned org unit.</p>
-                        @elseif ($isSuperAdmin)
-                            <div
-                                x-data="{ fileableType: '{{ old('fileable_type', $fileManagementSystem->fileable_type) }}' }">
-                                <label class="block text-gray-700 dark:text-gray-300">Org Unit Type:</label>
-                                <select name="fileable_type" x-model="fileableType"
-                                    class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
-                                    required>
-                                    <option value="branch">Branch</option>
-                                    <option value="region">Region</option>
-                                    <option value="division">Division</option>
-                                    <option value="head-office">Head Office</option>
-                                </select>
-                                @error('fileable_type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-
-                                <div class="mt-4" x-show="fileableType === 'branch'">
-                                    <label class="block text-gray-700 dark:text-gray-300">Branch:</label>
-                                    <select name="fileable_id" :disabled="fileableType !== 'branch'"
-                                        class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                        <option value="">Select Branch</option>
-                                        @foreach ($branches as $branch)
-                                            <option value="{{ $branch->id }}" {{ old('fileable_id', $fileManagementSystem->fileable_type === 'branch' ? $fileManagementSystem->fileable_id : null) == $branch->id ? 'selected' : '' }}>
-                                                {{ $branch->code ? $branch->code . ' - ' : '' }}{{ $branch->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="mt-4" x-show="fileableType === 'region'">
-                                    <label class="block text-gray-700 dark:text-gray-300">Region:</label>
-                                    <select name="fileable_id" :disabled="fileableType !== 'region'"
-                                        class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                        <option value="">Select Region</option>
-                                        @foreach ($regions as $region)
-                                            <option value="{{ $region->id }}" {{ old('fileable_id', $fileManagementSystem->fileable_type === 'region' ? $fileManagementSystem->fileable_id : null) == $region->id ? 'selected' : '' }}>
-                                                {{ $region->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="mt-4" x-show="fileableType === 'division'">
-                                    <label class="block text-gray-700 dark:text-gray-300">Division:</label>
-                                    <select name="fileable_id" :disabled="fileableType !== 'division'"
-                                        class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                        <option value="">Select Division</option>
-                                        @foreach ($divisions as $division)
-                                            <option value="{{ $division->id }}" {{ old('fileable_id', $fileManagementSystem->fileable_type === 'division' ? $fileManagementSystem->fileable_id : null) == $division->id ? 'selected' : '' }}>
-                                                {{ $division->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="mt-4" x-show="fileableType === 'head-office'">
-                                    <label class="block text-gray-700 dark:text-gray-300">Head Office:</label>
-                                    <select name="fileable_id" :disabled="fileableType !== 'head-office'"
-                                        class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
-                                        <option value="">Select Head Office</option>
-                                        @foreach ($headOffices as $headOffice)
-                                            <option value="{{ $headOffice->id }}" {{ old('fileable_id', $fileManagementSystem->fileable_type === 'head-office' ? $fileManagementSystem->fileable_id : null) == $headOffice->id ? 'selected' : '' }}>
-                                                {{ $headOffice->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                @error('fileable_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                            </div>
-                        @else
-                            <p class="text-sm text-red-600 dark:text-red-400">
-                                Your account is not assigned to an org unit. Contact an administrator before updating this document record.
-                            </p>
-                        @endif
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-gray-700 dark:text-gray-300">File No <span class="text-gray-400 text-xs">(your own reference, e.g. HRMS/12/ABC)</span>:</label>
-                        <input type="text" name="file_no" value="{{ old('file_no', $fileManagementSystem->file_no) }}" maxlength="60"
+                        <label class="block text-gray-700 dark:text-gray-300">File No <span
+                                class="text-gray-400 text-xs">(your own reference, e.g. HRMS/12/ABC)</span>:</label>
+                        <input type="text" name="file_no" value="{{ old('file_no', $fileManagementSystem->file_no) }}"
+                            maxlength="60"
                             class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
                         @error('file_no') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
@@ -189,7 +116,8 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         @foreach ($fileManagementSystem->media as $page)
                             <div class="border border-gray-200 dark:border-gray-700 rounded-md p-3 text-center">
-                                <div class="mb-2 flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                <div
+                                    class="mb-2 flex items-center justify-between text-xs font-semibold text-gray-500 dark:text-gray-400">
                                     <span>Page {{ str_pad((string) $loop->iteration, 3, '0', STR_PAD_LEFT) }}</span>
                                     <span>#{{ $loop->iteration }}</span>
                                 </div>
@@ -227,6 +155,7 @@
                 @endif
 
                 @include('file-management-systems.partials.activity-history')
+                @include('file-management-systems.partials.transfers')
             </div>
         </div>
     </div>

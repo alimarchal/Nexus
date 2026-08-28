@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use App\Traits\UserTracking;
-use Database\Factories\FileManagementSystemFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
@@ -17,7 +17,6 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class FileManagementSystem extends Model implements HasMedia
 {
-    /** @use HasFactory<FileManagementSystemFactory> */
     use HasFactory, HasUuids, InteractsWithMedia, LogsActivity, SoftDeletes, UserTracking;
 
     protected $keyType = 'string';
@@ -35,6 +34,7 @@ class FileManagementSystem extends Model implements HasMedia
         'file_category_id',
         'fileable_type',
         'fileable_id',
+        'current_custodian_id',
         'document_date',
         'title',
     ];
@@ -57,6 +57,16 @@ class FileManagementSystem extends Model implements HasMedia
     public function fileCategory(): BelongsTo
     {
         return $this->belongsTo(FileCategory::class);
+    }
+
+    public function currentCustodian(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'current_custodian_id');
+    }
+
+    public function transfers(): HasMany
+    {
+        return $this->hasMany(FileManagementTransfer::class)->latest();
     }
 
     /**

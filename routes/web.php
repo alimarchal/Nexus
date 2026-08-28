@@ -121,6 +121,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::resource('/settings/categories', CategoryController::class);
     Route::resource('/settings/file-categories', FileCategoryController::class)->except(['show']);
+    Route::get('/product/file-management-systems/{fileManagementSystem}/transfer', [FileManagementSystemController::class, 'transfer'])->name('file-management-systems.transfer');
+    Route::post('/product/file-management-systems/{fileManagementSystem}/transfer', [FileManagementSystemController::class, 'storeTransfer'])->name('file-management-systems.transfers.store');
+    Route::patch('/product/file-management-systems/{fileManagementSystem}/transfers/{transfer}', [FileManagementSystemController::class, 'decideTransfer'])->name('file-management-systems.transfers.decide');
     Route::resource('/product/file-management-systems', FileManagementSystemController::class);
     Route::delete('/product/file-management-systems/{fileManagementSystem}/media/{media}', [FileManagementSystemController::class, 'destroyMedia'])->name('file-management-systems.media.destroy');
 

@@ -2,18 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DecideFileManagementTransferRequest;
 use App\Http\Requests\StoreFileManagementSystemRequest;
+use App\Http\Requests\StoreFileManagementTransferRequest;
 use App\Http\Requests\UpdateFileManagementSystemRequest;
 use App\Models\Branch;
 use App\Models\Division;
 use App\Models\FileCategory;
 use App\Models\FileManagementSystem;
+use App\Models\FileManagementTransfer;
 use App\Models\HeadOffice;
 use App\Models\Region;
+use App\Models\User;
 use App\Services\FileManagementSystemPathGenerator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
@@ -29,6 +34,8 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             new Middleware('role_or_permission:view file management systems', only: ['index', 'show']),
             new Middleware('role_or_permission:create file management systems', only: ['create', 'store']),
             new Middleware('role_or_permission:edit file management systems', only: ['edit', 'update']),
+            new Middleware('role_or_permission:transfer file management systems', only: ['transfer', 'storeTransfer']),
+            new Middleware('role_or_permission:approve file management transfers', only: ['decideTransfer']),
             new Middleware('role_or_permission:delete file management systems', only: ['destroy']),
         ];
     }
@@ -86,6 +93,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             ...$request->safe()->except(['pages', 'fileable_type', 'fileable_id']),
             'fileable_type' => $fileable['type'],
             'fileable_id' => $fileable['id'],
+            'current_custodian_id' => auth()->id(),
             'digital_id' => generateUniqueIdWithPrefix($orgUnit->code ?? $fileable['type'], 'file_management_systems', 'digital_id'),
         ]);
 
@@ -106,11 +114,12 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             404
         );
 
-        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'media']);
+        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'currentCustodian', 'media', 'transfers.recipient', 'transfers.requester', 'transfers.decider']);
 
         return view('file-management-systems.show', [
             'fileManagementSystem' => $fileManagementSystem,
             'activityHistory' => $this->activityHistory($fileManagementSystem),
+            'approvableTransferIds' => $this->approvableTransferIds($fileManagementSystem),
         ]);
     }
 
@@ -121,11 +130,12 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         $this->findVisible($fileManagementSystem);
 
-        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'media']);
+        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'currentCustodian', 'media', 'transfers.recipient', 'transfers.requester', 'transfers.decider']);
 
         return view('file-management-systems.edit', [
             'fileManagementSystem' => $fileManagementSystem,
             'activityHistory' => $this->activityHistory($fileManagementSystem),
+            'approvableTransferIds' => $this->approvableTransferIds($fileManagementSystem),
             ...$this->formOptions(),
         ]);
     }
@@ -137,41 +147,105 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         $this->findVisible($fileManagementSystem);
 
-        $fileable = $this->resolveFileableFromUser() ?? [
-            'type' => $request->fileable_type,
-            'id' => $request->fileable_id,
-        ];
-
-        $previousFileable = [
-            'type' => $fileManagementSystem->fileable_type,
-            'id' => $fileManagementSystem->fileable_id,
-        ];
-
         $fileManagementSystem->update([
-            ...$request->safe()->except(['pages', 'fileable_type', 'fileable_id']),
-            'fileable_type' => $fileable['type'],
-            'fileable_id' => $fileable['id'],
+            ...$request->safe()->except(['pages']),
         ]);
-
-        if ($previousFileable !== $fileable) {
-            $this->moveMediaForTransfer($fileManagementSystem, $previousFileable);
-
-            activity('file-management')
-                ->performedOn($fileManagementSystem)
-                ->causedBy(auth()->user())
-                ->event('transferred')
-                ->withProperties([
-                    'from' => $previousFileable,
-                    'to' => $fileable,
-                ])
-                ->log('File management record transferred');
-        }
 
         foreach ($request->file('pages', []) as $page) {
             $this->logPageUploaded($fileManagementSystem, $this->addPage($fileManagementSystem, $page));
         }
 
         return redirect()->route('file-management-systems.index')->with('success', 'Document record updated successfully.');
+    }
+
+    public function transfer(FileManagementSystem $fileManagementSystem)
+    {
+        $this->findVisible($fileManagementSystem);
+
+        return view('file-management-systems.transfer', [
+            'fileManagementSystem' => $fileManagementSystem->load(['fileable', 'currentCustodian']),
+            ...$this->transferOptions(),
+        ]);
+    }
+
+    public function storeTransfer(StoreFileManagementTransferRequest $request, FileManagementSystem $fileManagementSystem)
+    {
+        $fileManagementSystem = $this->findVisible($fileManagementSystem);
+        $destination = $this->resolveOrgUnit($request->string('destination_fileable_type')->toString(), $request->integer('destination_fileable_id'));
+        $recipient = User::query()->findOrFail($request->integer('recipient_id'));
+
+        abort_unless($destination && $this->userBelongsToUnit($recipient, $request->string('destination_fileable_type')->toString(), $destination->id), 422);
+
+        $hasPendingTransfer = $fileManagementSystem->transfers()->where('status', 'pending')->exists();
+        abort_if($hasPendingTransfer, 422, 'A pending transfer request already exists for this record.');
+
+        FileManagementTransfer::create([
+            'file_management_system_id' => $fileManagementSystem->id,
+            'source_fileable_type' => $fileManagementSystem->fileable_type,
+            'source_fileable_id' => $fileManagementSystem->fileable_id,
+            'destination_fileable_type' => $request->string('destination_fileable_type')->toString(),
+            'destination_fileable_id' => $destination->id,
+            'recipient_id' => $recipient->id,
+            'requested_by' => auth()->id(),
+            'reason' => $request->string('reason')->toString(),
+        ]);
+
+        return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('success', 'Transfer request submitted for approval.');
+    }
+
+    public function decideTransfer(DecideFileManagementTransferRequest $request, FileManagementSystem $fileManagementSystem, FileManagementTransfer $transfer)
+    {
+        abort_unless($transfer->file_management_system_id === $fileManagementSystem->id, 404);
+        abort_unless($this->canApproveTransfer($transfer), 403);
+        abort_unless($transfer->status === 'pending', 422, 'This transfer request has already been decided.');
+
+        if ($request->string('decision')->toString() === 'rejected') {
+            $transfer->update([
+                'status' => 'rejected',
+                'decided_by' => auth()->id(),
+                'decision_note' => $request->string('decision_note')->toString(),
+            ]);
+
+            return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('success', 'Transfer request rejected.');
+        }
+
+        $previousFileable = [
+            'type' => $fileManagementSystem->fileable_type,
+            'id' => $fileManagementSystem->fileable_id,
+        ];
+
+        DB::transaction(function () use ($transfer, $fileManagementSystem, $previousFileable, $request): void {
+            $fileManagementSystem->update([
+                'fileable_type' => $transfer->destination_fileable_type,
+                'fileable_id' => $transfer->destination_fileable_id,
+                'current_custodian_id' => $transfer->recipient_id,
+            ]);
+            $fileManagementSystem->load('media');
+            $this->moveMediaForTransfer($fileManagementSystem, $previousFileable);
+
+            $transfer->update([
+                'status' => 'approved',
+                'decided_by' => auth()->id(),
+                'decision_note' => $request->string('decision_note')->toString() ?: null,
+            ]);
+
+            activity('file-management')
+                ->performedOn($fileManagementSystem)
+                ->causedBy(auth()->user())
+                ->event('transferred')
+                ->withProperties([
+                    'transfer_id' => $transfer->id,
+                    'from' => $previousFileable,
+                    'to' => ['type' => $transfer->destination_fileable_type, 'id' => $transfer->destination_fileable_id],
+                    'reason' => $transfer->reason,
+                    'requester_id' => $transfer->requested_by,
+                    'recipient_id' => $transfer->recipient_id,
+                    'approver_id' => auth()->id(),
+                ])
+                ->log('File management record transferred');
+        });
+
+        return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('success', 'Transfer request approved and record ownership updated.');
     }
 
     /**
@@ -288,6 +362,50 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         $user = auth()->user();
 
         return $user->is_super_admin === 'Yes' || $user->hasRole('super-admin');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function transferOptions(): array
+    {
+        return [
+            'branches' => Branch::orderBy('name')->get(),
+            'regions' => Region::orderBy('name')->get(),
+            'divisions' => Division::orderBy('name')->get(),
+            'headOffices' => HeadOffice::orderBy('name')->get(),
+            'users' => User::query()->active()->orderBy('name')->get(),
+        ];
+    }
+
+    private function userBelongsToUnit(User $user, string $type, int $id): bool
+    {
+        return match ($type) {
+            'branch' => $user->branch_id === $id,
+            'region' => $user->region_id === $id,
+            'division' => $user->division_id === $id,
+            'head-office' => $user->head_office_id === $id,
+            default => false,
+        };
+    }
+
+    private function canApproveTransfer(FileManagementTransfer $transfer): bool
+    {
+        $user = auth()->user();
+
+        return $user->can('approve file management transfers')
+            && ($this->isSuperAdmin() || $user->hasRole('head-office') || $this->userBelongsToUnit($user, $transfer->destination_fileable_type, $transfer->destination_fileable_id));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function approvableTransferIds(FileManagementSystem $fileManagementSystem): array
+    {
+        return $fileManagementSystem->transfers
+            ->filter(fn (FileManagementTransfer $transfer): bool => $transfer->status === 'pending' && $this->canApproveTransfer($transfer))
+            ->pluck('id')
+            ->all();
     }
 
     private function findVisible(FileManagementSystem $fileManagementSystem): FileManagementSystem

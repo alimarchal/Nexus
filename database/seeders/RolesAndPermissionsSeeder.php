@@ -108,6 +108,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'create file management systems',
             'edit file management systems',
             'delete file management systems',
+            'transfer file management systems',
+            'approve file management transfers',
 
             // Report Management
             'view reports',
@@ -150,6 +152,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view file management systems',
                 'create file management systems',
                 'edit file management systems',
+                'transfer file management systems',
             ],
             'region' => [
                 'view users',
@@ -170,6 +173,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view file management systems',
                 'create file management systems',
                 'edit file management systems',
+                'transfer file management systems',
             ],
             'division' => [
                 'view users',
@@ -202,6 +206,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view file management systems',
                 'create file management systems',
                 'edit file management systems',
+                'transfer file management systems',
             ],
             'head-office' => [
                 'view users',
@@ -254,6 +259,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'create file management systems',
                 'edit file management systems',
                 'delete file management systems',
+                'transfer file management systems',
+                'approve file management transfers',
             ],
             'super-admin' => Permission::all()->pluck('name')->toArray(),
         ];

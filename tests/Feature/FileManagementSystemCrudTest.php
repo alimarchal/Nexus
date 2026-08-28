@@ -3,6 +3,7 @@
 use App\Models\Branch;
 use App\Models\FileCategory;
 use App\Models\FileManagementSystem;
+use App\Models\FileManagementTransfer;
 use App\Models\Region;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,6 +20,8 @@ beforeEach(function () {
     Permission::firstOrCreate(['name' => 'create file management systems']);
     Permission::firstOrCreate(['name' => 'edit file management systems']);
     Permission::firstOrCreate(['name' => 'delete file management systems']);
+    Permission::firstOrCreate(['name' => 'transfer file management systems']);
+    Permission::firstOrCreate(['name' => 'approve file management transfers']);
 
     $adminRole = Role::firstOrCreate(['name' => 'super-admin']);
     $adminRole->givePermissionTo([
@@ -26,10 +29,12 @@ beforeEach(function () {
         'create file management systems',
         'edit file management systems',
         'delete file management systems',
+        'transfer file management systems',
+        'approve file management transfers',
     ]);
 
     $branchRole = Role::firstOrCreate(['name' => 'branch']);
-    $branchRole->givePermissionTo(['view file management systems', 'create file management systems', 'edit file management systems']);
+    $branchRole->givePermissionTo(['view file management systems', 'create file management systems', 'edit file management systems', 'transfer file management systems']);
 
     $this->admin = User::factory()->create();
     $this->admin->assignRole('super-admin');
@@ -106,10 +111,8 @@ test('branch role can view files created by another user in their branch', funct
     $response->assertDontSee($otherDocument->digital_id);
 });
 
-test('transferred file is visible to the new org unit and keeps its transfer history', function () {
+test('normal edits cannot change a document record owner', function () {
     $newBranch = Branch::factory()->create();
-    $newBranchUser = User::factory()->create(['branch_id' => $newBranch->id]);
-    $newBranchUser->assignRole('branch');
     $document = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
@@ -121,28 +124,63 @@ test('transferred file is visible to the new org unit and keeps its transfer his
         'fileable_type' => 'branch',
         'fileable_id' => $newBranch->id,
         'document_date' => $document->document_date->format('Y-m-d'),
-        'title' => $document->title,
+        'title' => 'Updated document title',
     ])->assertRedirect(route('file-management-systems.index'));
 
-    $this->actingAs($this->branchUser)->get(route('file-management-systems.index'))
-        ->assertDontSee($document->digital_id);
-    $this->actingAs($newBranchUser)->get(route('file-management-systems.index'))
-        ->assertSee($document->digital_id);
-    $this->assertDatabaseHas('activity_log', [
-        'event' => 'transferred',
-        'description' => 'File management record transferred',
-    ]);
-    $this->actingAs($newBranchUser)->get(route('file-management-systems.show', $document))
-        ->assertSee('File History')
-        ->assertSee('Transferred')
-        ->assertSee("#{$this->branch->id}")
-        ->assertSee("#{$newBranch->id}");
+    $document->refresh();
+
+    expect($document->fileable_type)->toBe('branch');
+    expect($document->fileable_id)->toBe($this->branch->id);
+    expect($document->title)->toBe('Updated document title');
 });
 
-test('transferring a file moves its uploaded pages to the destination folder without changing its digital id', function () {
+test('authorized source user can create a pending transfer request', function () {
+    $newBranch = Branch::factory()->create();
+    $newBranchUser = User::factory()->create(['branch_id' => $newBranch->id]);
+    $newBranchUser->assignRole('branch');
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs($this->branchUser)->post(route('file-management-systems.transfers.store', $document), [
+        'destination_fileable_type' => 'branch',
+        'destination_fileable_id' => $newBranch->id,
+        'recipient_id' => $newBranchUser->id,
+        'reason' => 'Branch responsibility changed.',
+    ])->assertRedirect(route('file-management-systems.show', $document));
+
+    $this->assertDatabaseHas('file_management_transfers', [
+        'file_management_system_id' => $document->id,
+        'recipient_id' => $newBranchUser->id,
+        'requested_by' => $this->branchUser->id,
+        'status' => 'pending',
+    ]);
+    expect($document->fresh()->fileable_id)->toBe($this->branch->id);
+});
+
+test('user without transfer permission cannot request a transfer', function () {
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs(User::factory()->create())->post(route('file-management-systems.transfers.store', $document), [
+        'destination_fileable_type' => 'branch',
+        'destination_fileable_id' => $this->branch->id,
+        'recipient_id' => $this->branchUser->id,
+        'reason' => 'Unauthorized attempt.',
+    ])->assertForbidden();
+});
+
+test('approving a transfer moves ownership and media and records custodian activity', function () {
     Storage::fake('public');
 
     $newBranch = Branch::factory()->create();
+    $newBranchUser = User::factory()->create(['branch_id' => $newBranch->id]);
+    $newBranchUser->assignRole('branch');
     $document = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
@@ -153,20 +191,29 @@ test('transferring a file moves its uploaded pages to the destination folder wit
         ->toMediaCollection('pages');
     $previousPath = $page->getPath();
 
-    $this->actingAs($this->admin)->put(route('file-management-systems.update', $document), [
-        'file_category_id' => $this->fileCategory->id,
-        'fileable_type' => 'branch',
-        'fileable_id' => $newBranch->id,
-        'document_date' => $document->document_date->format('Y-m-d'),
-        'title' => $document->title,
-    ])->assertRedirect(route('file-management-systems.index'));
+    $this->actingAs($this->branchUser)->post(route('file-management-systems.transfers.store', $document), [
+        'destination_fileable_type' => 'branch',
+        'destination_fileable_id' => $newBranch->id,
+        'recipient_id' => $newBranchUser->id,
+        'reason' => 'Branch responsibility changed.',
+    ]);
+    $transfer = FileManagementTransfer::where('file_management_system_id', $document->id)->sole();
+
+    $this->actingAs($this->admin)->patch(route('file-management-systems.transfers.decide', [$document, $transfer]), [
+        'decision' => 'approved',
+    ])->assertRedirect(route('file-management-systems.show', $document));
 
     $page->refresh();
+    $document->refresh();
 
+    expect($document->fileable_id)->toBe($newBranch->id);
+    expect($document->current_custodian_id)->toBe($newBranchUser->id);
+    expect($transfer->fresh()->status)->toBe('approved');
     expect($page->getPath())->toContain("Branch/{$newBranch->id}/{$document->digital_id}");
     expect($page->getPath())->toEndWith('transfer-page.pdf');
     expect(file_exists($previousPath))->toBeFalse();
     expect(file_exists($page->getPath()))->toBeTrue();
+    $this->assertDatabaseHas('activity_log', ['event' => 'transferred', 'subject_id' => $document->id]);
 });
 
 test('authorized user can create a document record with a manual file no and filter by it', function () {
