@@ -22,8 +22,8 @@
                
                 <form method="POST" action="{{ route('users.store') }}"
                     x-data="{
-                        selectedRoleIds: {{ json_encode(old('roles', [])) }},
-                        roleMap: {!! $roles->pluck('name', 'id')->toJson() !!},
+                        selectedRoleIds: @js(old('roles', [])),
+                        roleMap: @js($roles->pluck('name', 'id')),
                         hasRole(name) {
                             return this.selectedRoleIds.some((id) => this.roleMap[id] === name);
                         },

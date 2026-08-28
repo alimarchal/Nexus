@@ -20,8 +20,8 @@
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
                 <form method="POST" action="{{ route('users.update', $user->id) }}"
                     x-data="{
-                        selectedRoleIds: {{ json_encode(old('roles', $userRoles)) }},
-                        roleMap: {!! $roles->pluck('name', 'id')->toJson() !!},
+                        selectedRoleIds: @js(old('roles', $userRoles)),
+                        roleMap: @js($roles->pluck('name', 'id')),
                         hasRole(name) {
                             return this.selectedRoleIds.some((id) => this.roleMap[id] === name);
                         },
