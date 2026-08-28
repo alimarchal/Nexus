@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreDocumentCategoryRequest;
-use App\Http\Requests\UpdateDocumentCategoryRequest;
-use App\Models\DocumentCategory;
+use App\Http\Requests\StoreFileManagementSystemRequest;
+use App\Http\Requests\UpdateFileManagementSystemRequest;
+use App\Models\FileManagementSystem;
 
-class DocumentCategoryController extends Controller
+class FileManagementSystemController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -27,7 +27,7 @@ class DocumentCategoryController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreDocumentCategoryRequest $request)
+    public function store(StoreFileManagementSystemRequest $request)
     {
         //
     }
@@ -35,7 +35,7 @@ class DocumentCategoryController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(DocumentCategory $documentCategory)
+    public function show(FileManagementSystem $fileManagementSystem)
     {
         //
     }
@@ -43,7 +43,7 @@ class DocumentCategoryController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(DocumentCategory $documentCategory)
+    public function edit(FileManagementSystem $fileManagementSystem)
     {
         //
     }
@@ -51,7 +51,7 @@ class DocumentCategoryController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateDocumentCategoryRequest $request, DocumentCategory $documentCategory)
+    public function update(UpdateFileManagementSystemRequest $request, FileManagementSystem $fileManagementSystem)
     {
         //
     }
@@ -59,7 +59,7 @@ class DocumentCategoryController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(DocumentCategory $documentCategory)
+    public function destroy(FileManagementSystem $fileManagementSystem)
     {
         //
     }

@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Models\DocumentCategory;
+use App\Models\FileManagementSystem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<DocumentCategory>
+ * @extends Factory<FileManagementSystem>
  */
-class DocumentCategoryFactory extends Factory
+class FileManagementSystemFactory extends Factory
 {
     /**
      * Define the model's default state.

@@ -11,18 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('document_categories', function (Blueprint $table) {
+        Schema::create('file_management_systems', function (Blueprint $table) {
             // Stores the unique UUID identifier for each document category.
             $table->uuid('id')->primary();
 
-            // Stores the unique code used to identify the document category.
-            $table->string('category_code', 20)->unique();
+            // digital_id      VARCHAR(40)  NOT NULL UNIQUE,     -- e.g. BR014-20260827-CASH-000123
+            $table->string('digital_id', 40)->unique();
 
-            // Stores the display name of the document category.
-            $table->string('category_name', 100);
-
-            // Indicates whether the document category is currently active.
-            $table->enum('is_active', ['0', '1'])->default('1');
+            // document_categories foreign id      BIGINT UNSIGNED NOT NULL, $table->foreignUuid('aksic_application_id')->nullable()->constrained('aksic_applications')->nullOnDelete()->cascadeOnUpdate();
+            $table->foreignUuid('document_category_id')->constrained('document_categories')->nullOnDelete()->cascadeOnUpdate();
 
             // Adds audit tracking columns such as created_by/updated_by to record who created or updated the category.
             $table->userTracking();
@@ -41,6 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('document_categories');
+        Schema::dropIfExists('file_management_systems');
     }
 };
