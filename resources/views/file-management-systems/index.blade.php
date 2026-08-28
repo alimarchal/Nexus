@@ -98,7 +98,6 @@
     <x-data-table :items="$fileManagementSystems" :headers="[
         ['label' => '#', 'align' => 'text-center'],
         ['label' => 'Digital ID', 'align' => 'text-center'],
-        ['label' => 'File No', 'align' => 'text-center'],
         ['label' => 'Category', 'align' => 'text-center'],
         ['label' => 'Org Unit', 'align' => 'text-center'],
         ['label' => 'Document Date', 'align' => 'text-center'],
@@ -114,15 +113,18 @@
                 </td>
                 <td class="px-2 py-1 text-center font-semibold">
                     {{ $fileManagementSystem->digital_id }}
-                </td>
-                <td class="px-2 py-1 text-center">
-                    {{ $fileManagementSystem->file_no ?? '-' }}
+                    @if ($fileManagementSystem->file_no)
+                        <span class="block text-xs font-normal text-gray-500 dark:text-gray-400">
+                            {{ $fileManagementSystem->file_no }}
+                        </span>
+                    @endif
                 </td>
                 <td class="px-2 py-1 text-center">
                     {{ $fileManagementSystem->fileCategory->category_name ?? 'N/A' }}
                 </td>
                 <td class="px-2 py-1 text-center">
-                    {{ $fileManagementSystem->fileable_label }}: {{ $fileManagementSystem->fileable_name ?? 'N/A' }}
+                    {{ $fileManagementSystem->fileable_label }}:
+                    {{ $fileManagementSystem->fileable_type === 'division' ? ($fileManagementSystem->fileable?->short_name ?? $fileManagementSystem->fileable_name ?? 'N/A') : ($fileManagementSystem->fileable_name ?? 'N/A') }}
                 </td>
                 <td class="px-2 py-1 text-center">
                     {{ $fileManagementSystem->document_date?->format('d-m-Y') }}
