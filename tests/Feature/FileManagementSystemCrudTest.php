@@ -75,13 +75,21 @@ test('authorized user can create a document record with a scanned page', functio
 
     $fms = FileManagementSystem::where('title', 'Test Document')->first();
     expect($fms->media)->toHaveCount(1);
+    $this->assertDatabaseHas('activity_log', [
+        'event' => 'page_uploaded',
+        'description' => 'File management page uploaded',
+    ]);
 });
 
-test('branch role can only manage their own branch scoped documents', function () {
+test('branch role can view files created by another user in their branch', function () {
+    $otherBranchUser = User::factory()->create(['branch_id' => $this->branch->id]);
+    $otherBranchUser->assignRole('branch');
+
     $ownDocument = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
+        'created_by' => $otherBranchUser->id,
     ]);
 
     $otherBranch = Branch::factory()->create();
@@ -96,6 +104,69 @@ test('branch role can only manage their own branch scoped documents', function (
     $response->assertSuccessful();
     $response->assertSee($ownDocument->digital_id);
     $response->assertDontSee($otherDocument->digital_id);
+});
+
+test('transferred file is visible to the new org unit and keeps its transfer history', function () {
+    $newBranch = Branch::factory()->create();
+    $newBranchUser = User::factory()->create(['branch_id' => $newBranch->id]);
+    $newBranchUser->assignRole('branch');
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs($this->admin)->put(route('file-management-systems.update', $document), [
+        'file_category_id' => $this->fileCategory->id,
+        'fileable_type' => 'branch',
+        'fileable_id' => $newBranch->id,
+        'document_date' => $document->document_date->format('Y-m-d'),
+        'title' => $document->title,
+    ])->assertRedirect(route('file-management-systems.index'));
+
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.index'))
+        ->assertDontSee($document->digital_id);
+    $this->actingAs($newBranchUser)->get(route('file-management-systems.index'))
+        ->assertSee($document->digital_id);
+    $this->assertDatabaseHas('activity_log', [
+        'event' => 'transferred',
+        'description' => 'File management record transferred',
+    ]);
+    $this->actingAs($newBranchUser)->get(route('file-management-systems.show', $document))
+        ->assertSee('File History')
+        ->assertSee('Transferred')
+        ->assertSee("Branch #{$this->branch->id}")
+        ->assertSee("Branch #{$newBranch->id}");
+});
+
+test('transferring a file moves its uploaded pages to the destination folder without changing its digital id', function () {
+    Storage::fake('public');
+
+    $newBranch = Branch::factory()->create();
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+    $page = $document->addMedia(UploadedFile::fake()->create('transfer-page.pdf', 100, 'application/pdf'))
+        ->usingFileName('transfer-page.pdf')
+        ->toMediaCollection('pages');
+    $previousPath = $page->getPath();
+
+    $this->actingAs($this->admin)->put(route('file-management-systems.update', $document), [
+        'file_category_id' => $this->fileCategory->id,
+        'fileable_type' => 'branch',
+        'fileable_id' => $newBranch->id,
+        'document_date' => $document->document_date->format('Y-m-d'),
+        'title' => $document->title,
+    ])->assertRedirect(route('file-management-systems.index'));
+
+    $page->refresh();
+
+    expect($page->getPath())->toContain("Branch/{$newBranch->id}/{$document->digital_id}");
+    expect($page->getPath())->toEndWith('transfer-page.pdf');
+    expect(file_exists($previousPath))->toBeFalse();
+    expect(file_exists($page->getPath()))->toBeTrue();
 });
 
 test('authorized user can create a document record with a manual file no and filter by it', function () {
@@ -165,6 +236,9 @@ test('authorized user can delete a document record', function () {
 });
 
 test('authorized user can view a single document record', function () {
+    $owner = User::factory()->create();
+    $this->actingAs($owner);
+
     $document = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
@@ -176,6 +250,7 @@ test('authorized user can view a single document record', function () {
     $response->assertSuccessful();
     $response->assertViewIs('file-management-systems.show');
     $response->assertSee($document->digital_id);
+    $response->assertViewHas('fileManagementSystem', fn (FileManagementSystem $fileManagementSystem): bool => $fileManagementSystem->creator?->is($owner) ?? false);
 });
 
 test('branch role cannot view another branch document by guessing the url', function () {

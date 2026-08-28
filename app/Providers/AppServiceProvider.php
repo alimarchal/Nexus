@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Branch;
 use App\Models\Division;
+use App\Models\HeadOffice;
 use App\Models\Region;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Gate;
@@ -35,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
             'branch' => Branch::class,
             'region' => Region::class,
             'division' => Division::class,
+            'head-office' => HeadOffice::class,
         ]);
     }
 }

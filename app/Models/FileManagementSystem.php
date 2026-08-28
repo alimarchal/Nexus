@@ -10,13 +10,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 class FileManagementSystem extends Model implements HasMedia
 {
     /** @use HasFactory<FileManagementSystemFactory> */
-    use HasFactory, HasUuids, InteractsWithMedia, SoftDeletes, UserTracking;
+    use HasFactory, HasUuids, InteractsWithMedia, LogsActivity, SoftDeletes, UserTracking;
 
     protected $keyType = 'string';
 
@@ -85,7 +87,28 @@ class FileManagementSystem extends Model implements HasMedia
             return $query;
         }
 
-        return $query->where('created_by', $user->id);
+        $orgUnit = match (true) {
+            $user->hasRole('branch') && $user->branch_id => [(new Branch)->getMorphClass(), $user->branch_id],
+            $user->hasRole('region') && $user->region_id => [(new Region)->getMorphClass(), $user->region_id],
+            $user->hasRole('division') && $user->division_id => [(new Division)->getMorphClass(), $user->division_id],
+            $user->hasRole('head-office') && $user->head_office_id => [(new HeadOffice)->getMorphClass(), $user->head_office_id],
+            default => null,
+        };
+
+        if (! $orgUnit) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('fileable_type', $orgUnit[0])->where('fileable_id', $orgUnit[1]);
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $eventName): string => "File Management System has been {$eventName}");
     }
 
     public function scopeDocumentDateFrom($query, string $date)

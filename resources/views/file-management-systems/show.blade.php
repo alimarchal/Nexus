@@ -40,10 +40,24 @@
                     </div>
 
                     <div>
-                        <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Org Unit</dt>
+                        <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Record Owner (Org Unit)</dt>
                         <dd class="mt-1 text-gray-800 dark:text-gray-200">
                             {{ $fileManagementSystem->fileable_label }}:
                             {{ $fileManagementSystem->fileable_name ?? 'N/A' }}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Created By</dt>
+                        <dd class="mt-1 text-gray-800 dark:text-gray-200">
+                            {{ $fileManagementSystem->creator?->name ?? 'System' }}
+                        </dd>
+                    </div>
+
+                    <div>
+                        <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Last Updated By</dt>
+                        <dd class="mt-1 text-gray-800 dark:text-gray-200">
+                            {{ $fileManagementSystem->updater?->name ?? 'System' }}
                         </dd>
                     </div>
 
@@ -57,6 +71,11 @@
                     <div class="sm:col-span-2">
                         <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Title</dt>
                         <dd class="mt-1 text-gray-800 dark:text-gray-200">{{ $fileManagementSystem->title ?? '-' }}</dd>
+                    </div>
+
+                    <div class="sm:col-span-2">
+                        <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Storage Collection</dt>
+                        <dd class="mt-1 text-gray-800 dark:text-gray-200">Public disk / pages</dd>
                     </div>
                 </dl>
 
@@ -98,6 +117,8 @@
                 @else
                     <p class="text-sm text-gray-500 dark:text-gray-400">No pages uploaded.</p>
                 @endif
+
+                @include('file-management-systems.partials.activity-history')
             </div>
         </div>
     </div>

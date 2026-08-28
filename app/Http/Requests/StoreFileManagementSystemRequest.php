@@ -36,8 +36,8 @@ class StoreFileManagementSystemRequest extends FormRequest
     }
 
     /**
-     * Branch may only be selected as an org unit by super admins; other users
-     * pick region/division (or have their branch auto-assigned).
+     * Super-admins may select an organization unit. Other users submit their
+     * own assigned unit, which is enforced by the controller.
      *
      * @return array<int, string>
      */
@@ -46,6 +46,16 @@ class StoreFileManagementSystemRequest extends FormRequest
         $user = $this->user();
         $isSuperAdmin = $user && ($user->is_super_admin === 'Yes' || $user->hasRole('super-admin'));
 
-        return $isSuperAdmin ? ['branch', 'region', 'division'] : ['region', 'division'];
+        if ($isSuperAdmin) {
+            return ['branch', 'region', 'division', 'head-office'];
+        }
+
+        return match (true) {
+            $user?->hasRole('branch') && $user->branch_id => ['branch'],
+            $user?->hasRole('region') && $user->region_id => ['region'],
+            $user?->hasRole('division') && $user->division_id => ['division'],
+            $user?->hasRole('head-office') && $user->head_office_id => ['head-office'],
+            default => [],
+        };
     }
 }

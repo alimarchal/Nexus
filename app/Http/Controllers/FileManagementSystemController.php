@@ -8,10 +8,16 @@ use App\Models\Branch;
 use App\Models\Division;
 use App\Models\FileCategory;
 use App\Models\FileManagementSystem;
+use App\Models\HeadOffice;
 use App\Models\Region;
+use App\Services\FileManagementSystemPathGenerator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Models\Activity;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -45,7 +51,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
                 AllowedFilter::scope('document_date_from', 'documentDateFrom'),
                 AllowedFilter::scope('document_date_to', 'documentDateTo'),
             ])
-            ->with(['fileCategory', 'fileable', 'media'])
+            ->with(['fileCategory', 'fileable', 'creator', 'updater', 'media'])
             ->defaultSort('-document_date')
             ->paginate(request('per_page', 10))
             ->appends(request()->query());
@@ -84,7 +90,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         ]);
 
         foreach ($request->file('pages', []) as $page) {
-            $this->addPage($fileManagementSystem, $page);
+            $this->logPageUploaded($fileManagementSystem, $this->addPage($fileManagementSystem, $page));
         }
 
         return redirect()->route('file-management-systems.index')->with('success', 'Document record created successfully. Digital ID: '.$fileManagementSystem->digital_id);
@@ -100,10 +106,11 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             404
         );
 
-        $fileManagementSystem->load(['fileCategory', 'fileable', 'media']);
+        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'media']);
 
         return view('file-management-systems.show', [
             'fileManagementSystem' => $fileManagementSystem,
+            'activityHistory' => $this->activityHistory($fileManagementSystem),
         ]);
     }
 
@@ -118,6 +125,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
 
         return view('file-management-systems.edit', [
             'fileManagementSystem' => $fileManagementSystem,
+            'activityHistory' => $this->activityHistory($fileManagementSystem),
             ...$this->formOptions(),
         ]);
     }
@@ -134,14 +142,33 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             'id' => $request->fileable_id,
         ];
 
+        $previousFileable = [
+            'type' => $fileManagementSystem->fileable_type,
+            'id' => $fileManagementSystem->fileable_id,
+        ];
+
         $fileManagementSystem->update([
             ...$request->safe()->except(['pages', 'fileable_type', 'fileable_id']),
             'fileable_type' => $fileable['type'],
             'fileable_id' => $fileable['id'],
         ]);
 
+        if ($previousFileable !== $fileable) {
+            $this->moveMediaForTransfer($fileManagementSystem, $previousFileable);
+
+            activity('file-management')
+                ->performedOn($fileManagementSystem)
+                ->causedBy(auth()->user())
+                ->event('transferred')
+                ->withProperties([
+                    'from' => $previousFileable,
+                    'to' => $fileable,
+                ])
+                ->log('File management record transferred');
+        }
+
         foreach ($request->file('pages', []) as $page) {
-            $this->addPage($fileManagementSystem, $page);
+            $this->logPageUploaded($fileManagementSystem, $this->addPage($fileManagementSystem, $page));
         }
 
         return redirect()->route('file-management-systems.index')->with('success', 'Document record updated successfully.');
@@ -168,7 +195,20 @@ class FileManagementSystemController extends Controller implements HasMiddleware
 
         $this->findVisible($fileManagementSystem);
 
-        $fileManagementSystem->media()->where('id', $media)->firstOrFail()->delete();
+        $page = Media::query()
+            ->whereKey($media)
+            ->where('model_type', $fileManagementSystem->getMorphClass())
+            ->where('model_id', $fileManagementSystem->getKey())
+            ->firstOrFail();
+
+        activity('file-management')
+            ->performedOn($fileManagementSystem)
+            ->causedBy(auth()->user())
+            ->event('page_removed')
+            ->withProperties($this->pageActivityProperties($page))
+            ->log('File management page removed');
+
+        $page->delete();
 
         return redirect()->back()->with('success', 'Page removed successfully.');
     }
@@ -180,20 +220,22 @@ class FileManagementSystemController extends Controller implements HasMiddleware
      */
     private function formOptions(): array
     {
+        $isSuperAdmin = $this->isSuperAdmin();
+
         return [
             'fileCategories' => FileCategory::where('is_active', '1')->orderBy('category_name')->get(),
-            'branches' => Branch::orderBy('name')->get(),
-            'regions' => Region::orderBy('name')->get(),
-            'divisions' => Division::orderBy('name')->get(),
+            'branches' => $isSuperAdmin ? Branch::orderBy('name')->get() : collect(),
+            'regions' => $isSuperAdmin ? Region::orderBy('name')->get() : collect(),
+            'divisions' => $isSuperAdmin ? Division::orderBy('name')->get() : collect(),
+            'headOffices' => $isSuperAdmin ? HeadOffice::orderBy('name')->get() : collect(),
             'autoFileable' => $this->resolveFileableFromUser(),
-            'canAssignBranch' => auth()->user()->is_super_admin === 'Yes' || auth()->user()->hasRole('super-admin'),
+            'isSuperAdmin' => $isSuperAdmin,
         ];
     }
 
     /**
-     * Force the org unit to the logged-in user's own branch when they belong to
-     * one, so branch/region/division staff can't reassign documents to another
-     * unit. Users without a branch (head-office/super-admin) pick manually.
+     * Resolve the logged-in user's assigned organization unit. Non-super-admins
+     * cannot create or move records outside this unit.
      *
      * @return array{type: string, id: int, label: string}|null
      */
@@ -201,30 +243,51 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         $user = auth()->user();
 
-        if (! $user->branch_id) {
+        if ($this->isSuperAdmin()) {
             return null;
         }
 
-        $branch = $user->branch ?? Branch::find($user->branch_id);
-
-        return [
-            'type' => 'branch',
-            'id' => $user->branch_id,
-            'label' => ($branch?->code ? $branch->code.' - ' : '').($branch?->name ?? 'Branch #'.$user->branch_id),
+        $orgUnits = [
+            'branch' => $user->branch,
+            'region' => $user->region,
+            'division' => $user->division,
+            'head-office' => $user->headOffice,
         ];
+
+        foreach (['branch', 'region', 'division', 'head-office'] as $type) {
+            $orgUnit = $orgUnits[$type];
+
+            if ($user->hasRole($type) && $orgUnit) {
+                return [
+                    'type' => $type,
+                    'id' => $orgUnit->id,
+                    'label' => $type === 'division' ? ($orgUnit->short_name ?: $orgUnit->name) : $orgUnit->name,
+                ];
+            }
+        }
+
+        return null;
     }
 
     /**
      * Resolve the polymorphic org-unit model for digital ID prefix generation.
      */
-    private function resolveOrgUnit(string $fileableType, int $fileableId): Branch|Region|Division|null
+    private function resolveOrgUnit(string $fileableType, int $fileableId): Branch|Region|Division|HeadOffice|null
     {
         return match ($fileableType) {
             'branch' => Branch::find($fileableId),
             'region' => Region::find($fileableId),
             'division' => Division::find($fileableId),
+            'head-office' => HeadOffice::find($fileableId),
             default => null,
         };
+    }
+
+    private function isSuperAdmin(): bool
+    {
+        $user = auth()->user();
+
+        return $user->is_super_admin === 'Yes' || $user->hasRole('super-admin');
     }
 
     private function findVisible(FileManagementSystem $fileManagementSystem): FileManagementSystem
@@ -232,13 +295,80 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         return FileManagementSystem::visibleTo(auth()->user())->findOrFail($fileManagementSystem->id);
     }
 
-    private function addPage(FileManagementSystem $fileManagementSystem, mixed $page): void
+    private function addPage(FileManagementSystem $fileManagementSystem, mixed $page): Media
     {
         $originalFilename = $page->getClientOriginalName();
 
-        $fileManagementSystem->addMedia($page)
+        return $fileManagementSystem->addMedia($page)
             ->usingFileName(Str::uuid().'_'.$originalFilename)
             ->withCustomProperties(['original_filename' => $originalFilename])
             ->toMediaCollection('pages');
+    }
+
+    private function logPageUploaded(FileManagementSystem $fileManagementSystem, Media $page): void
+    {
+        activity('file-management')
+            ->performedOn($fileManagementSystem)
+            ->causedBy(auth()->user())
+            ->event('page_uploaded')
+            ->withProperties($this->pageActivityProperties($page))
+            ->log('File management page uploaded');
+    }
+
+    /**
+     * @return array{media_id: int, original_filename: string, stored_filename: string}
+     */
+    private function pageActivityProperties(Media $page): array
+    {
+        return [
+            'media_id' => $page->id,
+            'original_filename' => $page->getCustomProperty('original_filename', $page->file_name),
+            'stored_filename' => $page->file_name,
+        ];
+    }
+
+    private function activityHistory(FileManagementSystem $fileManagementSystem): Collection
+    {
+        return Activity::query()
+            ->where('subject_type', FileManagementSystem::class)
+            ->where('subject_id', $fileManagementSystem->getKey())
+            ->with('causer')
+            ->latest()
+            ->get();
+    }
+
+    /**
+     * @param  array{type: string, id: int}  $previousFileable
+     */
+    private function moveMediaForTransfer(FileManagementSystem $fileManagementSystem, array $previousFileable): void
+    {
+        $previousRecord = clone $fileManagementSystem;
+        $previousRecord->forceFill([
+            'fileable_type' => $previousFileable['type'],
+            'fileable_id' => $previousFileable['id'],
+        ]);
+
+        $pathGenerator = app(FileManagementSystemPathGenerator::class);
+        $folders = [];
+
+        foreach ($fileManagementSystem->media as $page) {
+            $page->setRelation('model', $previousRecord);
+            $previousPath = $pathGenerator->getPath($page);
+
+            $page->setRelation('model', $fileManagementSystem);
+            $newPath = $pathGenerator->getPath($page);
+
+            $folders[$page->disk.':'.$previousPath] = [
+                'disk' => $page->disk,
+                'previous_path' => $previousPath,
+                'new_path' => $newPath,
+            ];
+        }
+
+        foreach ($folders as $folder) {
+            if ($folder['previous_path'] !== $folder['new_path']) {
+                Storage::disk($folder['disk'])->move($folder['previous_path'], $folder['new_path']);
+            }
+        }
     }
 }

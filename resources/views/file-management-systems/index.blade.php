@@ -99,13 +99,14 @@
         ['label' => '#', 'align' => 'text-center'],
         ['label' => 'Digital ID', 'align' => 'text-center'],
         ['label' => 'Category', 'align' => 'text-center'],
-        ['label' => 'Org Unit', 'align' => 'text-center'],
+        ['label' => 'Stored In', 'align' => 'text-center'],
+        ['label' => 'Created By', 'align' => 'text-center'],
         ['label' => 'Document Date', 'align' => 'text-center'],
         ['label' => 'Title', 'align' => 'text-center'],
         ['label' => 'Pages', 'align' => 'text-center'],
         ['label' => 'Actions', 'align' => 'text-center'],
-    ]" emptyMessage="No document records found." :emptyRoute="route('file-management-systems.create')"
-        emptyLinkText="Add a new document record">
+    ]" emptyMessage="No document records found."
+        :emptyRoute="route('file-management-systems.create')" emptyLinkText="Add a new document record">
         @foreach ($fileManagementSystems as $index => $fileManagementSystem)
             <tr class="border-b border-gray-200 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
                 <td class="px-2 py-1 text-center">
@@ -125,6 +126,9 @@
                 <td class="px-2 py-1 text-center">
                     {{ $fileManagementSystem->fileable_label }}:
                     {{ $fileManagementSystem->fileable_type === 'division' ? ($fileManagementSystem->fileable?->short_name ?? $fileManagementSystem->fileable_name ?? 'N/A') : ($fileManagementSystem->fileable_name ?? 'N/A') }}
+                </td>
+                <td class="px-2 py-1 text-center">
+                    {{ $fileManagementSystem->creator?->name ?? 'System' }}
                 </td>
                 <td class="px-2 py-1 text-center">
                     {{ $fileManagementSystem->document_date?->format('d-m-Y') }}

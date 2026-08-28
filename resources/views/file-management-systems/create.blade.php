@@ -41,22 +41,21 @@
                     <div class="mb-4">
                         @if ($autoFileable)
                             <label class="block text-gray-700 dark:text-gray-300">Org Unit:</label>
-                            <input type="text" value="Branch: {{ $autoFileable['label'] }}" disabled
+                            <input type="text" value="{{ \Illuminate\Support\Str::headline($autoFileable['type']) }}: {{ $autoFileable['label'] }}" disabled
                                 class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-200 dark:text-gray-500 rounded-md shadow-sm">
                             <input type="hidden" name="fileable_type" value="{{ $autoFileable['type'] }}">
                             <input type="hidden" name="fileable_id" value="{{ $autoFileable['id'] }}">
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Automatically set to your branch.</p>
-                        @else
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Automatically set to your assigned org unit.</p>
+                        @elseif ($isSuperAdmin)
                             <div x-data="{ fileableType: '{{ old('fileable_type', 'branch') }}' }">
                                 <label class="block text-gray-700 dark:text-gray-300">Org Unit Type:</label>
                                 <select name="fileable_type" x-model="fileableType"
                                     class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
                                     required>
-                                    @if ($canAssignBranch)
-                                        <option value="branch">Branch</option>
-                                    @endif
+                                    <option value="branch">Branch</option>
                                     <option value="region">Region</option>
                                     <option value="division">Division</option>
+                                    <option value="head-office">Head Office</option>
                                 </select>
                                 @error('fileable_type') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
 
@@ -98,8 +97,25 @@
                                         @endforeach
                                     </select>
                                 </div>
+
+                                <div class="mt-4" x-show="fileableType === 'head-office'">
+                                    <label class="block text-gray-700 dark:text-gray-300">Head Office:</label>
+                                    <select name="fileable_id" :disabled="fileableType !== 'head-office'"
+                                        class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
+                                        <option value="">Select Head Office</option>
+                                        @foreach ($headOffices as $headOffice)
+                                            <option value="{{ $headOffice->id }}" {{ old('fileable_id') == $headOffice->id ? 'selected' : '' }}>
+                                                {{ $headOffice->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                                 @error('fileable_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
+                        @else
+                            <p class="text-sm text-red-600 dark:text-red-400">
+                                Your account is not assigned to an org unit. Contact an administrator before creating a document record.
+                            </p>
                         @endif
                     </div>
 
