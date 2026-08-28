@@ -3,9 +3,24 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 return new class extends Migration
 {
+    /**
+     * Permission names guarding the File Management System module.
+     *
+     * @var array<int, string>
+     */
+    private array $permissions = [
+        'view file management systems',
+        'create file management systems',
+        'edit file management systems',
+        'delete file management systems',
+    ];
+
     public function up(): void
     {
         Schema::create('file_management_systems', function (Blueprint $table) {
@@ -44,10 +59,69 @@ return new class extends Migration
             // Add document_date to that composite for the date-range queries you'll run often.
             $table->index(['fileable_type', 'fileable_id', 'document_date'], 'idx_fileable_date');
         });
+
+        $this->seedPermissions();
     }
 
     public function down(): void
     {
+        $this->revokePermissions();
+
         Schema::dropIfExists('file_management_systems');
+    }
+
+    /**
+     * Create the module permissions and grant them to the appropriate roles.
+     * Branch/region/division scan and manage their own documents (view, create,
+     * edit); only head-office/super-admin may delete them.
+     */
+    private function seedPermissions(): void
+    {
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        foreach ($this->permissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        $editable = ['view file management systems', 'create file management systems', 'edit file management systems'];
+
+        $rolePermissions = [
+            'branch' => $editable,
+            'region' => $editable,
+            'division' => $editable,
+            'head-office' => $this->permissions,
+            'super-admin' => $this->permissions,
+        ];
+
+        foreach ($rolePermissions as $roleName => $permissionNames) {
+            Role::where('name', $roleName)->first()?->givePermissionTo($permissionNames);
+        }
+
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+    }
+
+    /**
+     * Revoke and remove the module permissions from every role.
+     */
+    private function revokePermissions(): void
+    {
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        foreach ($this->permissions as $permissionName) {
+            $permission = Permission::where('name', $permissionName)->first();
+
+            if ($permission) {
+                foreach ($permission->roles as $role) {
+                    $role->revokePermissionTo($permission);
+                }
+
+                $permission->delete();
+            }
+        }
+
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 };

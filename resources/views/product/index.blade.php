@@ -85,6 +85,19 @@
                     </div>
                 </a>
 
+                <!-- File Management System Card (scanned documents - branch/region/division/head-office) -->
+                @can('view file management systems')
+                <a href="{{ route('file-management-systems.index') }}"
+                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                    <div class="p-5 flex justify-between">
+                        <div>
+                            <div class="text-3xl font-bold leading-8">{{ \App\Models\FileManagementSystem::count() }}</div>
+                            <div class="mt-1 text-base font-extrabold text-black">File Management</div>
+                        </div>
+                        <img src="{{ url('icons-images/dispatch.png') }}" alt="File Management" class="h-16 w-16">
+                    </div>
+                </a>
+                @endcan
 
 
                 <!-- Add more cards for other resources as needed

@@ -103,6 +103,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit file categories',
             'delete file categories',
 
+            // File Management System (scanned documents - branch/region/division/head-office)
+            'view file management systems',
+            'create file management systems',
+            'edit file management systems',
+            'delete file management systems',
+
             // Report Management
             'view reports',
             'generate reports',
@@ -140,6 +146,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view dashboard',
                 'view reports',
                 'view file categories',
+                'view file management systems',
+                'create file management systems',
+                'edit file management systems',
             ],
             'region' => [
                 'view users',
@@ -157,6 +166,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view reports',
                 'generate reports',
                 'view file categories',
+                'view file management systems',
+                'create file management systems',
+                'edit file management systems',
             ],
             'division' => [
                 'view users',
@@ -186,6 +198,9 @@ class RolesAndPermissionsSeeder extends Seeder
                 'view file categories',
                 'create file categories',
                 'edit file categories',
+                'view file management systems',
+                'create file management systems',
+                'edit file management systems',
             ],
             'head-office' => [
                 'view users',
@@ -235,6 +250,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'create file categories',
                 'edit file categories',
                 'delete file categories',
+                'view file management systems',
+                'create file management systems',
+                'edit file management systems',
+                'delete file management systems',
             ],
             'super-admin' => Permission::all()->pluck('name')->toArray(),
         ];
