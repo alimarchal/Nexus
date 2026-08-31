@@ -18,12 +18,14 @@
                     <div>
                         <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Current Owner</dt>
                         <dd class="mt-1 text-gray-800 dark:text-gray-200">{{ $fileManagementSystem->fileable_label }}:
-                            {{ $fileManagementSystem->fileable_name ?? 'N/A' }}</dd>
+                            {{ $fileManagementSystem->fileable_name ?? 'N/A' }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Current Custodian</dt>
                         <dd class="mt-1 text-gray-800 dark:text-gray-200">
-                            {{ $fileManagementSystem->currentCustodian?->name ?? 'Unassigned' }}</dd>
+                            {{ $fileManagementSystem->currentCustodian?->name ?? 'Unassigned' }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Digital ID</dt>
@@ -34,11 +36,24 @@
                 <form method="POST"
                     action="{{ route('file-management-systems.transfers.store', $fileManagementSystem) }}">
                     @csrf
-                    <div x-data="{ type: '{{ old('destination_fileable_type', 'branch') }}' }"
-                        class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div x-data='{
+                            type: "{{ old('destination_fileable_type', 'branch') }}",
+                            destinationId: "{{ old('destination_fileable_id') }}",
+                            recipientId: "{{ old('recipient_id') }}",
+                            recipients: @json($transferRecipients),
+                            get filteredRecipients() {
+                                const field = `${this.type.replace("-", "_")}_id`;
+
+                                return this.recipients.filter((user) => String(user[field]) === String(this.destinationId));
+                            },
+                            resetRecipient() {
+                                this.recipientId = "";
+                            },
+                        }' class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label class="block text-gray-700 dark:text-gray-300">Destination Unit Type</label>
                             <select name="destination_fileable_type" x-model="type"
+                                x-on:change="destinationId = ''; resetRecipient()"
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 required>
                                 <option value="branch">Branch</option>
@@ -52,19 +67,22 @@
 
                         <div x-show="type === 'branch'">
                             <label class="block text-gray-700 dark:text-gray-300">Destination Branch</label>
-                            <select name="destination_fileable_id" :disabled="type !== 'branch'"
+                            <select name="destination_fileable_id" x-model="destinationId"
+                                x-on:change="resetRecipient()" :disabled="type !== 'branch'"
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 required>
                                 <option value="">Select Branch</option>
                                 @foreach ($branches as $branch)
                                     <option value="{{ $branch->id }}">
-                                        {{ $branch->code ? $branch->code . ' - ' : '' }}{{ $branch->name }}</option>
+                                        {{ $branch->code ? $branch->code . ' - ' : '' }}{{ $branch->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
                         <div x-show="type === 'region'">
                             <label class="block text-gray-700 dark:text-gray-300">Destination Region</label>
-                            <select name="destination_fileable_id" :disabled="type !== 'region'"
+                            <select name="destination_fileable_id" x-model="destinationId"
+                                x-on:change="resetRecipient()" :disabled="type !== 'region'"
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                                 <option value="">Select Region</option>
                                 @foreach ($regions as $region)
@@ -73,7 +91,8 @@
                         </div>
                         <div x-show="type === 'division'">
                             <label class="block text-gray-700 dark:text-gray-300">Destination Division</label>
-                            <select name="destination_fileable_id" :disabled="type !== 'division'"
+                            <select name="destination_fileable_id" x-model="destinationId"
+                                x-on:change="resetRecipient()" :disabled="type !== 'division'"
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                                 <option value="">Select Division</option>
                                 @foreach ($divisions as $division)
@@ -83,7 +102,8 @@
                         </div>
                         <div x-show="type === 'head-office'">
                             <label class="block text-gray-700 dark:text-gray-300">Destination Head Office</label>
-                            <select name="destination_fileable_id" :disabled="type !== 'head-office'"
+                            <select name="destination_fileable_id" x-model="destinationId"
+                                x-on:change="resetRecipient()" :disabled="type !== 'head-office'"
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                                 <option value="">Select Head Office</option>
                                 @foreach ($headOffices as $headOffice)
@@ -95,12 +115,13 @@
 
                         <div class="sm:col-span-2">
                             <label class="block text-gray-700 dark:text-gray-300">Receiving Custodian</label>
-                            <select name="recipient_id"
+                            <select name="recipient_id" x-model="recipientId"
                                 class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                                 required>
                                 <option value="">Select Custodian</option>
-                                @foreach ($users as $user)
-                                <option value="{{ $user->id }}">{{ $user->name }}</option>@endforeach
+                                <template x-for="user in filteredRecipients" :key="user.id">
+                                    <option :value="user.id" x-text="user.name"></option>
+                                </template>
                             </select>
                             @error('recipient_id') <span class="text-sm text-red-500">{{ $message }}</span> @enderror
                         </div>

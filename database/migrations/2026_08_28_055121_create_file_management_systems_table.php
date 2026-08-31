@@ -51,11 +51,6 @@ return new class extends Migration
             // Adds audit tracking columns such as created_by/updated_by to record who created or updated the record.
             $table->userTracking();
 
-            $table->foreignId('current_custodian_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-
             // Adds a deleted_at column so records can be soft-deleted without being permanently removed from the database.
             $table->softDeletes();
 

@@ -374,7 +374,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             'regions' => Region::orderBy('name')->get(),
             'divisions' => Division::orderBy('name')->get(),
             'headOffices' => HeadOffice::orderBy('name')->get(),
-            'users' => User::query()->active()->orderBy('name')->get(),
+            'transferRecipients' => User::query()
+                ->active()
+                ->orderBy('name')
+                ->get(['id', 'name', 'branch_id', 'region_id', 'division_id', 'head_office_id']),
         ];
     }
 
