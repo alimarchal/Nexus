@@ -124,6 +124,11 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/product/file-management-systems/{fileManagementSystem}/transfer', [FileManagementSystemController::class, 'transfer'])->name('file-management-systems.transfer');
     Route::post('/product/file-management-systems/{fileManagementSystem}/transfer', [FileManagementSystemController::class, 'storeTransfer'])->name('file-management-systems.transfers.store');
     Route::patch('/product/file-management-systems/{fileManagementSystem}/transfers/{transfer}', [FileManagementSystemController::class, 'decideTransfer'])->name('file-management-systems.transfers.decide');
+    Route::get('/product/file-management-systems/{fileManagementSystem}/archive', [FileManagementSystemController::class, 'archiveForm'])->name('file-management-systems.archive-form');
+    Route::post('/product/file-management-systems/{fileManagementSystem}/archive', [FileManagementSystemController::class, 'storeArchive'])->name('file-management-systems.archive');
+    Route::get('/product/boxes', [FileManagementSystemController::class, 'boxesList'])->name('file-management-systems.boxes');
+    Route::get('/product/boxes/create', [FileManagementSystemController::class, 'createBox'])->name('file-management-systems.boxes.create');
+    Route::post('/product/boxes', [FileManagementSystemController::class, 'storeBox'])->name('file-management-systems.boxes.store');
     Route::resource('/product/file-management-systems', FileManagementSystemController::class);
     Route::delete('/product/file-management-systems/{fileManagementSystem}/media/{media}', [FileManagementSystemController::class, 'destroyMedia'])->name('file-management-systems.media.destroy');
 

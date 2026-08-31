@@ -35,6 +35,10 @@ class FileManagementSystem extends Model implements HasMedia
         'fileable_type',
         'fileable_id',
         'current_custodian_id',
+        'box_id',
+        'is_archived',
+        'archived_at',
+        'position_in_box',
         'document_date',
         'title',
     ];
@@ -46,6 +50,7 @@ class FileManagementSystem extends Model implements HasMedia
     {
         return [
             'document_date' => 'date',
+            'archived_at' => 'datetime',
         ];
     }
 
@@ -67,6 +72,31 @@ class FileManagementSystem extends Model implements HasMedia
     public function transfers(): HasMany
     {
         return $this->hasMany(FileManagementTransfer::class)->latest();
+    }
+
+    public function box(): BelongsTo
+    {
+        return $this->belongsTo(Box::class);
+    }
+
+    /**
+     * Check if file is archived in a box.
+     */
+    public function isArchived(): bool
+    {
+        return $this->is_archived === true && $this->box_id !== null;
+    }
+
+    /**
+     * Get archive location (box number and position).
+     */
+    public function getArchiveLocationAttribute(): ?string
+    {
+        if ($this->isArchived() && $this->box) {
+            return "{$this->box->box_number} (Position {$this->position_in_box})";
+        }
+
+        return null;
     }
 
     /**

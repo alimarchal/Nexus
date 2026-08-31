@@ -21,6 +21,9 @@ return new class extends Migration
         'delete file management systems',
         'transfer file management systems',
         'approve file management transfers',
+        'archive file management systems',
+        'create boxes',
+        'manage boxes',
     ];
 
     public function up(): void
@@ -88,7 +91,7 @@ return new class extends Migration
             ]);
         }
 
-        $editable = ['view file management systems', 'create file management systems', 'edit file management systems', 'transfer file management systems'];
+        $editable = ['view file management systems', 'create file management systems', 'edit file management systems', 'transfer file management systems', 'archive file management systems', 'create boxes', 'manage boxes'];
 
         $rolePermissions = [
             'branch' => $editable,

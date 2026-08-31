@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DecideFileManagementTransferRequest;
+use App\Http\Requests\StoreBoxRequest;
+use App\Http\Requests\StoreFileArchivingRequest;
 use App\Http\Requests\StoreFileManagementSystemRequest;
 use App\Http\Requests\StoreFileManagementTransferRequest;
 use App\Http\Requests\UpdateFileManagementSystemRequest;
+use App\Models\Box;
 use App\Models\Branch;
 use App\Models\Division;
 use App\Models\FileCategory;
@@ -37,6 +40,9 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             new Middleware('role_or_permission:transfer file management systems', only: ['transfer', 'storeTransfer']),
             new Middleware('role_or_permission:approve file management transfers', only: ['decideTransfer']),
             new Middleware('role_or_permission:delete file management systems', only: ['destroy']),
+            new Middleware('role_or_permission:archive file management systems', only: ['archiveForm', 'storeArchive']),
+            new Middleware('role_or_permission:create boxes', only: ['createBox', 'storeBox']),
+            new Middleware('role_or_permission:manage boxes', only: ['boxesList']),
         ];
     }
 
@@ -459,6 +465,175 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     }
 
     /**
+     * Show archiving form for a file.
+     */
+    public function archiveForm(FileManagementSystem $fileManagementSystem)
+    {
+        // Authorization check - user can only archive files from their org unit
+        if (! $fileManagementSystem->load('fileable')->fileable) {
+            abort(404, 'Record not found');
+        }
+
+        $userOrgUnit = $this->getUserOrgUnit();
+        if ($fileManagementSystem->fileable_type !== $userOrgUnit['type'] ||
+            $fileManagementSystem->fileable_id !== $userOrgUnit['id']) {
+            abort(403, 'You cannot archive files outside your organization unit');
+        }
+
+        // Get available boxes for this org unit
+        $boxes = Box::where('boxable_type', $fileManagementSystem->fileable_type)
+            ->where('boxable_id', $fileManagementSystem->fileable_id)
+            ->where('status', 'open')
+            ->get();
+
+        return view('file-management-systems.archive', compact('fileManagementSystem', 'boxes'));
+    }
+
+    /**
+     * Archive a file to a box.
+     */
+    public function storeArchive(FileManagementSystem $fileManagementSystem, StoreFileArchivingRequest $request)
+    {
+        $validated = $request->validated();
+        $box = Box::findOrFail($validated['box_id']);
+
+        // Verify box belongs to same org unit
+        if ($box->boxable_type !== $fileManagementSystem->fileable_type ||
+            $box->boxable_id !== $fileManagementSystem->fileable_id) {
+            return redirect()->back()->with('error', 'Selected box does not belong to your organization unit');
+        }
+
+        // Check if box can accept more files
+        if (! $box->canAcceptFiles()) {
+            return redirect()->back()->with('error', 'Selected box is full or closed');
+        }
+
+        DB::transaction(function () use ($fileManagementSystem, $box) {
+            $fileManagementSystem->update([
+                'box_id' => $box->id,
+                'is_archived' => true,
+                'archived_at' => now(),
+                'position_in_box' => $box->file_count + 1,
+            ]);
+
+            // Update box file count
+            $box->increment('file_count');
+
+            // Check if box is now full
+            if ($box->file_count >= $box->capacity) {
+                $box->update(['status' => 'full']);
+            }
+
+            // Log activity
+            activity('file-management')
+                ->performedOn($fileManagementSystem)
+                ->causedBy(auth()->user())
+                ->event('archived')
+                ->withProperties([
+                    'box_id' => $box->id,
+                    'box_number' => $box->box_number,
+                    'position_in_box' => $fileManagementSystem->position_in_box,
+                    'archived_at' => $fileManagementSystem->archived_at->toIso8601String(),
+                ])
+                ->log('File management record archived to box');
+        });
+
+        return redirect()
+            ->route('file-management-systems.show', $fileManagementSystem)
+            ->with('success', "File archived to {$box->box_number}");
+    }
+
+    /**
+     * Show create box form.
+     */
+    public function createBox()
+    {
+        $userOrgUnit = $this->getUserOrgUnit();
+
+        return view('file-management-systems.create-box', compact('userOrgUnit'));
+    }
+
+    /**
+     * Store a new box.
+     */
+    public function storeBox(StoreBoxRequest $request)
+    {
+        $validated = $request->validated();
+        $userOrgUnit = $this->getUserOrgUnit();
+
+        $box = DB::transaction(function () use ($validated, $userOrgUnit) {
+            $box = Box::create([
+                'box_number' => Box::generateBoxNumber($userOrgUnit['type'], $userOrgUnit['id']),
+                'boxable_type' => $userOrgUnit['type'],
+                'boxable_id' => $userOrgUnit['id'],
+                'location' => $validated['location'],
+                'capacity' => $validated['capacity'] ?? 100,
+                'created_by' => auth()->id(),
+            ]);
+
+            activity('file-management')
+                ->performedOn($box)
+                ->causedBy(auth()->user())
+                ->event('created')
+                ->withProperties([
+                    'box_number' => $box->box_number,
+                    'location' => $box->location,
+                    'capacity' => $box->capacity,
+                ])
+                ->log('Archive box created');
+
+            return $box;
+        });
+
+        return redirect()
+            ->route('file-management-systems.boxes')
+            ->with('success', "Box {$box->box_number} created successfully");
+    }
+
+    /**
+     * List all boxes for user's org unit.
+     */
+    public function boxesList()
+    {
+        $boxes = Box::visibleTo(auth()->user())
+            ->with(['creator', 'boxable'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        return view('file-management-systems.boxes-list', compact('boxes'));
+    }
+
+    /**
+     * Get current user's organization unit.
+     *
+     * @return array{type: string, id: int}
+     */
+    private function getUserOrgUnit(): array
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole('branch') && $user->branch_id) {
+            return ['type' => (new Branch)->getMorphClass(), 'id' => $user->branch_id];
+        }
+
+        if ($user->hasRole('region') && $user->region_id) {
+            return ['type' => (new Region)->getMorphClass(), 'id' => $user->region_id];
+        }
+
+        if ($user->hasRole('division') && $user->division_id) {
+            return ['type' => (new Division)->getMorphClass(), 'id' => $user->division_id];
+        }
+
+        if ($user->hasRole('head-office') && $user->head_office_id) {
+            return ['type' => (new HeadOffice)->getMorphClass(), 'id' => $user->head_office_id];
+        }
+
+        abort(403, 'User does not belong to any organization unit');
+    }
+
+    /**
+     * Move media files during file transfer between organization units.
+     *
      * @param  array{type: string, id: int}  $previousFileable
      */
     private function moveMediaForTransfer(FileManagementSystem $fileManagementSystem, array $previousFileable): void

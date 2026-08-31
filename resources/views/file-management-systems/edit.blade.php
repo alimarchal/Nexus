@@ -3,7 +3,21 @@
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
             Edit Document Record: {{ $fileManagementSystem->digital_id }}
         </h2>
-        <div class="flex justify-center items-center float-right">
+        <div class="flex justify-center items-center float-right gap-2">
+            @can('transfer file management systems')
+                <a href="{{ route('file-management-systems.transfer', $fileManagementSystem) }}"
+                    class="inline-flex items-center rounded-md border border-transparent bg-blue-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-blue-900">
+                    Transfer
+                </a>
+            @endcan
+            @can('archive file management systems')
+                @if (!$fileManagementSystem->is_archived)
+                    <a href="{{ route('file-management-systems.archive-form', $fileManagementSystem) }}"
+                        class="inline-flex items-center rounded-md border border-transparent bg-purple-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-purple-700">
+                        Archive
+                    </a>
+                @endif
+            @endcan
             <a href="{{ route('file-management-systems.index') }}"
                 class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -37,7 +51,8 @@
                     <div>
                         <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Current Custodian</dt>
                         <dd class="mt-1 text-gray-800 dark:text-gray-200">
-                            {{ $fileManagementSystem->currentCustodian?->name ?? 'Unassigned' }}</dd>
+                            {{ $fileManagementSystem->currentCustodian?->name ?? 'Unassigned' }}
+                        </dd>
                     </div>
 
                     <div>
@@ -46,6 +61,26 @@
                             {{ $fileManagementSystem->updater?->name ?? 'System' }}
                         </dd>
                     </div>
+
+                    @if ($fileManagementSystem->is_archived)
+                        <div>
+                            <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Archive Status</dt>
+                            <dd class="mt-1 text-gray-800 dark:text-gray-200">
+                                <span
+                                    class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-sm font-semibold text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    🗃️ {{ $fileManagementSystem->box->box_number ?? 'Unknown' }}
+                                </span>
+                            </dd>
+                        </div>
+
+                        <div>
+                            <dt class="text-sm font-semibold text-gray-500 dark:text-gray-400">Archive Location</dt>
+                            <dd class="mt-1 text-gray-800 dark:text-gray-200">
+                                {{ $fileManagementSystem->box->location ?? 'Not specified' }} (Position
+                                {{ $fileManagementSystem->position_in_box }})
+                            </dd>
+                        </div>
+                    @endif
                 </dl>
 
                 <form method="POST" action="{{ route('file-management-systems.update', $fileManagementSystem) }}"
