@@ -26,7 +26,19 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('file_management_systems', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('current_custodian_id');
+            if (Schema::hasColumn('file_management_systems', 'current_custodian_id')) {
+                try {
+                    $table->dropConstrainedForeignId('current_custodian_id');
+                } catch (Throwable $e) {
+                    // MySQL may already have removed the foreign key in a later migration rollback.
+                }
+            }
+        });
+
+        Schema::table('file_management_systems', function (Blueprint $table) {
+            if (Schema::hasColumn('file_management_systems', 'current_custodian_id')) {
+                $table->dropColumn('current_custodian_id');
+            }
         });
     }
 };

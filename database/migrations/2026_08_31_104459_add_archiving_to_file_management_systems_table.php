@@ -54,8 +54,17 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('file_management_systems', function (Blueprint $table) {
-            $columns = ['position_in_box', 'archived_at', 'is_archived', 'box_id', 'current_custodian_id'];
-            foreach ($columns as $column) {
+            if (Schema::hasColumn('file_management_systems', 'box_id')) {
+                $table->dropConstrainedForeignId('box_id');
+            }
+
+            if (Schema::hasColumn('file_management_systems', 'current_custodian_id')) {
+                $table->dropConstrainedForeignId('current_custodian_id');
+            }
+        });
+
+        Schema::table('file_management_systems', function (Blueprint $table) {
+            foreach (['position_in_box', 'archived_at', 'is_archived'] as $column) {
                 if (Schema::hasColumn('file_management_systems', $column)) {
                     $table->dropColumn($column);
                 }
