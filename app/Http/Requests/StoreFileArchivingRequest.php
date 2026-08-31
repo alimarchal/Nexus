@@ -23,8 +23,6 @@ class StoreFileArchivingRequest extends FormRequest
     {
         return [
             'box_id' => ['required', 'string', 'exists:boxes,id'],
-            'file_ids' => ['required', 'array', 'min:1'],
-            'file_ids.*' => ['string', 'exists:file_management_systems,id'],
         ];
     }
 
@@ -38,9 +36,6 @@ class StoreFileArchivingRequest extends FormRequest
         return [
             'box_id.required' => 'Box selection is required',
             'box_id.exists' => 'Selected box does not exist',
-            'file_ids.required' => 'Please select at least one file to archive',
-            'file_ids.min' => 'Please select at least one file to archive',
-            'file_ids.*.exists' => 'One or more selected files do not exist',
         ];
     }
 }

@@ -1,19 +1,24 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="inline-block text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight inline-block">
             Create New Archive Box
         </h2>
-        <div class="float-right flex items-center justify-center">
+
+        <div class="flex justify-center items-center float-right">
             <a href="{{ route('file-management-systems.boxes') }}"
-                class="inline-flex items-center rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                Back
+                class="inline-flex items-center ml-2 px-4 py-2 bg-blue-950 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-800 focus:bg-green-800 active:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
             </a>
         </div>
     </x-slot>
 
     <div class="py-6">
-        <div class="mx-auto max-w-2xl sm:px-6 lg:px-8">
-            <div class="overflow-hidden bg-white p-6 shadow-xl sm:rounded-lg dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
                 @if ($errors->any())
                     <div class="mb-4 rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900">
                         <div class="flex">

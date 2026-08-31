@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Box;
 use App\Models\Branch;
 use App\Models\FileCategory;
 use App\Models\FileManagementSystem;
@@ -22,6 +23,9 @@ beforeEach(function () {
     Permission::firstOrCreate(['name' => 'delete file management systems']);
     Permission::firstOrCreate(['name' => 'transfer file management systems']);
     Permission::firstOrCreate(['name' => 'approve file management transfers']);
+    Permission::firstOrCreate(['name' => 'archive file management systems']);
+    Permission::firstOrCreate(['name' => 'create boxes']);
+    Permission::firstOrCreate(['name' => 'manage boxes']);
 
     $adminRole = Role::firstOrCreate(['name' => 'super-admin']);
     $adminRole->givePermissionTo([
@@ -31,10 +35,13 @@ beforeEach(function () {
         'delete file management systems',
         'transfer file management systems',
         'approve file management transfers',
+        'archive file management systems',
+        'create boxes',
+        'manage boxes',
     ]);
 
     $branchRole = Role::firstOrCreate(['name' => 'branch']);
-    $branchRole->givePermissionTo(['view file management systems', 'create file management systems', 'edit file management systems', 'transfer file management systems']);
+    $branchRole->givePermissionTo(['view file management systems', 'create file management systems', 'edit file management systems', 'transfer file management systems', 'archive file management systems', 'create boxes', 'manage boxes']);
 
     $this->admin = User::factory()->create();
     $this->admin->assignRole('super-admin');
@@ -330,4 +337,79 @@ test('uploaded pages are stored under the branch/digital-id folder', function ()
     $page = $fms->media->first();
 
     expect($page->getPath())->toContain("Branch/{$this->branch->id}/{$fms->digital_id}");
+});
+
+test('archiving a document to a box does not require selecting files', function () {
+    Storage::fake('public');
+
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+    $document->addMedia(UploadedFile::fake()->create('scan.pdf', 100, 'application/pdf'))
+        ->usingFileName('scan.pdf')
+        ->toMediaCollection('pages');
+
+    $box = Box::factory()->create([
+        'boxable_type' => 'branch',
+        'boxable_id' => $this->branch->id,
+        'status' => 'open',
+    ]);
+
+    $response = $this->actingAs($this->branchUser)->post(route('file-management-systems.archive', $document), [
+        'box_id' => $box->id,
+    ]);
+
+    $response->assertSessionDoesntHaveErrors();
+    $response->assertRedirect(route('file-management-systems.show', $document));
+
+    $document->refresh();
+    expect($document->is_archived)->toBeTrue();
+    expect($document->box_id)->toBe($box->id);
+    expect($box->refresh()->file_count)->toBe(1);
+
+    $page = $document->media->first()->fresh();
+    expect($page->getPath())->toContain("Branch/{$this->branch->id}/Box-{$box->box_number}/{$document->digital_id}");
+});
+
+test('boxes list page loads for a branch user without errors', function () {
+    Box::factory()->create([
+        'boxable_type' => 'branch',
+        'boxable_id' => $this->branch->id,
+    ]);
+
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.boxes'))
+        ->assertSuccessful()
+        ->assertViewIs('file-management-systems.boxes-list');
+});
+
+test('boxes create page back button points to the boxes list', function () {
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.boxes.create'))
+        ->assertSuccessful()
+        ->assertSee(route('file-management-systems.boxes'), false);
+});
+
+test('file management systems index can be filtered by box number', function () {
+    $box = Box::factory()->create([
+        'boxable_type' => 'branch',
+        'boxable_id' => $this->branch->id,
+        'box_number' => 'BOX-2026-001',
+    ]);
+    $archived = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+        'box_id' => $box->id,
+    ]);
+    FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $response = $this->actingAs($this->admin)->get(route('file-management-systems.index', ['filter' => ['box_number' => 'BOX-2026-001']]));
+
+    $response->assertSuccessful();
+    $response->assertViewHas('fileManagementSystems', fn ($items) => $items->pluck('id')->all() === [$archived->id]);
 });

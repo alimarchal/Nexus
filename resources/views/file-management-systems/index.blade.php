@@ -26,6 +26,12 @@
             </div>
 
             <div>
+                <x-label for="filter_box_number" value="Box" />
+                <x-input id="filter_box_number" name="filter[box_number]" type="text" class="mt-1 block w-full"
+                    :value="request('filter.box_number')" placeholder="Search by box number..." />
+            </div>
+
+            <div>
                 <x-label for="filter_file_category_id" value="Category" />
                 <select id="filter_file_category_id" name="filter[file_category_id]"
                     class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
@@ -103,9 +109,10 @@
         ['label' => 'Document Date', 'align' => 'text-center'],
         ['label' => 'Title', 'align' => 'text-center'],
         ['label' => 'Pages', 'align' => 'text-center'],
+        ['label' => 'Box', 'align' => 'text-center'],
         ['label' => 'Actions', 'align' => 'text-center'],
-    ]" emptyMessage="No document records found." :emptyRoute="route('file-management-systems.create')"
-        emptyLinkText="Add a new document record">
+    ]" emptyMessage="No document records found."
+        :emptyRoute="route('file-management-systems.create')" emptyLinkText="Add a new document record">
         @foreach ($fileManagementSystems as $index => $fileManagementSystem)
             <tr class="border-b border-gray-200 text-sm hover:bg-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
                 <td class="px-2 py-1 text-center">
@@ -136,6 +143,16 @@
                     <span class="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-800">
                         {{ $fileManagementSystem->media->count() }}
                     </span>
+                </td>
+                <td class="px-2 py-1 text-center">
+                    @if ($fileManagementSystem->box)
+                        <span
+                            class="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                            {{ $fileManagementSystem->box->box_number }}
+                        </span>
+                    @else
+                        <span class="text-xs text-gray-400">-</span>
+                    @endif
                 </td>
                 <td class="px-2 py-1 text-center">
                     <div class="flex justify-center space-x-2">

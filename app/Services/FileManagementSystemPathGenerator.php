@@ -10,6 +10,7 @@ use Spatie\MediaLibrary\Support\PathGenerator\PathGenerator;
 /**
  * Stores FileManagementSystem media under a folder per org unit, then per digital ID,
  * e.g. `Branch/11/0011-20260828-0002/`, `Region/Kotli/...`, `President Office/...`.
+ * Archived files get an extra `Box-{box_number}/` segment before the digital ID folder.
  * Other models fall back to the package default (flat `{media-id}/`) layout.
  */
 class FileManagementSystemPathGenerator implements PathGenerator
@@ -37,7 +38,13 @@ class FileManagementSystemPathGenerator implements PathGenerator
             return app(DefaultPathGenerator::class)->getPath($media);
         }
 
-        return $this->orgFolder($model).'/'.$this->sanitize($model->digital_id);
+        $path = $this->orgFolder($model);
+
+        if ($model->box_id) {
+            $path .= '/'.$this->sanitize('Box-'.($model->box?->box_number ?? $model->box_id));
+        }
+
+        return $path.'/'.$this->sanitize($model->digital_id);
     }
 
     private function orgFolder(FileManagementSystem $model): string

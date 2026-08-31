@@ -51,6 +51,7 @@ class FileManagementSystem extends Model implements HasMedia
         return [
             'document_date' => 'date',
             'archived_at' => 'datetime',
+            'is_archived' => 'boolean',
         ];
     }
 
@@ -174,5 +175,10 @@ class FileManagementSystem extends Model implements HasMedia
     public function scopeDivisionId($query, string $divisionId)
     {
         return $query->where('fileable_type', (new Division)->getMorphClass())->where('fileable_id', $divisionId);
+    }
+
+    public function scopeBoxNumber($query, string $boxNumber)
+    {
+        return $query->whereHas('box', fn ($q) => $q->where('box_number', 'like', "%{$boxNumber}%"));
     }
 }

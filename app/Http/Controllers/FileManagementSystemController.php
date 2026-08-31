@@ -63,8 +63,9 @@ class FileManagementSystemController extends Controller implements HasMiddleware
                 AllowedFilter::scope('division_id'),
                 AllowedFilter::scope('document_date_from', 'documentDateFrom'),
                 AllowedFilter::scope('document_date_to', 'documentDateTo'),
+                AllowedFilter::scope('box_number'),
             ])
-            ->with(['fileCategory', 'fileable', 'creator', 'updater', 'media'])
+            ->with(['fileCategory', 'fileable', 'creator', 'updater', 'media', 'box'])
             ->defaultSort('-document_date')
             ->paginate(request('per_page', 10))
             ->appends(request()->query());
@@ -509,12 +510,16 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         }
 
         DB::transaction(function () use ($fileManagementSystem, $box) {
+            $fileManagementSystem->load('media');
+
             $fileManagementSystem->update([
                 'box_id' => $box->id,
                 'is_archived' => true,
                 'archived_at' => now(),
                 'position_in_box' => $box->file_count + 1,
             ]);
+
+            $this->moveMediaForArchive($fileManagementSystem, $box);
 
             // Update box file count
             $box->increment('file_count');
@@ -629,6 +634,41 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         }
 
         abort(403, 'User does not belong to any organization unit');
+    }
+
+    /**
+     * Move media files into the box's folder after archiving.
+     */
+    private function moveMediaForArchive(FileManagementSystem $fileManagementSystem, Box $box): void
+    {
+        $previousRecord = clone $fileManagementSystem;
+        $previousRecord->forceFill(['box_id' => null])->setRelation('box', null);
+
+        $newRecord = clone $fileManagementSystem;
+        $newRecord->setRelation('box', $box);
+
+        $pathGenerator = app(FileManagementSystemPathGenerator::class);
+        $folders = [];
+
+        foreach ($fileManagementSystem->media as $page) {
+            $page->setRelation('model', $previousRecord);
+            $previousPath = $pathGenerator->getPath($page);
+
+            $page->setRelation('model', $newRecord);
+            $newPath = $pathGenerator->getPath($page);
+
+            $folders[$page->disk.':'.$previousPath] = [
+                'disk' => $page->disk,
+                'previous_path' => $previousPath,
+                'new_path' => $newPath,
+            ];
+        }
+
+        foreach ($folders as $folder) {
+            if ($folder['previous_path'] !== $folder['new_path'] && Storage::disk($folder['disk'])->exists($folder['previous_path'])) {
+                Storage::disk($folder['disk'])->move($folder['previous_path'], $folder['new_path']);
+            }
+        }
     }
 
     /**

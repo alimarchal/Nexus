@@ -104,21 +104,22 @@ class Box extends Model
      */
     public function scopeVisibleTo($query, User $user)
     {
-        $userOrgUnits = $user->getOrgUnitTypes();
-
-        if ($user->hasRole('super-admin')) {
+        if ($user->is_super_admin === 'Yes' || $user->hasRole('super-admin')) {
             return $query;
         }
 
-        $conditions = [];
-        foreach ($userOrgUnits as $type => $id) {
-            $conditions[] = ['boxable_type', $type, 'boxable_id', $id];
+        $orgUnit = match (true) {
+            $user->hasRole('branch') && $user->branch_id => [(new Branch)->getMorphClass(), $user->branch_id],
+            $user->hasRole('region') && $user->region_id => [(new Region)->getMorphClass(), $user->region_id],
+            $user->hasRole('division') && $user->division_id => [(new Division)->getMorphClass(), $user->division_id],
+            $user->hasRole('head-office') && $user->head_office_id => [(new HeadOffice)->getMorphClass(), $user->head_office_id],
+            default => null,
+        };
+
+        if (! $orgUnit) {
+            return $query->whereRaw('1 = 0');
         }
 
-        return $query->where(function ($q) use ($conditions) {
-            foreach ($conditions as [$typeCol, $typeVal, $idCol, $idVal]) {
-                $q->orWhere([$typeCol => $typeVal, $idCol => $idVal]);
-            }
-        });
+        return $query->where('boxable_type', $orgUnit[0])->where('boxable_id', $orgUnit[1]);
     }
 }
