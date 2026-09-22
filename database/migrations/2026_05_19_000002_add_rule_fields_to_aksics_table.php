@@ -9,11 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('aksics', function (Blueprint $table) {
+            // aksic_rules is created after aksics, so this foreign key can't live in the
+            // create_aksics_table migration itself — it must stay a separate, later migration.
             $table->foreignId('aksic_rule_id')->nullable()->after('tehsil_id')->constrained('aksic_rules')->nullOnDelete()->cascadeOnUpdate();
-            $table->string('gender')->nullable()->after('quota');
-            $table->boolean('is_startup_business')->default(false)->after('business_type');
-            $table->boolean('site_visit_completed')->default(false)->after('sanction_date');
-            $table->date('site_visit_date')->nullable()->after('site_visit_completed');
         });
     }
 
@@ -21,7 +19,6 @@ return new class extends Migration
     {
         Schema::table('aksics', function (Blueprint $table) {
             $table->dropConstrainedForeignId('aksic_rule_id');
-            $table->dropColumn(['gender', 'is_startup_business', 'site_visit_completed', 'site_visit_date']);
         });
     }
 };

@@ -35,6 +35,9 @@ return new class extends Migration
             // digital_id      VARCHAR(40)  NOT NULL UNIQUE,     -- e.g. BR014-20260827-CASH-000123
             $table->string('digital_id', 40)->unique();
 
+            // Manually assigned file number for the user's own convenience (e.g. HRMS/12/ABC), independent of the auto-generated digital_id.
+            $table->string('file_no', 60)->nullable()->index();
+
             // document_categories foreign id
             $table->foreignUuid('file_category_id')
                 ->constrained('file_categories')
@@ -53,6 +56,13 @@ return new class extends Migration
 
             // Adds audit tracking columns such as created_by/updated_by to record who created or updated the record.
             $table->userTracking();
+
+            // The user currently holding/responsible for this physical/scanned file.
+            $table->foreignId('current_custodian_id')
+                ->nullable()
+                ->after('updated_by')
+                ->constrained('users')
+                ->nullOnDelete();
 
             // Adds a deleted_at column so records can be soft-deleted without being permanently removed from the database.
             $table->softDeletes();

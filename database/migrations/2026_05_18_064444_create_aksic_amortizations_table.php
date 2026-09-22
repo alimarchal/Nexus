@@ -27,6 +27,9 @@ return new class extends Migration
             $table->decimal('total_installment', 20, 6);
             $table->decimal('principal_balance_after_installment', 20, 6);
             $table->timestamps();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->softDeletes();
 
             $table->unique(['aksic_id', 'installment_no']);
             $table->index(['aksic_id', 'due_date']);

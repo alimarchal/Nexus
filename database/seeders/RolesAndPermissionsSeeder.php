@@ -72,6 +72,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'create aksic rules',
             'edit aksic rules',
             'delete aksic rules',
+            'approve aksics',
+            'import aksics',
 
             // Branch Management
             'view branches',
@@ -241,6 +243,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'create aksic rules',
                 'edit aksic rules',
                 'delete aksic rules',
+                'approve aksics',
+                'import aksics',
                 'view branches',
                 'edit branches',
                 'delete branches',

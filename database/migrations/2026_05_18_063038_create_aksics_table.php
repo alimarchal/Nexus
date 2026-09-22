@@ -22,7 +22,9 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('business_name')->nullable();
             $table->string('business_type')->nullable();
+            $table->boolean('is_startup_business')->default(false);
             $table->string('quota')->nullable();
+            $table->string('gender')->nullable();
             $table->text('business_address')->nullable();
             $table->text('permanent_address')->nullable();
             $table->unsignedBigInteger('business_category_id')->nullable();
@@ -51,11 +53,20 @@ return new class extends Migration
             $table->decimal('principal_amount', 15, 2)->nullable();
             $table->unsignedInteger('tenure')->nullable();
             $table->date('disbursement_date')->nullable();
-            $table->date('sanction_date')->nullable();
+            $table->boolean('site_visit_completed')->default(false);
+            $table->date('site_visit_date')->nullable();
+            $table->enum('consent_entry', ['Yes', 'No'])->nullable();
+            $table->date('consent_date')->nullable();
+            $table->text('liquid_security')->nullable();
+            $table->text('personal_guarantees')->nullable();
             $table->decimal('kibor_rate', 5, 2)->nullable();
             $table->decimal('spread_rate', 5, 2)->nullable();
             $table->decimal('total_rate', 5, 2)->nullable();
+            $table->decimal('total_interest', 20, 6)->nullable();
             $table->timestamps();
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->softDeletes();
         });
     }
 
