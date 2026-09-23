@@ -33,24 +33,28 @@
         'president-office' => 'Not tied to any branch or office',
     ];
 
-    $control = 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100';
-    $lbl = 'block text-sm font-medium text-gray-700 dark:text-gray-300';
-    $card = 'overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800';
-    $cardHead = 'border-b border-gray-200 bg-gray-50 px-5 py-3 dark:border-gray-700 dark:bg-gray-900/40';
+    $control = 'mt-1 block w-full rounded-md border-gray-400 text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100';
+    $lbl = 'block text-sm font-semibold text-black dark:text-gray-100';
+    $card = 'overflow-hidden rounded-lg border border-gray-400 bg-white shadow-md dark:border-gray-600 dark:bg-gray-800';
+    $cardHead = 'border-b border-gray-400 bg-gray-100 px-5 py-3 dark:border-gray-600 dark:bg-gray-900/40';
     $cardTitle = 'text-sm font-bold uppercase tracking-wide text-green-800 dark:text-green-400';
-    $hint = 'mt-1 text-xs text-gray-500 dark:text-gray-400';
-    $isSelf = $user->is(auth()->user());
+    $hint = 'mt-1 text-xs text-gray-700 dark:text-gray-300';
+    $isSelf = $user->exists && $user->is(auth()->user());
+    // The same screen is used for Add User (users/create includes this view with a new User).
+    $isCreate = ! $user->exists;
 @endphp
 
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-                <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">Edit User: {{ $user->name }}</h2>
+                <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">{{ $isCreate ? 'Add New User' : 'Edit User: '.$user->name }}</h2>
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    @if ($isCreate) Settings → User Module → Users @else
                     {{ $user->email }}
                     &middot; {{ $user->is_active === 'No' ? 'Inactive' : 'Active' }}
                     @if ($user->roles->isNotEmpty()) &middot; {{ $user->roles->pluck('name')->implode(', ') }} @endif
+                    @endif
                 </p>
             </div>
             <a href="{{ route('users.index') }}"
@@ -76,7 +80,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('users.update', $user->id) }}" id="user-edit-form"
+            <form method="POST" action="{{ $isCreate ? route('users.store') : route('users.update', $user->id) }}" id="user-edit-form"
                 x-data="userEditForm({
                     roles: {{ \Illuminate\Support\Js::from($selectedRoleIds) }},
                     permissions: {{ \Illuminate\Support\Js::from($selectedPermissionIds) }},
@@ -91,14 +95,14 @@
                 })"
                 @submit.prevent="openReview()">
                 @csrf
-                @method('PUT')
+                @unless ($isCreate) @method('PUT') @endunless
 
                 <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
                     {{-- 1. Account ------------------------------------------------ --}}
                     <section class="{{ $card }} lg:col-span-2">
                         <header class="{{ $cardHead }}">
                             <h3 class="{{ $cardTitle }}">1. Account</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Login details and whether the user can sign in.</p>
+                            <p class="text-xs text-gray-700 dark:text-gray-300">Login details and whether the user can sign in.</p>
                         </header>
                         <div class="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
                             <div>
@@ -112,15 +116,15 @@
                                 @error('email') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                             <div x-data="{ show: false }">
-                                <label for="password" class="{{ $lbl }}">New password</label>
+                                <label for="password" class="{{ $lbl }}">{{ $isCreate ? 'Password' : 'New password' }} @if ($isCreate)<span class="text-red-600">*</span>@endif</label>
                                 <div class="relative">
-                                    <input id="password" :type="show ? 'text' : 'password'" name="password" minlength="8" autocomplete="new-password"
-                                        x-model="password" class="{{ $control }}" style="padding-right: 4rem;" placeholder="Leave blank to keep current">
+                                    <input id="password" :type="show ? 'text' : 'password'" name="password" minlength="8" autocomplete="new-password" @required($isCreate)
+                                        x-model="password" class="{{ $control }}" style="padding-right: 4rem;" placeholder="{{ $isCreate ? 'At least 8 characters' : 'Leave blank to keep current' }}">
                                     <button type="button" @click="show = !show" class="absolute px-3 text-xs font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-300"
                                         style="top: 0.25rem; bottom: 0; right: 0;"
                                         x-text="show ? 'Hide' : 'Show'"></button>
                                 </div>
-                                <p class="{{ $hint }}">Minimum 8 characters. Leave blank to keep the current password.</p>
+                                <p class="{{ $hint }}">Minimum 8 characters.{{ $isCreate ? '' : ' Leave blank to keep the current password.' }}</p>
                                 @error('password') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
                             <div class="grid grid-cols-2 gap-4">
@@ -148,19 +152,19 @@
                     <aside class="{{ $card }}">
                         <header class="{{ $cardHead }}">
                             <h3 class="{{ $cardTitle }}">Access summary</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Updates as you change roles and permissions.</p>
+                            <p class="text-xs text-gray-700 dark:text-gray-300">Updates as you change roles and permissions.</p>
                         </header>
                         <dl class="space-y-3 p-5 text-sm">
-                            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Status</dt>
+                            <div class="flex justify-between"><dt class="text-gray-700 dark:text-gray-300">Status</dt>
                                 <dd class="font-semibold" :class="isActive === 'Yes' ? 'text-green-700' : 'text-red-700'" x-text="isActive === 'Yes' ? 'Active' : 'Inactive'"></dd></div>
-                            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Super admin</dt>
-                                <dd class="font-semibold text-gray-900 dark:text-gray-100" x-text="isSuperAdmin"></dd></div>
-                            <div class="flex justify-between gap-3"><dt class="text-gray-500 dark:text-gray-400">Roles</dt>
-                                <dd class="text-right font-semibold text-gray-900 dark:text-gray-100" x-text="roleNames().join(', ') || 'None'"></dd></div>
-                            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Permissions from roles</dt>
-                                <dd class="font-semibold text-gray-900 dark:text-gray-100" x-text="inheritedIds().length"></dd></div>
-                            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">Extra (individual) permissions</dt>
-                                <dd class="font-semibold text-gray-900 dark:text-gray-100" x-text="permissions.length"></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-700 dark:text-gray-300">Super admin</dt>
+                                <dd class="font-semibold text-black dark:text-gray-100" x-text="isSuperAdmin"></dd></div>
+                            <div class="flex justify-between gap-3"><dt class="text-gray-700 dark:text-gray-300">Roles</dt>
+                                <dd class="text-right font-semibold text-black dark:text-gray-100" x-text="roleNames().join(', ') || 'None'"></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-700 dark:text-gray-300">Permissions from roles</dt>
+                                <dd class="font-semibold text-black dark:text-gray-100" x-text="inheritedIds().length"></dd></div>
+                            <div class="flex justify-between"><dt class="text-gray-700 dark:text-gray-300">Extra (individual) permissions</dt>
+                                <dd class="font-semibold text-black dark:text-gray-100" x-text="permissions.length"></dd></div>
                         </dl>
                     </aside>
                 </div>
@@ -169,18 +173,18 @@
                 <section class="{{ $card }} mt-5">
                     <header class="{{ $cardHead }}">
                         <h3 class="{{ $cardTitle }}">2. Roles &amp; office</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Roles decide what the user can do; the office decides which records they see.</p>
+                        <p class="text-xs text-gray-700 dark:text-gray-300">Roles decide what the user can do; the office decides which records they see.</p>
                     </header>
                     <div class="space-y-5 p-5">
                         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                             @foreach ($roles as $role)
                                 <label class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition"
-                                    :class="roles.includes('{{ $role->id }}') ? 'border-green-600 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 hover:border-gray-300 dark:border-gray-700'">
+                                    :class="roles.includes('{{ $role->id }}') ? 'border-green-600 bg-green-50 dark:bg-green-900/20' : 'border-gray-400 hover:border-gray-600 dark:border-gray-600'">
                                     <input type="checkbox" name="roles[]" value="{{ $role->id }}" x-model="roles"
-                                        class="mt-0.5 size-4 rounded border-gray-300 text-green-700 focus:ring-green-600">
+                                        class="mt-0.5 size-4 rounded border-gray-500 text-green-700 focus:ring-green-600">
                                     <span>
-                                        <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">{{ \Illuminate\Support\Str::headline($role->name) }}</span>
-                                        <span class="block text-xs text-gray-500 dark:text-gray-400">
+                                        <span class="block text-sm font-semibold text-black dark:text-gray-100">{{ \Illuminate\Support\Str::headline($role->name) }}</span>
+                                        <span class="block text-xs text-gray-700 dark:text-gray-300">
                                             {{ $roleHelp[$role->name] ?? 'Custom role' }} &middot; {{ $role->permissions->count() }} permissions
                                         </span>
                                     </span>
@@ -231,7 +235,7 @@
                                 </select>
                                 @error('head_office_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 md:col-span-2"
+                            <p class="text-sm text-gray-700 dark:text-gray-400 md:col-span-2"
                                 x-show="!hasRole('branch') && !hasRole('region') && !hasRole('division') && !hasRole('head-office')">
                                 Select Branch, Region, Division or Head Office role to link the user to an office.
                             </p>
@@ -248,26 +252,26 @@
                     <header class="{{ $cardHead }} flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h3 class="{{ $cardTitle }}">3. Extra permissions</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                            <p class="text-xs text-gray-700 dark:text-gray-300">
                                 Only for access <b>beyond</b> the selected roles. Items marked
                                 <span class="rounded bg-green-100 px-1 font-semibold text-green-800">via role</span> are already granted by a role.
                             </p>
                         </div>
                         <input type="search" x-model="search" placeholder="Search permissions…" aria-label="Search permissions"
-                            class="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-64 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
+                            class="w-full rounded-md border-gray-400 text-sm text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-64 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
                     </header>
                     <div class="grid max-h-[28rem] grid-cols-1 gap-4 overflow-y-auto p-5 md:grid-cols-2 xl:grid-cols-3" style="max-height: 28rem;">
                         @foreach ($permissionGroups as $group => $items)
-                            <fieldset class="rounded-md border border-gray-200 p-3 dark:border-gray-700"
+                            <fieldset class="rounded-md border border-gray-400 p-3 dark:border-gray-600"
                                 x-show="groupVisible({{ \Illuminate\Support\Js::from($items->pluck('name')->values()) }})">
-                                <legend class="px-1 text-xs font-bold uppercase tracking-wide text-gray-700 dark:text-gray-300">{{ $group }}</legend>
+                                <legend class="px-1 text-xs font-bold uppercase tracking-wide text-black dark:text-gray-100">{{ $group }}</legend>
                                 <div class="space-y-1.5">
                                     @foreach ($items as $permission)
                                         <label class="flex items-center justify-between gap-2 text-sm" x-show="matches(@js($permission->name))">
                                             <span class="flex items-center gap-2">
                                                 <input type="checkbox" name="permissions[]" value="{{ $permission->id }}" x-model="permissions"
-                                                    class="size-4 rounded border-gray-300 text-blue-700 focus:ring-blue-600">
-                                                <span class="text-gray-800 dark:text-gray-200">{{ $permission->name }}</span>
+                                                    class="size-4 rounded border-gray-500 text-blue-700 focus:ring-blue-600">
+                                                <span class="text-black dark:text-gray-100">{{ $permission->name }}</span>
                                             </span>
                                             <span x-show="inheritedIds().includes('{{ $permission->id }}')"
                                                 class="shrink-0 rounded bg-green-100 px-1.5 text-[10px] font-semibold text-green-800" style="font-size:10px">via role</span>
@@ -281,8 +285,8 @@
                 </section>
 
                 {{-- Sticky action bar ------------------------------------------------ --}}
-                <div class="sticky bottom-0 z-10 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white/95 px-5 py-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-800/95">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                <div class="sticky bottom-0 z-10 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-400 bg-white/95 px-5 py-3 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-800/95">
+                    <p class="text-xs text-gray-700 dark:text-gray-300">
                         Fields marked <span class="font-bold text-red-600">*</span> are required. You will review the changes before they are saved.
                     </p>
                     <div class="flex items-center gap-3">
@@ -310,15 +314,15 @@
                                         </svg>
                                     </div>
                                     <div class="mt-3 w-full text-center sm:ml-4 sm:mt-0 sm:text-left">
-                                        <h3 class="text-lg font-medium leading-6 text-gray-900">Save changes to {{ $user->name }}?</h3>
-                                        <div class="mt-3 rounded-md border border-gray-200 bg-gray-50 p-3">
-                                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">Review</div>
+                                        <h3 class="text-lg font-medium leading-6 text-black">{{ $isCreate ? 'Create this user?' : 'Save changes to '.$user->name.'?' }}</h3>
+                                        <div class="mt-3 rounded-md border border-gray-400 bg-gray-50 p-3">
+                                            <div class="text-xs font-semibold uppercase tracking-wide text-gray-700">Review</div>
                                             <dl class="mt-2 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                                                <div><dt class="text-gray-500">Status</dt><dd class="font-semibold text-gray-900" x-text="isActive === 'Yes' ? 'Active' : 'Inactive'"></dd></div>
-                                                <div><dt class="text-gray-500">Super admin</dt><dd class="font-semibold text-gray-900" x-text="isSuperAdmin"></dd></div>
-                                                <div class="sm:col-span-2"><dt class="text-gray-500">Roles</dt><dd class="font-semibold text-gray-900" x-text="roleNames().join(', ') || 'None'"></dd></div>
-                                                <div><dt class="text-gray-500">Extra permissions</dt><dd class="font-semibold text-gray-900" x-text="permissions.length"></dd></div>
-                                                <div><dt class="text-gray-500">Password</dt><dd class="font-semibold text-gray-900" x-text="password ? 'Will be changed' : 'Unchanged'"></dd></div>
+                                                <div><dt class="text-gray-700">Status</dt><dd class="font-semibold text-black" x-text="isActive === 'Yes' ? 'Active' : 'Inactive'"></dd></div>
+                                                <div><dt class="text-gray-700">Super admin</dt><dd class="font-semibold text-black" x-text="isSuperAdmin"></dd></div>
+                                                <div class="sm:col-span-2"><dt class="text-gray-700">Roles</dt><dd class="font-semibold text-black" x-text="roleNames().join(', ') || 'None'"></dd></div>
+                                                <div><dt class="text-gray-700">Extra permissions</dt><dd class="font-semibold text-black" x-text="permissions.length"></dd></div>
+                                                <div><dt class="text-gray-700">Password</dt><dd class="font-semibold text-black" x-text="password ? '{{ $isCreate ? 'Set' : 'Will be changed' }}' : 'Unchanged'"></dd></div>
                                             </dl>
                                         </div>
                                         <ul class="mt-3 space-y-1 text-sm text-amber-800" x-show="warnings().length">
@@ -332,7 +336,7 @@
                                     class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50">Cancel</button>
                                 <button type="button" @click="confirmSave()" :disabled="saving"
                                     class="inline-flex items-center rounded-md border border-transparent bg-emerald-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
-                                    <span x-show="!saving">Save changes</span><span x-show="saving">Saving...</span>
+                                    <span x-show="!saving">{{ $isCreate ? 'Create user' : 'Save changes' }}</span><span x-show="saving">Saving...</span>
                                 </button>
                             </div>
                         </div>
@@ -381,7 +385,7 @@
                         if (this.isActive === 'No' && this.original.isActive !== 'No') list.push('The user will be deactivated and can no longer sign in.');
                         if (this.isSuperAdmin !== this.original.isSuperAdmin) list.push('Super admin will change to ' + this.isSuperAdmin + '.');
                         const before = [...this.original.roles].sort().join(',');
-                        if (before !== [...this.roles].sort().join(',')) list.push('Roles will change.');
+                        if (this.original.roles.length && before !== [...this.roles].sort().join(',')) list.push('Roles will change.');
                         if (this.roles.length === 0) list.push('No role is selected; the user will only have extra permissions.');
                         const needsOffice = { branch: 'branch_id', region: 'region_id', division: 'division_id', 'head-office': 'head_office_id' };
                         Object.entries(needsOffice).forEach(([role, field]) => {

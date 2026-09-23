@@ -24,27 +24,23 @@ class RegionController extends Controller implements HasMiddleware
 
     /**
      * Display a listing of the resource.
-     */public function index(Request $request)
-{
-    $regions = Region::query();
+     */
+    public function index(Request $request)
+    {
+        $regions = Region::query()->withCount(['districts', 'branches', 'users'])->orderBy('name');
 
-    // Apply filters, if any
-    if ($request->has('filter.name')) {
-        $regions->where('name', 'like', '%' . $request->input('filter.name') . '%');
+        if ($name = $request->input('filter.name')) {
+            $regions->where('name', 'like', '%'.$name.'%');
+        }
+
+        if ($createdAt = $request->input('filter.created_at')) {
+            $regions->whereDate('created_at', $createdAt);
+        }
+
+        $regions = $regions->paginate(25)->withQueryString();
+
+        return view('regions.index', compact('regions'));
     }
-
-    if ($request->has('filter.created_at')) {
-        $regions->whereDate('created_at', $request->input('filter.created_at'));
-    }
-
-    // Paginate the results
-    $regions = $regions->paginate(10);
-
-    return view('regions.index', compact('regions'));
-}
-
-
-
 
     /**
      * Show the form for creating a new resource.
@@ -95,6 +91,10 @@ class RegionController extends Controller implements HasMiddleware
      */
     public function destroy(Region $region)
     {
+        if ($region->districts()->exists() || $region->branches()->exists()) {
+            return redirect()->route('regions.index')->with('error', 'This region still has districts or branches. Move them first.');
+        }
+
         $region->delete();
 
         return redirect()->route('regions.index')->with('success', 'Region deleted successfully.');

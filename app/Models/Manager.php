@@ -34,6 +34,6 @@ class Manager extends Model
 
     public function updatedBy()
     {
-        return $this->belongsTo(User::class, 'update_by');
+        return $this->belongsTo(User::class, 'updated_by');
     }
 }

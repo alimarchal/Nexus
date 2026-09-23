@@ -49,6 +49,12 @@ class Branch extends Model
         return $this->hasMany(Contact::class);
     }
 
+    /** Users posted at this branch (users.branch_id). */
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
     public function branchTargets(): HasMany
     {
         return $this->hasMany(BranchTarget::class);

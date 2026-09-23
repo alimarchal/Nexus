@@ -56,7 +56,16 @@ class RoleController extends Controller implements HasMiddleware
     // Display a listing of the roles with pagination
     public function index(Request $request)
     {
-        $query = Role::with('permissions');
+        // Spatie's users() relation needs a guard on the instance, so withCount('users')
+        // cannot be used here; count the pivot rows directly instead.
+        $query = Role::query()
+            ->select('roles.*')
+            ->addSelect(['users_count' => \Illuminate\Support\Facades\DB::table(config('permission.table_names.model_has_roles'))
+                ->selectRaw('count(*)')
+                ->whereColumn('role_id', 'roles.id')
+                ->where('model_type', (new \App\Models\User)->getMorphClass())])
+            ->with('permissions:id,name')
+            ->orderBy('name');
 
         // Apply filters based on request inputs
         if ($name = $request->input('filter.name')) {
@@ -68,7 +77,7 @@ class RoleController extends Controller implements HasMiddleware
         }
 
         // Paginate the filtered results
-        $roles = $query->paginate(10)->withQueryString();
+        $roles = $query->paginate(25)->withQueryString();
 
         // Return the view with roles data
         return view('roles.index', compact('roles'));
@@ -108,8 +117,13 @@ class RoleController extends Controller implements HasMiddleware
     public function destroy(Role $role)
     {
         // Prevent deletion of super-admin role if users are assigned to it
-        if ($role->name === 'super-admin' && $role->users->count() > 0) {
-            return redirect()->back()->withErrors(['role' => 'Cannot delete super-admin role while users are assigned to it.']);
+        if ($role->name === 'super-admin') {
+            return redirect()->back()->with('error', 'The super-admin role cannot be deleted.');
+        }
+
+        // A role that is still assigned would silently strip access from those users.
+        if (($count = $role->users()->count()) > 0) {
+            return redirect()->back()->with('error', "Role '{$role->name}' is assigned to {$count} user(s). Move them to another role first.");
         }
 
         $role->delete();

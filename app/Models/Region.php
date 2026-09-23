@@ -39,6 +39,12 @@ class Region extends Model
         return $this->hasMany(Branch::class, 'region_id','id');
     }
 
+    /** Users posted at the regional office (users.region_id). */
+    public function users(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
     public function getNameAttribute(?string $value): string
     {
         return $value ?? '';

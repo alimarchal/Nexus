@@ -27,23 +27,29 @@ class BranchController extends Controller implements HasMiddleware
     {
         $branches = QueryBuilder::for(Branch::class)
             ->allowedFilters([
-                AllowedFilter::exact('name'),
+                // One box searches code, name and address.
+                AllowedFilter::callback('search', function ($query, $value) {
+                    $value = trim((string) $value);
+                    $query->where(fn ($q) => $q->where('code', 'like', "%{$value}%")
+                        ->orWhere('name', 'like', "%{$value}%")
+                        ->orWhere('address', 'like', "%{$value}%"));
+                }),
+                AllowedFilter::partial('name'),
                 AllowedFilter::exact('region_id'),
                 AllowedFilter::exact('district_id'),
-                AllowedFilter::exact('id'),  // Allow filtering by 'id' (branch_id)
+                AllowedFilter::exact('id'),
             ])
-            ->with(['region', 'district'])  // We only need to eager load 'region' and 'district'
-            ->paginate(10);
+            ->with(['region', 'district'])
+            ->withCount('users')
+            ->orderBy('code')
+            ->paginate(25)
+            ->withQueryString();
 
-        // Fetch regions and districts for the dropdowns
-        $regions = Region::all();
-        $districts = District::all();
+        $regions = Region::orderBy('name')->get();
+        $districts = District::orderBy('name')->get();
 
-        // Return the view with the filtered data
         return view('branches.index', compact('branches', 'regions', 'districts'));
     }
-
-
 
     /**
      * Show the form for creating a new resource.
@@ -51,8 +57,8 @@ class BranchController extends Controller implements HasMiddleware
     public function create()
     {
         // Get all regions and districts for the dropdown options
-        $regions = Region::all();
-        $districts = District::all();
+        $regions = Region::orderBy('name')->get();
+        $districts = District::orderBy('name')->get();
 
         // Return the view to create a new branch
         return view('branches.create', compact('regions', 'districts'));
@@ -66,14 +72,15 @@ class BranchController extends Controller implements HasMiddleware
         // Validate the incoming request
         $request->validate([
             'region_id' => 'required|exists:regions,id',
-            'district_id' => 'required|exists:districts,id',
+            // The district must belong to the chosen region.
+            'district_id' => ['required', \Illuminate\Validation\Rule::exists('districts', 'id')->where('region_id', $request->input('region_id'))],
             'code' => 'required|string|unique:branches,code',
             'name' => 'required|string',
             'address' => 'required|string',
         ]);
 
         // Create the new branch using validated data
-        Branch::create($request->all());
+        Branch::create($request->only(['region_id', 'district_id', 'code', 'name', 'address']));
 
         // Redirect back to the branches list with a success message
         return redirect()->route('branches.index')->with('success', 'Branch created successfully.');
@@ -94,8 +101,8 @@ class BranchController extends Controller implements HasMiddleware
     public function edit(Branch $branch)
     {
         // Get all regions and districts for editing the branch
-        $regions = Region::all();
-        $districts = District::all();
+        $regions = Region::orderBy('name')->get();
+        $districts = District::orderBy('name')->get();
 
         // Return the view to edit the branch with pre-filled data
         return view('branches.edit', compact('branch', 'regions', 'districts'));
@@ -109,14 +116,15 @@ class BranchController extends Controller implements HasMiddleware
         // Validate the incoming request
         $request->validate([
             'region_id' => 'required|exists:regions,id',
-            'district_id' => 'required|exists:districts,id',
+            // The district must belong to the chosen region.
+            'district_id' => ['required', \Illuminate\Validation\Rule::exists('districts', 'id')->where('region_id', $request->input('region_id'))],
             'code' => 'required|string|unique:branches,code,' . $branch->id,
             'name' => 'required|string',
             'address' => 'required|string',
         ]);
 
         // Update the branch using the validated data
-        $branch->update($request->all());
+        $branch->update($request->only(['region_id', 'district_id', 'code', 'name', 'address']));
 
         // Redirect back to the branches list with a success message
         return redirect()->route('branches.index')->with('success', 'Branch updated successfully.');
@@ -127,7 +135,10 @@ class BranchController extends Controller implements HasMiddleware
      */
     public function destroy(Branch $branch)
     {
-        // Delete the branch
+        if ($branch->users()->exists()) {
+            return redirect()->route('branches.index')->with('error', 'Users are still posted at this branch. Move them first.');
+        }
+
         $branch->delete();
 
         // Redirect back to the branches list with a success message

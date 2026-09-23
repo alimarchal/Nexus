@@ -37,9 +37,9 @@ class UserController extends Controller implements HasMiddleware
             ->allowedFilters(User::getAllowedFilters())
             ->allowedSorts(User::getAllowedSorts())
             ->allowedIncludes(User::getAllowedIncludes())
-            ->with(['branch', 'roles', 'permissions'])
+            ->with(['branch', 'region', 'division', 'headOffice', 'roles', 'permissions'])
             ->defaultSort('-created_at')
-            ->paginate(request('per_page', 10))
+            ->paginate(request('per_page', 25))
             ->appends(request()->query());
 
         return view('users.index', compact('branches', 'roles', 'users'));

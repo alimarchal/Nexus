@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class PermissionController extends Controller implements HasMiddleware
 {
@@ -46,22 +47,42 @@ class PermissionController extends Controller implements HasMiddleware
     // Display a listing of the permissions with pagination
     public function index(Request $request)
     {
-        $query = Permission::with('roles');
+        // Direct (per-user) grants; Spatie's users() relation cannot be used with withCount.
+        $query = Permission::query()
+            ->select('permissions.*')
+            ->addSelect(['users_count' => \Illuminate\Support\Facades\DB::table(config('permission.table_names.model_has_permissions'))
+                ->selectRaw('count(*)')
+                ->whereColumn('permission_id', 'permissions.id')
+                ->where('model_type', (new \App\Models\User)->getMorphClass())])
+            ->with('roles:id,name')
+            ->orderBy('name');
 
-        // Apply filters based on request inputs
         if ($name = $request->input('filter.name')) {
             $query->where('name', 'LIKE', '%'.$name.'%');
+        }
+
+        // Module = everything after the first word ("view aksic claims" -> "aksic claims").
+        if ($module = $request->input('filter.module')) {
+            $query->where('name', 'LIKE', '% '.$module);
+        }
+
+        if ($roleId = $request->input('filter.role_id')) {
+            $query->whereHas('roles', fn ($q) => $q->where('id', $roleId));
         }
 
         if ($createdAt = $request->input('filter.created_at')) {
             $query->whereDate('created_at', $createdAt);
         }
 
-        // Paginate the filtered results
-        $permissions = $query->paginate(10)->withQueryString();
+        $permissions = $query->paginate(25)->withQueryString();
 
-        // Return the view with permissions data
-        return view('permissions.index', compact('permissions'));
+        $modules = Permission::orderBy('name')->pluck('name')
+            ->filter(fn ($name) => str_contains($name, ' '))
+            ->map(fn ($name) => \Illuminate\Support\Str::of($name)->after(' ')->lower()->value())
+            ->unique()->sort()->values();
+        $roles = Role::orderBy('name')->get(['id', 'name']);
+
+        return view('permissions.index', compact('permissions', 'modules', 'roles'));
     }
 
     // Show the form for editing the specified permission
@@ -95,7 +116,7 @@ class PermissionController extends Controller implements HasMiddleware
         $criticalPermissions = ['view users', 'edit users', 'create users', 'delete users', 'view roles', 'edit roles'];
 
         if (in_array($permission->name, $criticalPermissions)) {
-            return redirect()->back()->withErrors(['permission' => 'Cannot delete critical system permission: '.$permission->name]);
+            return redirect()->back()->with('error', 'Cannot delete critical system permission: '.$permission->name);
         }
 
         // Delete the permission

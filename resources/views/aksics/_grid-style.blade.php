@@ -14,6 +14,13 @@
         table.aksic-grid td.num, table.aksic-grid th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
         table.aksic-grid td.ctr, table.aksic-grid th.ctr { text-align: center; }
         table.aksic-grid td a { color: #1d4ed8; }
+        /* Tailwind alignment helpers keep working inside the grid. */
+        table.aksic-grid th.text-center, table.aksic-grid td.text-center { text-align: center; }
+        table.aksic-grid th.text-right, table.aksic-grid td.text-right { text-align: right; }
+        table.aksic-grid th.text-left, table.aksic-grid td.text-left { text-align: left; }
+        /* Row hover for list tables: <table class="aksic-grid aksic-hover"> */
+        table.aksic-grid.aksic-hover tbody tr:hover td { background: #f3f4f6; }
+        table.aksic-grid .muted { color: #374151; font-size: 12px; }
         table.aksic-grid .neg { color: #b91c1c; font-weight: 700; }
         table.aksic-grid tfoot td.neg { color: #fca5a5; }
         table.aksic-grid .bar { height: 6px; background: #e5e7eb; border-radius: 3px; margin-top: 3px; overflow: hidden; }
