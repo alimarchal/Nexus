@@ -58,9 +58,10 @@ return new class extends Migration
             $table->userTracking();
 
             // The user currently holding/responsible for this physical/scanned file.
+            // (No ->after(): column position is set by declaration order inside
+            // Schema::create, and MariaDB rejects AFTER in CREATE TABLE.)
             $table->foreignId('current_custodian_id')
                 ->nullable()
-                ->after('updated_by')
                 ->constrained('users')
                 ->nullOnDelete();
 
