@@ -24,7 +24,7 @@
     'confirmTitle' => 'Save changes?',
     'confirmButton' => 'Save',
     'confirmNote' => null,
-    'maxWidth' => 'max-w-4xl',
+    'maxWidth' => 'max-w-7xl',
 ])
 
 @php($ui = \App\Support\Ui::class)

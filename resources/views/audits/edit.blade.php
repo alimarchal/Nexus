@@ -7,7 +7,7 @@
                 class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-xs font-semibold rounded-md">Back</a>
         </div>
     </x-slot>
-    <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 py-6">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 py-6">
         <x-status-message />
         <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg p-6">
             <form method="POST" action="{{ route('audits.update',$audit) }}" enctype="multipart/form-data"

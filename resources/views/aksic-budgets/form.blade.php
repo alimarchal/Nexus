@@ -11,7 +11,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="mx-auto max-w-4xl space-y-4 sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
             <x-validation-errors />
 
             <form method="POST" action="{{ $editing ? route('aksic-budgets.update', $budget) : route('aksic-budgets.store') }}"

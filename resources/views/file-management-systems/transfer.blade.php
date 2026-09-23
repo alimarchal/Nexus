@@ -12,7 +12,7 @@
     </x-slot>
 
     <div class="py-6">
-        <div class="mx-auto max-w-4xl sm:px-6 lg:px-8">
+        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
             <div class="overflow-hidden bg-white p-6 shadow-xl sm:rounded-lg dark:bg-gray-800">
                 <dl class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div>
