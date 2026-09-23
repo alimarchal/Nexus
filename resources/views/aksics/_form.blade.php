@@ -1,63 +1,151 @@
-<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <section class="space-y-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Applicant & Business</h3>
+@php
+    /**
+     * AKSIC -- shared create / edit form.
+     *
+     * Layout only: the fields, names and ids below are exactly the ones the
+     * Store/UpdateAksicRequest validate and the aksics table stores. Nothing is
+     * added or removed here -- the form is grouped into cards, labelled with
+     * required markers and given per-field validation messages.
+     */
+    $isEdit = isset($aksic) && $aksic->exists;
 
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    $lbl = 'block text-sm font-medium text-gray-700 dark:text-gray-300';
+    $control = 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100';
+    $readonly = $control.' bg-gray-100 text-gray-600 dark:bg-gray-950 dark:text-gray-400';
+    $card = 'overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800';
+    $cardHead = 'flex items-center justify-between gap-3 border-b border-gray-200 bg-gray-50 px-5 py-3 dark:border-gray-700 dark:bg-gray-900/40';
+    $cardTitle = 'text-sm font-bold uppercase tracking-wide text-green-800 dark:text-green-400';
+    $hint = 'mt-1 text-xs text-gray-500 dark:text-gray-400';
+@endphp
+
+<div class="space-y-5">
+
+    {{-- 1. Applicant ------------------------------------------------------ --}}
+    <section class="{{ $card }}">
+        <header class="{{ $cardHead }}">
             <div>
-                <x-label for="application_no" value="Application No" :required="true" />
-                <x-input id="application_no" type="text" name="application_no" class="mt-1 block w-full"
+                <h3 class="{{ $cardTitle }}">1. Applicant</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Identity of the borrower and the quota applied for.</p>
+            </div>
+            <span class="rounded-full bg-gray-200 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                {{ $isEdit ? 'Editing '.$aksic->application_no : 'New case' }}
+            </span>
+        </header>
+
+        <div class="grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
+            <div>
+                <label for="application_no" class="{{ $lbl }}">Application No <span class="text-red-600">*</span></label>
+                <x-input id="application_no" type="text" name="application_no" class="{{ $control }}"
                     :value="old('application_no', $aksic->application_no ?? '')" required />
+                <x-input-error for="application_no" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="status_display" value="Status" />
-                <x-input id="status_display" type="text" class="mt-1 block w-full bg-gray-100 dark:bg-gray-900"
+                <label for="status_display" class="{{ $lbl }}">Status</label>
+                <x-input id="status_display" type="text" class="{{ $readonly }}"
                     :value="$aksic->status ?? 'Pending'" readonly />
+                <p class="{{ $hint }}">Set by the system; approval generates the schedule.</p>
             </div>
 
             <div>
-                <x-label for="name" value="Applicant Name" :required="true" />
-                <x-input id="name" type="text" name="name" class="mt-1 block w-full"
+                <label for="account_no" class="{{ $lbl }}">Account No</label>
+                <x-input id="account_no" type="text" name="account_no" maxlength="50" class="{{ $control }}"
+                    :value="old('account_no', $aksic->account_no ?? '')" />
+                <p class="{{ $hint }}">Bank account the loan is booked against.</p>
+                <x-input-error for="account_no" class="mt-1" />
+            </div>
+
+            <div>
+                <label for="name" class="{{ $lbl }}">Applicant Name <span class="text-red-600">*</span></label>
+                <x-input id="name" type="text" name="name" class="{{ $control }}"
                     :value="old('name', $aksic->name ?? '')" required />
+                <x-input-error for="name" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="father_name" value="Father Name" :required="true" />
-                <x-input id="father_name" type="text" name="father_name" class="mt-1 block w-full"
+                <label for="father_name" class="{{ $lbl }}">Father Name <span class="text-red-600">*</span></label>
+                <x-input id="father_name" type="text" name="father_name" class="{{ $control }}"
                     :value="old('father_name', $aksic->father_name ?? '')" required />
+                <x-input-error for="father_name" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="cnic" value="CNIC" :required="true" />
-                <x-input id="cnic" type="text" name="cnic" class="mt-1 block w-full"
+                <label for="cnic" class="{{ $lbl }}">CNIC <span class="text-red-600">*</span></label>
+                <x-input id="cnic" type="text" name="cnic" class="{{ $control }}"
                     :value="old('cnic', $aksic->cnic ?? '')" required />
+                <x-input-error for="cnic" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="phone" value="Phone" />
-                <x-input id="phone" type="text" name="phone" class="mt-1 block w-full"
+                <label for="phone" class="{{ $lbl }}">Phone</label>
+                <x-input id="phone" type="text" name="phone" class="{{ $control }}"
                     :value="old('phone', $aksic->phone ?? '')" />
+                <x-input-error for="phone" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="business_name" value="Business Name" />
-                <x-input id="business_name" type="text" name="business_name" class="mt-1 block w-full"
+                <label for="quota" class="{{ $lbl }}">Gender Quota <span class="text-red-600">*</span></label>
+                <select id="quota" name="quota" class="{{ $control }}" required>
+                    <option value="">Select Quota</option>
+                    @foreach (['Male', 'Female', 'Disabled', 'Transgender'] as $quota)
+                        <option value="{{ $quota }}" @selected(old('quota', $aksic->quota ?? '') === $quota)>{{ $quota }}</option>
+                    @endforeach
+                </select>
+                <x-input-error for="quota" class="mt-1" />
+            </div>
+
+            <div id="disabled_gender_wrapper">
+                <label for="gender" class="{{ $lbl }}">Disabled Gender <span class="text-red-600">*</span></label>
+                <select id="gender" name="gender" class="{{ $control }}">
+                    <option value="">Select Gender</option>
+                    @foreach (['Male', 'Female'] as $gender)
+                        <option value="{{ $gender }}" @selected(old('gender', $aksic->gender ?? '') === $gender)>{{ $gender }}</option>
+                    @endforeach
+                </select>
+                <p class="{{ $hint }}">Required only when the quota is Disabled / Special Person.</p>
+                <x-input-error for="gender" class="mt-1" />
+            </div>
+
+            <div class="md:col-span-3">
+                <label for="permanent_address" class="{{ $lbl }}">Permanent Address</label>
+                <textarea id="permanent_address" name="permanent_address" rows="2" class="{{ $control }}">{{ old('permanent_address', $aksic->permanent_address ?? '') }}</textarea>
+                <x-input-error for="permanent_address" class="mt-1" />
+            </div>
+        </div>
+    </section>
+
+    {{-- 2. Business & location -------------------------------------------- --}}
+    <section class="{{ $card }}">
+        <header class="{{ $cardHead }}">
+            <div>
+                <h3 class="{{ $cardTitle }}">2. Business &amp; Location</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">What is being financed, where it operates and which branch books it.</p>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
+            <div>
+                <label for="business_name" class="{{ $lbl }}">Business Name</label>
+                <x-input id="business_name" type="text" name="business_name" class="{{ $control }}"
                     :value="old('business_name', $aksic->business_name ?? '')" />
+                <x-input-error for="business_name" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="business_type" value="Business Type" :required="true" />
-                <select id="business_type" name="business_type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
+                <label for="business_type" class="{{ $lbl }}">Business Type <span class="text-red-600">*</span></label>
+                <select id="business_type" name="business_type" class="{{ $control }}" required>
                     <option value="">Select Business Type</option>
                     @foreach (['Existing', 'New'] as $businessType)
                         <option value="{{ $businessType }}" @selected(old('business_type', $aksic->business_type ?? '') === $businessType)>{{ $businessType }}</option>
                     @endforeach
                 </select>
+                <p class="{{ $hint }}">"New" marks the case as a start-up business.</p>
+                <x-input-error for="business_type" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="business_category_id" value="Business Category" />
-                <select id="business_category_id" name="business_category_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
+                <label for="business_category_id" class="{{ $lbl }}">Business Category</label>
+                <select id="business_category_id" name="business_category_id" class="{{ $control }}">
                     <option value="">Select Category</option>
                     @foreach ($categories as $category)
                         <option value="{{ $category->id }}" @selected((string) old('business_category_id', $aksic->business_category_id ?? '') === (string) $category->id)>
@@ -65,18 +153,20 @@
                         </option>
                     @endforeach
                 </select>
+                <x-input-error for="business_category_id" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="business_sub_category_id" value="Business Sub Category" />
-                <select id="business_sub_category_id" name="business_sub_category_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
+                <label for="business_sub_category_id" class="{{ $lbl }}">Business Sub Category</label>
+                <select id="business_sub_category_id" name="business_sub_category_id" class="{{ $control }}">
                     <option value="">Select Business Category first</option>
                 </select>
+                <x-input-error for="business_sub_category_id" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="district_id" value="District" :required="true" />
-                <select id="district_id" name="district_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
+                <label for="district_id" class="{{ $lbl }}">District <span class="text-red-600">*</span></label>
+                <select id="district_id" name="district_id" class="{{ $control }}" required>
                     <option value="">Select District</option>
                     @foreach ($districts as $district)
                         <option value="{{ $district->id }}" @selected((string) old('district_id', $aksic->district_id ?? '') === (string) $district->id)>
@@ -84,12 +174,12 @@
                         </option>
                     @endforeach
                 </select>
+                <x-input-error for="district_id" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="branch_id" value="Branch" />
-                <select id="branch_id" name="branch_id" data-placeholder="Select Branch"
-                    class="select2 mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
+                <label for="branch_id" class="{{ $lbl }}">Branch</label>
+                <select id="branch_id" name="branch_id" data-placeholder="Select Branch" class="select2 {{ $control }}">
                     <option value="">Select Branch</option>
                     @foreach ($branches as $branch)
                         <option value="{{ $branch->id }}" @selected((string) old('branch_id', $aksic->branch_id ?? '') === (string) $branch->id)>
@@ -97,118 +187,135 @@
                         </option>
                     @endforeach
                 </select>
+                <x-input-error for="branch_id" class="mt-1" />
             </div>
 
-            <div>
-                <x-label for="quota" value="Gender Quota" :required="true" />
-                <select id="quota" name="quota" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
-                    <option value="">Select Quota</option>
-                    @foreach (['Male', 'Female', 'Disabled', 'Transgender'] as $quota)
-                        <option value="{{ $quota }}" @selected(old('quota', $aksic->quota ?? '') === $quota)>{{ $quota }}</option>
-                    @endforeach
-                </select>
+            {{-- Live read-out of the active scheme rule for the chosen district. --}}
+            <div id="district_rule_panel" class="hidden md:col-span-3">
+                <div class="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-900 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                    <span class="font-bold uppercase tracking-wide">Scheme rule</span>
+                    <span id="district_rule_text" class="ml-2"></span>
+                </div>
             </div>
 
-            <div id="disabled_gender_wrapper">
-                <x-label for="gender" value="Disabled Gender" :required="true" />
-                <select id="gender" name="gender" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
-                    <option value="">Select Gender</option>
-                    @foreach (['Male', 'Female'] as $gender)
-                        <option value="{{ $gender }}" @selected(old('gender', $aksic->gender ?? '') === $gender)>{{ $gender }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="md:col-span-2">
-                <x-label for="business_address" value="Business Address" />
-                <textarea id="business_address" name="business_address" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">{{ old('business_address', $aksic->business_address ?? '') }}</textarea>
-            </div>
-
-            <div class="md:col-span-2">
-                <x-label for="permanent_address" value="Permanent Address" />
-                <textarea id="permanent_address" name="permanent_address" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">{{ old('permanent_address', $aksic->permanent_address ?? '') }}</textarea>
+            <div class="md:col-span-3">
+                <label for="business_address" class="{{ $lbl }}">Business Address</label>
+                <textarea id="business_address" name="business_address" rows="2" class="{{ $control }}">{{ old('business_address', $aksic->business_address ?? '') }}</textarea>
+                <x-input-error for="business_address" class="mt-1" />
             </div>
         </div>
     </section>
 
-    <section class="space-y-4">
-        <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-300">Financial & Security</h3>
-
-        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+    {{-- 3. Financing & security ------------------------------------------- --}}
+    <section class="{{ $card }}">
+        <header class="{{ $cardHead }}">
             <div>
-                <x-label for="principal_amount" value="Principal Amount" :required="true" />
-                <x-input id="principal_amount" type="number" step="0.01" name="principal_amount" class="mt-1 block w-full"
+                <h3 class="{{ $cardTitle }}">3. Financing &amp; Security</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Amount, pricing and the due diligence that must be in place before approval.</p>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
+            <div>
+                <label for="principal_amount" class="{{ $lbl }}">Principal Amount <span class="text-red-600">*</span></label>
+                <x-input id="principal_amount" type="number" step="0.01" name="principal_amount" class="{{ $control }}"
                     :value="old('principal_amount', $aksic->principal_amount ?? '')" required />
+                <x-input-error for="principal_amount" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="tenure" value="Tenure Months" :required="true" />
-                <x-input id="tenure" type="number" min="1" name="tenure" class="mt-1 block w-full"
+                <label for="tenure" class="{{ $lbl }}">Tenure (Months) <span class="text-red-600">*</span></label>
+                <x-input id="tenure" type="number" min="1" name="tenure" class="{{ $control }}"
                     :value="old('tenure', $aksic->tenure ?? 60)" required />
+                <x-input-error for="tenure" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="disbursement_date" value="Disbursement Date" :required="true" />
-                <x-input id="disbursement_date" type="date" name="disbursement_date" class="mt-1 block w-full"
-                    :value="old('disbursement_date', isset($aksic) && $aksic->disbursement_date ? $aksic->disbursement_date->format('Y-m-d') : '')" required />
+                <label for="disbursement_date" class="{{ $lbl }}">Disbursement Date <span class="text-red-600">*</span> <span class="text-xs font-normal text-gray-500">(D.M.Y)</span></label>
+                <x-input id="disbursement_date" type="text" name="disbursement_date" class="{{ $control }}" inputmode="numeric"
+                    placeholder="{{ \App\Support\AksicDate::PLACEHOLDER }}" pattern="\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4}" title="Day.Month.Year, e.g. 25.05.2026"
+                    :value="\App\Support\AksicDate::display(old('disbursement_date', $aksic->disbursement_date ?? null), '')" required />
+                <x-input-error for="disbursement_date" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="site_visit_completed" value="Site Visit Completed" :required="true" />
-                <select id="site_visit_completed" name="site_visit_completed" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100" required>
+                <label for="kibor_rate" class="{{ $lbl }}">KIBOR Rate (%) <span class="text-red-600">*</span></label>
+                <x-input id="kibor_rate" type="number" step="0.01" name="kibor_rate" class="{{ $control }}"
+                    :value="old('kibor_rate', $aksic->kibor_rate ?? '')" required />
+                <x-input-error for="kibor_rate" class="mt-1" />
+            </div>
+
+            <div>
+                <label for="spread_rate" class="{{ $lbl }}">Spread Rate (%) <span class="text-red-600">*</span></label>
+                <x-input id="spread_rate" type="number" step="0.01" name="spread_rate" class="{{ $control }}"
+                    :value="old('spread_rate', $aksic->spread_rate ?? '')" required />
+                <x-input-error for="spread_rate" class="mt-1" />
+            </div>
+
+            <div>
+                <label for="total_rate" class="{{ $lbl }}">Total Rate (%)</label>
+                <x-input id="total_rate" type="number" step="0.01" class="{{ $readonly }}"
+                    :value="old('total_rate', isset($aksic) && $aksic->total_rate !== null ? $aksic->total_rate : '')" readonly />
+                <p class="{{ $hint }}">KIBOR + Spread, recalculated as you type.</p>
+            </div>
+
+            <div>
+                <label for="site_visit_completed" class="{{ $lbl }}">Site Visit Completed <span class="text-red-600">*</span></label>
+                <select id="site_visit_completed" name="site_visit_completed" class="{{ $control }}" required>
                     <option value="0" @selected((string) old('site_visit_completed', isset($aksic) ? (int) $aksic->site_visit_completed : 0) === '0')>No</option>
                     <option value="1" @selected((string) old('site_visit_completed', isset($aksic) ? (int) $aksic->site_visit_completed : 0) === '1')>Yes</option>
                 </select>
+                <x-input-error for="site_visit_completed" class="mt-1" />
             </div>
 
             <div>
-                <x-label for="kibor_rate" value="KIBOR Rate" :required="true" />
-                <x-input id="kibor_rate" type="number" step="0.01" name="kibor_rate" class="mt-1 block w-full"
-                    :value="old('kibor_rate', $aksic->kibor_rate ?? '')" required />
+                <label for="site_visit_date" class="{{ $lbl }}">Site Visit Date <span class="text-xs font-normal text-gray-500">(D.M.Y)</span></label>
+                <x-input id="site_visit_date" type="text" name="site_visit_date" class="{{ $control }}" inputmode="numeric"
+                    placeholder="{{ \App\Support\AksicDate::PLACEHOLDER }}" pattern="\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4}" title="Day.Month.Year, e.g. 25.05.2026"
+                    :value="\App\Support\AksicDate::display(old('site_visit_date', $aksic->site_visit_date ?? null), '')" />
+                <x-input-error for="site_visit_date" class="mt-1" />
             </div>
 
-            <div>
-                <x-label for="spread_rate" value="Spread Rate" :required="true" />
-                <x-input id="spread_rate" type="number" step="0.01" name="spread_rate" class="mt-1 block w-full"
-                    :value="old('spread_rate', $aksic->spread_rate ?? '')" required />
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="consent_entry" class="{{ $lbl }}">Consent Entry</label>
+                    <select id="consent_entry" name="consent_entry" class="{{ $control }}">
+                        <option value="">Select</option>
+                        @foreach (['Yes', 'No'] as $consentEntry)
+                            <option value="{{ $consentEntry }}" @selected(old('consent_entry', $aksic->consent_entry ?? '') === $consentEntry)>{{ $consentEntry }}</option>
+                        @endforeach
+                    </select>
+                    <x-input-error for="consent_entry" class="mt-1" />
+                </div>
+
+                <div>
+                    <label for="consent_date" class="{{ $lbl }}">Consent Date <span class="text-xs font-normal text-gray-500">(D.M.Y)</span></label>
+                    <x-input id="consent_date" type="text" name="consent_date" class="{{ $control }}" inputmode="numeric"
+                        placeholder="{{ \App\Support\AksicDate::PLACEHOLDER }}" pattern="\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4}" title="Day.Month.Year, e.g. 25.05.2026"
+                        :value="\App\Support\AksicDate::display(old('consent_date', $aksic->consent_date ?? null), '')" />
+                    <x-input-error for="consent_date" class="mt-1" />
+                </div>
             </div>
 
-            <div>
-                <x-label for="total_rate" value="Total Rate" />
-                <x-input id="total_rate" type="number" step="0.01" class="mt-1 block w-full bg-gray-100 dark:bg-gray-900"
-                    :value="old('total_rate', isset($aksic) && $aksic->total_rate !== null ? $aksic->total_rate : '')" readonly />
-            </div>
+            <div class="md:col-span-3 md:grid md:grid-cols-3 md:gap-4">
+                <div>
+                    <label for="liquid_security" class="{{ $lbl }}">Liquid Security</label>
+                    <textarea id="liquid_security" name="liquid_security" rows="3" class="{{ $control }}">{{ old('liquid_security', $aksic->liquid_security ?? '') }}</textarea>
+                    <x-input-error for="liquid_security" class="mt-1" />
+                </div>
 
-            <div>
-                <x-label for="site_visit_date" value="Site Visit Date" />
-                <x-input id="site_visit_date" type="date" name="site_visit_date" class="mt-1 block w-full"
-                    :value="old('site_visit_date', isset($aksic) && $aksic->site_visit_date ? $aksic->site_visit_date->format('Y-m-d') : '')" />
-            </div>
+                <div class="mt-4 md:mt-0">
+                    <label for="personal_guarantees" class="{{ $lbl }}">Personal Guarantees</label>
+                    <textarea id="personal_guarantees" name="personal_guarantees" rows="3" class="{{ $control }}">{{ old('personal_guarantees', $aksic->personal_guarantees ?? '') }}</textarea>
+                    <x-input-error for="personal_guarantees" class="mt-1" />
+                </div>
 
-            <div>
-                <x-label for="consent_entry" value="Consent Entry" />
-                <select id="consent_entry" name="consent_entry" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
-                    <option value="">Select Consent</option>
-                    @foreach (['Yes', 'No'] as $consentEntry)
-                        <option value="{{ $consentEntry }}" @selected(old('consent_entry', $aksic->consent_entry ?? '') === $consentEntry)>{{ $consentEntry }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <x-label for="consent_date" value="Consent Date" />
-                <x-input id="consent_date" type="date" name="consent_date" class="mt-1 block w-full"
-                    :value="old('consent_date', isset($aksic) && $aksic->consent_date ? $aksic->consent_date->format('Y-m-d') : '')" />
-            </div>
-
-            <div class="md:col-span-2">
-                <x-label for="liquid_security" value="Liquid Security" />
-                <textarea id="liquid_security" name="liquid_security" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">{{ old('liquid_security', $aksic->liquid_security ?? '') }}</textarea>
-            </div>
-
-            <div class="md:col-span-2">
-                <x-label for="personal_guarantees" value="Personal Guarantees" />
-                <textarea id="personal_guarantees" name="personal_guarantees" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">{{ old('personal_guarantees', $aksic->personal_guarantees ?? '') }}</textarea>
+                <div class="mt-4 md:mt-0">
+                    <label for="mortgage" class="{{ $lbl }}">Mortgage</label>
+                    <textarea id="mortgage" name="mortgage" rows="3" class="{{ $control }}"
+                        placeholder="Mortgaged property / collateral details">{{ old('mortgage', $aksic->mortgage ?? '') }}</textarea>
+                    <x-input-error for="mortgage" class="mt-1" />
+                </div>
             </div>
         </div>
     </section>
@@ -225,6 +332,8 @@
             const subCategoriesByParent = {{ Illuminate\Support\Js::from($subCategoriesByParent) }};
             const selectedSubCategoryId = String(@json((string) old('business_sub_category_id', $aksic->business_sub_category_id ?? '')));
             const district = document.getElementById('district_id');
+            const districtRulePanel = document.getElementById('district_rule_panel');
+            const districtRuleText = document.getElementById('district_rule_text');
             const quota = document.getElementById('quota');
             const disabledGenderWrapper = document.getElementById('disabled_gender_wrapper');
             const gender = document.getElementById('gender');
@@ -264,9 +373,23 @@
 
             function showDistrictRule() {
                 const selectedRule = rulesByDistrict[district.value];
-                district.title = selectedRule
-                    ? `${selectedRule.district_name}: ${selectedRule.proposed_beneficiaries} beneficiaries, ${selectedRule.population_percentage}% population`
-                    : 'No active AKSIC rule for this district';
+
+                if (!district.value) {
+                    districtRulePanel.classList.add('hidden');
+                    district.title = '';
+                    return;
+                }
+
+                districtRulePanel.classList.remove('hidden');
+
+                if (selectedRule) {
+                    const summary = `${selectedRule.district_name}: ${selectedRule.proposed_beneficiaries} proposed beneficiaries, ${selectedRule.population_percentage}% of population.`;
+                    districtRuleText.textContent = summary;
+                    district.title = summary;
+                } else {
+                    districtRuleText.textContent = 'No active AKSIC rule exists for this district — the case cannot be saved until one is configured.';
+                    district.title = 'No active AKSIC rule for this district';
+                }
             }
 
             function syncDisabledGender() {

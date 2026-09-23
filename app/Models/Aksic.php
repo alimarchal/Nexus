@@ -22,6 +22,7 @@ class Aksic extends Model
         'father_name',
         'cnic',
         'application_no',
+        'account_no',
         'cnic_issue_date',
         'dob',
         'phone',
@@ -65,6 +66,7 @@ class Aksic extends Model
         'consent_date',
         'liquid_security',
         'personal_guarantees',
+        'mortgage',
         'kibor_rate',
         'spread_rate',
         'total_rate',
@@ -109,6 +111,7 @@ class Aksic extends Model
             AllowedFilter::partial('father_name'),
             AllowedFilter::partial('cnic'),
             AllowedFilter::partial('application_no'),
+            AllowedFilter::partial('account_no'),
             AllowedFilter::partial('business_name'),
             AllowedFilter::partial('business_type'),
             AllowedFilter::partial('district_name'),
@@ -131,6 +134,11 @@ class Aksic extends Model
     public function amortizations(): HasMany
     {
         return $this->hasMany(AksicAmortization::class);
+    }
+
+    public function claimItems(): HasMany
+    {
+        return $this->hasMany(AksicClaimItem::class);
     }
 
     public function businessCategory(): BelongsTo

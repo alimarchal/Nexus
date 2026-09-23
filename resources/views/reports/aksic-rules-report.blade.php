@@ -246,7 +246,8 @@
                         { name: 'Transgender', data: chartData.actualTransgenderLoans }
                     ],
                     xaxis: { categories: chartData.districts },
-                    yaxis: { labels: { formatter: value => Math.round(value).toLocaleString() } },
+                    // whole-number axis: loan counts are integers, so avoid repeated ticks like 1, 1, 2, 2
+                    yaxis: { min: 0, forceNiceScale: true, tickAmount: Math.max(1, Math.min(10, Math.ceil(Math.max(0, ...chartData.districts.map((_, k) => [chartData.actualMaleLoans, chartData.actualFemaleLoans, chartData.actualDisabledMaleLoans, chartData.actualDisabledFemaleLoans, chartData.actualTransgenderLoans].reduce((sum, series) => sum + Number(series[k] || 0), 0)))))), labels: { formatter: value => Math.round(value).toLocaleString() } },
                     colors: ['#1e3a8a', '#be185d', '#0f766e', '#b45309', '#7c3aed'],
                     plotOptions: { bar: { columnWidth: '55%', borderRadius: 3 } },
                     dataLabels: { enabled: false },

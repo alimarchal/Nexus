@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountOpeningController;
 use App\Http\Controllers\AksicApplicationController;
+use App\Http\Controllers\AksicClaimController;
 use App\Http\Controllers\AksicController;
 use App\Http\Controllers\AksicRuleController;
 use App\Http\Controllers\AuditActionUpdateController;
@@ -152,6 +153,17 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('product/aksic-template', [AksicController::class, 'downloadTemplate'])->name('aksic.template');
     Route::post('product/aksic-import', [AksicController::class, 'import'])->name('aksic.import');
     Route::post('product/aksic/{aksic}/approve', [AksicController::class, 'approve'])->name('aksic.approve');
+    // AKSIC claim lodging + District / Region / Branch / Gender MIS (Portal Change #5).
+    Route::prefix('product/aksic-claims')->name('aksic-claims.')->group(function () {
+        Route::get('/', [AksicClaimController::class, 'index'])->name('index');
+        Route::get('/create', [AksicClaimController::class, 'create'])->name('create');
+        Route::post('/', [AksicClaimController::class, 'store'])->name('store');
+        Route::get('/{aksicClaim}', [AksicClaimController::class, 'show'])->name('show');
+        Route::post('/{aksicClaim}/status', [AksicClaimController::class, 'updateStatus'])->name('status');
+        Route::delete('/{aksicClaim}', [AksicClaimController::class, 'destroy'])->name('destroy');
+    });
+    // Printable AKSIC loan case sheet + repayment schedule (standalone document view).
+    Route::get('product/aksic/{aksic}/print', [AksicController::class, 'print'])->name('aksic.print');
     Route::resource('product/aksic', AksicController::class)->names('aksic');
     Route::resource('product/aksic-rules', AksicRuleController::class)->parameters(['aksic-rules' => 'aksic_rule'])->names('aksic-rules');
     Route::resource('product/stationery-transactions', StationeryTransactionController::class);

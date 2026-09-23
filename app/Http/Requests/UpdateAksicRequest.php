@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Aksic;
 use App\Models\AksicRule;
+use App\Support\AksicDate;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,13 @@ class UpdateAksicRequest extends FormRequest
         $this->merge([
             'is_startup_business' => $this->input('business_type') === 'New',
         ]);
+
+        // Change #7: dates are typed as D.M.Y; store them as Y-m-d.
+        foreach (['disbursement_date', 'site_visit_date', 'consent_date', 'cnic_issue_date', 'dob'] as $field) {
+            if ($this->has($field)) {
+                $this->merge([$field => AksicDate::toDatabase($this->input($field))]);
+            }
+        }
     }
 
     /**
@@ -75,6 +83,8 @@ class UpdateAksicRequest extends FormRequest
             'consent_date' => ['nullable', 'date'],
             'liquid_security' => ['nullable', 'string'],
             'personal_guarantees' => ['nullable', 'string'],
+            'mortgage' => ['nullable', 'string', 'max:5000'],
+            'account_no' => ['nullable', 'string', 'max:50'],
             'kibor_rate' => ['required', 'numeric', 'min:0', 'max:100'],
             'spread_rate' => ['required', 'numeric', 'min:0', 'max:100'],
         ];

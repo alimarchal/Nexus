@@ -86,6 +86,19 @@
                     </a>
                 @endcan
 
+                @can('view aksic claims')
+                    <a href="{{ route('aksic-claims.index') }}"
+                        class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                        <div class="p-5 flex justify-between">
+                            <div>
+                                <div class="text-3xl font-bold leading-8">{{ \Illuminate\Support\Facades\Schema::hasTable('aksic_claims') ? \App\Models\AksicClaim::count() : 0 }}</div>
+                                <div class="mt-1 text-base font-extrabold text-black">AKSIC Claims</div>
+                            </div>
+                            <img src="{{ url('icons-images/logo (1).png') }}" alt="AKSIC Claims" class="h-16 w-16">
+                        </div>
+                    </a>
+                @endcan
+
                 <!-- File Management System Card (scanned documents - branch/region/division/head-office) -->
                 @can('view file management systems')
                     <a href="{{ route('file-management-systems.index') }}"

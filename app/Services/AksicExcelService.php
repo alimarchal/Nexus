@@ -7,6 +7,7 @@ use App\Models\AksicBusinessCategory;
 use App\Models\AksicRule;
 use App\Models\Branch;
 use App\Models\District;
+use App\Support\AksicDate;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -14,9 +15,9 @@ use Illuminate\Validation\Rule;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx as XlsxReader;
-use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -40,14 +41,18 @@ class AksicExcelService
         'branch_id' => 'Branch',
         'principal_amount' => 'Principal Amount',
         'tenure' => 'Tenure',
-        'disbursement_date' => 'Disbursement Date',
+        'disbursement_date' => 'Disbursement Date (D.M.Y)',
         'kibor_rate' => 'KIBOR Rate',
         'spread_rate' => 'Spread Rate',
         'total_rate' => 'Total Rate',
         'consent_entry' => 'Consent Entry',
-        'consent_date' => 'Consent Date',
+        'consent_date' => 'Consent Date (D.M.Y)',
         'liquid_security' => 'Liquid Security',
         'personal_guarantees' => 'Personal Guarantees',
+        // Portal Change #11 / #9 -- appended so existing column letters (and the
+        // dropdown lists bound to them) stay where they were.
+        'account_no' => 'Account No',
+        'mortgage' => 'Mortgage',
     ];
 
     /**
@@ -66,8 +71,17 @@ class AksicExcelService
         }
 
         $sheet->fromArray($this->sampleRow(), null, 'A2');
-        $sheet->getStyle('A1:V1')->getFont()->setBold(true);
-        $sheet->getStyle('A1:V1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('DCFCE7');
+        $lastColumn = Coordinate::stringFromColumnIndex(count(self::COLUMNS));
+        $sheet->getStyle("A1:{$lastColumn}1")->getFont()->setBold(true);
+        $sheet->getStyle("A1:{$lastColumn}1")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('DCFCE7');
+
+        // Portal Change #7: dates are entered and shown as D.M.Y.
+        foreach (['disbursement_date', 'consent_date'] as $dateField) {
+            $dateColumn = $this->columnLetter($dateField);
+            $sheet->getStyle("{$dateColumn}2:{$dateColumn}500")->getNumberFormat()->setFormatCode('dd.mm.yyyy');
+        }
+        $sheet->getStyle($this->columnLetter('account_no').'2:'.$this->columnLetter('account_no').'500')
+            ->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
         $sheet->freezePane('A2');
 
         $dataSheet = $spreadsheet->createSheet();
@@ -206,11 +220,13 @@ class AksicExcelService
             $this->branchOptions()[0] ?? '',
             1000000,
             60,
-            now()->toDateString(),
+            now()->format(AksicDate::DISPLAY),
             12,
             2.04,
             14.04,
             'No',
+            '',
+            '',
             '',
             '',
             '',
@@ -328,6 +344,8 @@ class AksicExcelService
             'consent_date' => $this->dateValue($data['consent_date']),
             'liquid_security' => $this->nullableString($data['liquid_security']),
             'personal_guarantees' => $this->nullableString($data['personal_guarantees']),
+            'account_no' => $this->nullableString($data['account_no'] ?? null),
+            'mortgage' => $this->nullableString($data['mortgage'] ?? null),
         ];
     }
 
@@ -361,6 +379,8 @@ class AksicExcelService
             'consent_date' => ['nullable', 'date'],
             'liquid_security' => ['nullable', 'string'],
             'personal_guarantees' => ['nullable', 'string'],
+            'account_no' => ['nullable', 'string', 'max:50'],
+            'mortgage' => ['nullable', 'string', 'max:5000'],
         ];
     }
 
@@ -411,19 +431,21 @@ class AksicExcelService
             ->value('id');
     }
 
+    /**
+     * Portal Change #7: read Excel dates as D.M.Y (typed or pasted text) or as
+     * real Excel dates, and hand the database Y-m-d. Unreadable values are
+     * passed through so the row fails validation instead of saving a wrong date.
+     */
     private function dateValue(mixed $value): ?string
     {
-        if ($value === null || $value === '') {
-            return null;
-        }
+        $converted = AksicDate::toDatabase($value);
 
-        if (is_numeric($value)) {
-            return ExcelDate::excelToDateTimeObject((float) $value)->format('Y-m-d');
-        }
+        return $converted === null ? null : (string) $converted;
+    }
 
-        $timestamp = strtotime((string) $value);
-
-        return $timestamp === false ? null : date('Y-m-d', $timestamp);
+    private function columnLetter(string $field): string
+    {
+        return Coordinate::stringFromColumnIndex(array_search($field, array_keys(self::COLUMNS), true) + 1);
     }
 
     /**

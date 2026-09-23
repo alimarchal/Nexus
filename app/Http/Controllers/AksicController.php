@@ -10,6 +10,7 @@ use App\Models\AksicRule;
 use App\Models\Branch;
 use App\Models\District;
 use App\Services\AksicAmortizationScheduleGenerator;
+use App\Services\AksicBudgetService;
 use App\Services\AksicExcelService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ class AksicController extends Controller implements HasMiddleware
     public function __construct(
         private readonly AksicAmortizationScheduleGenerator $scheduleGenerator,
         private readonly AksicExcelService $excelService,
+        private readonly AksicBudgetService $budgetService,
     ) {}
 
     /**
@@ -34,7 +36,7 @@ class AksicController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('role_or_permission:view aksics', only: ['index', 'show']),
+            new Middleware('role_or_permission:view aksics', only: ['index', 'show', 'print']),
             new Middleware('role_or_permission:create aksics', only: ['create', 'store']),
             new Middleware('role_or_permission:edit aksics', only: ['edit', 'update']),
             new Middleware('role_or_permission:delete aksics', only: ['destroy']),
@@ -51,6 +53,7 @@ class AksicController extends Controller implements HasMiddleware
             ->withCount('amortizations')
             ->with(['branch', 'district', 'aksicRule', 'businessCategory'])
             ->defaultSort('-created_at')
+            ->orderByDesc('id') // stable order for bulk imports sharing a created_at (matches Previous / Next on the case page)
             ->paginate(10)
             ->withQueryString();
         $subCategoriesByParent = AksicBusinessCategory::query()
@@ -88,11 +91,37 @@ class AksicController extends Controller implements HasMiddleware
             ->with('success', 'AKSIC record created as pending. Approve it to generate amortization schedule.');
     }
 
-    public function show(Aksic $aksic): View
+    public function show(Request $request, Aksic $aksic): View
     {
         $aksic->load(['amortizations' => fn ($query) => $query->orderBy('installment_no'), 'branch', 'district', 'aksicRule', 'businessCategory', 'businessSubCategory', 'creator', 'updater']);
 
-        return view('aksics.show', compact('aksic'));
+        $pendingOnly = $request->query('nav') === 'pending';
+        $navigation = $this->neighbours($aksic, $pendingOnly);
+        $subCategoriesByParent = AksicBusinessCategory::query()
+            ->where('parent_id', '!=', 0)
+            ->orderBy('name')
+            ->get(['id', 'name', 'parent_id'])
+            ->groupBy('parent_id')
+            ->map(fn ($categories) => $categories->values());
+
+        return view('aksics.show', compact('aksic', 'navigation', 'pendingOnly', 'subCategoriesByParent'));
+    }
+
+    /**
+     * Printable AKSIC loan case sheet and repayment schedule.
+     *
+     * Renders a standalone document (no app chrome) so the browser prints the
+     * sheet exactly as shown -- same pattern as the Account Opening Form print.
+     */
+    public function print(Aksic $aksic): View
+    {
+        $aksic->load([
+            'amortizations' => fn ($query) => $query->orderBy('installment_no'),
+            'branch', 'district', 'aksicRule', 'businessCategory', 'businessSubCategory',
+            'creator', 'updater',
+        ]);
+
+        return view('aksics.print', compact('aksic'));
     }
 
     public function edit(Aksic $aksic): View
@@ -125,8 +154,10 @@ class AksicController extends Controller implements HasMiddleware
 
     public function approve(Request $request, Aksic $aksic): RedirectResponse
     {
-        if ($aksic->status === 'Approved' && $aksic->amortizations()->exists()) {
-            return redirect()->route('aksic.index')
+        // Only a super-admin may regenerate an approved schedule (e.g. to apply the
+        // revised first-instalment / markup rules of Portal Change #3 and #10).
+        if ($aksic->status === 'Approved' && $aksic->amortizations()->exists() && ! $request->user()?->hasRole('super-admin')) {
+            return $this->afterApprove($request, $aksic)
                 ->with('success', 'AKSIC record is already approved.');
         }
 
@@ -142,8 +173,31 @@ class AksicController extends Controller implements HasMiddleware
         ]);
 
         if (! $this->canGenerateSchedule($aksic)) {
-            return redirect()->route('aksic.index')
+            return $this->afterApprove($request, $aksic)
                 ->withErrors(['approve' => 'AKSIC record is missing required loan fields for schedule generation.']);
+        }
+
+        // Markup budget check: project this case's markup and test it against the
+        // active budget (district, gender share, Existing/New share).
+        $projectedMarkup = (float) collect($this->scheduleGenerator->generate(
+            (string) $aksic->principal_amount,
+            (int) $aksic->tenure,
+            $aksic->disbursement_date->toDateString(),
+            (string) $aksic->kibor_rate,
+            (string) $aksic->spread_rate,
+        ))->sum('total_interest');
+
+        $budgetCheck = $this->budgetService->check($aksic, $projectedMarkup);
+        $breachText = collect($budgetCheck['breaches'])
+            ->map(fn (array $b): string => $b['scope'].': limit '.number_format($b['limit'], 2)
+                .', used '.number_format($b['used'], 2).', this case '.number_format($b['requested'], 2)
+                .' (short by '.number_format($b['shortfall'], 2).')')
+            ->implode(' | ');
+
+        if ($breachText !== '' && $budgetCheck['enforcement'] === 'block') {
+            return $this->afterApprove($request, $aksic)->with('error',
+                'Not approved -- markup budget exceeded. '.$breachText
+                .'. Enhance the allocation on the AKSIC Budget page, then approve again.');
         }
 
         DB::transaction(function () use ($aksic, $validated): void {
@@ -159,8 +213,12 @@ class AksicController extends Controller implements HasMiddleware
             ]);
         });
 
-        return redirect()->route('aksic.index')
+        $redirect = $this->afterApprove($request, $aksic)
             ->with('success', 'AKSIC record approved and amortization schedule generated successfully.');
+
+        return $breachText !== '' && $budgetCheck['enforcement'] === 'warn'
+            ? $redirect->with('warning', 'Approved over the markup budget. '.$breachText)
+            : $redirect;
     }
 
     public function downloadTemplate(): BinaryFileResponse
@@ -233,6 +291,59 @@ class AksicController extends Controller implements HasMiddleware
             fn (string $carry, array $row): string => bcadd($carry, (string) $row['total_interest'], 6),
             '0.000000',
         );
+    }
+
+    /**
+     * Where to land after the Approve modal: back on the case page (with its
+     * Previous / Next context) when approved from there, otherwise the index.
+     */
+    private function afterApprove(Request $request, Aksic $aksic): RedirectResponse
+    {
+        if ($request->input('return_to') === 'show') {
+            return redirect()->route('aksic.show', array_filter([
+                'aksic' => $aksic,
+                'nav' => $request->input('nav') === 'pending' ? 'pending' : null,
+            ]));
+        }
+
+        return redirect()->route('aksic.index');
+    }
+
+    /**
+     * Previous / next case in the same order as the index (newest first), with
+     * id as tie-breaker so bulk-imported rows sharing a created_at still step
+     * one by one. With $pendingOnly only cases awaiting approval are visited.
+     *
+     * @return array{previous: ?Aksic, next: ?Aksic, position: int, total: int}
+     */
+    private function neighbours(Aksic $aksic, bool $pendingOnly): array
+    {
+        $scope = fn () => Aksic::query()
+            ->when($pendingOnly, fn ($query) => $query
+                ->where('status', 'Pending')
+                ->whereDoesntHave('amortizations'));
+
+        $createdAt = $aksic->created_at;
+        $id = $aksic->getKey();
+
+        $newer = fn ($query) => $query->where(fn ($q) => $q
+            ->where('created_at', '>', $createdAt)
+            ->orWhere(fn ($q) => $q->where('created_at', $createdAt)->where('id', '>', $id)));
+
+        $previous = $newer($scope())->orderBy('created_at')->orderBy('id')->first(['id', 'application_no']);
+        $next = $scope()
+            ->where(fn ($q) => $q
+                ->where('created_at', '<', $createdAt)
+                ->orWhere(fn ($q) => $q->where('created_at', $createdAt)->where('id', '<', $id)))
+            ->orderByDesc('created_at')->orderByDesc('id')
+            ->first(['id', 'application_no']);
+
+        return [
+            'previous' => $previous,
+            'next' => $next,
+            'position' => $newer($scope())->count() + 1,
+            'total' => $scope()->count(),
+        ];
     }
 
     private function canGenerateSchedule(Aksic $aksic): bool
