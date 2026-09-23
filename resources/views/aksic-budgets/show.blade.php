@@ -173,7 +173,7 @@
                     <table class="aksic-grid">
                         <thead>
                             <tr class="group">
-                                <th rowspan="2" style="background:#f1f5f2;color:#333">District</th>
+                                <th rowspan="2">District</th>
                                 @foreach ($buckets as $k => $label)
                                     <th colspan="3">{{ $label }} ({{ rtrim(rtrim(number_format((float) $headerPct[$k], 2), '0'), '.') }}%)</th>
                                 @endforeach

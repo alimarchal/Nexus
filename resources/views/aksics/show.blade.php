@@ -126,6 +126,8 @@
         </div>
     </x-slot>
 
+    @include('aksics._grid-style')
+
     <div class="py-6">
         <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
             <x-status-message />
@@ -375,55 +377,58 @@
                         No repayment schedule yet. The schedule is generated when the case is approved.
                     </p>
                 @else
-                    <div class="max-h-[32rem] overflow-auto">
-                        <table class="min-w-full text-sm">
-                            <thead class="sticky top-0 z-10 bg-gray-50 text-xs uppercase tracking-wide text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    {{-- Bordered schedule, same style as the print sheet / claims tables --}}
+                    <div class="p-4">
+                    <div class="aksic-scroll">
+                        <table class="aksic-grid aksic-schedule">
+                            <thead>
                                 <tr>
-                                    <th class="px-3 py-2 text-center font-semibold">#</th>
-                                    <th class="px-3 py-2 text-left font-semibold">Due Date</th>
-                                    <th class="px-3 py-2 text-right font-semibold">Principal Outstanding</th>
-                                    <th class="px-3 py-2 text-right font-semibold">Principal Instalment</th>
-                                    <th class="px-3 py-2 text-right font-semibold">Markup per Year</th>
-                                    <th class="px-3 py-2 text-right font-semibold">Markup per Month</th>
-                                    <th class="px-3 py-2 text-right font-semibold">Markup</th>
-                                    <th class="px-3 py-2 text-center font-semibold">Days</th>
-                                    <th class="px-3 py-2 text-right font-semibold">Total Instalment</th>
-                                    <th class="px-3 py-2 text-right font-semibold">Outstanding Balance</th>
+                                    <th class="ctr">#</th>
+                                    <th>Due Date</th>
+                                    <th class="num">Principal Outstanding</th>
+                                    <th class="num">Principal Instalment</th>
+                                    <th class="num">Markup per Year</th>
+                                    <th class="num">Markup per Month</th>
+                                    <th class="num">Markup</th>
+                                    <th class="ctr">Days</th>
+                                    <th class="num">Total Instalment</th>
+                                    <th class="num">Outstanding Balance</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-100 tabular-nums dark:divide-gray-700">
+                            <tbody>
                                 @foreach ($schedule as $row)
-                                    <tr class="{{ $loop->even ? 'bg-gray-50/60 dark:bg-gray-700/30' : '' }} hover:bg-green-50 dark:hover:bg-gray-700">
-                                        <td class="px-3 py-2 text-center text-gray-500 dark:text-gray-400">
+                                    <tr>
+                                        <td class="ctr">
                                             {{ $row->installment_no }}
                                             @if ($loop->first && $isNewSchedule)
-                                                <span class="block text-[10px] font-semibold uppercase text-amber-700 dark:text-amber-300" title="Broken period: markup only, principal unchanged">markup only</span>
+                                                <span style="display:block;font-size:9px;font-weight:700;text-transform:uppercase;color:#b45309" title="Broken period: markup only, principal unchanged">markup only</span>
                                             @endif
                                         </td>
-                                        <td class="px-3 py-2 text-gray-900 dark:text-gray-100">{{ $date($row->due_date) }}</td>
-                                        <td class="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{{ number_format((float) $row->principal_amount_os, 2) }}</td>
-                                        <td class="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{{ number_format((float) $row->installment_per_month, 2) }}</td>
-                                        <td class="px-3 py-2 text-right text-gray-500 dark:text-gray-400">{{ number_format((float) $row->product, 2) }}</td>
-                                        <td class="px-3 py-2 text-right text-gray-500 dark:text-gray-400">{{ number_format((float) $row->interest_rate_per_month, 2) }}</td>
-                                        <td class="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{{ number_format((float) $row->total_interest, 2) }}</td>
-                                        <td class="px-3 py-2 text-center text-gray-500 dark:text-gray-400">{{ $row->days }}</td>
-                                        <td class="px-3 py-2 text-right font-semibold text-gray-900 dark:text-gray-100">{{ number_format((float) $row->total_installment, 2) }}</td>
-                                        <td class="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{{ number_format((float) $row->principal_balance_after_installment, 2) }}</td>
+                                        <td>{{ $date($row->due_date) }}</td>
+                                        <td class="num">{{ number_format((float) $row->principal_amount_os, 2) }}</td>
+                                        <td class="num">{{ number_format((float) $row->installment_per_month, 2) }}</td>
+                                        <td class="num">{{ number_format((float) $row->product, 2) }}</td>
+                                        <td class="num">{{ number_format((float) $row->interest_rate_per_month, 2) }}</td>
+                                        <td class="num">{{ number_format((float) $row->total_interest, 2) }}</td>
+                                        <td class="ctr">{{ $row->days }}</td>
+                                        <td class="num"><b>{{ number_format((float) $row->total_installment, 2) }}</b></td>
+                                        <td class="num">{{ number_format((float) $row->principal_balance_after_installment, 2) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
-                            <tfoot class="sticky bottom-0 bg-gray-100 text-sm font-bold tabular-nums dark:bg-gray-700">
+                            <tfoot>
                                 <tr>
-                                    <td colspan="3" class="px-3 py-2 text-right text-gray-700 dark:text-gray-200">Totals</td>
-                                    <td class="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{{ number_format($totalPrincipal, 2) }}</td>
+                                    <td colspan="3" class="num">Totals</td>
+                                    <td class="num">{{ number_format($totalPrincipal, 2) }}</td>
                                     <td colspan="2"></td>
-                                    <td class="px-3 py-2 text-right text-gray-900 dark:text-gray-100">{{ number_format($totalInterest, 2) }}</td>
-                                    <td class="px-3 py-2 text-center text-gray-900 dark:text-gray-100">{{ $schedule->sum('days') }}</td>
-                                    <td class="px-3 py-2 text-right text-green-800 dark:text-green-300">{{ number_format($totalPayable, 2) }}</td>
-                                    <td class="px-3 py-2 text-right text-gray-900 dark:text-gray-100">0.00</td>
+                                    <td class="num">{{ number_format($totalInterest, 2) }}</td>
+                                    <td class="ctr">{{ $schedule->sum('days') }}</td>
+                                    <td class="num">{{ number_format($totalPayable, 2) }}</td>
+                                    <td class="num">0.00</td>
                                 </tr>
                             </tfoot>
                         </table>
+                    </div>
                     </div>
                 @endif
             </div>
