@@ -18,17 +18,12 @@
 <x-app-layout>
     <x-slot name="header">
         <x-page-header title="AKSIC Claims" :createRoute="route('aksic-claims.create')" createLabel="Lodge Claim"
-            createPermission="lodge aksic claims" :showSearch="false" :showRefresh="true" backRoute="aksic.index" />
+            createPermission="lodge aksic claims" :showSearch="true" :showRefresh="true" backRoute="aksic.index" />
     </x-slot>
 
-    <div class="py-6">
-        <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
-            <x-status-message />
-
-            {{-- Filters ----------------------------------------------------- --}}
-            <form method="GET" action="{{ route('aksic-claims.index') }}"
-                class="overflow-hidden bg-white p-5 shadow-xl dark:bg-gray-800 sm:rounded-lg">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+    {{-- Filters: hidden until the filter (sliders) button is clicked, same as the AKSIC list --}}
+    <x-filter-section :action="route('aksic-claims.index')">
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
                     @include('aksic-claims._filters', ['prefix' => 'filter', 'values' => $filter])
                     <div>
                         <label class="{{ $lbl }}" for="filter_status">Status</label>
@@ -49,20 +44,16 @@
                         <input id="filter_date_to" type="text" name="filter[date_to]" value="{{ $filter['date_to'] ?? '' }}"
                             placeholder="{{ \App\Support\AksicDate::PLACEHOLDER }}" class="{{ $control }}">
                     </div>
-                    <div>
-                        <label class="{{ $lbl }}" for="group_by">Summary by</label>
-                        <select id="group_by" name="group_by" class="{{ $control }}">
-                            @foreach ($groups as $key => $label)
-                                <option value="{{ $key }}" @selected($groupBy === $key)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+
                 </div>
-                <div class="mt-4 flex gap-2">
-                    <x-button class="bg-blue-950 hover:bg-green-800">Apply</x-button>
-                    <a href="{{ route('aksic-claims.index') }}" class="inline-flex items-center rounded-md bg-gray-200 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 hover:bg-gray-300">Reset</a>
-                </div>
-            </form>
+        <input type="hidden" name="group_by" value="{{ $groupBy }}">
+    </x-filter-section>
+
+    @include('aksics._grid-style')
+
+    <div class="py-6">
+        <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
+            <x-status-message />
 
             {{-- Summary by district / region / branch / gender ----------------- --}}
             <div class="overflow-hidden bg-white shadow-xl dark:bg-gray-800 sm:rounded-lg">
@@ -77,79 +68,82 @@
                         @endforeach
                     </div>
                 </div>
-                <table class="min-w-full text-sm">
-                    <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                <div class="p-4">
+                <table class="aksic-grid">
+                    <thead>
                         <tr>
-                            <th class="px-4 py-2 text-left">{{ $groups[$groupBy] }}</th>
-                            <th class="px-4 py-2 text-right">Claims</th>
-                            <th class="px-4 py-2 text-right">Loans</th>
-                            <th class="px-4 py-2 text-right">Principal Outstanding</th>
-                            <th class="px-4 py-2 text-right">Markup Claimed</th>
+                            <th class="ctr">#</th>
+                            <th>{{ $groups[$groupBy] }}</th>
+                            <th class="num">Claims</th>
+                            <th class="num">Loans</th>
+                            <th class="num">Principal Outstanding</th>
+                            <th class="num">Markup Claimed</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 tabular-nums dark:divide-gray-700">
+                    <tbody>
                         @forelse ($summary as $row)
                             <tr>
-                                <td class="px-4 py-2 font-semibold text-gray-900 dark:text-gray-100">{{ $row->label }}</td>
-                                <td class="px-4 py-2 text-right">{{ number_format($row->claims) }}</td>
-                                <td class="px-4 py-2 text-right">{{ number_format($row->loans) }}</td>
-                                <td class="px-4 py-2 text-right">{{ number_format($row->principal, 2) }}</td>
-                                <td class="px-4 py-2 text-right font-semibold">{{ number_format($row->markup, 2) }}</td>
+                                <td class="ctr">{{ $loop->iteration }}</td>
+                                <td><b>{{ $row->label }}</b></td>
+                                <td class="num">{{ number_format($row->claims) }}</td>
+                                <td class="num">{{ number_format($row->loans) }}</td>
+                                <td class="num">{{ number_format($row->principal, 2) }}</td>
+                                <td class="num"><b>{{ number_format($row->markup, 2) }}</b></td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">No claims match these filters.</td></tr>
+                            <tr><td colspan="6" class="ctr">No claims match these filters.</td></tr>
                         @endforelse
                     </tbody>
                     @if ($summary->isNotEmpty())
-                        <tfoot class="bg-gray-100 font-bold tabular-nums dark:bg-gray-700">
+                        <tfoot>
                             <tr>
-                                <td class="px-4 py-2">Total</td>
-                                <td class="px-4 py-2 text-right" title="A claim spanning several groups is counted in each">&mdash;</td>
-                                <td class="px-4 py-2 text-right">{{ number_format($summaryTotals->loans) }}</td>
-                                <td class="px-4 py-2 text-right">{{ number_format($summaryTotals->principal, 2) }}</td>
-                                <td class="px-4 py-2 text-right text-green-800 dark:text-green-300">{{ number_format($summaryTotals->markup, 2) }}</td>
+                                <td></td>
+                                <td>Total</td>
+                                <td class="num" title="A claim spanning several groups is counted in each">&mdash;</td>
+                                <td class="num">{{ number_format($summaryTotals->loans) }}</td>
+                                <td class="num">{{ number_format($summaryTotals->principal, 2) }}</td>
+                                <td class="num">{{ number_format($summaryTotals->markup, 2) }}</td>
                             </tr>
                         </tfoot>
                     @endif
                 </table>
+                </div>
             </div>
 
             {{-- Claims list ------------------------------------------------------ --}}
             <div class="overflow-hidden bg-white shadow-xl dark:bg-gray-800 sm:rounded-lg">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-green-800 text-xs uppercase tracking-wide text-white">
+                <div class="p-4">
+                <table class="aksic-grid">
+                    <thead>
                         <tr>
-                            <th class="px-3 py-2 text-left">Claim No</th>
-                            <th class="px-3 py-2 text-left">Claim Date</th>
-                            <th class="px-3 py-2 text-left">Period</th>
-                            <th class="px-3 py-2 text-left">Lodged For</th>
-                            <th class="px-3 py-2 text-right">Loans</th>
-                            <th class="px-3 py-2 text-right">Markup Claimed</th>
-                            <th class="px-3 py-2 text-center">Status</th>
-                            <th class="px-3 py-2 text-center">Actions</th>
+                            <th>Claim No</th>
+                            <th>Claim Date</th>
+                            <th>Period</th>
+                            <th>Lodged For</th>
+                            <th class="num">Loans</th>
+                            <th class="num">Markup Claimed</th>
+                            <th class="ctr">Status</th>
+                            <th class="ctr print:hidden">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 tabular-nums dark:divide-gray-700">
+                    <tbody>
                         @forelse ($claims as $claim)
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                <td class="px-3 py-2 font-semibold">{{ $claim->claim_no }}</td>
-                                <td class="px-3 py-2">{{ \App\Support\AksicDate::display($claim->claim_date) }}</td>
-                                <td class="px-3 py-2">{{ \App\Support\AksicDate::display($claim->period_from) }} &ndash; {{ \App\Support\AksicDate::display($claim->period_to) }}</td>
-                                <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{{ $claim->filterLabel() }}</td>
-                                <td class="px-3 py-2 text-right">{{ number_format($claim->total_loans) }}</td>
-                                <td class="px-3 py-2 text-right font-semibold">{{ number_format((float) $claim->total_markup, 2) }}</td>
-                                <td class="px-3 py-2 text-center">
-                                    <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $badge[$claim->status] ?? 'bg-gray-100 text-gray-700' }}">{{ $claim->status }}</span>
-                                </td>
-                                <td class="px-3 py-2 text-center">
-                                    <a href="{{ route('aksic-claims.show', $claim) }}" class="font-semibold text-blue-700 hover:underline">View</a>
-                                </td>
+                            <tr>
+                                <td><b>{{ $claim->claim_no }}</b></td>
+                                <td>{{ \App\Support\AksicDate::display($claim->claim_date) }}</td>
+                                <td>{{ \App\Support\AksicDate::display($claim->period_from) }} &ndash; {{ \App\Support\AksicDate::display($claim->period_to) }}</td>
+                                <td>{{ $claim->filterLabel() }}</td>
+                                <td class="num">{{ number_format($claim->total_loans) }}</td>
+                                <td class="num"><b>{{ number_format((float) $claim->total_markup, 2) }}</b></td>
+                                <td class="ctr"><span class="rounded-full px-2 py-1 text-xs font-semibold {{ $badge[$claim->status] ?? 'bg-gray-100 text-gray-700' }}">{{ $claim->status }}</span></td>
+                                <td class="ctr print:hidden"><a href="{{ route('aksic-claims.show', $claim) }}" class="font-semibold text-blue-700 hover:underline">View</a></td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="px-3 py-8 text-center text-gray-500">No claims lodged yet.</td></tr>
+                            <tr><td colspan="8" class="ctr">No claims lodged yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
+                </div>
                 <div class="px-3 py-2">{{ $claims->links() }}</div>
             </div>
         </div>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountOpeningController;
 use App\Http\Controllers\AksicApplicationController;
+use App\Http\Controllers\AksicBudgetController;
 use App\Http\Controllers\AksicClaimController;
 use App\Http\Controllers\AksicController;
 use App\Http\Controllers\AksicRuleController;
@@ -153,6 +154,19 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('product/aksic-template', [AksicController::class, 'downloadTemplate'])->name('aksic.template');
     Route::post('product/aksic-import', [AksicController::class, 'import'])->name('aksic.import');
     Route::post('product/aksic/{aksic}/approve', [AksicController::class, 'approve'])->name('aksic.approve');
+    // AKSIC markup budget (allocation sheet): position, versions, enhance/reduce with ledger.
+    Route::prefix('product/aksic-budgets')->name('aksic-budgets.')->group(function () {
+        Route::get('/', [AksicBudgetController::class, 'index'])->name('index');
+        Route::get('/create', [AksicBudgetController::class, 'create'])->name('create');
+        Route::post('/', [AksicBudgetController::class, 'store'])->name('store');
+        Route::get('/{aksicBudget}', [AksicBudgetController::class, 'show'])->name('show');
+        Route::get('/{aksicBudget}/edit', [AksicBudgetController::class, 'edit'])->name('edit');
+        Route::put('/{aksicBudget}', [AksicBudgetController::class, 'update'])->name('update');
+        Route::post('/{aksicBudget}/activate', [AksicBudgetController::class, 'activate'])->name('activate');
+        Route::post('/{aksicBudget}/redistribute', [AksicBudgetController::class, 'redistribute'])->name('redistribute');
+        Route::post('/{aksicBudget}/allocations/{allocation}/revise', [AksicBudgetController::class, 'revise'])->name('revise');
+    });
+
     // AKSIC claim lodging + District / Region / Branch / Gender MIS (Portal Change #5).
     Route::prefix('product/aksic-claims')->name('aksic-claims.')->group(function () {
         Route::get('/', [AksicClaimController::class, 'index'])->name('index');

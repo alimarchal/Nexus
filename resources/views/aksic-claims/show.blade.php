@@ -33,6 +33,8 @@
         </div>
     </x-slot>
 
+    @include('aksics._grid-style')
+
     <div class="py-6 print:py-0">
         <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8 print:max-w-none print:px-0">
             <x-status-message />
@@ -94,7 +96,7 @@
                 @foreach ($groups as $key => $label)
                     <div class="overflow-hidden bg-white shadow-xl dark:bg-gray-800 sm:rounded-lg print:shadow-none print:border">
                         <h3 class="border-b border-gray-200 px-5 py-3 text-sm font-bold uppercase tracking-wide text-green-800 dark:border-gray-700 dark:text-green-400">{{ $label }}-wise</h3>
-                        <table class="min-w-full text-sm tabular-nums">
+                        <table class="aksic-grid">
                             <thead class="bg-gray-50 text-xs uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                                 <tr>
                                     <th class="px-4 py-2 text-left">{{ $label }}</th>
@@ -121,7 +123,7 @@
             {{-- Loans --------------------------------------------------------------- --}}
             <div class="overflow-hidden bg-white shadow-xl dark:bg-gray-800 sm:rounded-lg print:shadow-none">
                 <h3 class="border-b border-gray-200 px-6 py-3 text-sm font-bold uppercase tracking-wide text-green-800 dark:border-gray-700 dark:text-green-400">Loans in this claim</h3>
-                <table class="min-w-full text-sm tabular-nums">
+                <table class="aksic-grid">
                     <thead class="bg-gray-50 text-xs uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                         <tr>
                             <th class="px-3 py-2 text-left">#</th>
