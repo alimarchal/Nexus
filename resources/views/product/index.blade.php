@@ -101,6 +101,22 @@
                 @endcan
 
 
+                <!-- Account Opening (AOF) Card - BAJK Account Opening Form wizard -->
+                @can('view account openings')
+                    <a href="{{ route('account-openings.index') }}"
+                        class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
+                        <div class="p-5 flex justify-between">
+                            <div>
+                                <div class="text-3xl font-bold leading-8">{{ $accountOpeningCount }}</div>
+                                <div class="mt-1 text-base font-extrabold text-black">Account Opening (AOF)</div>
+                                <div class="mt-1 text-xs font-medium text-gray-500">Individual / Joint / Sole Proprietor &amp; Entity forms</div>
+                            </div>
+                            <img src="{{ url('icons-images/logo (1).png') }}" alt="Account Opening" class="h-16 w-16">
+                        </div>
+                    </a>
+                @endcan
+
+
                 <!-- Add more cards for other resources as needed
 
                 <a href="{{ route('circulars.index') }}"

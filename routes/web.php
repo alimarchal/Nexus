@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AccountOpeningController;
 use App\Http\Controllers\AksicApplicationController;
 use App\Http\Controllers\AksicController;
 use App\Http\Controllers\AksicRuleController;
@@ -131,6 +132,21 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::post('/product/boxes', [FileManagementSystemController::class, 'storeBox'])->name('file-management-systems.boxes.store');
     Route::resource('/product/file-management-systems', FileManagementSystemController::class);
     Route::delete('/product/file-management-systems/{fileManagementSystem}/media/{media}', [FileManagementSystemController::class, 'destroyMedia'])->name('file-management-systems.media.destroy');
+
+    // BAJK Account Opening Form (AOF) -- one wizard for both printed forms
+    // (Individual/Joint/Sole Proprietor and Government/Company/NGO).
+    Route::prefix('product/account-openings')->name('account-openings.')->group(function () {
+        Route::get('/', [AccountOpeningController::class, 'index'])->name('index');
+        Route::get('/create', [AccountOpeningController::class, 'create'])->name('create');
+        Route::post('/', [AccountOpeningController::class, 'store'])->name('store');
+        Route::get('/{accountOpeningRequest}', [AccountOpeningController::class, 'show'])->name('show');
+        Route::get('/{accountOpeningRequest}/print', [AccountOpeningController::class, 'print'])->name('print');
+        Route::get('/{accountOpeningRequest}/steps/{step}', [AccountOpeningController::class, 'editStep'])->name('steps.edit');
+        Route::put('/{accountOpeningRequest}/steps/{step}', [AccountOpeningController::class, 'updateStep'])->name('steps.update');
+        Route::post('/{accountOpeningRequest}/submit', [AccountOpeningController::class, 'submit'])->name('submit');
+        Route::post('/{accountOpeningRequest}/approve', [AccountOpeningController::class, 'approve'])->name('approve');
+        Route::delete('/{accountOpeningRequest}', [AccountOpeningController::class, 'destroy'])->name('destroy');
+    });
 
     Route::resource('product/printed-stationeries', PrintedStationeryController::class);
     Route::get('product/aksic-template', [AksicController::class, 'downloadTemplate'])->name('aksic.template');
