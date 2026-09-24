@@ -177,6 +177,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::delete('/{aksicClaim}', [AksicClaimController::class, 'destroy'])->name('destroy');
     });
     // Printable AKSIC loan case sheet + repayment schedule (standalone document view).
+    Route::get('product/aksic-export', [AksicController::class, 'export'])->name('aksic.export');
+    Route::post('product/aksic-demo-data', [AksicController::class, 'demoData'])->name('aksic.demo-data'); // local only
     Route::get('product/aksic/{aksic}/print', [AksicController::class, 'print'])->name('aksic.print');
     Route::resource('product/aksic', AksicController::class)->names('aksic');
     Route::resource('product/aksic-rules', AksicRuleController::class)->parameters(['aksic-rules' => 'aksic_rule'])->names('aksic-rules');

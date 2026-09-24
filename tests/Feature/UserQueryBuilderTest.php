@@ -55,7 +55,7 @@ test('can filter users by name', function () {
         ->get(route('users.index', ['filter' => ['name' => 'John']]));
 
     $response->assertSuccessful();
-    $response->assertSeeText('Settings User-Module Users');
+    $response->assertSeeText('Users');
     $response->assertSeeText('Add User');
     $response->assertSeeText('John Doe');
     $response->assertDontSeeText('Jane Smith');

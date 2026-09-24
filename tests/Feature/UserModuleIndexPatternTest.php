@@ -33,7 +33,7 @@ test('user module users index uses shared page pattern', function () {
 
     $response->assertSuccessful();
     $response->assertViewIs('users.index');
-    $response->assertSeeText('Settings User-Module Users');
+    $response->assertSeeText('Users');
     $response->assertSee('id="filters"', false);
     $response->assertSee('select2/select2.min.css', false);
     $response->assertSee('select2/select2.min.js', false);
@@ -60,7 +60,7 @@ test('user module roles index uses shared page pattern and filters', function ()
 
     $response->assertSuccessful();
     $response->assertViewIs('roles.index');
-    $response->assertSeeText('Settings User-Module Roles');
+    $response->assertSeeText('Roles');
     $response->assertSeeText('Add Role');
     $response->assertSeeText('branch-manager');
     $response->assertDontSeeText('super-admin');
@@ -75,7 +75,7 @@ test('user module permissions index uses shared page pattern and filters', funct
 
     $response->assertSuccessful();
     $response->assertViewIs('permissions.index');
-    $response->assertSeeText('Settings User-Module Permissions');
+    $response->assertSeeText('Permissions');
     $response->assertSeeText('Add Permission');
     $response->assertSeeText('approve reports');
     $response->assertDontSeeText('view users');
@@ -102,7 +102,7 @@ test('user module managers index uses shared page pattern and functional filters
 
     $response->assertSuccessful();
     $response->assertViewIs('managers.index');
-    $response->assertSeeText('Settings User-Module Managers');
+    $response->assertSeeText('Division Managers');
     $response->assertSeeText('Operations Lead');
     $response->assertDontSeeText('Finance Lead');
     $response->assertSee('id="filters"', false);

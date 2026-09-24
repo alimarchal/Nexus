@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -50,10 +53,10 @@ class PermissionController extends Controller implements HasMiddleware
         // Direct (per-user) grants; Spatie's users() relation cannot be used with withCount.
         $query = Permission::query()
             ->select('permissions.*')
-            ->addSelect(['users_count' => \Illuminate\Support\Facades\DB::table(config('permission.table_names.model_has_permissions'))
+            ->addSelect(['users_count' => DB::table(config('permission.table_names.model_has_permissions'))
                 ->selectRaw('count(*)')
                 ->whereColumn('permission_id', 'permissions.id')
-                ->where('model_type', (new \App\Models\User)->getMorphClass())])
+                ->where('model_type', (new User)->getMorphClass())])
             ->with('roles:id,name')
             ->orderBy('name');
 
@@ -78,7 +81,7 @@ class PermissionController extends Controller implements HasMiddleware
 
         $modules = Permission::orderBy('name')->pluck('name')
             ->filter(fn ($name) => str_contains($name, ' '))
-            ->map(fn ($name) => \Illuminate\Support\Str::of($name)->after(' ')->lower()->value())
+            ->map(fn ($name) => Str::of($name)->after(' ')->lower()->value())
             ->unique()->sort()->values();
         $roles = Role::orderBy('name')->get(['id', 'name']);
 

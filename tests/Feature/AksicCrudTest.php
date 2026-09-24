@@ -16,6 +16,9 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function (): void {
+    // Excel import / export are off unless .env switches them on (config/aksic.php).
+    config(['aksic.excel_import' => true, 'aksic.excel_export' => true]);
+
     foreach (['view aksics', 'create aksics', 'edit aksics', 'delete aksics', 'approve aksics', 'import aksics'] as $permission) {
         Permission::firstOrCreate(['name' => $permission]);
     }
@@ -76,6 +79,8 @@ test('user can approve aksic and amortization schedule is generated with total i
         'total_interest' => null,
         'business_type' => 'Existing',
         'quota' => 'Male',
+        'site_visit_completed' => true,
+        'site_visit_date' => '2026-05-05',
     ]);
 
     $response = $this->actingAs($this->user)->post(route('aksic.approve', $aksic), [
@@ -88,7 +93,8 @@ test('user can approve aksic and amortization schedule is generated with total i
     expect($aksic->status)->toBe('Approved');
     expect($aksic->business_sub_category_id)->toBe($subCategory->id);
     expect($aksic->total_interest)->not->toBeNull();
-    $this->assertDatabaseCount('aksic_amortizations', 60);
+    // Row 1 is the markup-only broken period, then 60 regular instalments (Portal Change #3).
+    $this->assertDatabaseCount('aksic_amortizations', 61);
     $this->assertDatabaseHas('aksic_amortizations', [
         'aksic_id' => $aksic->id,
         'installment_no' => 1,
@@ -102,7 +108,8 @@ test('user can approve aksic and amortization schedule is generated with total i
 
     $aksic->refresh();
     expect($aksic->total_interest)->toEqual($firstTotalInterest);
-    $this->assertDatabaseCount('aksic_amortizations', 60);
+    // Row 1 is the markup-only broken period, then 60 regular instalments (Portal Change #3).
+    $this->assertDatabaseCount('aksic_amortizations', 61);
 });
 
 test('user can update aksic without regenerating amortization schedule', function (): void {
@@ -194,7 +201,8 @@ test('generated aksic show page hides edit and delete for non super admin', func
 
     $response->assertSuccessful();
     $response->assertDontSee(route('aksic.edit', $aksic), false);
-    $response->assertDontSee(route('aksic.destroy', $aksic), false);
+    // destroy shares the show URL, so check for the DELETE form instead.
+    $response->assertDontSee('name="_method" value="DELETE"', false);
 });
 
 test('user can view organized aksic create and edit forms with searchable branch select', function (): void {
@@ -206,20 +214,20 @@ test('user can view organized aksic create and edit forms with searchable branch
 
     $this->actingAs($this->user)->get(route('aksic.create'))
         ->assertSuccessful()
-        ->assertSeeText('Applicant & Business')
-        ->assertSeeText('Financial & Security')
+        ->assertSeeText('1. Applicant')
+        ->assertSeeText('3. Financing & Security')
         ->assertSee('id="branch_id"', false)
         ->assertSee('select2 mt-1 block w-full', false);
 
     $this->actingAs($this->user)->get(route('aksic.edit', $aksic))
         ->assertSuccessful()
-        ->assertSeeText('Applicant & Business')
-        ->assertSeeText('Financial & Security')
+        ->assertSeeText('1. Applicant')
+        ->assertSeeText('3. Financing & Security')
         ->assertSee('id="branch_id"', false)
         ->assertSee('select2 mt-1 block w-full', false);
 });
 
-test('aksic index shows generated loans as view only and pending loans with red generate action', function (): void {
+test('aksic index lists cases with view icons and leaves approval to the case page', function (): void {
     $category = AksicBusinessCategory::create(['name' => 'Retail', 'parent_id' => 0]);
     AksicBusinessCategory::create(['name' => 'Grocery', 'parent_id' => $category->id]);
     $generated = Aksic::factory()->create([
@@ -243,25 +251,19 @@ test('aksic index shows generated loans as view only and pending loans with red 
     $response = $this->actingAs($this->user)->get(route('aksic.index'));
 
     $response->assertSuccessful();
-    $response->assertSeeText('Total Interest');
-    $response->assertSeeText('Loan Information');
-    $response->assertSeeText('Business Category');
-    $response->assertSeeText('Principal');
-    $response->assertSeeText('KIBOR');
-    $response->assertSeeText('Spread');
-    $response->assertSeeText('Total Rate');
-    $response->assertDontSee('<th class="py-2 px-2 text-left">Application No</th>', false);
-    $response->assertSee(number_format((float) $generated->total_interest, 2));
-    $response->assertSee('Retail', false);
-    $response->assertSee('1,000,000.00', false);
+    $response->assertSeeText('Markup (Rs)');
+    $response->assertSeeText('Pending approval');
+    $response->assertSee('1,000,000', false);
+    $response->assertSee('2,500', false);
     $response->assertSee(route('aksic.show', $generated), false);
+    $response->assertSee(route('aksic.show', ['aksic' => $pending, 'nav' => 'pending']), false);
+    // A generated schedule locks the case for non super admins.
     $response->assertDontSee(route('aksic.edit', $generated), false);
-    $response->assertDontSee(route('aksic.approve', $generated), false);
     $response->assertSee(route('aksic.edit', $pending), false);
-    $response->assertSee(route('aksic.approve', $pending), false);
-    $response->assertSee('text-red-600 hover:text-red-800 hover:bg-red-100', false);
+    // Approval happens on the case page, not from the list.
+    $response->assertDontSee(route('aksic.approve', $pending), false);
+    $response->assertDontSee('Classic', false);
     $response->assertSee('open-import-aksic-modal', false);
-    $response->assertDontSee('class="inline-flex items-center gap-2"', false);
 });
 
 test('user without aksic permission is forbidden', function (): void {
@@ -433,6 +435,10 @@ function aksicImportFile(array $rows): UploadedFile
             'Consent Date',
             'Liquid Security',
             'Personal Guarantees',
+            'Account No',
+            'Mortgage',
+            'Site Visit Completed',
+            'Site Visit Date',
         ],
         ...$rows,
     ]);
@@ -448,3 +454,71 @@ function aksicImportFile(array $rows): UploadedFile
         true,
     );
 }
+
+test('create and edit forms use calendar date inputs and save the picked date', function (): void {
+    $this->actingAs($this->user)->get(route('aksic.create'))
+        ->assertSuccessful()
+        ->assertSee('type="date"', false)
+        ->assertDontSee('dd.mm.yyyy', false);
+
+    // The browser calendar posts Y-m-d; the list and case page show it as D.M.Y.
+    $payload = array_merge(aksicPayload($this->district->id), ['disbursement_date' => '2026-06-15', 'consent_date' => '2026-06-10']);
+    $this->actingAs($this->user)->post(route('aksic.store'), $payload)->assertRedirect();
+
+    $aksic = Aksic::where('application_no', 'AKSIC-001')->firstOrFail();
+    expect($aksic->disbursement_date->toDateString())->toBe('2026-06-15');
+
+    $this->actingAs($this->user)->get(route('aksic.edit', $aksic))
+        ->assertSuccessful()
+        ->assertSee('value="2026-06-15"', false);
+});
+
+test('approval is refused until the case meets its district rule', function (): void {
+    $category = AksicBusinessCategory::create(['name' => 'Retail', 'parent_id' => 0]);
+    $subCategory = AksicBusinessCategory::create(['name' => 'Grocery', 'parent_id' => $category->id]);
+    $aksic = Aksic::factory()->create([
+        'district_id' => $this->district->id,
+        'aksic_rule_id' => AksicRule::where('district_id', $this->district->id)->value('id'),
+        'business_category_id' => $category->id,
+        'status' => 'Pending',
+        'total_interest' => null,
+        'business_type' => 'Existing',
+        'quota' => 'Male',
+        'site_visit_completed' => false,
+        'site_visit_date' => null,
+    ]);
+
+    expect($aksic->approvalBlockers())->toContain('Site visit must be completed and its date entered.');
+
+    $this->actingAs($this->user)->get(route('aksic.show', $aksic))
+        ->assertOk()->assertSee('Complete case to approve')->assertSee('Site visit must be completed');
+
+    $this->actingAs($this->user)->post(route('aksic.approve', $aksic), ['business_sub_category_id' => $subCategory->id])
+        ->assertSessionHas('error');
+    expect($aksic->fresh()->status)->toBe('Pending');
+    $this->assertDatabaseCount('aksic_amortizations', 0);
+
+    $aksic->update(['site_visit_completed' => true, 'site_visit_date' => '2026-05-05']);
+    expect($aksic->fresh()->approvalBlockers())->toBe([]);
+});
+
+test('import reads the site visit columns and stops at the district beneficiary limit', function (): void {
+    $category = AksicBusinessCategory::create(['name' => 'Retail', 'parent_id' => 0]);
+    AksicRule::where('district_id', $this->district->id)->update(['proposed_beneficiaries' => 1]);
+    $row = fn (string $app, string $cnic) => [
+        $app, $cnic, 'Imported Applicant', 'Imported Father', '03002222222', 'Imported Business', 'New', 'Male', '',
+        $category->name, $this->district->name, $this->branch->code, 1000000, 60, '2026-05-11', 12, 2.04, 14.04,
+        'Yes', '2026-05-09', 'Cheques', 'Guarantee', '', '', 'Yes', '2026-05-08',
+    ];
+
+    $this->actingAs($this->user)->post(route('aksic.import'), [
+        'file' => aksicImportFile([$row('AKSIC-CAP-001', '44444-4444444-3'), $row('AKSIC-CAP-002', '55555-5555555-5')]),
+    ]);
+
+    $imported = Aksic::where('application_no', 'AKSIC-CAP-001')->first();
+    expect($imported)->not->toBeNull();
+    expect($imported->site_visit_completed)->toBeTrue();
+    expect($imported->site_visit_date->toDateString())->toBe('2026-05-08');
+    expect(Aksic::where('application_no', 'AKSIC-CAP-002')->exists())->toBeFalse();
+    expect(collect(session('import_errors'))->implode(' '))->toContain('quota is full');
+});

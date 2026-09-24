@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -60,10 +62,10 @@ class RoleController extends Controller implements HasMiddleware
         // cannot be used here; count the pivot rows directly instead.
         $query = Role::query()
             ->select('roles.*')
-            ->addSelect(['users_count' => \Illuminate\Support\Facades\DB::table(config('permission.table_names.model_has_roles'))
+            ->addSelect(['users_count' => DB::table(config('permission.table_names.model_has_roles'))
                 ->selectRaw('count(*)')
                 ->whereColumn('role_id', 'roles.id')
-                ->where('model_type', (new \App\Models\User)->getMorphClass())])
+                ->where('model_type', (new User)->getMorphClass())])
             ->with('permissions:id,name')
             ->orderBy('name');
 

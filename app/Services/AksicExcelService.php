@@ -23,6 +23,9 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class AksicExcelService
 {
+    /** Rows prepared with dropdowns / date formats in the template (header is row 1). */
+    private const TEMPLATE_ROWS = 5001;
+
     /**
      * @var array<string, string>
      */
@@ -53,6 +56,9 @@ class AksicExcelService
         // dropdown lists bound to them) stay where they were.
         'account_no' => 'Account No',
         'mortgage' => 'Mortgage',
+        // Scheme rule: site visit must be completed (with its date) before approval.
+        'site_visit_completed' => 'Site Visit Completed',
+        'site_visit_date' => 'Site Visit Date (D.M.Y)',
     ];
 
     /**
@@ -76,11 +82,11 @@ class AksicExcelService
         $sheet->getStyle("A1:{$lastColumn}1")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('DCFCE7');
 
         // Portal Change #7: dates are entered and shown as D.M.Y.
-        foreach (['disbursement_date', 'consent_date'] as $dateField) {
+        foreach (['disbursement_date', 'consent_date', 'site_visit_date'] as $dateField) {
             $dateColumn = $this->columnLetter($dateField);
-            $sheet->getStyle("{$dateColumn}2:{$dateColumn}500")->getNumberFormat()->setFormatCode('dd.mm.yyyy');
+            $sheet->getStyle("{$dateColumn}2:{$dateColumn}".self::TEMPLATE_ROWS)->getNumberFormat()->setFormatCode('dd.mm.yyyy');
         }
-        $sheet->getStyle($this->columnLetter('account_no').'2:'.$this->columnLetter('account_no').'500')
+        $sheet->getStyle($this->columnLetter('account_no').'2:'.$this->columnLetter('account_no').self::TEMPLATE_ROWS)
             ->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
         $sheet->freezePane('A2');
 
@@ -105,13 +111,15 @@ class AksicExcelService
 
         $dataSheet->setSheetState(Worksheet::SHEETSTATE_HIDDEN);
 
-        $this->addListValidation($sheet, 'G2:G500', 'Lists!$B$1:$B$2');
-        $this->addListValidation($sheet, 'H2:H500', 'Lists!$C$1:$C$5');
-        $this->addListValidation($sheet, 'I2:I500', 'Lists!$D$1:$D$2');
-        $this->addListValidation($sheet, 'J2:J500', 'Lists!$E$1:$E$'.max(1, count($lists['E'])));
-        $this->addListValidation($sheet, 'K2:K500', 'Lists!$F$1:$F$'.max(1, count($lists['F'])));
-        $this->addListValidation($sheet, 'L2:L500', 'Lists!$G$1:$G$'.max(1, count($lists['G'])));
-        $this->addListValidation($sheet, 'S2:S500', 'Lists!$A$1:$A$2');
+        $this->addListValidation($sheet, 'G2:G'.self::TEMPLATE_ROWS, 'Lists!$B$1:$B$2');
+        $this->addListValidation($sheet, 'H2:H'.self::TEMPLATE_ROWS, 'Lists!$C$1:$C$5');
+        $this->addListValidation($sheet, 'I2:I'.self::TEMPLATE_ROWS, 'Lists!$D$1:$D$2');
+        $this->addListValidation($sheet, 'J2:J'.self::TEMPLATE_ROWS, 'Lists!$E$1:$E$'.max(1, count($lists['E'])));
+        $this->addListValidation($sheet, 'K2:K'.self::TEMPLATE_ROWS, 'Lists!$F$1:$F$'.max(1, count($lists['F'])));
+        $this->addListValidation($sheet, 'L2:L'.self::TEMPLATE_ROWS, 'Lists!$G$1:$G$'.max(1, count($lists['G'])));
+        $this->addListValidation($sheet, 'S2:S'.self::TEMPLATE_ROWS, 'Lists!$A$1:$A$2');
+        $siteVisit = $this->columnLetter('site_visit_completed');
+        $this->addListValidation($sheet, $siteVisit.'2:'.$siteVisit.self::TEMPLATE_ROWS, 'Lists!$A$1:$A$2');
 
         $filename = 'aksic_import_template.xlsx';
         $path = storage_path('app/'.$filename);
@@ -121,9 +129,10 @@ class AksicExcelService
     }
 
     /**
+     * @param  array<int, int>|null  $allowedBranchIds  null = any branch; otherwise rows must belong to one of these (branch / region users)
      * @return array{imported: int, skipped: int, errors: array<int, string>}
      */
-    public function import(UploadedFile $file): array
+    public function import(UploadedFile $file, ?array $allowedBranchIds = null): array
     {
         $reader = new XlsxReader;
         $spreadsheet = $reader->load($file->getRealPath());
@@ -172,13 +181,29 @@ class AksicExcelService
                 continue;
             }
 
-            $ruleId = AksicRule::query()
+            if ($allowedBranchIds !== null && ! in_array((int) ($payload['branch_id'] ?? 0), $allowedBranchIds, true)) {
+                $errors[] = "Row {$row}: branch is outside your office, so the row was not imported.";
+                $skipped++;
+
+                continue;
+            }
+
+            $rule = AksicRule::query()
                 ->where('district_id', $payload['district_id'])
                 ->where('is_active', true)
-                ->value('id');
+                ->first();
+            $ruleId = $rule?->id;
 
-            if (! $ruleId) {
+            if (! $rule) {
                 $errors[] = "Row {$row}: no active AKSIC rule exists for selected district.";
+                $skipped++;
+
+                continue;
+            }
+
+            // Same scheme caps as the case form: district beneficiaries and gender quota.
+            if ($limitError = $this->capError($rule, $payload['quota'])) {
+                $errors[] = "Row {$row}: {$limitError}";
                 $skipped++;
 
                 continue;
@@ -198,6 +223,27 @@ class AksicExcelService
         }
 
         return ['imported' => $imported, 'skipped' => $skipped, 'errors' => $errors];
+    }
+
+    /**
+     * District beneficiary limit and scheme-wide gender quota limit, counted
+     * live so rows earlier in the same file are included.
+     */
+    private function capError(AksicRule $rule, string $quota): ?string
+    {
+        if (Aksic::query()->where('district_id', $rule->district_id)->count() + 1 > $rule->proposed_beneficiaries) {
+            return "{$rule->district_name} quota is full (limit {$rule->proposed_beneficiaries} beneficiaries).";
+        }
+
+        $aliases = in_array($quota, ['Disabled', 'Special Person'], true) ? ['Disabled', 'Special Person'] : [$quota];
+        $total = (int) AksicRule::query()->where('is_active', true)->sum('proposed_beneficiaries');
+        $limit = (int) floor($total * ((float) $rule->quotaPercentageFor($quota) / 100));
+
+        if ($limit > 0 && Aksic::query()->whereIn('quota', $aliases)->count() + 1 > $limit) {
+            return "{$quota} quota is full (limit {$limit} beneficiaries).";
+        }
+
+        return null;
     }
 
     /**
@@ -230,21 +276,26 @@ class AksicExcelService
             '',
             '',
             '',
+            'Yes',
+            now()->subDays(7)->format(AksicDate::DISPLAY),
         ];
     }
 
+    /**
+     * One dropdown rule for the whole range (not one per cell), so a 5,000-row
+     * template stays small and quick to generate.
+     */
     private function addListValidation($sheet, string $range, string $formula): void
     {
-        foreach ($sheet->rangeToArray($range, null, true, true, true) as $row => $columns) {
-            foreach (array_keys($columns) as $column) {
-                $validation = $sheet->getCell($column.$row)->getDataValidation();
-                $validation->setType(DataValidation::TYPE_LIST);
-                $validation->setErrorStyle(DataValidation::STYLE_STOP);
-                $validation->setAllowBlank(true);
-                $validation->setShowDropDown(true);
-                $validation->setFormula1($formula);
-            }
-        }
+        $validation = new DataValidation;
+        $validation->setType(DataValidation::TYPE_LIST);
+        $validation->setErrorStyle(DataValidation::STYLE_STOP);
+        $validation->setAllowBlank(true);
+        $validation->setShowDropDown(true);
+        $validation->setFormula1($formula);
+        $validation->setSqref($range);
+
+        $sheet->setDataValidation($range, $validation);
     }
 
     /**
@@ -332,11 +383,13 @@ class AksicExcelService
             'business_category_id' => $this->categoryId($data['business_category_id']),
             'business_sub_category_id' => null,
             'district_id' => $this->districtId($data['district_id']),
+            'district_name' => $this->nullableString($data['district_id']),
             'branch_id' => $this->branchId($data['branch_id']),
             'principal_amount' => $data['principal_amount'],
             'tenure' => $data['tenure'],
             'disbursement_date' => $this->dateValue($data['disbursement_date']),
-            'site_visit_completed' => false,
+            'site_visit_completed' => in_array(strtolower(trim((string) ($data['site_visit_completed'] ?? ''))), ['yes', 'y', '1', 'true'], true),
+            'site_visit_date' => $this->dateValue($data['site_visit_date'] ?? null),
             'kibor_rate' => $data['kibor_rate'],
             'spread_rate' => $data['spread_rate'],
             'total_rate' => $data['total_rate'],
@@ -381,6 +434,8 @@ class AksicExcelService
             'personal_guarantees' => ['nullable', 'string'],
             'account_no' => ['nullable', 'string', 'max:50'],
             'mortgage' => ['nullable', 'string', 'max:5000'],
+            'site_visit_completed' => ['boolean'],
+            'site_visit_date' => ['nullable', 'date'],
         ];
     }
 

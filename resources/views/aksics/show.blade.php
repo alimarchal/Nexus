@@ -33,6 +33,8 @@
     $isNewSchedule = $schedule->isNotEmpty() && (float) $schedule->first()->installment_per_month === 0.0;
 
     $canApprove = $aksic->status !== 'Reject' && $canModifyAksic;
+    // Scheme rules still open before this case can be approved (site visit, business nature, loan fields).
+    $approvalBlockers = $schedule->isEmpty() ? $aksic->approvalBlockers() : [];
     $navQuery = $pendingOnly ? ['nav' => 'pending'] : [];
 
     $statusStyles = [
@@ -48,21 +50,51 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    AKSIC Case {{ $aksic->application_no }}
-                </h2>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {{ $val($aksic->name) }}
+        {{-- Header actions follow one rule: at most one filled (primary) button,
+             everything else outlined; destructive action is red outline and last. --}}
+        <div class="ak-head">
+            <div class="ak-head-text">
+                <nav class="ak-crumbs" aria-label="Breadcrumb">
+                    <a href="{{ route('product.index') }}">Product</a><span aria-hidden="true">›</span>
+                    <a href="{{ route('aksic.index') }}">AKSIC</a><span aria-hidden="true">›</span>
+                    <span>Case {{ $aksic->application_no }}</span>
+                </nav>
+                <h1 class="ak-title">{{ $val($aksic->name) }}</h1>
+                <p class="ak-sub">
+                    Case {{ $aksic->application_no }}
                     @if ($aksic->cnic) &middot; CNIC {{ $aksic->cnic }} @endif
                     @if ($aksic->branch) &middot; {{ $aksic->branch->code }} - {{ $aksic->branch->name }} @endif
                 </p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2">
+            <div class="ak-head-actions">
+                <a href="{{ session('aksic.list_url', route('aksic.index')) }}" class="ak-btn ak-btn-outline" title="Back to the case list"><span aria-hidden="true">←</span> Back</a>
+                @can('delete aksics')
+                    @if ($canModifyAksic)
+                        <button type="button" x-data class="ak-btn ak-btn-danger-outline"
+                            x-on:click="$dispatch('open-delete-aksic-modal', { url: '{{ route('aksic.destroy', $aksic) }}' })">Delete</button>
+                    @endif
+                @endcan
+
+                @can('edit aksics')
+                    @if ($canModifyAksic)
+                        <a href="{{ route('aksic.edit', $aksic) }}" class="ak-btn ak-btn-outline">Edit</a>
+                    @endif
+                @endcan
+
+                <a href="{{ route('aksic.print', $aksic) }}" target="_blank" rel="noopener" class="ak-btn ak-btn-outline">
+                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true" style="width:16px;height:16px">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 9V4h12v5M6 18h12v4H6v-4Zm-2 0h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2Z" />
+                    </svg>
+                    Print sheet
+                </a>
+
                 @can('approve aksics')
-                    @if ($canApprove)
+                    @if ($canApprove && $approvalBlockers)
+                        <a href="{{ route('aksic.edit', $aksic) }}" class="ak-btn ak-btn-outline" style="border-color:#f59e0b;color:#92400e" title="{{ implode(' ', $approvalBlockers) }}">
+                            Complete case to approve
+                        </a>
+                    @elseif ($canApprove)
                         <button type="button" x-data
                             x-on:click="$dispatch('open-approve-aksic-modal', {{ Illuminate\Support\Js::from([
                                 'url' => route('aksic.approve', $aksic),
@@ -76,55 +108,19 @@
                                 'returnTo' => 'show',
                                 'nav' => $pendingOnly ? 'pending' : '',
                             ]) }})"
-                            class="{{ $btn }} bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500">
-                            <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            class="ak-btn {{ $schedule->isEmpty() ? 'ak-btn-success' : 'ak-btn-outline' }}">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true" style="width:16px;height:16px">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
                             </svg>
-                            {{ $schedule->isEmpty() ? 'Approve' : 'Regenerate Schedule' }}
+                            {{ $schedule->isEmpty() ? 'Approve & generate schedule' : 'Regenerate schedule' }}
                         </button>
                     @endif
                 @endcan
-
-                <a href="{{ route('aksic.print', $aksic) }}" target="_blank"
-                    class="{{ $btn }} bg-green-800 hover:bg-green-900 focus:ring-green-600">
-                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M6 9V4h12v5M6 18h12v4H6v-4Zm-2 0h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2Z" />
-                    </svg>
-                    Print Sheet
-                </a>
-
-                @can('edit aksics')
-                    @if ($canModifyAksic)
-                        <a href="{{ route('aksic.edit', $aksic) }}"
-                            class="{{ $btn }} bg-blue-950 hover:bg-green-800 focus:ring-indigo-500">
-                            Edit
-                        </a>
-                    @endif
-                @endcan
-
-                @can('delete aksics')
-                    @if ($canModifyAksic)
-                        <form method="POST" action="{{ route('aksic.destroy', $aksic) }}" class="inline-block"
-                            onsubmit="return confirm('Delete this AKSIC record?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="{{ $btn }} bg-red-700 hover:bg-red-800 focus:ring-red-500">
-                                Delete
-                            </button>
-                        </form>
-                    @endif
-                @endcan
-
-                <a href="{{ route('aksic.index') }}"
-                    class="{{ $btn }} bg-blue-950 hover:bg-green-800 focus:ring-indigo-500">
-                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                </a>
             </div>
         </div>
     </x-slot>
+
+    @include('aksics._ui-style')
 
     @include('aksics._grid-style')
 
@@ -132,6 +128,20 @@
         <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
             <x-status-message />
             <x-validation-errors />
+
+            @if ($approvalBlockers)
+                <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+                    <b>Before this case can be approved (scheme rules):</b>
+                    <ul class="mt-1 list-disc pl-5">
+                        @foreach ($approvalBlockers as $blocker)
+                            <li>{{ $blocker }}</li>
+                        @endforeach
+                    </ul>
+                    @can('edit aksics')
+                        <a href="{{ route('aksic.edit', $aksic) }}" class="mt-2 inline-block font-semibold underline">Edit the case →</a>
+                    @endcan
+                </div>
+            @endif
 
             {{-- Previous / Next through the case list (#12) -------------------- --}}
             <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-4 py-3 shadow dark:bg-gray-800">
@@ -438,4 +448,10 @@
     @push('modals')
         @include('aksics._approve-modal')
     @endpush
+    @if ($canModifyAksic && auth()->user()?->can('delete aksics'))
+        <x-alpine-confirmation-modal eventName="open-delete-aksic-modal" title="Delete AKSIC case" confirmButtonText="Delete"
+            confirmButtonClass="bg-red-600 hover:bg-red-700" csrfMethod="DELETE">
+            <p class="text-sm text-black">Delete case <b>{{ $aksic->application_no }}</b> of {{ $aksic->name }}? This cannot be undone.</p>
+        </x-alpine-confirmation-modal>
+    @endif
 </x-app-layout>

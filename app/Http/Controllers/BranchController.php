@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Branch;
-use App\Models\Region;
 use App\Models\District;
+use App\Models\Region;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Validation\Rule;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
-use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Routing\Controllers\HasMiddleware;
 
 class BranchController extends Controller implements HasMiddleware
 {
@@ -73,7 +74,7 @@ class BranchController extends Controller implements HasMiddleware
         $request->validate([
             'region_id' => 'required|exists:regions,id',
             // The district must belong to the chosen region.
-            'district_id' => ['required', \Illuminate\Validation\Rule::exists('districts', 'id')->where('region_id', $request->input('region_id'))],
+            'district_id' => ['required', Rule::exists('districts', 'id')->where('region_id', $request->input('region_id'))],
             'code' => 'required|string|unique:branches,code',
             'name' => 'required|string',
             'address' => 'required|string',
@@ -117,8 +118,8 @@ class BranchController extends Controller implements HasMiddleware
         $request->validate([
             'region_id' => 'required|exists:regions,id',
             // The district must belong to the chosen region.
-            'district_id' => ['required', \Illuminate\Validation\Rule::exists('districts', 'id')->where('region_id', $request->input('region_id'))],
-            'code' => 'required|string|unique:branches,code,' . $branch->id,
+            'district_id' => ['required', Rule::exists('districts', 'id')->where('region_id', $request->input('region_id'))],
+            'code' => 'required|string|unique:branches,code,'.$branch->id,
             'name' => 'required|string',
             'address' => 'required|string',
         ]);

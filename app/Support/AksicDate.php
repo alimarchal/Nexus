@@ -74,6 +74,18 @@ final class AksicDate
     /**
      * Format a stored date for display as D.M.Y.
      */
+    /**
+     * Value for an <input type="date"> (the browser calendar): always Y-m-d, or
+     * '' when empty / unreadable. The form posts Y-m-d, which toDatabase()
+     * accepts as-is, so the calendar and the D.M.Y display share one path.
+     */
+    public static function forInput(mixed $value): string
+    {
+        $converted = self::toDatabase($value);
+
+        return is_string($converted) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $converted) ? $converted : '';
+    }
+
     public static function display(mixed $value, string $empty = '—'): string
     {
         if ($value === null || $value === '') {

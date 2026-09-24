@@ -1,255 +1,496 @@
+{{--
+    AKSIC loan cases list: /product/aksic
+
+    UI/UX principles used on this screen (reuse them on other list pages):
+      1. One primary action (New case); secondary actions grouped in menus.
+      2. Numbers the user acts on first: KPI cards double as filters.
+      3. Filters sit right above the results they change; visible labels,
+         active filters shown as removable chips, one-click reset.
+      4. Table built for scanning: text left, money right, units in headers,
+         fewer and denser columns, status as dot + word (not colour alone).
+      5. Each row has one clear next step (Approve / View) plus quiet icons.
+      6. Keyboard and screen-reader friendly: "/" focuses search, aria-sort,
+         aria-labels on icon buttons, visible focus rings.
+      7. Scales to 1M rows: indexed filters, max 100 rows a page, cached totals.
+    Styles are plain CSS (ak- prefix) so nothing depends on a Tailwind rebuild.
+--}}
+@php
+    $ui = \App\Support\Ui::class;
+    $user = auth()->user();
+    $filters = array_filter((array) request('filter', []), fn ($v) => $v !== null && $v !== '');
+    $sort = (string) request('sort', '-created_at');
+    $tab = $filters['schedule'] ?? '';
+    $chips = \Illuminate\Support\Arr::except($filters, 'schedule');
+
+    // Pakistani units for headline figures; exact value shown on hover.
+    $compact = function ($v): string {
+        $v = (float) $v;
+
+        return match (true) {
+            $v >= 10000000 => number_format($v / 10000000, 2).' Cr',
+            $v >= 100000 => number_format($v / 100000, 2).' Lac',
+            default => number_format($v, 0),
+        };
+    };
+    $money = fn ($v) => number_format((float) $v, 0);
+
+    // URLs that keep every other query parameter (sort, per_page ...).
+    $withFilters = fn (array $f) => request()->fullUrlWithQuery(['filter' => $f ?: null, 'page' => null]);
+    $tabUrl = function (string $key) use ($filters, $withFilters) {
+        $f = \Illuminate\Support\Arr::except($filters, 'schedule');
+        if ($key !== '') {
+            $f['schedule'] = $key;
+        }
+
+        return $withFilters($f);
+    };
+    $sortUrl = fn (string $field) => request()->fullUrlWithQuery(['sort' => $sort === $field ? '-'.$field : $field, 'page' => null]);
+    $ariaSort = fn (string $field) => $sort === $field ? 'ascending' : ($sort === '-'.$field ? 'descending' : 'none');
+    // Arrow only on the sorted column (U+25B2/U+25BC render as text, not emoji).
+    $sortMark = fn (string $field) => $sort === $field ? "\u{25B2}" : ($sort === '-'.$field ? "\u{25BC}" : '');
+
+    $chipLabels = [
+        'search' => 'Search', 'quota' => 'Quota', 'district_id' => 'District', 'business_name' => 'Business',
+        'date_from' => 'Entered from', 'date_to' => 'Entered to', 'amount_min' => 'Min principal',
+        'amount_max' => 'Max principal', 'status' => 'Status', 'name' => 'Name', 'cnic' => 'CNIC',
+        'application_no' => 'Application', 'district_name' => 'District',
+    ];
+    $districtNames = $districts->pluck('name', 'id');
+    $advancedKeys = ['business_name', 'date_from', 'date_to', 'amount_min', 'amount_max'];
+    $advancedCount = collect($advancedKeys)->filter(fn ($k) => isset($filters[$k]))->count();
+
+    $pagePrincipal = $aksics->sum(fn ($a) => (float) $a->principal_amount);
+    $pageMarkup = $aksics->sum(fn ($a) => (float) $a->total_interest);
+    $isSuperAdmin = $user?->hasRole('super-admin');
+    // Feature switches from config/aksic.php (.env AKSIC_EXCEL_IMPORT / AKSIC_EXCEL_EXPORT / AKSIC_DEMO_DATA, off by default).
+    $canImport = config('aksic.excel_import') && $user?->can('import aksics');
+    $canExport = (bool) config('aksic.excel_export');
+    $canDemo = config('aksic.demo_data') && app()->isLocal() && $isSuperAdmin;
+    $stats += ['male' => 0, 'female' => 0, 'other' => 0, 'average' => 0];
+    $womenShare = $stats['cases'] ? round(($stats['female'] + $stats['other']) / $stats['cases'] * 100) : 0;
+@endphp
+
 <x-app-layout>
+    {{-- ============================ Page header ============================ --}}
     <x-slot name="header">
-        <x-page-header title="AKSIC" :createRoute="route('aksic.create')" createLabel="" createPermission="create aksics"
-            :showSearch="true" :showRefresh="true" backRoute="product.index">
-            {{-- All header buttons share one height (size-6 icon + py-2, same as the
-                 built-in +, filter, refresh, back and print buttons); module buttons
-                 carry a short label next to their icon. --}}
-            @can('import aksics')
-                <a href="{{ route('aksic.template') }}" class="inline-flex items-center gap-2 rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-950 focus:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-green-800" title="Download Excel Template">
-                    <svg class="size-6 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                    <span class="hidden md:inline-block">Template</span>
-                </a>
-                <button type="button" x-data x-on:click="$dispatch('open-import-aksic-modal')" class="inline-flex items-center gap-2 rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-950 focus:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-green-800" title="Import Excel">
-                    <svg class="size-6 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" /></svg>
-                    <span class="hidden md:inline-block">Import</span>
-                </button>
-            @endcan
-            <a href="{{ route('reports.aksic-rules-report') }}" class="inline-flex items-center gap-2 rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-950 focus:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-green-800" title="AKSIC Rules &amp; Loans Report">
-                <svg class="size-6 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" /></svg>
-                <span class="hidden md:inline-block">Report</span>
-            </a>
-            @can('view aksic budget')
-                <a href="{{ route('aksic-budgets.index') }}" class="inline-flex items-center gap-2 rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-950 focus:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-green-800" title="Markup Budget">
-                    <svg class="size-6 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" /></svg>
-                    <span class="hidden md:inline-block">Budget</span>
-                </a>
-            @endcan
-            @can('view aksic claims')
-                <a href="{{ route('aksic-claims.index') }}" class="inline-flex items-center gap-2 rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-950 focus:bg-green-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-green-800" title="Claims">
-                    <svg class="size-6 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z" /></svg>
-                    <span class="hidden md:inline-block">Claims</span>
-                </a>
-            @endcan
-        </x-page-header>
-    </x-slot>
-
-    <x-filter-section :action="route('aksic.index')">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-                <x-label for="filter_status" value="Status" />
-                <select id="filter_status" name="filter[status]"
-                    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
-                    <option value="">All Statuses</option>
-                    @foreach (['Pending', 'Approved', 'Reject'] as $status)
-                        <option value="{{ $status }}" @selected(request('filter.status') === $status)>{{ $status }}</option>
-                    @endforeach
-                </select>
+        <div class="ak-head">
+            <div class="ak-head-text">
+                <nav class="ak-crumbs" aria-label="Breadcrumb">
+                    <a href="{{ route('product.index') }}">Product</a><span aria-hidden="true">›</span><span>AKSIC</span>
+                </nav>
+                <h1 class="ak-title">AKSIC Loan Cases</h1>
+                <p class="ak-sub">
+                    PM Youth Loan Scheme &middot;
+                    <span class="ak-scope {{ $office['level'] === 'all' ? '' : 'ak-scope-limited' }}" title="What you can see is based on your office">
+                        Viewing: {{ $office['label'] }}
+                    </span>
+                </p>
             </div>
 
-            <x-input-filters name="name" label="Applicant Name" type="text" />
-            <x-input-filters name="cnic" label="CNIC" type="text" />
-            <x-input-filters name="application_no" label="Application No" type="text" />
-            <x-input-filters name="business_name" label="Business Name" type="text" />
-            <x-input-filters name="district_name" label="District" type="text" />
+            <div class="ak-head-actions">
+                <a href="{{ route('product.index') }}" class="ak-btn ak-btn-outline" title="Back to Product">
+                    <span aria-hidden="true">←</span> Back
+                </a>
 
-            <div>
-                <x-label for="filter_quota" value="Gender Quota" />
-                <select id="filter_quota" name="filter[quota]"
-                    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100">
-                    <option value="">All Quotas</option>
-                    @foreach (['Male', 'Female', 'Disabled', 'Special Person', 'Transgender'] as $quota)
-                        <option value="{{ $quota }}" @selected(request('filter.quota') === $quota)>{{ $quota }}</option>
-                    @endforeach
-                </select>
-            </div>
+                {{-- Secondary: reports & modules --}}
+                <div class="ak-menu" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+                    <button type="button" class="ak-btn ak-btn-outline" @click="open = !open" :aria-expanded="open" aria-haspopup="true">
+                        Reports <span aria-hidden="true">▾</span>
+                    </button>
+                    <div class="ak-menu-list" x-show="open" x-cloak x-transition.opacity>
+                        <a href="{{ route('reports.aksic-rules-report') }}">Rules &amp; loans report</a>
+                        @can('view aksic budget') <a href="{{ route('aksic-budgets.index') }}">Markup budget</a> @endcan
+                        @can('view aksic claims') <a href="{{ route('aksic-claims.index') }}">Claims</a> @endcan
+                    </div>
+                </div>
 
-            <x-date-from />
-            <x-date-to />
+                {{-- Secondary: Excel --}}
+                @if ($canImport || $canDemo)
+                    <div class="ak-menu" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+                        <button type="button" class="ak-btn ak-btn-outline" @click="open = !open" :aria-expanded="open" aria-haspopup="true">
+                            Import <span aria-hidden="true">▾</span>
+                        </button>
+                        <div class="ak-menu-list" x-show="open" x-cloak x-transition.opacity>
+                            @if ($canImport)
+                                <button type="button" @click="open = false; $dispatch('open-import-aksic-modal')">Import from Excel…</button>
+                                <a href="{{ route('aksic.template') }}">Download Excel template</a>
+                            @endif
+                            @if ($canDemo)
+                                <form method="POST" action="{{ route('aksic.demo-data') }}" onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').textContent = 'Creating demo cases…';">
+                                    @csrf
+                                    <input type="hidden" name="count" value="520">
+                                    <button type="submit" style="border-top:1px solid #e2e8f0; margin-top:4px">Local only: replace demo cases (520)</button>
+                                </form>
+                                <form method="POST" action="{{ route('aksic.demo-data') }}">
+                                    @csrf
+                                    <input type="hidden" name="count" value="0">
+                                    <button type="submit">Local only: remove demo cases</button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
+                @endif
 
-            <div>
-                <x-label for="filter_amount_min" value="Min Principal" />
-                <x-input id="filter_amount_min" name="filter[amount_min]" type="number" step="0.01" class="mt-1 block w-full"
-                    :value="request('filter.amount_min')" />
-            </div>
+                {{-- Output: export the filtered list / print this page as a table --}}
+                <div class="ak-menu" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
+                    <button type="button" class="ak-btn ak-btn-outline" @click="open = !open" :aria-expanded="open" aria-haspopup="true">
+                        {{ $canExport ? 'Export / Print' : 'Print' }} <span aria-hidden="true">▾</span>
+                    </button>
+                    <div class="ak-menu-list" x-show="open" x-cloak x-transition.opacity>
+                        @if ($canExport)
+                            <a href="{{ route('aksic.export', request()->only(['filter', 'sort'])) }}">Export to Excel (CSV) — all {{ number_format($aksics->total()) }} filtered cases</a>
+                        @endif
+                        <button type="button" @click="open = false; $nextTick(() => window.print())">Print this page ({{ $aksics->count() }} rows)</button>
+                    </div>
+                </div>
 
-            <div>
-                <x-label for="filter_amount_max" value="Max Principal" />
-                <x-input id="filter_amount_max" name="filter[amount_max]" type="number" step="0.01" class="mt-1 block w-full"
-                    :value="request('filter.amount_max')" />
+                {{-- Primary --}}
+                @can('create aksics')
+                    <a href="{{ route('aksic.create') }}" class="ak-btn ak-btn-primary">
+                        <span aria-hidden="true">＋</span> New case
+                    </a>
+                @endcan
             </div>
         </div>
-    </x-filter-section>
+    </x-slot>
 
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mt-2 pb-16">
+    @include('aksics._ui-style')
+    <style>@page { size: A4 landscape; margin: 10mm; }</style>
+
+    <div class="ak-page">
+        {{-- Printed report header (Ctrl+P): title, office, filters and totals; hidden on screen --}}
+        <div class="ak-print-head">
+            <div class="ak-print-bank">The Bank of Azad Jammu &amp; Kashmir</div>
+            <div class="ak-print-title">AKSIC Loan Cases &mdash; PM Youth Loan Scheme</div>
+            <table class="ak-print-meta">
+                <tr><th>Office</th><td>{{ $office['label'] }}</td><th>Printed</th><td>{{ now()->format('d.m.Y H:i') }} by {{ $user?->name }}</td></tr>
+                <tr><th>Filters</th><td colspan="3">
+                    @php
+                        $printFilters = collect($filters)->map(function ($value, $key) use ($chipLabels, $districtNames) {
+                            if ($key === 'schedule') {
+                                return 'Status: '.($value === 'generated' ? 'Approved' : 'Pending approval');
+                            }
+                            $shown = $key === 'district_id' ? ($districtNames[$value] ?? $value) : $value;
+
+                            return ($chipLabels[$key] ?? \Illuminate\Support\Str::headline($key)).': '.$shown;
+                        })->values();
+                    @endphp
+                    {{ $printFilters->isEmpty() ? 'None (all cases)' : $printFilters->implode(' · ') }}
+                </td></tr>
+                <tr><th>Rows</th><td>{{ number_format($aksics->firstItem() ?? 0) }}–{{ number_format($aksics->lastItem() ?? 0) }} of {{ number_format($aksics->total()) }} cases</td>
+                    <th>Sorted by</th><td>{{ ltrim($sort, '-') === 'created_at' ? 'Date entered' : \Illuminate\Support\Str::headline(ltrim($sort, '-')) }} ({{ str_starts_with($sort, '-') ? 'descending' : 'ascending' }})</td></tr>
+            </table>
+        </div>
+
+        {{-- ============================ Messages ============================ --}}
         <x-status-message />
         @if ($errors->any())
-            <div class="mb-3 rounded-md bg-red-50 p-4 text-sm text-red-700">
-                {{ $errors->first() }}
-            </div>
+            <div class="ak-alert ak-alert-error" role="alert">{{ $errors->first() }}</div>
         @endif
         @if (session('import_errors'))
-            <div class="mb-3 rounded-md bg-amber-50 p-4 text-sm text-amber-800">
-                <div class="font-semibold">Import skipped rows</div>
-                <ul class="mt-2 list-disc space-y-1 pl-5">
+            <div class="ak-alert ak-alert-warn" role="status">
+                <b>Import skipped {{ count(session('import_errors')) }} row(s).</b>
+                <ul>
                     @foreach (array_slice(session('import_errors'), 0, 10) as $importError)
                         <li>{{ $importError }}</li>
                     @endforeach
                 </ul>
             </div>
         @endif
-        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg">
-            @if ($aksics->count() > 0)
-                <div class="relative overflow-x-auto rounded-lg">
-                    <table class="min-w-max w-full table-auto text-sm">
-                        <thead>
-                            <tr class="bg-green-800 text-white uppercase text-sm">
-                                <th class="py-2 px-2 text-center">#</th>
-                                <th class="py-2 px-2 text-left">Name</th>
-                                <th class="py-2 px-2 text-left">CNIC</th>
-                                <th class="py-2 px-2 text-left">District</th>
-                                <th class="py-2 px-2 text-center">Quota</th>
-                                <th class="py-2 px-2 text-center">Gender</th>
-                                <th class="py-2 px-2 text-right">Principal</th>
-                                <th class="py-2 px-2 text-right">Total Interest</th>
-                                <th class="py-2 px-2 text-center">Tenure</th>
-                                <th class="py-2 px-2 text-center">Status</th>
-                                <th class="py-2 px-2 text-center">Schedule</th>
-                                <th class="py-2 px-2 text-center print:hidden">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-black text-md leading-normal font-extrabold">
-                            @foreach ($aksics as $aksic)
-                                @php
-                                    $canModifyAksic = $aksic->amortizations_count === 0 || auth()->user()?->hasRole('super-admin');
-                                @endphp
-                                <tr class="border-b border-gray-200 hover:bg-gray-100">
-                                    <td class="py-1 px-2 text-center">{{ $loop->iteration }}</td>
-                                    <td class="py-1 px-2 text-left">{{ $aksic->name }}</td>
-                                    <td class="py-1 px-2 text-left">{{ $aksic->cnic }}</td>
-                                    <td class="py-1 px-2 text-left">{{ $aksic->district_name ?? $aksic->district?->name ?? '-' }}</td>
-                                    <td class="py-1 px-2 text-center">{{ $aksic->quota ?? '-' }}</td>
-                                    <td class="py-1 px-2 text-center">{{ $aksic->gender ?? '-' }}</td>
-                                    <td class="py-1 px-2 text-right">{{ number_format((float) $aksic->principal_amount, 2) }}</td>
-                                    <td class="py-1 px-2 text-right">
-                                        {{ $aksic->total_interest === null ? '-' : number_format((float) $aksic->total_interest, 2) }}
-                                    </td>
-                                    <td class="py-1 px-2 text-center">{{ $aksic->tenure }}</td>
-                                    <td class="py-1 px-2 text-center">
-                                        <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $aksic->status === 'Reject' ? 'bg-red-100 text-red-800' : ($aksic->amortizations_count > 0 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800') }}">
-                                            {{ $aksic->status === 'Reject' ? 'Reject' : ($aksic->amortizations_count > 0 ? 'Generated' : 'Pending') }}
-                                        </span>
-                                    </td>
-                                    <td class="py-1 px-2 text-center">{{ $aksic->amortizations_count }}</td>
-                                    <td class="py-1 px-2 text-center">
-                                        <div class="flex justify-center gap-2">
-                                            <a href="{{ route('aksic.show', $aksic) }}"
-                                                class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-md transition-colors duration-150"
-                                                title="View">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                                </svg>
-                                            </a>
-                                            @if ($canModifyAksic && $aksic->status !== 'Reject')
-                                                @can('edit aksics')
-                                                    <a href="{{ route('aksic.edit', $aksic) }}"
-                                                        class="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-md transition-colors duration-150"
-                                                        title="Edit">
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5" />
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5Z" />
-                                                        </svg>
-                                                    </a>
-                                                @endcan
-                                                @can('approve aksics')
-                                                    <button type="button" x-data
-                                                        data-approve-url="{{ route('aksic.approve', $aksic) }}"
-                                                        x-on:click="$dispatch('open-approve-aksic-modal', {{ Illuminate\Support\Js::from([
-                                                            'url' => route('aksic.approve', $aksic),
-                                                            'categoryId' => (string) $aksic->business_category_id,
-                                                            'category' => $aksic->businessCategory?->name ?? '-',
-                                                            'principal' => $aksic->principal_amount === null ? '-' : number_format((float) $aksic->principal_amount, 2),
-                                                            'kiborRate' => $aksic->kibor_rate === null ? '-' : number_format((float) $aksic->kibor_rate, 2).'%',
-                                                            'spreadRate' => $aksic->spread_rate === null ? '-' : number_format((float) $aksic->spread_rate, 2).'%',
-                                                            'totalRate' => $aksic->total_rate === null ? '-' : number_format((float) $aksic->total_rate, 2).'%',
-                                                        ]) }})"
-                                                        class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-md transition-colors duration-150"
-                                                        title="Pending - Generate Schedule">
-                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 13 4 4L19 7" />
-                                                        </svg>
-                                                    </button>
-                                                @endcan
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
+
+        {{-- ============================ KPI cards (also filters) ============================ --}}
+        {{-- KPI cards: only figures that are not already on screen (case counts live in
+             the tabs). One actionable card (pending) links to its list. --}}
+        <section class="ak-kpis" aria-label="Summary for the current filters">
+            <a href="{{ $tabUrl('pending') }}" class="ak-kpi{{ $stats['pending'] ? ' ak-kpi-action' : '' }}{{ $tab === 'pending' ? ' is-active' : '' }}" aria-current="{{ $tab === 'pending' ? 'true' : 'false' }}">
+                <span class="ak-kpi-icon ak-tone-amber" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Pending approval</span>
+                    <span class="ak-kpi-value">{{ number_format($stats['pending']) }}</span>
+                    <span class="ak-kpi-hint">{{ $stats['pending'] ? 'Review and approve →' : 'Nothing waiting' }}</span>
+                </span>
+            </a>
+            <div class="ak-kpi" title="Rs {{ $money($stats['principal']) }}">
+                <span class="ak-kpi-icon ak-tone-navy" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75h19.5M3.75 6h16.5a1.5 1.5 0 0 1 1.5 1.5v7.5a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5V7.5A1.5 1.5 0 0 1 3.75 6ZM15 11.25a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Loan amount</span>
+                    <span class="ak-kpi-value">Rs {{ $compact($stats['principal']) }}</span>
+                    <span class="ak-kpi-hint">avg Rs {{ $compact($stats['average']) }} per case</span>
+                </span>
+            </div>
+            <div class="ak-kpi" title="Rs {{ $money($stats['markup']) }}">
+                <span class="ak-kpi-icon ak-tone-green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18 9 11.25l4.3 4.3a11.95 11.95 0 0 1 5.8-5.8l2.65-1.2m0 0-5.94-2.28m5.94 2.28-2.28 5.94" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Scheduled markup</span>
+                    <span class="ak-kpi-value">Rs {{ $compact($stats['markup']) }}</span>
+                    <span class="ak-kpi-hint">on {{ number_format($stats['generated']) }} approved {{ \Illuminate\Support\Str::plural('case', $stats['generated']) }}</span>
+                </span>
+            </div>
+            <div class="ak-kpi">
+                <span class="ak-kpi-icon ak-tone-slate" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.13a9.38 9.38 0 0 0 2.63.37 9.34 9.34 0 0 0 4.12-.95 4.13 4.13 0 0 0-7.53-2.49M15 19.13v-.01a6.37 6.37 0 0 0-.97-3.4M15 19.13v.1A12.32 12.32 0 0 1 8.62 21a12.32 12.32 0 0 1-6.37-1.77v-.11a6.38 6.38 0 0 1 11.96-3.4M12 6.38a3.38 3.38 0 1 1-6.75 0 3.38 3.38 0 0 1 6.75 0Zm8.25 2.25a2.63 2.63 0 1 1-5.25 0 2.63 2.63 0 0 1 5.25 0Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Quota mix</span>
+                    <span class="ak-kpi-value ak-kpi-value-sm">{{ number_format($stats['male']) }} M · {{ number_format($stats['female']) }} F · {{ number_format($stats['other']) }} other</span>
+                    <span class="ak-kpi-hint">{{ $womenShare }}% female &amp; special quotas</span>
+                </span>
+            </div>
+        </section>
+
+        {{-- ============================ Results card ============================ --}}
+        <section class="ak-card" aria-label="Loan cases">
+            {{-- Tabs --}}
+            <div class="ak-tabs" role="tablist">
+                @foreach (['' => ['All', $stats['cases']], 'pending' => ['Pending approval', $stats['pending']], 'generated' => ['Approved', $stats['generated']]] as $key => [$label, $count])
+                    <a href="{{ $tabUrl($key) }}" role="tab" aria-selected="{{ $tab === $key ? 'true' : 'false' }}" class="ak-tab {{ $tab === $key ? 'is-active' : '' }}">
+                        {{ $label }} <span class="ak-count">{{ number_format($count) }}</span>
+                    </a>
+                @endforeach
+            </div>
+
+            {{-- Filters --}}
+            <form method="GET" action="{{ route('aksic.index') }}" class="ak-filters"
+                x-data="{ advanced: {{ $advancedCount ? 'true' : 'false' }}, busy: false }" @submit="busy = true">
+                @if ($tab !== '') <input type="hidden" name="filter[schedule]" value="{{ $tab }}"> @endif
+                @if (request('sort')) <input type="hidden" name="sort" value="{{ request('sort') }}"> @endif
+                @if (request('per_page')) <input type="hidden" name="per_page" value="{{ request('per_page') }}"> @endif
+
+                <div class="ak-filter-row">
+                    <div class="ak-field ak-field-search">
+                        <label for="f_search">Search</label>
+                        <div class="ak-search">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" /></svg>
+                            <input id="f_search" type="search" name="filter[search]" value="{{ $filters['search'] ?? '' }}" autocomplete="off"
+                                placeholder="CNIC, application no, account no or name" aria-describedby="f_search_help"
+                                x-ref="search" @keydown.window.slash="if (! ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) { $event.preventDefault(); $refs.search.focus(); }">
+                            <kbd aria-hidden="true">/</kbd>
+                        </div>
+                        <p id="f_search_help" class="ak-help">Full CNIC gives an exact match; other text matches the start.</p>
+                    </div>
+                    <div class="ak-field">
+                        <label for="f_district">District</label>
+                        <select id="f_district" name="filter[district_id]">
+                            <option value="">All districts</option>
+                            @foreach ($districts as $district)
+                                <option value="{{ $district->id }}" @selected((string) ($filters['district_id'] ?? '') === (string) $district->id)>{{ $district->name }}</option>
                             @endforeach
-                        </tbody>
-                    </table>
+                        </select>
+                    </div>
+                    <div class="ak-field">
+                        <label for="f_quota">Quota</label>
+                        <select id="f_quota" name="filter[quota]">
+                            <option value="">All quotas</option>
+                            @foreach (['Male', 'Female', 'Disabled', 'Special Person', 'Transgender'] as $quota)
+                                <option value="{{ $quota }}" @selected(($filters['quota'] ?? '') === $quota)>{{ $quota }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="ak-filter-buttons">
+                        <button type="button" class="ak-btn ak-btn-ghost" @click="advanced = !advanced" :aria-expanded="advanced" aria-controls="ak-advanced">
+                            More filters @if ($advancedCount)<span class="ak-count ak-count-dark">{{ $advancedCount }}</span>@endif
+                        </button>
+                        <button type="submit" class="ak-btn ak-btn-primary" :disabled="busy">
+                            <span x-show="!busy">Apply</span><span x-show="busy" x-cloak>Searching…</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="px-2 py-2">{{ $aksics->links() }}</div>
-            @else
-                <p class="text-gray-700 dark:text-gray-300 text-center py-4">No AKSIC records found.</p>
+
+                <div id="ak-advanced" class="ak-filter-advanced" x-show="advanced" x-cloak x-transition>
+                    <div class="ak-field">
+                        <label for="f_business">Business name</label>
+                        <input id="f_business" type="text" name="filter[business_name]" value="{{ $filters['business_name'] ?? '' }}">
+                    </div>
+                    <div class="ak-field">
+                        <label for="f_from">Entered from</label>
+                        <input id="f_from" type="date" name="filter[date_from]" value="{{ $filters['date_from'] ?? '' }}">
+                    </div>
+                    <div class="ak-field">
+                        <label for="f_to">Entered to</label>
+                        <input id="f_to" type="date" name="filter[date_to]" value="{{ $filters['date_to'] ?? '' }}">
+                    </div>
+                    <div class="ak-field">
+                        <label for="f_min">Min principal (Rs)</label>
+                        <input id="f_min" type="number" min="0" step="1000" inputmode="numeric" name="filter[amount_min]" value="{{ $filters['amount_min'] ?? '' }}">
+                    </div>
+                    <div class="ak-field">
+                        <label for="f_max">Max principal (Rs)</label>
+                        <input id="f_max" type="number" min="0" step="1000" inputmode="numeric" name="filter[amount_max]" value="{{ $filters['amount_max'] ?? '' }}">
+                    </div>
+                </div>
+            </form>
+
+            {{-- Active filters --}}
+            @if ($chips)
+                <div class="ak-chips" aria-label="Active filters">
+                    <span class="ak-chips-label">Filtered by</span>
+                    @foreach ($chips as $key => $value)
+                        <a href="{{ $withFilters(\Illuminate\Support\Arr::except($filters, $key)) }}" class="ak-chip" aria-label="Remove filter {{ $chipLabels[$key] ?? $key }}">
+                            <b>{{ $chipLabels[$key] ?? \Illuminate\Support\Str::headline($key) }}:</b>
+                            {{ $key === 'district_id' ? ($districtNames[$value] ?? $value) : $value }}
+                            <span aria-hidden="true">×</span>
+                        </a>
+                    @endforeach
+                    <a href="{{ $withFilters($tab !== '' ? ['schedule' => $tab] : []) }}" class="ak-chips-clear">Clear all</a>
+                </div>
             @endif
-        </div>
+
+            {{-- Table --}}
+            @if ($aksics->count() > 0)
+                @php
+                    $sortNames = ['name' => 'Applicant', 'application_no' => 'Application no', 'principal_amount' => 'Loan amount',
+                        'total_interest' => 'Markup', 'disbursement_date' => 'Disbursed date', 'created_at' => 'Date entered',
+                        'tenure' => 'Tenure', 'status' => 'Status', 'cnic' => 'CNIC'];
+                    $sortField = ltrim($sort, '-');
+                @endphp
+                <div class="ak-table-wrap" x-data="{
+                        compact: (() => { try { return localStorage.getItem('ak-density') === 'compact'; } catch (e) { return false; } })(),
+                        setDensity(v) { this.compact = v; try { localStorage.setItem('ak-density', v ? 'compact' : 'comfortable'); } catch (e) {} }
+                    }">
+                    <div class="ak-dt-toolbar">
+                        <p>
+                            <b>{{ number_format($aksics->total()) }}</b> {{ \Illuminate\Support\Str::plural('case', $aksics->total()) }}
+                            &middot; sorted by <b>{{ $sortNames[$sortField] ?? 'Date entered' }}</b> ({{ str_starts_with($sort, '-') ? 'newest / highest first' : 'oldest / lowest first' }})
+                        </p>
+                        <div class="ak-seg ak-seg-sm" role="group" aria-label="Row density">
+                            <button type="button" @click="setDensity(false)" :aria-pressed="!compact" :class="!compact && 'is-on'">Comfortable</button>
+                            <button type="button" @click="setDensity(true)" :aria-pressed="compact" :class="compact && 'is-on'">Compact</button>
+                        </div>
+                    </div>
+                    <div class="ak-dt-scroll" :class="compact && 'is-compact'" tabindex="0" aria-label="AKSIC cases table, scrolls sideways on small screens">
+                        <table class="ak-dt">
+                            <caption class="sr-only">AKSIC loan cases, {{ $aksics->total() }} results</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="ak-c ak-sticky-1">#</th>
+                                    <th scope="col" class="ak-sticky-2" aria-sort="{{ $ariaSort('name') }}"><a href="{{ $sortUrl('name') }}">Applicant <span aria-hidden="true">{{ $sortMark('name') }}</span></a></th>
+                                    <th scope="col" aria-sort="{{ $ariaSort('application_no') }}"><a href="{{ $sortUrl('application_no') }}">Application / A/c <span aria-hidden="true">{{ $sortMark('application_no') }}</span></a></th>
+                                    <th scope="col">Branch / District</th>
+                                    <th scope="col" class="ak-c">Quota</th>
+                                    <th scope="col" class="ak-num" aria-sort="{{ $ariaSort('principal_amount') }}"><a href="{{ $sortUrl('principal_amount') }}">Loan (Rs) <span aria-hidden="true">{{ $sortMark('principal_amount') }}</span></a></th>
+                                    <th scope="col" class="ak-num" aria-sort="{{ $ariaSort('total_interest') }}"><a href="{{ $sortUrl('total_interest') }}">Markup (Rs) <span aria-hidden="true">{{ $sortMark('total_interest') }}</span></a></th>
+                                    <th scope="col" class="ak-c" aria-sort="{{ $ariaSort('disbursement_date') }}"><a href="{{ $sortUrl('disbursement_date') }}">Disbursed <span aria-hidden="true">{{ $sortMark('disbursement_date') }}</span></a></th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col" class="ak-c ak-sticky-end print:hidden"><span class="sr-only">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($aksics as $aksic)
+                                    @php
+                                        $approved = $aksic->status === 'Approved';
+                                        $hasSchedule = $aksic->amortizations_count > 0;
+                                        $canModify = ! $hasSchedule || $isSuperAdmin;
+                                    @endphp
+                                    <tr>
+                                        <td class="ak-c ak-sticky-1 ak-muted" data-label="#">{{ $aksics->firstItem() + $loop->index }}</td>
+                                        <td data-label="Applicant" class="ak-sticky-2">
+                                            <a href="{{ route('aksic.show', $aksic) }}" class="ak-primary-link">{{ $aksic->name }}</a>
+                                            @if ($aksic->father_name) <div class="ak-muted ak-hide-compact">S/o, D/o {{ $aksic->father_name }}</div> @endif
+                                            <div class="ak-muted ak-mono">{{ $aksic->cnic }}</div>
+                                        </td>
+                                        <td data-label="Application / A/c">
+                                            <div class="ak-mono">{{ $aksic->application_no ?: '—' }}</div>
+                                            <div class="ak-muted ak-mono">A/c {{ $aksic->account_no ?: '—' }}</div>
+                                        </td>
+                                        <td data-label="Branch / District">
+                                            <div>{{ $aksic->branch ? $aksic->branch->code.' · '.$aksic->branch->name : '—' }}</div>
+                                            <div class="ak-muted">{{ $aksic->district_name ?? $aksic->district?->name ?? '—' }}</div>
+                                        </td>
+                                        <td class="ak-c" data-label="Quota">
+                                            {{ $aksic->quota ?? '—' }}
+                                            @if ($aksic->gender && $aksic->gender !== $aksic->quota) <div class="ak-muted">{{ $aksic->gender }}</div> @endif
+                                        </td>
+                                        <td class="ak-num" data-label="Loan (Rs)">
+                                            <div class="ak-strong">{{ number_format((float) $aksic->principal_amount, 0) }}</div>
+                                            <div class="ak-muted">{{ $aksic->total_rate === null ? '—' : number_format((float) $aksic->total_rate, 2).'%' }} · {{ $aksic->tenure ? $aksic->tenure.' mo' : '—' }}</div>
+                                        </td>
+                                        <td class="ak-num" data-label="Markup (Rs)">{{ $aksic->total_interest === null ? '—' : number_format((float) $aksic->total_interest, 0) }}</td>
+                                        <td class="ak-c ak-mono" data-label="Disbursed">{{ \App\Support\AksicDate::display($aksic->disbursement_date) }}</td>
+                                        <td data-label="Status">
+                                            @if ($approved)
+                                                <span class="ak-status ak-status-green"><i aria-hidden="true"></i>Approved</span>
+                                                <div class="ak-muted ak-hide-compact">{{ $hasSchedule ? $aksic->amortizations_count.' instalments' : 'Schedule missing' }}</div>
+                                            @else
+                                                <span class="ak-status ak-status-amber"><i aria-hidden="true"></i>Pending</span>
+                                                <div class="ak-muted ak-hide-compact">awaiting approval</div>
+                                            @endif
+                                        </td>
+                                        <td class="ak-sticky-end print:hidden" data-label="">
+                                            {{-- Icons only: approval happens on the case page (View), after reading the case --}}
+                                            <div class="ak-actions">
+                                                <a href="{{ $approved ? route('aksic.show', $aksic) : route('aksic.show', ['aksic' => $aksic, 'nav' => 'pending']) }}" class="ak-icon ak-icon-view" title="{{ $approved ? 'View case' : 'View & approve case' }}" aria-label="View case of {{ $aksic->name }}">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                                                </a>
+                                                <a href="{{ route('aksic.print', $aksic) }}" target="_blank" rel="noopener" class="ak-icon" title="Print case sheet" aria-label="Print case sheet for {{ $aksic->name }}">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2M6 14h12v7H6z" /></svg>
+                                                </a>
+                                                <span class="ak-slot">
+                                                    @if ($canModify)
+                                                        @can('edit aksics')
+                                                            <a href="{{ route('aksic.edit', $aksic) }}" class="ak-icon" title="Edit case" aria-label="Edit case of {{ $aksic->name }}">
+                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m16.86 4.49 2.65 2.65M4 20l4.2-.9 10.9-10.9a1.9 1.9 0 0 0-2.7-2.7L5.5 16.4 4 20Z" /></svg>
+                                                            </a>
+                                                        @endcan
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" class="ak-foot-label">This page ({{ $aksics->count() }} {{ \Illuminate\Support\Str::plural('case', $aksics->count()) }})</td>
+                                    <td class="ak-num">{{ $money($pagePrincipal) }}</td>
+                                    <td class="ak-num">{{ $money($pageMarkup) }}</td>
+                                    <td colspan="2"></td>
+                                    <td class="ak-sticky-end"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- Pagination --}}
+                <div class="ak-pager">
+                    <p>Showing <b>{{ number_format($aksics->firstItem()) }}–{{ number_format($aksics->lastItem()) }}</b> of <b>{{ number_format($aksics->total()) }}</b> cases</p>
+                    <div class="ak-pager-right">
+                        <form method="GET" action="{{ route('aksic.index') }}" class="ak-perpage">
+                            @foreach (request()->except(['per_page', 'page']) as $key => $value)
+                                @if (is_array($value))
+                                    @foreach ($value as $k => $v) <input type="hidden" name="{{ $key }}[{{ $k }}]" value="{{ $v }}"> @endforeach
+                                @else
+                                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                @endif
+                            @endforeach
+                            <label for="per_page">Rows per page</label>
+                            <select id="per_page" name="per_page" onchange="this.form.submit()">
+                                @foreach (\App\Http\Controllers\AksicController::PER_PAGE as $n)
+                                    <option value="{{ $n }}" @selected($perPage === $n)>{{ $n }}</option>
+                                @endforeach
+                            </select>
+                        </form>
+                        <div>{{ $aksics->onEachSide(1)->links() }}</div>
+                    </div>
+                </div>
+            @else
+                <div class="ak-empty">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" /></svg>
+                    @if ($filters)
+                        <h2>No cases match these filters</h2>
+                        <p>Remove a filter or search with a full CNIC.</p>
+                        <a href="{{ route('aksic.index') }}" class="ak-btn ak-btn-primary">Clear all filters</a>
+                    @else
+                        <h2>No AKSIC cases yet</h2>
+                        <p>{{ $canImport ? 'Add a case, or import many at once from the Excel template.' : 'Add the first case with “New case”.' }}</p>
+                        @can('create aksics') <a href="{{ route('aksic.create') }}" class="ak-btn ak-btn-primary">＋ New case</a> @endcan
+                    @endif
+                </div>
+            @endif
+        </section>
     </div>
 
     @push('modals')
-        <div x-data="{ show: false, isSubmitting: false }" x-on:open-import-aksic-modal.window="show = true; isSubmitting = false"
-            x-on:keydown.escape.window="if (show) { show = false }" x-show="show" x-cloak class="fixed inset-0 z-50"
-            style="display: none;">
-            <div x-show="show" x-transition:enter="ease-out duration-300"
-                x-transition:enter-start="opacity-0 backdrop-blur-none"
-                x-transition:enter-end="opacity-100 backdrop-blur-sm"
-                x-transition:leave="ease-in duration-200"
-                x-transition:leave-start="opacity-100 backdrop-blur-sm"
-                x-transition:leave-end="opacity-0 backdrop-blur-none"
-                class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm transition-all" @click="show = false">
-            </div>
-
-            <div class="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto p-4">
-                <div x-show="show" x-transition:enter="ease-out duration-300"
-                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                    x-transition:leave="ease-in duration-200"
-                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg"
-                    @click.outside="show = false">
-                    <form method="POST" action="{{ route('aksic.import') }}" enctype="multipart/form-data"
-                        @submit="if (isSubmitting) { $event.preventDefault(); return; } isSubmitting = true;">
-                        @csrf
-                        <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                            <div>
-                                <div class="w-full text-left">
-                                    <h3 class="text-lg font-medium leading-6 text-gray-900">Import AKSIC Excel</h3>
-                                    <div class="mt-4 max-w-sm">
-                                        <x-label for="aksic_import_file" value="Excel File" :required="true" />
-                                        <input id="aksic_import_file" type="file" name="file" accept=".xlsx" required
-                                            class="mt-1 block w-full rounded-md border border-gray-300 text-sm text-gray-700 file:mr-4 file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-gray-700 hover:file:bg-gray-200 focus:border-indigo-500 focus:ring-indigo-500">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex flex-row justify-end gap-3 bg-gray-100 px-6 py-4">
-                            <button type="button" @click="show = false"
-                                class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50">
-                                Cancel
-                            </button>
-                            <button type="submit" :disabled="isSubmitting"
-                                class="inline-flex items-center rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-green-950 disabled:cursor-not-allowed disabled:opacity-60">
-                                <span x-show="!isSubmitting">Import</span>
-                                <span x-show="isSubmitting">Processing...</span>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        @include('aksics._approve-modal')
+        @if ($canImport)
+            @include('aksics._import-modal')
+        @endif
     @endpush
 </x-app-layout>

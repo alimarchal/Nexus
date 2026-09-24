@@ -9,7 +9,7 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div>
                 <x-label for="filter_division_id" value="Division" />
-                <select id="filter_division_id" name="filter[division_id]" class="{{ $ui::CONTROL }}">
+                <select id="filter_division_id" name="filter[division_id]" class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full" data-placeholder="All divisions">
                     <option value="">All divisions</option>
                     @foreach ($divisions as $division)
                         <option value="{{ $division->id }}" @selected((string) request('filter.division_id') === (string) $division->id)>{{ $division->name }}</option>
@@ -22,7 +22,7 @@
             </div>
             <div>
                 <x-label for="filter_created_by_user_id" value="Created by" />
-                <select id="filter_created_by_user_id" name="filter[created_by_user_id]" class="{{ $ui::CONTROL }}">
+                <select id="filter_created_by_user_id" name="filter[created_by_user_id]" class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full" data-placeholder="Anyone">
                     <option value="">Anyone</option>
                     @foreach ($users as $user)
                         <option value="{{ $user->id }}" @selected((string) request('filter.created_by_user_id') === (string) $user->id)>{{ $user->name }}</option>

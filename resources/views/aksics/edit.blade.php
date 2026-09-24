@@ -12,29 +12,27 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Edit AKSIC Case {{ $aksic->application_no }}
-                </h2>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        <div class="ak-head">
+            <div class="ak-head-text">
+                <nav class="ak-crumbs" aria-label="Breadcrumb">
+                    <a href="{{ route('product.index') }}">Product</a><span aria-hidden="true">›</span>
+                    <a href="{{ route('aksic.index') }}">AKSIC</a><span aria-hidden="true">›</span>
+                    <a href="{{ route('aksic.show', $aksic) }}">Case {{ $aksic->application_no }}</a><span aria-hidden="true">›</span><span>Edit</span>
+                </nav>
+                <h1 class="ak-title">Edit case {{ $aksic->application_no }}</h1>
+                <p class="ak-sub">
                     {{ $aksic->name ?? '—' }}
                     @if ($aksic->cnic) &middot; CNIC {{ $aksic->cnic }} @endif
                     &middot; Status {{ $aksic->status ?? 'Pending' }}
                 </p>
             </div>
-
-            <div class="flex items-center gap-2">
-                <a href="{{ route('aksic.show', $aksic) }}"
-                    class="{{ $btn }} bg-blue-950 text-white hover:bg-green-800 focus:ring-indigo-500">
-                    <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Back to Case
-                </a>
+            <div class="ak-head-actions">
+                <a href="{{ route('aksic.show', $aksic) }}" class="ak-btn ak-btn-outline"><span aria-hidden="true">←</span> Back to case</a>
             </div>
         </div>
     </x-slot>
+
+    @include('aksics._ui-style')
 
     <div class="py-6">
         <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">

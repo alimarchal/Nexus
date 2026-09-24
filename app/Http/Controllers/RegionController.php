@@ -4,11 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Region;
 use Illuminate\Http\Request;
-use Spatie\QueryBuilder\QueryBuilder;
-use Spatie\QueryBuilder\AllowedFilter;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Routing\Controllers\HasMiddleware;
-
+use Illuminate\Routing\Controllers\Middleware;
 
 class RegionController extends Controller implements HasMiddleware
 {
@@ -78,7 +75,7 @@ class RegionController extends Controller implements HasMiddleware
     public function update(Request $request, Region $region)
     {
         $request->validate([
-            'name' => 'required|string|max:255|unique:regions,name,' . $region->id,
+            'name' => 'required|string|max:255|unique:regions,name,'.$region->id,
         ]);
 
         $region->update($request->only('name'));

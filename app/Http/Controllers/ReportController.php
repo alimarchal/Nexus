@@ -126,21 +126,16 @@ class ReportController extends Controller implements HasMiddleware
 
     public function aksicRulesReport(Request $request)
     {
+        // Applications = every live case (the district / quota caps count these);
+        // loans done, amount and markup = approved cases only.
+        $approved = fn ($query) => $query->where('status', 'Approved');
         $rules = AksicRule::query()
             ->where('is_active', true)
-            ->withCount('aksics')
-            ->withSum('aksics as principal_amount_sum', 'principal_amount')
+            ->withCount(['aksics', 'aksics as approved_count' => $approved])
+            ->withSum(['aksics as principal_amount_sum' => $approved], 'principal_amount')
+            ->withSum(['aksics as interest_amount_sum' => $approved], 'total_interest')
             ->orderBy('district_name')
             ->get();
-
-        $interestByRule = DB::table('aksic_rules')
-            ->leftJoin('aksics', 'aksics.aksic_rule_id', '=', 'aksic_rules.id')
-            ->leftJoin('aksic_amortizations', 'aksic_amortizations.aksic_id', '=', 'aksics.id')
-            ->whereNull('aksic_rules.deleted_at')
-            ->where('aksic_rules.is_active', true)
-            ->groupBy('aksic_rules.id')
-            ->select('aksic_rules.id', DB::raw('COALESCE(SUM(aksic_amortizations.total_interest), 0) as interest_sum'))
-            ->pluck('interest_sum', 'id');
 
         $actualQuotaCountsByRule = DB::table('aksics')
             ->select('aksic_rule_id', 'quota', 'gender', DB::raw('COUNT(*) as loans_count'))
@@ -150,13 +145,15 @@ class ReportController extends Controller implements HasMiddleware
             ->get()
             ->groupBy('aksic_rule_id');
 
-        $reportRows = $rules->map(function (AksicRule $rule) use ($interestByRule, $actualQuotaCountsByRule): array {
+        $reportRows = $rules->map(function (AksicRule $rule) use ($actualQuotaCountsByRule): array {
             $principalAmountCents = $this->decimalAmountToCents($rule->principal_amount_sum ?? 0);
-            $interestAmountCents = $this->decimalAmountToCents($interestByRule[$rule->id] ?? 0);
+            // total_interest keeps 6 decimals: round to paisa (not truncate) so totals match the budget page.
+            $interestAmountCents = $this->decimalAmountToCents(number_format((float) ($rule->interest_amount_sum ?? 0), 2, '.', ''));
             $principalAmount = $this->centsToDecimal($principalAmountCents);
             $interestAmount = $this->centsToDecimal($interestAmountCents);
-            $loansDone = (int) $rule->aksics_count;
-            $remaining = max(0, $rule->proposed_beneficiaries - $loansDone);
+            $applications = (int) $rule->aksics_count;
+            $loansDone = (int) $rule->approved_count;
+            $remaining = max(0, $rule->proposed_beneficiaries - $applications);
             $quotaCounts = $this->allocateAksicGenderQuota($rule);
             $actualQuotaCounts = $this->actualAksicQuotaCounts($actualQuotaCountsByRule->get($rule->id, collect()));
 
@@ -174,8 +171,14 @@ class ReportController extends Controller implements HasMiddleware
                 'actual_disabled_male_loans' => $actualQuotaCounts['disabled_male'],
                 'actual_disabled_female_loans' => $actualQuotaCounts['disabled_female'],
                 'actual_transgender_loans' => $actualQuotaCounts['transgender'],
+                'applications' => $applications,
                 'loans_done' => $loansDone,
+                'pending' => $applications - $loansDone,
                 'remaining' => $remaining,
+                'male_percentage' => (float) $rule->male_percentage,
+                'female_percentage' => (float) $rule->female_percentage,
+                'special_percentage' => (float) $rule->special_person_percentage,
+                'transgender_percentage' => (float) $rule->transgender_percentage,
                 'principal_amount' => $principalAmount,
                 'interest_amount' => $interestAmount,
                 'total_payable' => $this->centsToDecimal($principalAmountCents + $interestAmountCents),
@@ -198,7 +201,9 @@ class ReportController extends Controller implements HasMiddleware
             'actual_disabled_male_loans' => $reportRows->sum('actual_disabled_male_loans'),
             'actual_disabled_female_loans' => $reportRows->sum('actual_disabled_female_loans'),
             'actual_transgender_loans' => $reportRows->sum('actual_transgender_loans'),
+            'applications' => $reportRows->sum('applications'),
             'loans_done' => $reportRows->sum('loans_done'),
+            'pending' => $reportRows->sum('pending'),
             'remaining' => $reportRows->sum('remaining'),
             'principal_amount' => $financialTotals['principal_amount'],
             'interest_amount' => $financialTotals['interest_amount'],
@@ -208,6 +213,7 @@ class ReportController extends Controller implements HasMiddleware
         $chartData = [
             'districts' => $reportRows->pluck('district')->values(),
             'proposed' => $reportRows->pluck('proposed_beneficiaries')->values(),
+            'applications' => $reportRows->pluck('applications')->values(),
             'loansDone' => $reportRows->pluck('loans_done')->values(),
             'maleBeneficiaries' => $reportRows->pluck('male_beneficiaries')->values(),
             'femaleBeneficiaries' => $reportRows->pluck('female_beneficiaries')->values(),

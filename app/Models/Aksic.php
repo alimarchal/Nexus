@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class Aksic extends Model
@@ -96,6 +98,16 @@ class Aksic extends Model
         ];
     }
 
+    /** Bumped on every change so the cached list totals refresh at once. */
+    public const STATS_VERSION_KEY = 'aksic-stats-version';
+
+    protected static function booted(): void
+    {
+        $bump = fn () => rescue(fn () => Cache::forever(self::STATS_VERSION_KEY, (string) microtime(true)), null, false);
+        static::saved($bump);
+        static::deleted($bump);
+    }
+
     /**
      * @return array<int, AllowedFilter>
      */
@@ -116,11 +128,49 @@ class Aksic extends Model
             AllowedFilter::partial('business_type'),
             AllowedFilter::partial('district_name'),
             AllowedFilter::partial('tehsil_name'),
+            // One search box built for large tables (10k - 1M rows): every branch
+            // uses an index -- exact CNIC, prefix match on application / account
+            // no and applicant name. No leading-wildcard LIKE scans.
+            AllowedFilter::callback('search', function ($query, $value): void {
+                $value = trim((string) $value);
+                if ($value === '') {
+                    return;
+                }
+                $digits = preg_replace('/\D+/', '', $value);
+
+                if (strlen($digits) === 13) {
+                    // Full CNIC typed with or without dashes -> exact lookup on the unique index.
+                    $query->where(fn ($q) => $q
+                        ->whereIn('cnic', [$digits, substr($digits, 0, 5).'-'.substr($digits, 5, 7).'-'.substr($digits, 12)])
+                        ->orWhere('application_no', $value)
+                        ->orWhere('account_no', $value));
+
+                    return;
+                }
+
+                $like = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value).'%';
+                $query->where(function ($q) use ($like): void {
+                    $q->where('application_no', 'like', $like)
+                        ->orWhere('account_no', 'like', $like)
+                        ->orWhere('cnic', 'like', $like)
+                        ->orWhere('name', 'like', $like);
+                });
+            }),
+            // Pending = awaiting approval; generated = approved (schedule is created on approval).
+            // Uses the indexed status column instead of an EXISTS on the schedule table.
+            AllowedFilter::callback('schedule', function ($query, $value): void {
+                $query->where('status', $value === 'generated' ? 'Approved' : 'Pending');
+            }),
             AllowedFilter::callback('date_from', function ($query, $value): void {
-                $query->whereDate('created_at', '>=', $value);
+                // Range on the raw column (not DATE()) so the created_at index is used.
+                if ($date = rescue(fn () => Carbon::parse((string) $value)->startOfDay(), null, false)) {
+                    $query->where('created_at', '>=', $date);
+                }
             }),
             AllowedFilter::callback('date_to', function ($query, $value): void {
-                $query->whereDate('created_at', '<=', $value);
+                if ($date = rescue(fn () => Carbon::parse((string) $value)->addDay()->startOfDay(), null, false)) {
+                    $query->where('created_at', '<', $date);
+                }
             }),
             AllowedFilter::callback('amount_min', function ($query, $value): void {
                 $query->where('principal_amount', '>=', $value);
@@ -159,6 +209,36 @@ class Aksic extends Model
     public function district(): BelongsTo
     {
         return $this->belongsTo(District::class);
+    }
+
+    /**
+     * Scheme rules that must be met before the case can be approved (the
+     * district's AKSIC rule decides which apply). Empty array = ready.
+     *
+     * @return array<int, string>
+     */
+    public function approvalBlockers(): array
+    {
+        $rule = $this->aksicRule
+            ?? AksicRule::query()->where('district_id', $this->district_id)->where('is_active', true)->first();
+        $blockers = [];
+
+        if (! $rule) {
+            $blockers[] = 'No active AKSIC rule for this district.';
+        }
+        if ($rule?->requires_site_visit && (! $this->site_visit_completed || ! $this->site_visit_date)) {
+            $blockers[] = 'Site visit must be completed and its date entered.';
+        }
+        if ($rule?->requires_business_nature && ! in_array($this->business_type, ['Existing', 'New'], true)) {
+            $blockers[] = 'Business nature (Existing / New) is required.';
+        }
+        foreach (['principal_amount' => 'Principal amount', 'tenure' => 'Tenure', 'disbursement_date' => 'Disbursement date', 'kibor_rate' => 'KIBOR rate', 'spread_rate' => 'Spread rate'] as $field => $label) {
+            if ($this->{$field} === null || $this->{$field} === '') {
+                $blockers[] = $label.' is required.';
+            }
+        }
+
+        return $blockers;
     }
 
     public function aksicRule(): BelongsTo

@@ -231,10 +231,9 @@
             </div>
 
             <div>
-                <label for="disbursement_date" class="{{ $lbl }}">Disbursement Date <span class="text-red-600">*</span> <span class="text-xs font-normal text-gray-500">(D.M.Y)</span></label>
-                <x-input id="disbursement_date" type="text" name="disbursement_date" class="{{ $control }}" inputmode="numeric"
-                    placeholder="{{ \App\Support\AksicDate::PLACEHOLDER }}" pattern="\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4}" title="Day.Month.Year, e.g. 25.05.2026"
-                    :value="\App\Support\AksicDate::display(old('disbursement_date', $aksic->disbursement_date ?? null), '')" required />
+                <label for="disbursement_date" class="{{ $lbl }}">Disbursement Date <span class="text-red-600">*</span></label>
+                <x-input id="disbursement_date" type="date" name="disbursement_date" class="{{ $control }}" max="2100-12-31"
+                    :value="\App\Support\AksicDate::forInput(old('disbursement_date', $aksic->disbursement_date ?? null))" required />
                 <x-input-error for="disbursement_date" class="mt-1" />
             </div>
 
@@ -269,10 +268,9 @@
             </div>
 
             <div>
-                <label for="site_visit_date" class="{{ $lbl }}">Site Visit Date <span class="text-xs font-normal text-gray-500">(D.M.Y)</span></label>
-                <x-input id="site_visit_date" type="text" name="site_visit_date" class="{{ $control }}" inputmode="numeric"
-                    placeholder="{{ \App\Support\AksicDate::PLACEHOLDER }}" pattern="\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4}" title="Day.Month.Year, e.g. 25.05.2026"
-                    :value="\App\Support\AksicDate::display(old('site_visit_date', $aksic->site_visit_date ?? null), '')" />
+                <label for="site_visit_date" class="{{ $lbl }}">Site Visit Date</label>
+                <x-input id="site_visit_date" type="date" name="site_visit_date" class="{{ $control }}" max="2100-12-31"
+                    :value="\App\Support\AksicDate::forInput(old('site_visit_date', $aksic->site_visit_date ?? null))" />
                 <x-input-error for="site_visit_date" class="mt-1" />
             </div>
 
@@ -289,10 +287,9 @@
                 </div>
 
                 <div>
-                    <label for="consent_date" class="{{ $lbl }}">Consent Date <span class="text-xs font-normal text-gray-500">(D.M.Y)</span></label>
-                    <x-input id="consent_date" type="text" name="consent_date" class="{{ $control }}" inputmode="numeric"
-                        placeholder="{{ \App\Support\AksicDate::PLACEHOLDER }}" pattern="\d{1,2}[\.\/\-]\d{1,2}[\.\/\-]\d{2,4}" title="Day.Month.Year, e.g. 25.05.2026"
-                        :value="\App\Support\AksicDate::display(old('consent_date', $aksic->consent_date ?? null), '')" />
+                    <label for="consent_date" class="{{ $lbl }}">Consent Date</label>
+                    <x-input id="consent_date" type="date" name="consent_date" class="{{ $control }}" max="2100-12-31"
+                        :value="\App\Support\AksicDate::forInput(old('consent_date', $aksic->consent_date ?? null))" />
                     <x-input-error for="consent_date" class="mt-1" />
                 </div>
             </div>

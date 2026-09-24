@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Str;
+
 /**
  * Shared Tailwind class strings for the Nexus ERP screens, so every settings
  * page (users, roles, permissions, branches, regions, districts, managers)
@@ -51,8 +53,8 @@ final class Ui
     /** "view aksic claims" -> "Aksic Claims" (module name used to group permissions). */
     public static function permissionModule(string $name): string
     {
-        $module = trim((string) \Illuminate\Support\Str::of($name)->after(' ')->title());
+        $module = trim((string) Str::of($name)->after(' ')->title());
 
-        return $module !== '' && $module !== \Illuminate\Support\Str::title($name) ? $module : 'General';
+        return $module !== '' && $module !== Str::title($name) ? $module : 'General';
     }
 }
