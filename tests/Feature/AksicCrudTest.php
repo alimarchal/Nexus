@@ -23,8 +23,9 @@ beforeEach(function (): void {
         Permission::firstOrCreate(['name' => $permission]);
     }
 
+    Permission::firstOrCreate(['name' => 'view all aksic cases']);
     $role = Role::create(['name' => 'aksic-manager']);
-    $role->givePermissionTo(['view aksics', 'create aksics', 'edit aksics', 'delete aksics', 'approve aksics', 'import aksics']);
+    $role->givePermissionTo(['view aksics', 'view all aksic cases', 'create aksics', 'edit aksics', 'delete aksics', 'approve aksics', 'import aksics']);
 
     $this->user = User::factory()->create();
     $this->user->assignRole($role);

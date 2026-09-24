@@ -62,10 +62,29 @@ test('region user sees every branch of the region only', function (): void {
     $this->actingAs($user)->get(route('aksic.show', $this->caseB1))->assertNotFound();
 });
 
-test('head office user sees all branches', function (): void {
+test('head office user with the view all permission sees all branches', function (): void {
+    Permission::findOrCreate(OfficeAccess::VIEW_ALL_PERMISSION, 'web');
+    Role::findByName('head-office')->givePermissionTo(OfficeAccess::VIEW_ALL_PERMISSION);
     $user = officeUser('head-office');
 
     expect(OfficeAccess::scope(Aksic::query(), $user)->count())->toBe(3);
+    $this->actingAs($user)->get(route('aksic.show', $this->caseB1))->assertOk();
+});
+
+test('user without the view all permission and without an office sees nothing', function (): void {
+    $user = officeUser('head-office');
+
+    expect(OfficeAccess::for($user)['level'])->toBe(OfficeAccess::NONE);
+    expect(OfficeAccess::scope(Aksic::query(), $user)->count())->toBe(0);
+    $this->actingAs($user)->get(route('aksic.show', $this->caseA1))->assertNotFound();
+});
+
+test('view all permission given directly to a branch user opens every branch', function (): void {
+    Permission::findOrCreate(OfficeAccess::VIEW_ALL_PERMISSION, 'web');
+    $user = officeUser('branch', ['branch_id' => $this->branchA1->id]);
+    $user->givePermissionTo(OfficeAccess::VIEW_ALL_PERMISSION);
+
+    expect(OfficeAccess::scope(Aksic::query(), $user->fresh())->count())->toBe(3);
 });
 
 test('branch role without a branch sees nothing', function (): void {

@@ -11,7 +11,7 @@
                 </a>
             @endcan
             @can('archive file management systems')
-                @if (!$fileManagementSystem->is_archived)
+                @if (! $fileManagementSystem->is_archived && $fileManagementSystem->isHeldBy(auth()->user()))
                     <a href="{{ route('file-management-systems.archive-form', $fileManagementSystem) }}"
                         class="inline-flex items-center rounded-md border border-transparent bg-purple-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-purple-700">
                         Archive

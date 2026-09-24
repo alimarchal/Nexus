@@ -122,6 +122,34 @@ class FileManagementSystem extends Model implements HasMedia
         $this->addMediaCollection('pages')->useDisk('public');
     }
 
+    /**
+     * The office unit ([morph type, id]) a user archives files and creates boxes
+     * for -- same order as the controller: branch, region, division, head office.
+     * Null for users with no office posting (e.g. super admin).
+     *
+     * @return array{0: string, 1: int}|null
+     */
+    public static function officeUnitOf(User $user): ?array
+    {
+        foreach (['branch' => 'branch_id', 'region' => 'region_id', 'division' => 'division_id', 'head-office' => 'head_office_id'] as $role => $column) {
+            if ($user->hasRole($role) && $user->{$column}) {
+                return [$role, (int) $user->{$column}];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Only the office that holds a file may archive it into one of its boxes.
+     */
+    public function isHeldBy(User $user): bool
+    {
+        $unit = self::officeUnitOf($user);
+
+        return $unit !== null && $this->fileable_type === $unit[0] && (int) $this->fileable_id === $unit[1];
+    }
+
     public function scopeVisibleTo($query, User $user)
     {
         if ($user->is_super_admin === 'Yes' || $user->hasRole('super-admin')) {

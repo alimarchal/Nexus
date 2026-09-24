@@ -20,7 +20,8 @@ beforeEach(function (): void {
     config(['aksic.excel_import' => true, 'aksic.excel_export' => true]);
 
     Permission::firstOrCreate(['name' => 'view aksics']);
-    Role::firstOrCreate(['name' => 'head-office'])->givePermissionTo('view aksics');
+    Permission::firstOrCreate(['name' => 'view all aksic cases']);
+    Role::firstOrCreate(['name' => 'head-office'])->givePermissionTo(['view aksics', 'view all aksic cases']);
 
     $region = Region::create(['name' => 'Region A']);
     $district = District::factory()->create(['name' => 'Muzaffarabad']);

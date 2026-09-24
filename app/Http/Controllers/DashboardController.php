@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Branch;
-use App\Models\Region;
+use App\Services\DashboardService;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\View\View;
 
 class DashboardController extends Controller implements HasMiddleware
 {
@@ -18,29 +18,27 @@ class DashboardController extends Controller implements HasMiddleware
         ];
     }
 
-    public function dashboard()
+    /**
+     * Home dashboard: AKSIC and file management figures for the user's own
+     * office (branch, region, ...) or the whole bank, by role and permission.
+     */
+    public function dashboard(Request $request, DashboardService $dashboard): View
     {
+        $user = $request->user();
 
-        $user = auth()->user();
+        abort_unless(
+            $user->is_super_admin === 'Yes' || $user->hasAnyRole(['branch', 'region', 'division', 'head-office', 'super-admin']),
+            403
+        );
 
-        // Check if user has any valid dashboard role
-        if (!$user->hasAnyRole(['branch', 'region', 'division', 'head-office', 'super-admin'])) {
-            abort(403); // Forbidden if no valid role
-        }
-        // Route to role-specific dashboard view
-        // return match ($user->roles->first()->name) {
-        //     'branch' => view('dashboard.branches'),
-        //     'region' => view('dashboard.region'),
-        //     'division' => view('dashboard.division'),
-        //     'head-office' => view('dashboard.all'),
-        //     'super-admin' => view('dashboard.dashboard'),
-        //     default => abort(403)
-        // };
-
-        return view('dashboard');
+        return view('dashboard', [
+            'aksic' => $dashboard->aksic($user),
+            'files' => $dashboard->files($user),
+            'greeting' => DashboardService::greeting(),
+        ]);
     }
 
-    public function daily_position(Request $request)
+    public function daily_position(Request $request): View
     {
         return view('dashboard.daily-position');
     }

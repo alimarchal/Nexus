@@ -3,11 +3,14 @@
         <h2 class="inline-block text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
             Archive Boxes Inventory
         </h2>
+        @php $canCreateBox = auth()->user()->can('create boxes') && \App\Models\FileManagementSystem::officeUnitOf(auth()->user()); @endphp
         <div class="float-right flex items-center justify-center">
-            <a href="{{ route('file-management-systems.boxes.create') }}"
-                class="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                New Box
-            </a>
+            @if ($canCreateBox)
+                <a href="{{ route('file-management-systems.boxes.create') }}"
+                    class="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    New Box
+                </a>
+            @endif
         </div>
     </x-slot>
 
@@ -117,10 +120,14 @@
                             Get started by creating your first archive box.
                         </p>
                         <div class="mt-6">
+                            @if ($canCreateBox)
                             <a href="{{ route('file-management-systems.boxes.create') }}"
                                 class="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900">
                                 Create First Box
                             </a>
+                            @else
+                                <p class="text-sm text-gray-600">Boxes are created by the office that holds the files.</p>
+                            @endif
                         </div>
                     </div>
                 @endif

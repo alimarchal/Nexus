@@ -413,3 +413,21 @@ test('file management systems index can be filtered by box number', function () 
     $response->assertSuccessful();
     $response->assertViewHas('fileManagementSystems', fn ($items) => $items->pluck('id')->all() === [$archived->id]);
 });
+
+test('archive and new box links show only for the office that holds the file', function () {
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    expect($document->isHeldBy($this->branchUser))->toBeTrue()
+        ->and($document->isHeldBy($this->admin))->toBeFalse();
+
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.show', $document))
+        ->assertOk()->assertSee(route('file-management-systems.archive-form', $document), false);
+    $this->actingAs($this->admin)->get(route('file-management-systems.show', $document))
+        ->assertOk()->assertDontSee(route('file-management-systems.archive-form', $document), false);
+    $this->actingAs($this->admin)->get(route('file-management-systems.boxes'))
+        ->assertOk()->assertDontSee(route('file-management-systems.boxes.create'), false);
+});

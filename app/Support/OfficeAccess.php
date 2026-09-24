@@ -10,10 +10,10 @@ use Illuminate\Database\Query\Builder as QueryBuilder;
 /**
  * Which branches' data a user may see, following the bank's organogram.
  *
- *   President Office / Head Office / Division / super admin -> every branch
+ *   "view all aksic cases" permission, President Office, super admin -> every branch
  *   Region  -> branches of the user's region
  *   Branch  -> the user's own branch only
- *   anything else (e.g. a branch role with no branch set) -> nothing
+ *   anything else (no permission and no branch / region posting) -> nothing
  *
  * When a user has several roles the widest one wins. Use it on any model that
  * carries a branch_id:  OfficeAccess::scope($query, $user)
@@ -27,6 +27,9 @@ final class OfficeAccess
     public const BRANCH = 'branch';
 
     public const NONE = 'none';
+
+    /** Permission that opens every branch's AKSIC cases (migration 2026_09_24_000001). */
+    public const VIEW_ALL_PERMISSION = 'view all aksic cases';
 
     /** Per request user object (a WeakMap, so no stale entries across users or tests). */
     private static ?\WeakMap $cache = null;
@@ -84,7 +87,8 @@ final class OfficeAccess
     {
         $bankWide = $user->is_super_admin === 'Yes'
             || (bool) $user->is_president_office
-            || $user->hasAnyRole(['super-admin', 'president-office', 'head-office', 'division']);
+            || $user->hasAnyRole(['super-admin', 'president-office'])
+            || rescue(fn () => $user->hasPermissionTo(self::VIEW_ALL_PERMISSION), false, false);
 
         if ($bankWide) {
             return ['level' => self::ALL, 'branch_ids' => null, 'label' => 'All branches'];
@@ -110,7 +114,7 @@ final class OfficeAccess
             return ['level' => self::BRANCH, 'branch_ids' => [(int) $user->branch_id], 'label' => 'Branch: '.($branch ? $branch->code.' - '.$branch->name : '#'.$user->branch_id)];
         }
 
-        // Head-office staff on a custom role with no office posting.
-        return ['level' => self::ALL, 'branch_ids' => null, 'label' => 'All branches'];
+        // No branch / region posting and no "view all aksic cases" permission.
+        return ['level' => self::NONE, 'branch_ids' => [], 'label' => 'No office set (needs the "view all aksic cases" permission)'];
     }
 }
