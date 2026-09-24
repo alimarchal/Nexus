@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\MediaLibrary\HasMedia;
@@ -138,6 +139,30 @@ class FileManagementSystem extends Model implements HasMedia
         }
 
         return null;
+    }
+
+    /**
+     * "What am I looking at" label for list and dashboard headers.
+     */
+    public static function officeLabelFor(User $user): string
+    {
+        if ($user->is_super_admin === 'Yes' || $user->hasRole('super-admin')) {
+            return 'All offices';
+        }
+
+        $unit = self::officeUnitOf($user);
+        if (! $unit) {
+            return 'No office set';
+        }
+
+        $office = match ($unit[0]) {
+            'branch' => $user->branch,
+            'region' => $user->region,
+            'division' => $user->division,
+            default => $user->headOffice,
+        };
+
+        return Str::headline($unit[0]).': '.trim(($office->code ?? '').' '.($office->name ?? ''));
     }
 
     /**

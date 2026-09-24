@@ -28,7 +28,7 @@ final class OfficeAccess
 
     public const NONE = 'none';
 
-    /** Permission that opens every branch's AKSIC cases (migration 2026_09_24_000001). */
+    /** Permission that opens every branch's AKSIC cases (migration 2026_09_23_000004_seed_access_permissions). */
     public const VIEW_ALL_PERMISSION = 'view all aksic cases';
 
     /** Per request user object (a WeakMap, so no stale entries across users or tests). */

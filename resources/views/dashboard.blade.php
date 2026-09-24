@@ -32,6 +32,9 @@
                 @if ($files)
                     <span class="ak-scope" title="Files you can see">Files: {{ $files['unit_label'] }}</span>
                 @endif
+                @if ($accountOpenings)
+                    <span class="ak-scope" title="Account opening requests you can see">Accounts: {{ $accountOpenings['label'] }}</span>
+                @endif
             </div>
         </div>
     </x-slot>
@@ -39,7 +42,7 @@
     @include('aksics._ui-style')
 
     <style>
-        .db-page { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; }
+        .db-page { --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; }
         .db-scopes { flex-wrap: wrap; gap: 6px; }
         .db-section-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
         .db-section-head h2 { font-size: 18px; font-weight: 700; color: var(--ak-text); }
@@ -80,11 +83,24 @@
     </style>
 
     <div class="db-page mx-auto max-w-7xl space-y-10 px-4 py-6 sm:px-6 lg:px-8">
-        @if (! $aksic && ! $files)
+        @if (! empty($pendingMigrations))
+            <div class="ak-alert ak-alert-warn" role="alert">
+                <b>{{ count($pendingMigrations) }} database {{ \Illuminate\Support\Str::plural('update', count($pendingMigrations)) }} not applied yet.</b>
+                New permissions and columns are missing until you run <code>php artisan migrate</code> on the server, so some users may not see the right modules.
+                <details class="mt-1"><summary class="cursor-pointer text-sm">Show list</summary>
+                    <ul class="mt-1 list-inside list-disc text-sm">
+                        @foreach ($pendingMigrations as $migration)
+                            <li><code>{{ $migration }}</code></li>
+                        @endforeach
+                    </ul>
+                </details>
+            </div>
+        @endif
+        @if (! $aksic && ! $files && ! $accountOpenings)
             <div class="db-card">
                 <div class="db-empty">
                     <b>Nothing to show yet</b>
-                    <span>Your role has no AKSIC or file management access. Ask the administrator to assign the right role.</span>
+                    <span>No dashboard section is enabled for your role. Ask the administrator for the dashboard permissions on Settings &rarr; Roles.</span>
                 </div>
             </div>
         @endif
@@ -225,6 +241,132 @@
             </section>
         @endif
 
+        {{-- ========================== Account opening ========================== --}}
+        @if ($accountOpenings)
+            @php
+                $a = $accountOpenings['totals'];
+                $aofBreakdownTitle = $accountOpenings['breakdown_by'] === 'branch' ? 'Requests by branch' : 'Requests by customer category';
+            @endphp
+            <section aria-labelledby="db-aof">
+                <div class="db-section-head">
+                    <div>
+                        <h2 id="db-aof">Account opening</h2>
+                        <p>{{ $accountOpenings['label'] }} &middot; account opening forms (AOF), approvals and products</p>
+                    </div>
+                    <div class="db-links">
+                        <a href="{{ route('account-openings.index') }}" class="ak-btn ak-btn-outline">Open requests</a>
+                        @can('create account openings')
+                            <a href="{{ route('account-openings.create') }}" class="ak-btn ak-btn-primary">＋ New request</a>
+                        @endcan
+                    </div>
+                </div>
+
+                <div class="ak-kpis">
+                    <div class="ak-kpi">
+                        <span class="ak-kpi-icon ak-tone-navy" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" /></svg></span>
+                        <span class="ak-kpi-body">
+                            <span class="ak-kpi-label">Requests</span>
+                            <span class="ak-kpi-value">{{ $n($a['requests']) }}</span>
+                            <span class="ak-kpi-hint">{{ $n($a['this_month']) }} this month &middot; {{ $n($a['individual']) }} individual, {{ $n($a['entity']) }} entity</span>
+                        </span>
+                    </div>
+                    <a href="{{ route('account-openings.index', ['filter' => ['status' => 'submitted']]) }}" class="ak-kpi{{ $a['awaiting'] ? ' ak-kpi-action' : '' }}">
+                        <span class="ak-kpi-icon ak-tone-amber" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg></span>
+                        <span class="ak-kpi-body">
+                            <span class="ak-kpi-label">Awaiting approval</span>
+                            <span class="ak-kpi-value">{{ $n($a['awaiting']) }}</span>
+                            <span class="ak-kpi-hint">{{ $a['awaiting'] ? 'Submitted / under review →' : 'Nothing waiting' }}</span>
+                        </span>
+                    </a>
+                    <div class="ak-kpi">
+                        <span class="ak-kpi-icon ak-tone-green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg></span>
+                        <span class="ak-kpi-body">
+                            <span class="ak-kpi-label">Accounts opened</span>
+                            <span class="ak-kpi-value">{{ $n($a['approved']) }}</span>
+                            <span class="ak-kpi-hint">{{ $a['requests'] ? round($a['approved'] / $a['requests'] * 100, 1) : 0 }}% of requests approved</span>
+                        </span>
+                    </div>
+                    <div class="ak-kpi">
+                        <span class="ak-kpi-icon ak-tone-navy" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" /></svg></span>
+                        <span class="ak-kpi-body">
+                            <span class="ak-kpi-label">Drafts in progress</span>
+                            <span class="ak-kpi-value">{{ $n($a['in_progress']) }}</span>
+                            <span class="ak-kpi-hint">{{ $n($a['rejected']) }} rejected</span>
+                        </span>
+                    </div>
+                </div>
+
+                @if ($a['requests'] === 0)
+                    <div class="db-card mt-4">
+                        <div class="db-empty">
+                            <b>No account opening requests yet</b>
+                            <span>Requests for {{ $accountOpenings['label'] }} will show here with monthly, status and product charts.</span>
+                            @can('create account openings')
+                                <a href="{{ route('account-openings.create') }}" class="ak-btn ak-btn-primary mt-2">＋ Start the first request</a>
+                            @endcan
+                        </div>
+                    </div>
+                @else
+                    <div class="db-grid mt-4">
+                        <div class="db-card">
+                            <div class="db-card-head">
+                                <div><h3>Requests and approvals</h3><p class="db-card-sub">By request date, last 12 months</p></div>
+                            </div>
+                            <div id="db-aof-monthly" class="db-chart" role="img" aria-label="Monthly account opening requests and approvals"></div>
+                        </div>
+                        <div class="db-card">
+                            <div class="db-card-head">
+                                <div><h3>Status</h3><p class="db-card-sub">All requests by current status</p></div>
+                            </div>
+                            <div id="db-aof-status" class="db-chart" role="img" aria-label="Requests by status"></div>
+                        </div>
+                    </div>
+
+                    <div class="db-grid mt-4">
+                        <div class="db-card">
+                            <div class="db-card-head">
+                                <div><h3>{{ $aofBreakdownTitle }}</h3><p class="db-card-sub">Top {{ count($accountOpenings['breakdown']) }}, opened and still open</p></div>
+                            </div>
+                            <div id="db-aof-breakdown" class="db-chart" role="img" aria-label="{{ $aofBreakdownTitle }}"></div>
+                        </div>
+                        <div class="db-stack">
+                            @if ($accountOpenings['products'])
+                                <div class="db-card">
+                                    <div class="db-card-head">
+                                        <div><h3>Accounts opened by product</h3><p class="db-card-sub">Approved requests</p></div>
+                                    </div>
+                                    <div id="db-aof-products" class="db-chart-sm" role="img" aria-label="Accounts opened by product"></div>
+                                </div>
+                            @endif
+                            <div class="db-card">
+                                <div class="db-card-head">
+                                    <div><h3>Awaiting approval</h3><p class="db-card-sub">Newest submitted requests</p></div>
+                                    @if ($a['awaiting'])<a href="{{ route('account-openings.index', ['filter' => ['status' => 'submitted']]) }}">All {{ $n($a['awaiting']) }} →</a>@endif
+                                </div>
+                                @if (empty($accountOpenings['awaiting']))
+                                    <div class="db-empty" style="min-height:120px"><span>No requests waiting.</span></div>
+                                @else
+                                    <ul class="db-list">
+                                        @foreach ($accountOpenings['awaiting'] as $req)
+                                            <li>
+                                                <a href="{{ $req['url'] }}">
+                                                    <span style="min-width:0">
+                                                        <span class="db-l1" style="display:block">{{ $req['name'] }}</span>
+                                                        <span class="db-l2" style="display:block">{{ $req['number'] }} &middot; {{ $req['branch'] }} &middot; {{ $req['form'] }}</span>
+                                                    </span>
+                                                    <span class="db-r"><b>{{ $req['status'] }}</b>{{ $req['date'] }}</span>
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </section>
+        @endif
+
         {{-- ========================== File management ========================== --}}
         @if ($files)
             @php $f = $files['totals']; @endphp
@@ -331,6 +473,7 @@
                 @endif
             </section>
         @endif
+
     </div>
 
     @php
@@ -343,6 +486,16 @@
                     'approved' => array_column($aksic['breakdown'], 'approved'),
                     'pending' => array_column($aksic['breakdown'], 'pending'),
                 ],
+            ] : null,
+            'aof' => $accountOpenings && $accountOpenings['totals']['requests'] > 0 ? [
+                'monthly' => $accountOpenings['monthly'],
+                'status' => ['labels' => array_values(\App\Services\DashboardService::AOF_STATUSES), 'values' => array_values($accountOpenings['status'])],
+                'breakdown' => [
+                    'labels' => array_column($accountOpenings['breakdown'], 'label'),
+                    'approved' => array_column($accountOpenings['breakdown'], 'approved'),
+                    'pending' => array_column($accountOpenings['breakdown'], 'pending'),
+                ],
+                'products' => ['labels' => array_keys($accountOpenings['products']), 'values' => array_values($accountOpenings['products'])],
             ] : null,
             'files' => $files && $files['totals']['files'] > 0 ? [
                 'monthly' => $files['monthly'],
@@ -357,7 +510,7 @@
                 if (typeof ApexCharts === 'undefined') { return; }
                 const data = {{ Illuminate\Support\Js::from($chartData) }};
                 const css = getComputedStyle(document.querySelector('.db-page'));
-                const c = ['--s1', '--s2', '--s3', '--s4'].map(v => css.getPropertyValue(v).trim());
+                const c = ['--s1', '--s2', '--s3', '--s4', '--s5'].map(v => css.getPropertyValue(v).trim());
                 const ink = '#475569', grid = '#e2e8f0';
                 const whole = v => Math.round(v).toLocaleString();
                 const intOnly = v => Number.isInteger(Math.round(+v * 1000) / 1000) ? whole(v) : '';
@@ -414,6 +567,55 @@
                         xaxis: Object.assign({}, base.xaxis, { categories: data.aksic.breakdown.labels, tickAmount: ticks(data.aksic.breakdown.approved.map((a, i) => a + data.aksic.breakdown.pending[i])), labels: { style: { colors: ink, fontSize: '11px' }, formatter: intOnly } }),
                         yaxis: { labels: { style: { colors: ink, fontSize: '12px' }, maxWidth: 160 } },
                     });
+                }
+
+                if (data.aof) {
+                    draw('db-aof-monthly', {
+                        chart: { type: 'bar', height: 290 },
+                        series: [
+                            { name: 'Requests', data: data.aof.monthly.total },
+                            { name: 'Approved', data: data.aof.monthly.approved },
+                        ],
+                        colors: [c[0], c[1]],
+                        plotOptions: { bar: { columnWidth: '58%', borderRadius: 4, borderRadiusApplication: 'end' } },
+                        stroke: { show: true, width: 2, colors: ['#fff'] },
+                        xaxis: Object.assign({}, base.xaxis, { categories: data.aof.monthly.labels }),
+                        yaxis: Object.assign({}, base.yaxis, { tickAmount: ticks(data.aof.monthly.total) }),
+                    });
+                    draw('db-aof-status', {
+                        chart: { type: 'donut', height: 290 },
+                        series: data.aof.status.values,
+                        labels: data.aof.status.labels,
+                        colors: [c[0], c[1], c[2], c[3], c[4]],
+                        stroke: { width: 2, colors: ['#fff'] },
+                        tooltip: { y: { formatter: v => whole(v) + ' requests' } },
+                        legend: Object.assign({}, base.legend, { position: 'bottom', horizontalAlign: 'center' }),
+                        dataLabels: { enabled: true, formatter: v => v >= 5 ? Math.round(v) + '%' : '', dropShadow: { enabled: false } },
+                        plotOptions: { pie: { donut: { size: '64%', labels: { show: true, total: { show: true, label: 'Requests', color: ink, formatter: w => whole(w.globals.seriesTotals.reduce((a, b) => a + b, 0)) } } } } },
+                    });
+                    draw('db-aof-breakdown', {
+                        chart: { type: 'bar', height: Math.max(190, data.aof.breakdown.labels.length * 34 + 90), stacked: true },
+                        series: [
+                            { name: 'Opened', data: data.aof.breakdown.approved },
+                            { name: 'Still open', data: data.aof.breakdown.pending },
+                        ],
+                        colors: [c[0], c[1]],
+                        plotOptions: { bar: { horizontal: true, barHeight: '62%', borderRadius: 4, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last' } },
+                        stroke: { show: true, width: 2, colors: ['#fff'] },
+                        xaxis: Object.assign({}, base.xaxis, { categories: data.aof.breakdown.labels, tickAmount: ticks(data.aof.breakdown.approved.map((a, i) => a + data.aof.breakdown.pending[i])), labels: { style: { colors: ink, fontSize: '11px' }, formatter: intOnly } }),
+                        yaxis: { labels: { style: { colors: ink, fontSize: '12px' }, maxWidth: 190 } },
+                    });
+                    if (data.aof.products.labels.length) {
+                        draw('db-aof-products', {
+                            chart: { type: 'bar', height: Math.max(170, data.aof.products.labels.length * 32 + 70) },
+                            series: [{ name: 'Accounts', data: data.aof.products.values }],
+                            colors: [c[0]],
+                            plotOptions: { bar: { horizontal: true, barHeight: '60%', borderRadius: 4, borderRadiusApplication: 'end' } },
+                            legend: { show: false },
+                            xaxis: Object.assign({}, base.xaxis, { categories: data.aof.products.labels, tickAmount: ticks(data.aof.products.values), labels: { style: { colors: ink, fontSize: '11px' }, formatter: intOnly } }),
+                            yaxis: { labels: { style: { colors: ink, fontSize: '12px' }, maxWidth: 170 } },
+                        });
+                    }
                 }
 
                 if (data.files) {

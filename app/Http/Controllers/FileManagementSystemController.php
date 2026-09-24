@@ -17,8 +17,11 @@ use App\Models\FileManagementTransfer;
 use App\Models\HeadOffice;
 use App\Models\Region;
 use App\Models\User;
+use App\Services\FileManagementExportService;
 use App\Services\FileManagementSystemPathGenerator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +38,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         return [
             new Middleware('role_or_permission:view file management systems', only: ['index', 'show']),
+            new Middleware('role_or_permission:export file management systems', only: ['exportCsv', 'exportZip']),
             new Middleware('role_or_permission:create file management systems', only: ['create', 'store']),
             new Middleware('role_or_permission:edit file management systems', only: ['edit', 'update']),
             new Middleware('role_or_permission:transfer file management systems', only: ['transfer', 'storeTransfer']),
@@ -46,34 +50,182 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         ];
     }
 
+    /** Rows-per-page choices on the list. */
+    public const PER_PAGE = [10, 25, 50, 100, 300];
+
     /**
-     * Display a listing of the resource.
+     * File list: /product/file-management-systems -- same layout as the AKSIC
+     * case list (KPI cards, status tabs, filters with chips, sortable table).
+     * Only the user's own office's files are listed (visibleTo).
      */
-    public function index()
+    public function index(Request $request)
     {
-        $fileManagementSystems = QueryBuilder::for(FileManagementSystem::class)
-            ->visibleTo(auth()->user())
-            ->allowedFilters([
-                AllowedFilter::exact('file_category_id'),
-                AllowedFilter::partial('digital_id'),
-                AllowedFilter::partial('file_no'),
-                AllowedFilter::partial('title'),
-                AllowedFilter::scope('branch_id'),
-                AllowedFilter::scope('region_id'),
-                AllowedFilter::scope('division_id'),
-                AllowedFilter::scope('document_date_from', 'documentDateFrom'),
-                AllowedFilter::scope('document_date_to', 'documentDateTo'),
-                AllowedFilter::scope('box_number'),
-            ])
-            ->with(['fileCategory', 'fileable', 'creator', 'updater', 'media', 'box'])
-            ->defaultSort('-document_date')
-            ->paginate(request('per_page', 10))
-            ->appends(request()->query());
+        $user = $request->user();
+        $perPage = in_array((int) $request->query('per_page'), self::PER_PAGE, true) ? (int) $request->query('per_page') : 25;
+
+        $fileManagementSystems = $this->listQuery($request)
+            ->with(['fileCategory:id,category_name', 'fileable', 'box:id,box_number,location', 'currentCustodian:id,name'])
+            ->withCount(['media as pages_count', 'transfers as pending_transfers_count' => fn ($q) => $q->where('status', 'pending')])
+            ->paginate($perPage)
+            ->withQueryString();
+
+        $request->session()->put('fms.list_url', $request->fullUrl());
 
         return view('file-management-systems.index', [
             'fileManagementSystems' => $fileManagementSystems,
+            'stats' => $this->listStats($request),
+            'perPage' => $perPage,
+            'officeLabel' => FileManagementSystem::officeLabelFor($user),
             ...$this->formOptions(),
         ]);
+    }
+
+    /**
+     * The list query (office scope, filters, sort) shared by the screen and
+     * the exports, so an export always contains exactly what the list shows.
+     */
+    private function listQuery(Request $request): QueryBuilder
+    {
+        return QueryBuilder::for(FileManagementSystem::query()->visibleTo($request->user()), $request)
+            ->allowedFilters($this->listFilters())
+            ->allowedSorts(['document_date', 'created_at', 'digital_id', 'file_no', 'title'])
+            ->defaultSort('-document_date')
+            ->orderByDesc('created_at');
+    }
+
+    /**
+     * Filtered list (or the ticked rows) as a CSV for Excel.
+     */
+    public function exportCsv(Request $request, FileManagementExportService $export)
+    {
+        $query = $this->exportQuery($request);
+        $this->logExport($request, 'csv', (clone $query)->count());
+
+        return $export->csv($query, 'file-management-'.now()->format('Ymd-His').'.csv');
+    }
+
+    /**
+     * Filtered list (or the ticked rows) as a ZIP: one folder per file with
+     * all its scanned pages and documents, plus 00-index.csv.
+     */
+    public function exportZip(Request $request, FileManagementExportService $export)
+    {
+        abort_unless(class_exists(\ZipArchive::class), 500, 'The PHP zip extension is not installed on the server.');
+
+        $query = $this->exportQuery($request);
+        $size = $export->measure($query);
+        $back = session('fms.list_url', route('file-management-systems.index'));
+
+        if ($size['files'] === 0) {
+            return redirect($back)->with('error', 'Nothing to download: no files match.');
+        }
+        if ($size['files'] > FileManagementExportService::MAX_ZIP_FILES || $size['bytes'] > FileManagementExportService::MAX_ZIP_BYTES) {
+            return redirect($back)->with('error', sprintf(
+                'Too much for one ZIP: %s files, %s of pages (limit %s files / %s). Narrow the filter or tick fewer rows.',
+                number_format($size['files']), FileManagementExportService::humanBytes($size['bytes']),
+                number_format(FileManagementExportService::MAX_ZIP_FILES), FileManagementExportService::humanBytes(FileManagementExportService::MAX_ZIP_BYTES)
+            ));
+        }
+
+        @set_time_limit(300);
+        $label = Str::slug(FileManagementSystem::officeLabelFor($request->user()), '_') ?: 'files';
+        $zip = $export->zip($query, $label);
+        $this->logExport($request, 'zip', $zip['files'], ['pages' => $zip['pages'], 'missing' => $zip['missing']]);
+
+        return response()->download($zip['path'], $zip['name'], ['Content-Type' => 'application/zip'])->deleteFileAfterSend();
+    }
+
+    /**
+     * List query plus, when rows were ticked, only those rows (still limited
+     * to the user's office by visibleTo).
+     */
+    private function exportQuery(Request $request): Builder
+    {
+        $ids = array_values(array_filter((array) $request->input('ids', []), fn ($id) => is_string($id) && Str::isUuid($id)));
+
+        return $this->listQuery($request)
+            ->when($ids !== [], fn ($q) => $q->whereIn('file_management_systems.id', $ids))
+            ->getEloquentBuilder();
+    }
+
+    /**
+     * @param  array<string, mixed>  $extra
+     */
+    private function logExport(Request $request, string $format, int $count, array $extra = []): void
+    {
+        activity('file-management')
+            ->causedBy($request->user())
+            ->event('exported')
+            ->withProperties(['format' => $format, 'files' => $count, 'filters' => (array) $request->input('filter', []), 'selected' => count((array) $request->input('ids', []))] + $extra)
+            ->log('File list exported as '.strtoupper($format));
+    }
+
+    /**
+     * @return array<int, AllowedFilter>
+     */
+    private function listFilters(): array
+    {
+        return [
+            AllowedFilter::exact('file_category_id'),
+            AllowedFilter::partial('digital_id'),
+            AllowedFilter::partial('file_no'),
+            AllowedFilter::partial('title'),
+            AllowedFilter::scope('branch_id'),
+            AllowedFilter::scope('region_id'),
+            AllowedFilter::scope('division_id'),
+            AllowedFilter::scope('document_date_from', 'documentDateFrom'),
+            AllowedFilter::scope('document_date_to', 'documentDateTo'),
+            AllowedFilter::scope('box_number'),
+            // One search box: digital id / file no from the start, title anywhere.
+            AllowedFilter::callback('search', function ($query, $value): void {
+                $value = trim((string) $value);
+                if ($value === '') {
+                    return;
+                }
+                $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+                $query->where(fn ($q) => $q
+                    ->where('digital_id', 'like', $escaped.'%')
+                    ->orWhere('file_no', 'like', $escaped.'%')
+                    ->orWhere('title', 'like', '%'.$escaped.'%'));
+            }),
+            // Tabs: in circulation / archived in a box.
+            AllowedFilter::callback('status', function ($query, $value): void {
+                $query->where('is_archived', $value === 'archived');
+            }),
+        ];
+    }
+
+    /**
+     * Totals for the KPI cards and tabs: same filters as the list except the
+     * status tab, so the tab counts always add up.
+     *
+     * @return array{files: int, archived: int, active: int, pages: int, this_month: int, incoming: int}
+     */
+    private function listStats(Request $request): array
+    {
+        $statsRequest = $request->duplicate(['filter' => collect((array) $request->query('filter', []))->except('status')->all()]);
+        $scoped = fn () => QueryBuilder::for(FileManagementSystem::query()->visibleTo($request->user()), $statsRequest)
+            ->allowedFilters($this->listFilters())
+            ->getEloquentBuilder();
+
+        $totals = $scoped()->toBase()
+            ->selectRaw('count(*) as files, sum(case when is_archived = 1 then 1 else 0 end) as archived')
+            ->first();
+        $unit = FileManagementSystem::officeUnitOf($request->user());
+
+        return [
+            'files' => (int) $totals->files,
+            'archived' => (int) $totals->archived,
+            'active' => (int) $totals->files - (int) $totals->archived,
+            'pages' => Media::query()->where('model_type', (new FileManagementSystem)->getMorphClass())
+                ->whereIn('model_id', $scoped()->select('file_management_systems.id'))->count(),
+            'this_month' => $scoped()->where('created_at', '>=', now()->startOfMonth())->count(),
+            'incoming' => FileManagementTransfer::query()->where('status', 'pending')
+                ->when(! $this->isSuperAdmin(), fn ($q) => $unit
+                    ? $q->where('destination_fileable_type', $unit[0])->where('destination_fileable_id', $unit[1])
+                    : $q->whereRaw('1 = 0'))
+                ->count(),
+        ];
     }
 
     /**
@@ -108,7 +260,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             $this->logPageUploaded($fileManagementSystem, $this->addPage($fileManagementSystem, $page));
         }
 
-        return redirect()->route('file-management-systems.index')->with('success', 'Document record created successfully. Digital ID: '.$fileManagementSystem->digital_id);
+        return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('success', 'File saved. Digital ID: '.$fileManagementSystem->digital_id);
     }
 
     /**
@@ -121,12 +273,13 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             404
         );
 
-        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'currentCustodian', 'media', 'transfers.recipient', 'transfers.requester', 'transfers.decider']);
+        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'currentCustodian', 'media', 'box', 'transfers.recipient', 'transfers.requester', 'transfers.decider']);
 
         return view('file-management-systems.show', [
             'fileManagementSystem' => $fileManagementSystem,
             'activityHistory' => $this->activityHistory($fileManagementSystem),
             'approvableTransferIds' => $this->approvableTransferIds($fileManagementSystem),
+            'listUrl' => session('fms.list_url', route('file-management-systems.index')),
         ]);
     }
 

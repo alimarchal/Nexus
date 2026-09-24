@@ -9,25 +9,41 @@ use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * AKSIC -- PM Youth Loan Scheme markup budget.
- *
- * Source: AKSIC "Markup Allocation / Budget (Rs. 994.225 million)" sheet --
- * district provision = total x population %, split Male 48 / Female 48 /
- * Special Person 2 / Transgender 2 and Existing 25 / New 75 business.
- *
- * aksic_budgets             one budget version (total, business split, how
- *                           strictly it is enforced at approval). Only one is
- *                           active; a revised scheme is a new version.
- * aksic_budget_allocations  current allocation per district for a budget.
- * aksic_budget_revisions    append-only ledger of every change -- initial
- *                           allocation, enhancement, reduction, redistribution,
- *                           setting changes -- with reference letter and reason.
- *
- * Utilisation is not stored: it is the markup (aksics.total_interest) of
- * approved cases, so it can never drift from the schedules.
+ * AKSIC markup budget: budget, allocation and revision tables, the budget sheet and its permissions.
  */
 return new class extends Migration
 {
+    public function up(): void
+    {
+        $this->createBudgetTables();
+    }
+
+    public function down(): void
+    {
+        $this->dropBudgetTables();
+    }
+
+    // ------------------------------------------------------------------
+    // Budget (was 2026_09_23_000004_create_aksic_budget_tables.php)
+    // ------------------------------------------------------------------
+    /**
+     * AKSIC -- PM Youth Loan Scheme markup budget.
+     *
+     * Source: AKSIC "Markup Allocation / Budget (Rs. 994.225 million)" sheet --
+     * district provision = total x population %, split Male 48 / Female 48 /
+     * Special Person 2 / Transgender 2 and Existing 25 / New 75 business.
+     *
+     * aksic_budgets             one budget version (total, business split, how
+     *                           strictly it is enforced at approval). Only one is
+     *                           active; a revised scheme is a new version.
+     * aksic_budget_allocations  current allocation per district for a budget.
+     * aksic_budget_revisions    append-only ledger of every change -- initial
+     *                           allocation, enhancement, reduction, redistribution,
+     *                           setting changes -- with reference letter and reason.
+     *
+     * Utilisation is not stored: it is the markup (aksics.total_interest) of
+     * approved cases, so it can never drift from the schedules.
+     */
     /**
      * Sheet figures in Rs million.
      *
@@ -51,7 +67,7 @@ return new class extends Migration
      */
     private array $permissions = ['view aksic budget', 'manage aksic budget'];
 
-    public function up(): void
+    private function createBudgetTables(): void
     {
         Schema::create('aksic_budgets', function (Blueprint $table) {
             $table->id();
@@ -107,7 +123,7 @@ return new class extends Migration
         $this->seedPermissions();
     }
 
-    public function down(): void
+    private function dropBudgetTables(): void
     {
         Schema::dropIfExists('aksic_budget_revisions');
         Schema::dropIfExists('aksic_budget_allocations');

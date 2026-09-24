@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AccountOpeningRequest;
 use App\Models\Aksic;
 use App\Models\AksicBudget;
 use App\Models\Branch;
@@ -22,6 +23,10 @@ use Illuminate\Support\Facades\DB;
  *
  *   AKSIC            -> OfficeAccess (own branch / own region / every branch with "view all aksic cases")
  *   File management  -> FileManagementSystem::visibleTo (the user's own office unit)
+ *   Account opening  -> AccountOpeningRequest::visibleTo (own branch / region; head office all)
+ *
+ * Each section needs its module view permission AND its dashboard permission
+ * (SECTION_PERMISSIONS), so a role can use a module without seeing it here.
  *
  * Everything is aggregated in SQL (no row loading) and cached for a minute per
  * visibility scope; AKSIC figures refresh at once when a case changes.
@@ -30,6 +35,22 @@ class DashboardService
 {
     public const MONTHS = 12;
 
+    /** @var array<string, array{0: string, 1: string}> section => [module permission, dashboard permission] */
+    public const SECTION_PERMISSIONS = [
+        'aksic' => ['view aksics', 'view aksic dashboard'],
+        'files' => ['view file management systems', 'view file management dashboard'],
+        'account_openings' => ['view account openings', 'view account opening dashboard'],
+    ];
+
+    /** Account opening statuses in display order. */
+    public const AOF_STATUSES = [
+        'draft' => 'Draft',
+        'submitted' => 'Submitted',
+        'under_review' => 'Under review',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
+    ];
+
     public function __construct(private readonly AksicBudgetService $budgets) {}
 
     /**
@@ -37,7 +58,7 @@ class DashboardService
      */
     public function aksic(User $user): ?array
     {
-        if (! $user->can('view aksics')) {
+        if (! $this->shows($user, 'aksic')) {
             return null;
         }
 
@@ -73,7 +94,7 @@ class DashboardService
                     'markup' => round((float) $totals->markup, 2),
                     'female_share' => $totals->cases ? round($totals->female / $totals->cases * 100, 1) : 0.0,
                 ],
-                'monthly' => $this->monthly($scoped(), 'created_at', true),
+                'monthly' => $this->monthly($scoped(), 'created_at', 'Approved'),
                 'quota' => $this->quotaMix($scoped()),
                 'breakdown_by' => $breakdownBy,
                 'breakdown' => $this->aksicBreakdown($scoped(), $breakdownBy),
@@ -100,7 +121,7 @@ class DashboardService
      */
     public function files(User $user): ?array
     {
-        if (! $user->can('view file management systems')) {
+        if (! $this->shows($user, 'files')) {
             return null;
         }
 
@@ -136,7 +157,7 @@ class DashboardService
                     'incoming' => $incoming->count(),
                     'outgoing' => $outgoing->count(),
                 ],
-                'monthly' => $this->monthly($scoped(), 'created_at', false),
+                'monthly' => $this->monthly($scoped(), 'created_at', null),
                 'categories' => $scoped()->toBase()
                     ->leftJoin('file_categories', 'file_categories.id', '=', 'file_management_systems.file_category_id')
                     ->selectRaw("coalesce(file_categories.category_name, 'Uncategorised') as label, count(*) as total")
@@ -157,20 +178,203 @@ class DashboardService
     }
 
     /**
-     * Last 12 months (oldest first), counts per month; with $approved also the
-     * approved count, so both series share one axis.
+     * @return array<string, mixed>|null null when the section is not allowed
+     */
+    public function accountOpenings(User $user): ?array
+    {
+        if (! $this->shows($user, 'account_openings')) {
+            return null;
+        }
+
+        [$level, $label] = $this->aofScope($user);
+        $key = 'dashboard:aof:v1:'.md5(json_encode([$level, $user->branch_id, $user->region_id]));
+
+        return Cache::remember($key, 60, function () use ($user, $level, $label): array {
+            $scoped = fn (): Builder => AccountOpeningRequest::query()->visibleTo($user);
+
+            $byStatus = $scoped()->toBase()->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+            $status = collect(self::AOF_STATUSES)->map(fn ($l, $key) => (int) ($byStatus[$key] ?? 0))->all();
+            $forms = $scoped()->toBase()->selectRaw('aof_form_type, count(*) as total')->groupBy('aof_form_type')->pluck('total', 'aof_form_type');
+
+            // Correlated sub-selects instead of joins: visibleTo() filters on an
+            // unqualified branch_id, which a join would make ambiguous.
+            $breakdownBy = $level === 'branch' ? 'category' : 'branch';
+            $labelSql = $breakdownBy === 'branch'
+                ? '(select branches.code from branches where branches.id = account_opening_requests.branch_id)'
+                : '(select customer_categories.name from customers join customer_categories on customer_categories.id = customers.customer_category_id where customers.id = account_opening_requests.customer_id)';
+
+            return [
+                'label' => $label,
+                'totals' => [
+                    'requests' => array_sum($status),
+                    'in_progress' => $status['draft'],
+                    'awaiting' => $status['submitted'] + $status['under_review'],
+                    'approved' => $status['approved'],
+                    'rejected' => $status['rejected'],
+                    'this_month' => $scoped()->where('request_date', '>=', now()->startOfMonth()->toDateString())->count(),
+                    'individual' => (int) ($forms[AccountOpeningRequest::FORM_INDIVIDUAL] ?? 0),
+                    'entity' => (int) ($forms[AccountOpeningRequest::FORM_ENTITY] ?? 0),
+                ],
+                'status' => $status,
+                'monthly' => $this->monthly($scoped(), 'request_date', 'approved'),
+                'breakdown_by' => $breakdownBy,
+                'breakdown' => $scoped()->toBase()
+                    ->selectRaw("coalesce({$labelSql}, 'Not set') as label,
+                        sum(case when status = 'approved' then 1 else 0 end) as approved,
+                        sum(case when status <> 'approved' then 1 else 0 end) as open_count,
+                        count(*) as total")
+                    ->groupBy('label')->orderByDesc('total')->limit(10)->get()
+                    ->map(fn ($r) => ['label' => (string) $r->label, 'approved' => (int) $r->approved, 'pending' => (int) $r->open_count])
+                    ->all(),
+                'products' => $scoped()->toBase()->where('status', 'approved')->whereNotNull('account_id')
+                    ->selectRaw("coalesce((select account_products.name from accounts join account_products on account_products.id = accounts.account_product_id where accounts.id = account_opening_requests.account_id), 'Other') as label, count(*) as total")
+                    ->groupBy('label')->orderByDesc('total')->limit(8)
+                    ->pluck('total', 'label')->map(fn ($v) => (int) $v)->all(),
+                // Plain arrays: the cache store does not unserialize model objects.
+                'awaiting' => $scoped()->whereIn('status', ['submitted', 'under_review'])
+                    ->with(['branch:id,code', 'customer.individual:id,customer_id,full_name', 'customer.organization:id,customer_id,business_name'])
+                    ->latest('request_date')->orderByDesc('id')->limit(6)
+                    ->get(['id', 'request_number', 'aof_form_type', 'branch_id', 'customer_id', 'request_date', 'status'])
+                    ->map(fn (AccountOpeningRequest $r) => [
+                        'url' => route('account-openings.show', $r),
+                        'number' => $r->request_number,
+                        'name' => $r->customer?->individual?->full_name ?? $r->customer?->organization?->business_name ?? 'Customer not entered',
+                        'branch' => $r->branch?->code,
+                        'form' => $r->aof_form_type === AccountOpeningRequest::FORM_ENTITY ? 'Entity' : 'Individual',
+                        'status' => self::AOF_STATUSES[$r->status] ?? $r->status,
+                        'date' => $r->request_date?->format('d.m.Y'),
+                    ])->all(),
+            ];
+        });
+    }
+
+    /**
+     * Whether a dashboard section is shown:
+     *   - module view permission AND the section's dashboard permission
+     *     (migration 2026_09_23_000004_seed_access_permissions), and
+     *   - the user has something to see in it: an office (branch / region /
+     *     ...) or bank-wide access. A user with the permission but no office
+     *     posting gets no section rather than a section of zeros.
+     */
+    public function shows(User $user, string $section): bool
+    {
+        [$module, $dashboard] = self::SECTION_PERMISSIONS[$section];
+
+        if (! $user->can($module) || ! $this->hasDashboardPermission($user, $dashboard)) {
+            return false;
+        }
+
+        return match ($section) {
+            'aksic' => OfficeAccess::for($user)['level'] !== OfficeAccess::NONE,
+            'files' => self::isSuperAdmin($user) || FileManagementSystem::officeUnitOf($user) !== null,
+            'account_openings' => $this->aofScope($user)[0] !== 'none',
+            default => false,
+        };
+    }
+
+    /**
+     * The section's dashboard permission. Until migration 2026_09_23_000004_seed_access_permissions has
+     * created it, it does not exist yet and the module permission alone
+     * decides, so nobody loses the dashboard just because a migration is pending.
+     */
+    private function hasDashboardPermission(User $user, string $permission): bool
+    {
+        if (self::isSuperAdmin($user)) {
+            return true;
+        }
+
+        return rescue(fn () => $user->hasPermissionTo($permission), fn () => true, false);
+    }
+
+    /**
+     * Sections this user sees, in page order.
+     *
+     * @return array<int, string>
+     */
+    public function sectionsFor(User $user): array
+    {
+        return array_values(array_filter(
+            array_keys(self::SECTION_PERMISSIONS),
+            fn (string $section) => $this->shows($user, $section)
+        ));
+    }
+
+    /**
+     * The dashboard is shown only to users who have at least one module on it
+     * (and the "view dashboard" permission); super admin always sees it.
+     */
+    public function isVisibleTo(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+        if (self::isSuperAdmin($user)) {
+            return true;
+        }
+
+        return $user->can('view dashboard') && $this->sectionsFor($user) !== [];
+    }
+
+    /**
+     * Where to send someone who cannot see the dashboard (e.g. after login):
+     * the first module they can open, otherwise their profile.
+     */
+    public function landingUrl(User $user): string
+    {
+        foreach ([
+            'view aksics' => 'aksic.index',
+            'view account openings' => 'account-openings.index',
+            'view file management systems' => 'file-management-systems.index',
+        ] as $permission => $route) {
+            if ($user->can($permission)) {
+                return route($route);
+            }
+        }
+
+        return route('profile.show');
+    }
+
+    public static function isSuperAdmin(User $user): bool
+    {
+        return $user->is_super_admin === 'Yes' || $user->hasRole('super-admin');
+    }
+
+    /**
+     * Same rule as AccountOpeningRequest::visibleTo, for the label and cache key.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private function aofScope(User $user): array
+    {
+        if ($user->is_super_admin === 'Yes' || $user->hasRole(['super-admin', 'head-office'])) {
+            return ['all', 'All branches'];
+        }
+        if ($user->hasRole('branch') && $user->branch_id) {
+            return ['branch', 'Branch: '.trim(($user->branch?->code ?? '').' - '.($user->branch?->name ?? ''), ' -')];
+        }
+        if ($user->hasRole('region') && $user->region_id) {
+            return ['region', 'Region: '.($user->region?->name ?? '#'.$user->region_id)];
+        }
+
+        return ['none', 'No office set'];
+    }
+
+    /**
+     * Last 12 months (oldest first), counts per month; with $approvedStatus also
+     * the count in that status, so both series share one axis.
      *
      * @return array{labels: array<int, string>, total: array<int, int>, approved?: array<int, int>}
      */
-    private function monthly(Builder $query, string $column, bool $approved): array
+    private function monthly(Builder $query, string $column, ?string $approvedStatus): array
     {
+        $approved = $approvedStatus !== null;
         $from = now()->startOfMonth()->subMonths(self::MONTHS - 1);
         $month = DB::connection()->getDriverName() === 'sqlite'
             ? "strftime('%Y-%m', {$column})"
             : "date_format({$column}, '%Y-%m')";
 
         $rows = $query->toBase()->where($column, '>=', $from)
-            ->selectRaw("{$month} as ym, count(*) as total".($approved ? ", sum(case when status = 'Approved' then 1 else 0 end) as approved" : ''))
+            ->selectRaw("{$month} as ym, count(*) as total".($approved ? ', sum(case when status = ? then 1 else 0 end) as approved' : ''), $approved ? [$approvedStatus] : [])
             ->groupBy('ym')->get()->keyBy('ym');
 
         $out = ['labels' => [], 'total' => []] + ($approved ? ['approved' => []] : []);

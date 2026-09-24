@@ -3,24 +3,45 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
- * AKSIC Portal Change #5 -- Claim lodging by District / Branch-Region / Gender.
- *
- * aksic_claims       one lodged claim: the period it covers and the filters it
- *                    was lodged for (district / region / branch / gender, all
- *                    optional), with its totals and settlement status.
- * aksic_claim_items  one line per loan in the claim. District, region, branch
- *                    and gender are snapshotted at lodging time so MIS reports
- *                    stay correct even if the loan or branch is edited later.
- *
- * Claim amount per loan = markup of the schedule instalments falling due
- * inside the claim period. A loan cannot sit in two live claims whose periods
- * overlap (enforced in App\Services\AksicClaimService).
+ * AKSIC markup subsidy claims: claim tables and their permissions.
  */
 return new class extends Migration
 {
     public function up(): void
+    {
+        $this->createClaimTables();
+        $this->seedClaimPermissions();
+    }
+
+    public function down(): void
+    {
+        $this->removeClaimPermissions();
+        $this->dropClaimTables();
+    }
+
+    // ------------------------------------------------------------------
+    // Claims (was 2026_09_23_000002_create_aksic_claims_tables.php)
+    // ------------------------------------------------------------------
+    /**
+     * AKSIC Portal Change #5 -- Claim lodging by District / Branch-Region / Gender.
+     *
+     * aksic_claims       one lodged claim: the period it covers and the filters it
+     *                    was lodged for (district / region / branch / gender, all
+     *                    optional), with its totals and settlement status.
+     * aksic_claim_items  one line per loan in the claim. District, region, branch
+     *                    and gender are snapshotted at lodging time so MIS reports
+     *                    stay correct even if the loan or branch is edited later.
+     *
+     * Claim amount per loan = markup of the schedule instalments falling due
+     * inside the claim period. A loan cannot sit in two live claims whose periods
+     * overlap (enforced in App\Services\AksicClaimService).
+     */
+    private function createClaimTables(): void
     {
         Schema::create('aksic_claims', function (Blueprint $table) {
             $table->uuid('id')->primary();
@@ -73,9 +94,67 @@ return new class extends Migration
         });
     }
 
-    public function down(): void
+    private function dropClaimTables(): void
     {
         Schema::dropIfExists('aksic_claim_items');
         Schema::dropIfExists('aksic_claims');
+    }
+
+    // ------------------------------------------------------------------
+    // ClaimPermissions (was 2026_09_23_000003_seed_aksic_claim_permissions.php)
+    // ------------------------------------------------------------------
+    /**
+     * Permissions for AKSIC claim lodging (Portal Change #5).
+     * Mirrors AKSIC itself: head-office lodges and settles, region/division view.
+     */
+    /**
+     * @var array<int, string>
+     */
+    private array $permissions = [
+        'view aksic claims',
+        'lodge aksic claims',
+        'settle aksic claims',
+        'delete aksic claims',
+    ];
+
+    private function seedClaimPermissions(): void
+    {
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        foreach ($this->permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+        }
+
+        $rolePermissions = [
+            'region' => ['view aksic claims'],
+            'division' => ['view aksic claims'],
+            'head-office' => $this->permissions,
+            'super-admin' => $this->permissions,
+        ];
+
+        foreach ($rolePermissions as $roleName => $permissionNames) {
+            Role::where('name', $roleName)->first()?->givePermissionTo($permissionNames);
+        }
+
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+    }
+
+    private function removeClaimPermissions(): void
+    {
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        foreach ($this->permissions as $permissionName) {
+            $permission = Permission::where('name', $permissionName)->first();
+
+            if ($permission) {
+                foreach ($permission->roles as $role) {
+                    $role->revokePermissionTo($permission);
+                }
+
+                $permission->delete();
+            }
+        }
+
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 };

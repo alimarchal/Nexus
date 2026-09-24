@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -78,7 +79,6 @@ test('authorized user can create a document record with a scanned page', functio
         'pages' => [UploadedFile::fake()->create('scan.pdf', 100, 'application/pdf')],
     ]);
 
-    $response->assertRedirect(route('file-management-systems.index'));
     $this->assertDatabaseHas('file_management_systems', [
         'title' => 'Test Document',
         'fileable_type' => 'branch',
@@ -86,6 +86,8 @@ test('authorized user can create a document record with a scanned page', functio
     ]);
 
     $fms = FileManagementSystem::where('title', 'Test Document')->first();
+    // Lands on the new file's page with its digital ID.
+    $response->assertRedirect(route('file-management-systems.show', $fms))->assertSessionHas('success');
     expect($fms->media)->toHaveCount(1);
     $this->assertDatabaseHas('activity_log', [
         'event' => 'page_uploaded',
@@ -430,4 +432,152 @@ test('archive and new box links show only for the office that holds the file', f
         ->assertOk()->assertDontSee(route('file-management-systems.archive-form', $document), false);
     $this->actingAs($this->admin)->get(route('file-management-systems.boxes'))
         ->assertOk()->assertDontSee(route('file-management-systems.boxes.create'), false);
+});
+
+test('file list searches, filters by status tab and counts the tabs', function () {
+    $active = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch', 'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id, 'digital_id' => 'FMS-SEARCH-1', 'title' => 'Loan agreement Ali',
+    ]);
+    $archived = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch', 'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id, 'is_archived' => true, 'title' => 'Old ledger',
+    ]);
+
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.index', ['filter' => ['search' => 'agreement']]))
+        ->assertOk()
+        ->assertViewHas('fileManagementSystems', fn ($items) => $items->pluck('id')->all() === [$active->id]);
+
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.index', ['filter' => ['search' => 'FMS-SEARCH']]))
+        ->assertViewHas('fileManagementSystems', fn ($items) => $items->pluck('id')->all() === [$active->id]);
+
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.index', ['filter' => ['status' => 'archived'], 'per_page' => 50]))
+        ->assertOk()
+        ->assertViewHas('perPage', 50)
+        ->assertViewHas('fileManagementSystems', fn ($items) => $items->pluck('id')->all() === [$archived->id])
+        // Tab counts ignore the status tab itself.
+        ->assertViewHas('stats', fn ($stats) => $stats['files'] === 2 && $stats['archived'] === 1 && $stats['active'] === 1)
+        ->assertSee('Viewing: Branch:', false);
+});
+
+test('file page shows the snapshot, pages and a pending transfer banner', function () {
+    Storage::fake('public');
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch', 'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id, 'title' => 'Board minutes',
+    ]);
+    $document->addMedia(UploadedFile::fake()->create('minutes.pdf', 120, 'application/pdf'))
+        ->withCustomProperties(['original_filename' => 'minutes.pdf'])->toMediaCollection('pages');
+    $other = Branch::factory()->create();
+    FileManagementTransfer::query()->create([
+        'file_management_system_id' => $document->id,
+        'source_fileable_type' => 'branch', 'source_fileable_id' => $this->branch->id,
+        'destination_fileable_type' => 'branch', 'destination_fileable_id' => $other->id,
+        'recipient_id' => $this->admin->id, 'requested_by' => $this->branchUser->id, 'reason' => 'Audit', 'status' => 'pending',
+    ]);
+
+    $this->actingAs($this->admin)->get(route('file-management-systems.show', $document))
+        ->assertOk()
+        ->assertSee('Board minutes')
+        ->assertSee('Scanned pages (1)')
+        ->assertSee('minutes.pdf')
+        ->assertSee('Transfer pending')
+        ->assertSee('Awaiting your decision');
+});
+
+test('new file page shows the office picker to super admin and the fixed office to a branch user', function () {
+    $this->actingAs($this->admin)->get(route('file-management-systems.create'))
+        ->assertOk()->assertSee('Office type')->assertSee('Review &amp; save', false);
+
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.create'))
+        ->assertOk()->assertDontSee('Office type')->assertSee('Set automatically from your posting.')
+        ->assertSee('name="fileable_id" value="'.$this->branch->id.'"', false);
+});
+
+/**
+ * @return array<string, string> ZIP entry name => contents
+ */
+function fmsZipEntries(string $path): array
+{
+    $zip = new ZipArchive;
+    $zip->open($path);
+    $entries = [];
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = $zip->getNameIndex($i);
+        $entries[$name] = (string) $zip->getFromIndex($i);
+    }
+    $zip->close();
+
+    return $entries;
+}
+
+function fmsDocumentWithPages(array $attributes, array $pages): FileManagementSystem
+{
+    $document = FileManagementSystem::factory()->create($attributes);
+    foreach ($pages as $name => $content) {
+        $document->addMediaFromString($content)->usingFileName(Str::uuid().'_'.$name)
+            ->withCustomProperties(['original_filename' => $name])->toMediaCollection('pages');
+    }
+
+    return $document;
+}
+
+test('filtered files download as a zip with one folder per file and an index', function () {
+    Storage::fake('public');
+    Permission::firstOrCreate(['name' => 'export file management systems']);
+    Role::findByName('branch', 'web')->givePermissionTo('export file management systems');
+
+    fmsDocumentWithPages(['fileable_type' => 'branch', 'fileable_id' => $this->branch->id, 'file_category_id' => $this->fileCategory->id,
+        'digital_id' => 'FMS-ZIP-1', 'title' => 'Loan file: Ali'], ['scan.pdf' => '%PDF-page-one', 'photo.jpg' => 'jpeg-bytes']);
+    fmsDocumentWithPages(['fileable_type' => 'branch', 'fileable_id' => $this->branch->id, 'file_category_id' => $this->fileCategory->id,
+        'digital_id' => 'FMS-ZIP-2', 'title' => 'Other', 'is_archived' => true], ['a.pdf' => '%PDF-other']);
+    // Another branch's file never leaves the office.
+    fmsDocumentWithPages(['fileable_type' => 'branch', 'fileable_id' => Branch::factory()->create()->id, 'file_category_id' => $this->fileCategory->id,
+        'digital_id' => 'FMS-ZIP-X', 'title' => 'Not mine'], ['x.pdf' => '%PDF-x']);
+
+    $response = $this->actingAs($this->branchUser)->get(route('file-management-systems.export-zip', ['filter' => ['status' => 'active']]));
+
+    $response->assertOk()->assertDownload();
+    $entries = fmsZipEntries($response->baseResponse->getFile()->getPathname());
+    $names = array_keys($entries);
+
+    expect(collect($names)->first(fn ($n) => str_ends_with($n, 'FMS-ZIP-1 - Loan file- Ali/01 - scan.pdf')))->not->toBeNull()
+        ->and(collect($names)->first(fn ($n) => str_ends_with($n, 'FMS-ZIP-1 - Loan file- Ali/02 - photo.jpg')))->not->toBeNull()
+        ->and(collect($names)->contains(fn ($n) => str_contains($n, 'FMS-ZIP-2')))->toBeFalse()
+        ->and(collect($names)->contains(fn ($n) => str_contains($n, 'FMS-ZIP-X')))->toBeFalse();
+
+    $index = $entries[collect($names)->first(fn ($n) => str_ends_with($n, '00-index.csv'))];
+    expect($index)->toContain('FMS-ZIP-1')->toContain('01 - scan.pdf | 02 - photo.jpg')->not->toContain('FMS-ZIP-X');
+    expect($entries[collect($names)->first(fn ($n) => str_ends_with($n, '01 - scan.pdf'))])->toBe('%PDF-page-one');
+    $this->assertDatabaseHas('activity_log', ['event' => 'exported', 'description' => 'File list exported as ZIP']);
+});
+
+test('ticked rows download as a zip and csv, limited to the user office', function () {
+    Storage::fake('public');
+    Permission::firstOrCreate(['name' => 'export file management systems']);
+    Role::findByName('branch', 'web')->givePermissionTo('export file management systems');
+
+    $mine = fmsDocumentWithPages(['fileable_type' => 'branch', 'fileable_id' => $this->branch->id, 'file_category_id' => $this->fileCategory->id, 'digital_id' => 'FMS-SEL-1'], ['p.pdf' => 'p']);
+    fmsDocumentWithPages(['fileable_type' => 'branch', 'fileable_id' => $this->branch->id, 'file_category_id' => $this->fileCategory->id, 'digital_id' => 'FMS-SEL-2'], ['q.pdf' => 'q']);
+    $other = fmsDocumentWithPages(['fileable_type' => 'branch', 'fileable_id' => Branch::factory()->create()->id, 'file_category_id' => $this->fileCategory->id, 'digital_id' => 'FMS-SEL-X'], ['x.pdf' => 'x']);
+
+    $zip = $this->actingAs($this->branchUser)->post(route('file-management-systems.export-zip'), ['ids' => [$mine->id, $other->id]]);
+    $names = array_keys(fmsZipEntries($zip->baseResponse->getFile()->getPathname()));
+    expect(collect($names)->contains(fn ($n) => str_contains($n, 'FMS-SEL-1')))->toBeTrue()
+        ->and(collect($names)->contains(fn ($n) => str_contains($n, 'FMS-SEL-2')))->toBeFalse()
+        ->and(collect($names)->contains(fn ($n) => str_contains($n, 'FMS-SEL-X')))->toBeFalse();
+
+    $csv = $this->actingAs($this->branchUser)->post(route('file-management-systems.export-csv'), ['ids' => [$mine->id]])->streamedContent();
+    expect($csv)->toContain('Digital ID')->toContain('FMS-SEL-1')->not->toContain('FMS-SEL-2')->not->toContain('FMS-SEL-X');
+});
+
+test('export needs its permission and refuses an empty zip', function () {
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.export-zip'))->assertForbidden();
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.index'))->assertDontSee('Download scanned files (ZIP)');
+
+    Permission::firstOrCreate(['name' => 'export file management systems']);
+    Role::findByName('branch', 'web')->givePermissionTo('export file management systems');
+
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.export-zip'))
+        ->assertRedirect()->assertSessionHas('error');
 });

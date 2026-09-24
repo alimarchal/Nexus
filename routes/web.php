@@ -132,6 +132,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/product/boxes', [FileManagementSystemController::class, 'boxesList'])->name('file-management-systems.boxes');
     Route::get('/product/boxes/create', [FileManagementSystemController::class, 'createBox'])->name('file-management-systems.boxes.create');
     Route::post('/product/boxes', [FileManagementSystemController::class, 'storeBox'])->name('file-management-systems.boxes.store');
+    Route::match(['get', 'post'], '/product/file-management-systems/export/csv', [FileManagementSystemController::class, 'exportCsv'])->name('file-management-systems.export-csv');
+    Route::match(['get', 'post'], '/product/file-management-systems/export/zip', [FileManagementSystemController::class, 'exportZip'])->name('file-management-systems.export-zip');
     Route::resource('/product/file-management-systems', FileManagementSystemController::class);
     Route::delete('/product/file-management-systems/{fileManagementSystem}/media/{media}', [FileManagementSystemController::class, 'destroyMedia'])->name('file-management-systems.media.destroy');
 
