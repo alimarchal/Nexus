@@ -680,3 +680,64 @@ test('transfer form explains when no head office exists yet', function () {
         ->assertSuccessful()
         ->assertSee('No head office has been set up');
 });
+
+test('a head office user can be chosen as the receiving custodian of a transfer', function () {
+    $headOffice = HeadOffice::create(['name' => 'Head Office']);
+    $custodian = User::factory()->create(['head_office_id' => $headOffice->id]);
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs($this->branchUser)
+        ->get(route('file-management-systems.transfer', $document))
+        ->assertSuccessful()
+        ->assertSee('"head_office_id":'.$headOffice->id, false);
+
+    $this->actingAs($this->branchUser)->post(route('file-management-systems.transfers.store', $document), [
+        'destination_fileable_type' => 'head-office',
+        'destination_fileable_id' => $headOffice->id,
+        'recipient_id' => $custodian->id,
+        'reason' => 'Send to head office records.',
+    ])->assertRedirect(route('file-management-systems.show', $document));
+
+    $this->assertDatabaseHas('file_management_transfers', ['recipient_id' => $custodian->id, 'status' => 'pending']);
+});
+
+test('a custodian from a different office is rejected with a field error', function () {
+    $otherBranch = Branch::factory()->create();
+    $destination = Branch::factory()->create();
+    $wrongCustodian = User::factory()->create(['branch_id' => $otherBranch->id]);
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs($this->branchUser)
+        ->from(route('file-management-systems.transfer', $document))
+        ->post(route('file-management-systems.transfers.store', $document), [
+            'destination_fileable_type' => 'branch',
+            'destination_fileable_id' => $destination->id,
+            'recipient_id' => $wrongCustodian->id,
+            'reason' => 'Wrong person picked.',
+        ])
+        ->assertRedirect(route('file-management-systems.transfer', $document))
+        ->assertSessionHasErrors('recipient_id');
+
+    $this->assertDatabaseCount('file_management_transfers', 0);
+});
+
+test('transfer form tells the user when the chosen office has no active custodian', function () {
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs($this->branchUser)
+        ->get(route('file-management-systems.transfer', $document))
+        ->assertSuccessful()
+        ->assertSee('No active user is assigned to this office yet');
+});
