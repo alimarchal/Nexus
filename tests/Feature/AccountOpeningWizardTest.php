@@ -119,7 +119,23 @@ test('the identification step requires a mobile number', function () {
             'identifications' => [['document_number' => '81303-1234567-1']],
             'addresses' => ['permanent_residential' => ['city' => 'Muzaffarabad']],
         ])
-        ->assertSessionHasErrors('contacts.mobile.value');
+        ->assertSessionHasErrors(['contacts.mobile.1.value' => 'Please enter at least one contact number to continue.']);
+});
+
+test('a missing mobile number never shows the technical field name to the user', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    $response = $this->actingAs($this->admin)
+        ->from(route('account-openings.steps.edit', [$accountOpeningRequest, 'identification']))
+        ->followingRedirects()
+        ->put(route('account-openings.steps.update', [$accountOpeningRequest, 'identification']), [
+            'identifications' => [['identification_document_type_id' => IdentificationDocumentType::code('CNIC')->firstOrFail()->id, 'document_number' => '81303-1234567-1']],
+            'addresses' => ['permanent_residential' => ['city' => 'Muzaffarabad']],
+        ]);
+
+    $response->assertSee('Please enter at least one contact number to continue.')
+        ->assertDontSee('contacts.mobile1.value')
+        ->assertDontSee('contacts.mobile.1.value field is required');
 });
 
 test('the identification step stores identification, address and contact', function () {
@@ -136,7 +152,7 @@ test('the identification step stores identification, address and contact', funct
                 'permanent_residential' => ['city' => 'Muzaffarabad', 'street_area' => 'Gojra'],
             ],
             'contacts' => [
-                'mobile' => ['country_code' => '+92', 'value' => '3008169924'],
+                'mobile' => [1 => ['country_code' => '+92', 'value' => '3008169924']],
             ],
         ])
         ->assertSessionHasNoErrors();

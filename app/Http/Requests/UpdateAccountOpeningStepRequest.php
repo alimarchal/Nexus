@@ -38,6 +38,21 @@ class UpdateAccountOpeningStepRequest extends FormRequest
     }
 
     /**
+     * Plain-language messages for the fields staff most often miss, so the form
+     * never shows a raw rule key such as "contacts.mobile.1.value".
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'contacts.mobile.1.value.required' => 'Please enter at least one contact number to continue.',
+            'contacts.mobile.1.country_code.required' => 'Please enter the country code for the mobile number, for example +92.',
+            'identifications.*.identification_document_type_id.required_with' => 'Please select the document type for the identification number you entered.',
+        ];
+    }
+
+    /**
      * AOF #04 to #06 -- Customer Category plus the Individual / Business detail blocks.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
