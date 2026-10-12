@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateFileManagementSystemRequest extends FormRequest
 {
@@ -30,5 +31,20 @@ class UpdateFileManagementSystemRequest extends FormRequest
             'pages' => ['nullable', 'array'],
             'pages.*' => ['file', 'max:10240', 'mimes:pdf,doc,docx,jpg,jpeg,png'],
         ];
+    }
+
+    /**
+     * A record always keeps at least one scanned page: when it has none yet,
+     * this edit must upload one.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $document = $this->route('file_management_system');
+
+            if ($document && $document->media()->count() === 0 && ! $this->hasFile('pages')) {
+                $validator->errors()->add('pages', 'Upload at least one scanned page before saving this record.');
+            }
+        });
     }
 }

@@ -435,6 +435,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             ->where('model_id', $fileManagementSystem->getKey())
             ->firstOrFail();
 
+        if ($fileManagementSystem->media()->count() <= 1) {
+            return redirect()->back()->withErrors(['pages' => 'A record must keep at least one scanned page. Upload a replacement before removing this one.']);
+        }
+
         activity('file-management')
             ->performedOn($fileManagementSystem)
             ->causedBy(auth()->user())

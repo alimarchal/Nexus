@@ -121,12 +121,15 @@ test('branch role can view files created by another user in their branch', funct
 });
 
 test('normal edits cannot change a document record owner', function () {
+    Storage::fake('public');
+
     $newBranch = Branch::factory()->create();
     $document = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
     ]);
+    $document->addMedia(UploadedFile::fake()->create('scan.pdf', 50, 'application/pdf'))->toMediaCollection('pages');
 
     $this->actingAs($this->admin)->put(route('file-management-systems.update', $document), [
         'file_category_id' => $this->fileCategory->id,
@@ -580,4 +583,63 @@ test('export needs its permission and refuses an empty zip', function () {
 
     $this->actingAs($this->branchUser)->get(route('file-management-systems.export-zip'))
         ->assertRedirect()->assertSessionHas('error');
+});
+
+test('updating a record that has no scanned page requires a page upload', function () {
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->from(route('file-management-systems.edit', $document))
+        ->put(route('file-management-systems.update', $document), [
+            'file_category_id' => $this->fileCategory->id,
+            'document_date' => '2026-08-01',
+            'title' => 'Edited without a file',
+        ])
+        ->assertRedirect(route('file-management-systems.edit', $document))
+        ->assertSessionHasErrors('pages');
+
+    expect($document->fresh()->title)->not->toBe('Edited without a file');
+});
+
+test('updating a record that already has a scanned page does not require a new upload', function () {
+    Storage::fake('public');
+
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+    $document->addMedia(UploadedFile::fake()->create('scan.pdf', 50, 'application/pdf'))->toMediaCollection('pages');
+
+    $this->actingAs($this->admin)
+        ->put(route('file-management-systems.update', $document), [
+            'file_category_id' => $this->fileCategory->id,
+            'document_date' => '2026-08-01',
+            'title' => 'Edited title',
+        ])
+        ->assertRedirect(route('file-management-systems.index'))
+        ->assertSessionHasNoErrors();
+
+    expect($document->fresh()->title)->toBe('Edited title');
+});
+
+test('the last scanned page of a record cannot be removed', function () {
+    Storage::fake('public');
+
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+    $page = $document->addMedia(UploadedFile::fake()->create('scan.pdf', 50, 'application/pdf'))->toMediaCollection('pages');
+
+    $this->actingAs($this->admin)
+        ->delete(route('file-management-systems.media.destroy', [$document, $page->id]))
+        ->assertSessionHasErrors('pages');
+
+    expect($document->fresh()->media)->toHaveCount(1);
 });
