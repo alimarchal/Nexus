@@ -58,10 +58,13 @@ test('user module roles index uses shared page pattern and filters', function ()
     $response->assertSuccessful();
     $response->assertViewIs('roles.index');
     $response->assertSeeText('Roles');
-    $response->assertSeeText('Add Role');
+    $response->assertSeeText('Add role');
     $response->assertSeeText('branch-manager');
     $response->assertDontSeeText('super-admin');
-    $response->assertSee('id="filters"', false);
+    // Same list pattern as the Users list: KPI cards, one search box, chips and a dense table.
+    $response->assertSee('class="ak-kpis"', false);
+    $response->assertSee('name="filter[search]"', false);
+    $response->assertSee('class="ak-dt"', false);
 });
 
 test('user module permissions index uses shared page pattern and filters', function () {
