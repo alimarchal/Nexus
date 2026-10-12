@@ -17,6 +17,7 @@ use App\Models\TransactionMode;
 use App\Models\User;
 use Database\Seeders\BajkAccountOpeningSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -285,4 +286,67 @@ test('an invalid mobile number does not overwrite the saved one', function () {
     submitMobile($this, $accountOpeningRequest, '+92', '03008169924');
 
     expect($accountOpeningRequest->fresh()->customer->contacts->firstWhere('contact_type', 'mobile')->value)->toBe('3008169924');
+});
+
+/**
+ * Submit the compliance step with only the tax residency fields varying.
+ *
+ * @param  array<int, array<string, mixed>>  $residencies
+ */
+function submitTaxResidency(mixed $test, AccountOpeningRequest $request, bool $otherCountry, array $residencies): TestResponse
+{
+    return $test->actingAs($test->admin)
+        ->put(route('account-openings.steps.update', [$request, 'compliance']), [
+            'is_tax_resident_other_country' => $otherCountry ? 1 : 0,
+            'tax_residencies' => $residencies,
+        ]);
+}
+
+test('tax residency details are ignored and cleared while the other-country box is unticked', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+    $uk = Country::where('iso2', 'GB')->firstOrFail();
+
+    submitTaxResidency($this, $accountOpeningRequest, true, [['country_id' => $uk->id, 'tin' => 'UK-123']])->assertSessionHasNoErrors();
+    expect($accountOpeningRequest->fresh()->customer->taxResidencies)->toHaveCount(1);
+
+    submitTaxResidency($this, $accountOpeningRequest, false, [['country_id' => $uk->id, 'tin' => 'UK-123']])->assertSessionHasNoErrors();
+    expect($accountOpeningRequest->fresh()->customer->taxResidencies)->toHaveCount(0);
+});
+
+test('ticking the other-country box requires a country other than Pakistan or the USA', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitTaxResidency($this, $accountOpeningRequest, true, [[]])->assertSessionHasErrors('tax_residencies');
+
+    foreach (['PK', 'US'] as $iso) {
+        submitTaxResidency($this, $accountOpeningRequest, true, [['country_id' => Country::where('iso2', $iso)->firstOrFail()->id]])
+            ->assertSessionHasErrors('tax_residencies');
+    }
+
+    expect($accountOpeningRequest->fresh()->customer->taxResidencies)->toHaveCount(0);
+});
+
+test('the tax residency fields render greyed out by default and without Pakistan or the USA', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    $html = $this->actingAs($this->admin)
+        ->get(route('account-openings.steps.edit', [$accountOpeningRequest, 'compliance']))
+        ->assertSuccessful()
+        ->assertSee('x-data="{ other: false }"', false)
+        ->assertSee('x-bind:disabled="!other"', false)
+        ->getContent();
+
+    $taxSection = Str::after($html, 'data-tax-residency');
+    $taxSection = Str::before($taxSection, 'Politically Exposed Person');
+
+    expect($taxSection)->toContain('United Kingdom')->not->toContain('>Pakistan<')->not->toContain('United States of America');
+});
+
+test('the tax residency fields are active when the other-country box was saved ticked', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+    submitTaxResidency($this, $accountOpeningRequest, true, [['country_id' => Country::where('iso2', 'GB')->firstOrFail()->id]]);
+
+    $this->actingAs($this->admin)
+        ->get(route('account-openings.steps.edit', [$accountOpeningRequest, 'compliance']))
+        ->assertSee('x-data="{ other: true }"', false);
 });

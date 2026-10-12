@@ -186,48 +186,62 @@
     @endif
 
     <x-aof-section title="Tax Residency Status"
-        subtitle="Reason A: the country does not issue TINs. Reason B: unable to obtain one (explanation required). Reason C: no TIN is required."
+        subtitle="Tick the box only if the customer is tax resident in a country other than Pakistan or the USA; the details below stay greyed out until then. Reason A: the country does not issue TINs. Reason B: unable to obtain one (explanation required). Reason C: no TIN is required."
         reference="AOF-Individual page 3 / AOF-Entity page 4">
-        <label class="mb-3 inline-flex items-center">
-            <input type="hidden" name="is_tax_resident_other_country" value="0">
-            <input type="checkbox" name="is_tax_resident_other_country" value="1"
-                @checked(old('is_tax_resident_other_country', $fatca?->is_tax_resident_other_country))
-                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-            <span class="ml-2 text-sm">Tax resident of a country other than Pakistan &amp; USA</span>
-        </label>
+        @php
+            $otherCountryResident = (bool) old('is_tax_resident_other_country', $fatca?->is_tax_resident_other_country);
+            $taxCountries = $countries->reject(fn ($country) => in_array($country->iso2, ['PK', 'US'], true));
+            $fieldOff = "bg-gray-100 text-gray-400 cursor-not-allowed";
+        @endphp
+        <div x-data="{ other: {{ $otherCountryResident ? 'true' : 'false' }} }" data-tax-residency>
+            <label class="mb-3 inline-flex items-center">
+                <input type="hidden" name="is_tax_resident_other_country" value="0">
+                <input type="checkbox" name="is_tax_resident_other_country" value="1" x-model="other"
+                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                <span class="ml-2 text-sm">Tax resident of a country other than Pakistan &amp; USA</span>
+            </label>
+            <p class="mb-3 text-xs text-gray-600" x-show="!other">Tick the box above to enter tax residency details.</p>
+            @error('tax_residencies') <p class="mb-2 text-sm text-red-600">{{ $message }}</p> @enderror
+            @error('tax_residencies.*') <p class="mb-2 text-sm text-red-600">{{ $message }}</p> @enderror
 
-        @foreach ($taxResidencies as $index => $row)
-            <div class="mb-2 grid grid-cols-1 gap-3 md:grid-cols-4">
-                <select name="tax_residencies[{{ $index }}][country_id]"
-                    class="select2 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">Country / jurisdiction of tax residence</option>
-                    @foreach ($countries as $country)
-                        <option value="{{ $country->id }}" @selected(($row['country_id'] ?? null) === $country->id)>
-                            {{ $country->name }}
-                        </option>
-                    @endforeach
-                </select>
+            @foreach ($taxResidencies as $index => $row)
+                <div class="mb-2 grid grid-cols-1 gap-3 md:grid-cols-4">
+                    <select name="tax_residencies[{{ $index }}][country_id]" x-bind:disabled="!other"
+                        x-bind:class="!other && '{{ $fieldOff }}'"
+                        class="select2 block w-full rounded-md border-gray-300 shadow-sm">
+                        <option value="">Country / jurisdiction of tax residence</option>
+                        @foreach ($taxCountries as $country)
+                            <option value="{{ $country->id }}" @selected(($row['country_id'] ?? null) === $country->id)>
+                                {{ $country->name }}
+                            </option>
+                        @endforeach
+                    </select>
 
-                <x-input name="tax_residencies[{{ $index }}][tin]" type="text" class="block w-full"
-                    placeholder="TIN / NTN" :value="$row['tin'] ?? null" />
+                    <x-input name="tax_residencies[{{ $index }}][tin]" type="text" class="block w-full"
+                        x-bind:disabled="!other" x-bind:class="!other && '{{ $fieldOff }}'"
+                        placeholder="TIN / NTN" :value="$row['tin'] ?? null" />
 
-                <select name="tax_residencies[{{ $index }}][no_tin_reason]"
-                    class="block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">If no TIN, reason</option>
-                    @foreach (['A', 'B', 'C'] as $reason)
-                        <option value="{{ $reason }}" @selected(($row['no_tin_reason'] ?? null) === $reason)>Reason {{ $reason }}</option>
-                    @endforeach
-                </select>
+                    <select name="tax_residencies[{{ $index }}][no_tin_reason]" x-bind:disabled="!other"
+                        x-bind:class="!other && '{{ $fieldOff }}'"
+                        class="block w-full rounded-md border-gray-300 shadow-sm">
+                        <option value="">If no TIN, reason</option>
+                        @foreach (['A', 'B', 'C'] as $reason)
+                            <option value="{{ $reason }}" @selected(($row['no_tin_reason'] ?? null) === $reason)>Reason {{ $reason }}</option>
+                        @endforeach
+                    </select>
 
-                <x-input name="tax_residencies[{{ $index }}][reason_b_explanation]" type="text" class="block w-full"
-                    placeholder="Explanation (Reason B only)" :value="$row['reason_b_explanation'] ?? null" />
+                    <x-input name="tax_residencies[{{ $index }}][reason_b_explanation]" type="text" class="block w-full"
+                        x-bind:disabled="!other" x-bind:class="!other && '{{ $fieldOff }}'"
+                        placeholder="Explanation (Reason B only)" :value="$row['reason_b_explanation'] ?? null" />
+                </div>
+            @endforeach
+
+            <div class="mt-3 md:w-1/3">
+                <x-label value="Self-certification date" />
+                <x-input name="self_certification_date" type="date" class="mt-1 block w-full"
+                    x-bind:disabled="!other" x-bind:class="!other && '{{ $fieldOff }}'"
+                    :value="old('self_certification_date', $fatca?->self_certification_date?->toDateString())" />
             </div>
-        @endforeach
-
-        <div class="mt-3 md:w-1/3">
-            <x-label value="Self-certification date" />
-            <x-input name="self_certification_date" type="date" class="mt-1 block w-full"
-                :value="old('self_certification_date', $fatca?->self_certification_date?->toDateString())" />
         </div>
     </x-aof-section>
 

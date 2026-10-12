@@ -677,8 +677,11 @@ class AccountOpeningController extends Controller implements HasMiddleware
             'self_certification_date' => $request->input('self_certification_date'),
         ]);
 
+        // The tax residency rows only apply when the customer is tax resident elsewhere;
+        // otherwise any previously saved rows are cleared.
         $customer->taxResidencies()->delete();
-        foreach ($request->input('tax_residencies', []) as $index => $row) {
+        $residencies = $request->boolean('is_tax_resident_other_country') ? $request->input('tax_residencies', []) : [];
+        foreach ($residencies as $index => $row) {
             if (blank($row['country_id'] ?? null)) {
                 continue;
             }
