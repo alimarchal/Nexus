@@ -235,12 +235,21 @@
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
                 <x-label value="***Mobile No." />
-                <div class="mt-1 flex space-x-2">
+                {{-- +92 numbers are exactly 10 digits (no leading 0); every code accepts digits only. --}}
+                <div class="mt-1 flex space-x-2"
+                    x-data="{
+                        code: @js($contactValue('mobile', 1, 'country_code') ?? '+92'),
+                        number: @js((string) ($contactValue('mobile', 1, 'value') ?? '')),
+                        get limit() { return this.code.replace(/\D/g, '').replace(/^0+/, '') === '92' ? 10 : 15; },
+                        clean() { this.number = this.number.replace(/\D/g, '').slice(0, this.limit); },
+                    }" x-init="clean()">
                     <x-input name="contacts[mobile][1][country_code]" type="text" class="block w-24" placeholder="+92"
-                        :value="$contactValue('mobile', 1, 'country_code') ?? '+92'" />
-                    <x-input name="contacts[mobile][1][value]" type="text" class="block w-full"
-                        :value="$contactValue('mobile', 1, 'value')" />
+                        x-model="code" x-on:input="clean()" />
+                    <x-input name="contacts[mobile][1][value]" type="text" class="block w-full" inputmode="numeric"
+                        autocomplete="tel-national" placeholder="3008169924" x-bind:maxlength="limit"
+                        x-model="number" x-on:input="clean()" />
                 </div>
+                <p class="mt-1 text-xs text-gray-600">Digits only. For +92 enter exactly 10 digits without the country code or a leading 0.</p>
                 <x-input-error for="contacts.mobile.1.value" class="mt-1" />
             </div>
 
