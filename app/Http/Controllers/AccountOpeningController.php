@@ -39,6 +39,7 @@ use App\Models\User;
 use App\Models\WealthSource;
 use App\Models\ZakatExemptionReason;
 use App\Services\AccountOpeningWorkflow;
+use App\Support\AccountOpeningSteps;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -262,6 +263,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
             'workflow' => $this->workflow,
             'canDecide' => $this->workflow->canDecide($accountOpeningRequest, $user),
             'isMaker' => $this->workflow->isMaker($accountOpeningRequest, $user),
+            'nextStep' => AccountOpeningSteps::next($this->progress($accountOpeningRequest)),
             'canUnlock' => $accountOpeningRequest->isLocked() && $user->can('unlock account openings') && $this->workflow->isSuperAdmin($user),
         ]);
     }
@@ -311,7 +313,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
         $this->authorizeVisibility($accountOpeningRequest);
         abort_unless(array_key_exists($step, self::STEPS), 404);
 
-        if ($blocked = $this->blockedFromEditing($accountOpeningRequest)) {
+        if ($blocked = $this->blockedFromEditing($accountOpeningRequest) ?? $this->blockedByEarlierStep($accountOpeningRequest, $step)) {
             return $blocked;
         }
 
@@ -339,7 +341,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
         $this->authorizeVisibility($accountOpeningRequest);
         abort_unless(array_key_exists($step, self::STEPS), 404);
 
-        if ($blocked = $this->blockedFromEditing($accountOpeningRequest)) {
+        if ($blocked = $this->blockedFromEditing($accountOpeningRequest) ?? $this->blockedByEarlierStep($accountOpeningRequest, $step)) {
             return $blocked;
         }
 
@@ -357,6 +359,14 @@ class AccountOpeningController extends Controller implements HasMiddleware
         });
 
         $next = $this->nextStep($step);
+
+        // Step-wise: moving on needs this step to be complete (Save & exit still keeps the draft).
+        if ($next !== null && ! $request->boolean('save_and_exit') && AccountOpeningSteps::strict()
+            && ! ($this->progress($accountOpeningRequest->fresh())[$step]['complete'] ?? false)) {
+            return redirect()
+                ->route('account-openings.steps.edit', [$accountOpeningRequest, $step])
+                ->with('error', 'Your changes are saved, but “'.self::STEPS[$step].'” is not complete yet. Fill in the required details to continue to the next step.');
+        }
 
         if ($request->boolean('save_and_exit') || $next === null) {
             return redirect()
@@ -450,6 +460,22 @@ class AccountOpeningController extends Controller implements HasMiddleware
         }
 
         return redirect()->route('account-openings.show', $accountOpeningRequest)->with('success', $success);
+    }
+
+    /**
+     * Step-wise rule: a step opens only after the steps before it are complete.
+     */
+    private function blockedByEarlierStep(AccountOpeningRequest $accountOpeningRequest, string $step): ?RedirectResponse
+    {
+        $blocker = AccountOpeningSteps::blockedBy($this->progress($accountOpeningRequest), $step);
+
+        if ($blocker === null) {
+            return null;
+        }
+
+        return redirect()
+            ->route('account-openings.steps.edit', [$accountOpeningRequest, $blocker])
+            ->with('error', 'Complete “'.self::STEPS[$blocker].'” before opening “'.self::STEPS[$step].'”.');
     }
 
     /**
