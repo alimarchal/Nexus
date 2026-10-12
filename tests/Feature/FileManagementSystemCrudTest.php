@@ -802,3 +802,44 @@ test('a seeded branch manager sees the new box button on the file list', functio
         ->assertSuccessful()
         ->assertSee('New box');
 });
+
+test('the seeded roles can archive files into boxes', function () {
+    $this->seed(RolesAndPermissionsSeeder::class);
+
+    foreach (['branch', 'region', 'division', 'head-office'] as $roleName) {
+        expect(Role::findByName($roleName)->hasPermissionTo('archive file management systems'))
+            ->toBeTrue("{$roleName} should archive files");
+    }
+});
+
+test('a seeded branch manager can archive an own file into a box from the file page', function () {
+    $this->seed(RolesAndPermissionsSeeder::class);
+    Storage::fake('public');
+    $manager = User::whereNotNull('branch_id')->whereHas('roles', fn ($q) => $q->where('name', 'branch'))->first();
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $manager->branch_id,
+        'file_category_id' => $this->fileCategory->id,
+        'created_by' => $manager->id,
+    ]);
+    $document->addMedia(UploadedFile::fake()->create('scan.pdf', 50, 'application/pdf'))->toMediaCollection('pages');
+
+    $this->actingAs($manager)
+        ->get(route('file-management-systems.show', $document))
+        ->assertSuccessful()
+        ->assertSee(route('file-management-systems.archive-form', $document), false);
+
+    $this->actingAs($manager)->post(route('file-management-systems.boxes.store'), ['location' => 'Shelf B', 'capacity' => 10]);
+    $box = Box::where('boxable_id', $manager->branch_id)->sole();
+
+    $this->actingAs($manager)
+        ->get(route('file-management-systems.archive-form', $document))
+        ->assertSuccessful()
+        ->assertSee($box->box_number);
+
+    $this->actingAs($manager)
+        ->post(route('file-management-systems.archive', $document), ['box_id' => $box->id])
+        ->assertRedirect(route('file-management-systems.show', $document));
+
+    expect($document->fresh()->is_archived)->toBeTrue();
+});
