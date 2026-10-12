@@ -256,8 +256,9 @@
                 <input type="checkbox" name="terms_and_conditions_accepted" value="1"
                     @checked(old('terms_and_conditions_accepted', $accountOpeningRequest->terms_and_conditions_accepted))
                     class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                <span class="ml-2">Customer has read, understood and accepted the Terms &amp; Conditions of the account.</span>
+                <span class="ml-2">Customer has read, understood and accepted the Terms &amp; Conditions of the account. <span class="font-bold text-red-600" title="Required to continue">*</span></span>
             </label>
+            <x-input-error for="terms_and_conditions_accepted" class="mt-1" />
 
             <label class="flex items-start">
                 <input type="hidden" name="indemnity_undertaking_accepted" value="0">

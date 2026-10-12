@@ -51,6 +51,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
         return [
             'contacts.mobile.1.value.required' => 'Please enter at least one contact number to continue.',
             'contacts.mobile.1.country_code.required' => 'Please enter the country code for the mobile number, for example +92.',
+            'terms_and_conditions_accepted.accepted' => 'Please review and accept the Terms and Conditions before continuing.',
             'identifications.*.identification_document_type_id.required_with' => 'Please select the document type for the identification number you entered.',
         ];
     }
@@ -337,7 +338,8 @@ class UpdateAccountOpeningStepRequest extends FormRequest
             'card_type_id' => ['nullable', 'uuid', 'exists:card_types,id'],
             'name_on_card' => ['nullable', 'required_with:card_type_id', 'string', 'max:19'],
 
-            'terms_and_conditions_accepted' => ['nullable', 'boolean'],
+            // Terms must be accepted to move on; "Save & exit" may still keep a draft.
+            'terms_and_conditions_accepted' => $this->boolean('save_and_exit') ? ['nullable', 'boolean'] : ['accepted'],
             'indemnity_undertaking_accepted' => ['nullable', 'boolean'],
             'aof_copy_received_by_customer' => ['nullable', 'boolean'],
             'shariah_compliant_investment_authorized' => ['nullable', 'boolean'],
