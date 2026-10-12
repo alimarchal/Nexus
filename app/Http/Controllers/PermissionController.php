@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\PermissionCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -47,26 +47,34 @@ class PermissionController extends Controller implements HasMiddleware
         return redirect()->route('permissions.index')->with('success', 'Permission created successfully!');
     }
 
+    /** Rows-per-page choices on the list. */
+    public const PER_PAGE = [10, 25, 50, 100];
+
     // Display a listing of the permissions with pagination
     public function index(Request $request)
     {
+        $perPage = in_array((int) $request->query('per_page'), self::PER_PAGE, true) ? (int) $request->query('per_page') : 25;
+        $sort = in_array(ltrim((string) $request->query('sort', 'name'), '-'), ['name', 'created_at', 'users_count'], true) ? (string) $request->query('sort', 'name') : 'name';
+        $directGrants = config('permission.table_names.model_has_permissions');
+        $roleGrants = config('permission.table_names.role_has_permissions');
+
         // Direct (per-user) grants; Spatie's users() relation cannot be used with withCount.
         $query = Permission::query()
             ->select('permissions.*')
-            ->addSelect(['users_count' => DB::table(config('permission.table_names.model_has_permissions'))
+            ->addSelect(['users_count' => DB::table($directGrants)
                 ->selectRaw('count(*)')
                 ->whereColumn('permission_id', 'permissions.id')
                 ->where('model_type', (new User)->getMorphClass())])
-            ->with('roles:id,name')
-            ->orderBy('name');
+            ->with('roles:id,name');
 
-        if ($name = $request->input('filter.name')) {
-            $query->where('name', 'LIKE', '%'.$name.'%');
+        if ($term = trim((string) $request->input('filter.search', $request->input('filter.name', '')))) {
+            $query->where('name', 'LIKE', '%'.$term.'%');
         }
 
-        // Module = everything after the first word ("view aksic claims" -> "aksic claims").
+        // Module = the product module the permission belongs to (see PermissionCatalog).
         if ($module = $request->input('filter.module')) {
-            $query->where('name', 'LIKE', '% '.$module);
+            $names = Permission::pluck('name')->filter(fn (string $name) => PermissionCatalog::moduleKey($name) === $module)->values();
+            $query->whereIn('name', $names);
         }
 
         if ($roleId = $request->input('filter.role_id')) {
@@ -77,15 +85,34 @@ class PermissionController extends Controller implements HasMiddleware
             $query->whereDate('created_at', $createdAt);
         }
 
-        $permissions = $query->paginate(25)->withQueryString();
+        if ($request->input('filter.usage') === 'orphan') {
+            $query->whereNotIn('id', DB::table($roleGrants)->select('permission_id'))
+                ->whereNotIn('id', DB::table($directGrants)->select('permission_id'));
+        }
 
-        $modules = Permission::orderBy('name')->pluck('name')
-            ->filter(fn ($name) => str_contains($name, ' '))
-            ->map(fn ($name) => Str::of($name)->after(' ')->lower()->value())
-            ->unique()->sort()->values();
+        $query->orderBy(ltrim($sort, '-'), str_starts_with($sort, '-') ? 'desc' : 'asc')->orderBy('name');
+
+        $permissions = $query->paginate($perPage)->withQueryString();
+
+        $modules = collect(PermissionCatalog::build(Permission::all()))->map(fn (array $module) => ['key' => $module['key'], 'label' => $module['label'], 'count' => $module['count']]);
         $roles = Role::orderBy('name')->get(['id', 'name']);
 
-        return view('permissions.index', compact('permissions', 'modules', 'roles'));
+        return view('permissions.index', [
+            'permissions' => $permissions,
+            'modules' => $modules,
+            'roles' => $roles,
+            'perPage' => $perPage,
+            'sort' => $sort,
+            'stats' => [
+                'permissions' => Permission::count(),
+                'modules' => $modules->count(),
+                'in_roles' => DB::table($roleGrants)->distinct()->count('permission_id'),
+                'orphans' => Permission::query()
+                    ->whereNotIn('id', DB::table($roleGrants)->select('permission_id'))
+                    ->whereNotIn('id', DB::table($directGrants)->select('permission_id'))
+                    ->count(),
+            ],
+        ]);
     }
 
     // Show the form for editing the specified permission

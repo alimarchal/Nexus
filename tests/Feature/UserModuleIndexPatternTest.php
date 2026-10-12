@@ -76,10 +76,13 @@ test('user module permissions index uses shared page pattern and filters', funct
     $response->assertSuccessful();
     $response->assertViewIs('permissions.index');
     $response->assertSeeText('Permissions');
-    $response->assertSeeText('Add Permission');
+    $response->assertSeeText('Add permission');
     $response->assertSeeText('approve reports');
     $response->assertDontSeeText('view users');
-    $response->assertSee('id="filters"', false);
+    // Same list pattern as the Users and Roles lists.
+    $response->assertSee('class="ak-kpis"', false);
+    $response->assertSee('name="filter[search]"', false);
+    $response->assertSee('class="ak-dt"', false);
 });
 
 test('user module managers index uses shared page pattern and functional filters', function () {
