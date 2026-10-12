@@ -93,6 +93,9 @@
                     </div>
                 </div>
 
+                @if ($user?->can('create boxes') && \App\Models\FileManagementSystem::officeUnitOf($user))
+                    <a href="{{ route('file-management-systems.boxes.create') }}" class="ak-btn ak-btn-outline" title="Create a new archive box for your office"><span aria-hidden="true">＋</span> New box</a>
+                @endif
                 @can('create file management systems')
                     <a href="{{ route('file-management-systems.create') }}" class="ak-btn ak-btn-primary"><span aria-hidden="true">＋</span> New file</a>
                 @endcan

@@ -10,6 +10,8 @@
                     class="inline-flex items-center rounded-md border border-transparent bg-green-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                     New Box
                 </a>
+            @elseif (auth()->user()->can('create boxes'))
+                <p class="max-w-xs text-right text-xs text-gray-600 dark:text-gray-400">Boxes belong to an office. Sign in as a user assigned to a branch, region, division or head office to create one.</p>
             @endif
         </div>
     </x-slot>
