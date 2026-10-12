@@ -334,7 +334,11 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         $destination = $this->resolveOrgUnit($request->string('destination_fileable_type')->toString(), $request->integer('destination_fileable_id'));
         $recipient = User::query()->findOrFail($request->integer('recipient_id'));
 
-        abort_unless($destination && $this->userBelongsToUnit($recipient, $request->string('destination_fileable_type')->toString(), $destination->id), 422);
+        abort_unless($destination, 422);
+
+        if (! $this->userBelongsToUnit($recipient, $request->string('destination_fileable_type')->toString(), $destination->id)) {
+            return back()->withInput()->withErrors(['recipient_id' => 'The selected custodian does not belong to the destination office.']);
+        }
 
         $hasPendingTransfer = $fileManagementSystem->transfers()->where('status', 'pending')->exists();
         abort_if($hasPendingTransfer, 422, 'A pending transfer request already exists for this record.');

@@ -126,6 +126,8 @@
                                     <option :value="user.id" x-text="user.name"></option>
                                 </template>
                             </select>
+                            <p x-cloak x-show="!destinationId" class="mt-1 text-sm text-gray-500">Choose the destination office first, then its custodians will be listed here.</p>
+                            <p x-cloak x-show="destinationId && filteredRecipients.length === 0" class="mt-1 text-sm text-amber-700">No active user is assigned to this office yet. Assign a user to it under Settings &rarr; Users, then come back.</p>
                             @error('recipient_id') <span class="text-sm text-red-500">{{ $message }}</span> @enderror
                         </div>
                         <div class="sm:col-span-2">
