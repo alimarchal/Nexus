@@ -844,15 +844,17 @@ class AccountOpeningController extends Controller implements HasMiddleware
             $stamp = $request->file("holders.{$index}.stamp_image");
 
             if ($signature || $thumb || $stamp) {
+                // A replacement of one image keeps the others from the specimen it supersedes.
+                $previous = $holder->specimenSignatures()->where('is_active', true)->latest('effective_from')->first();
                 $holder->specimenSignatures()->update(['is_active' => false]);
 
                 $holder->specimenSignatures()->create([
-                    'ss_card_number' => $row['ss_card_number'] ?? null,
+                    'ss_card_number' => $row['ss_card_number'] ?? $previous?->ss_card_number,
                     'specimen_number' => $holder->specimenSignatures()->count() + 1,
-                    'specimen_type' => $signature ? 'signature' : 'thumb_impression',
-                    'signature_image_path' => $signature?->store("account-openings/{$account->id}/signatures", 'public'),
-                    'thumb_left_image_path' => $thumb?->store("account-openings/{$account->id}/signatures", 'public'),
-                    'organization_stamp_path' => $stamp?->store("account-openings/{$account->id}/signatures", 'public'),
+                    'specimen_type' => ($signature || $previous?->signature_image_path) ? 'signature' : 'thumb_impression',
+                    'signature_image_path' => $signature?->store("account-openings/{$account->id}/signatures", 'public') ?? $previous?->signature_image_path,
+                    'thumb_left_image_path' => $thumb?->store("account-openings/{$account->id}/signatures", 'public') ?? $previous?->thumb_left_image_path,
+                    'organization_stamp_path' => $stamp?->store("account-openings/{$account->id}/signatures", 'public') ?? $previous?->organization_stamp_path,
                     'is_active' => true,
                     'effective_from' => now()->toDateString(),
                 ]);

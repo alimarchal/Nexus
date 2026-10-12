@@ -17,6 +17,8 @@ use App\Models\TransactionMode;
 use App\Models\User;
 use Database\Seeders\BajkAccountOpeningSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
@@ -461,4 +463,96 @@ test('the initial deposit is a typed amount field showing the minimum, not a num
         ->toContain('inputmode="decimal"')
         ->toContain('minimum 750.00')
         ->not->toMatch('/name="initial_deposit"[^>]*type="number"|type="number"[^>]*name="initial_deposit"/');
+});
+
+/**
+ * A real 1x1 PNG, so mime validation passes without the GD extension.
+ */
+function tinyPng(string $name): UploadedFile
+{
+    return UploadedFile::fake()->createWithContent(
+        $name,
+        base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')
+    );
+}
+
+/**
+ * Create the account (so the holders step can run) and return the customer id.
+ */
+function accountReadyForHolders(mixed $test, AccountOpeningRequest $request): string
+{
+    submitAccountStep($test, $request, ['terms_and_conditions_accepted' => 1])->assertSessionHasNoErrors();
+
+    return $request->fresh()->customer->id;
+}
+
+/**
+ * @param  array<string, mixed>  $holder
+ */
+function submitHolder(mixed $test, AccountOpeningRequest $request, array $holder, array $extra = []): TestResponse
+{
+    return $test->actingAs($test->admin)->put(
+        route('account-openings.steps.update', [$request, 'holders']),
+        ['holders' => [array_merge(['holder_role' => 'primary', 'is_signatory' => 1], $holder)], ...$extra]
+    );
+}
+
+test('a signatory cannot continue without a specimen signature and a thumb impression', function () {
+    Storage::fake('public');
+    $accountOpeningRequest = startAccountOpening($this);
+    $customerId = accountReadyForHolders($this, $accountOpeningRequest);
+
+    submitHolder($this, $accountOpeningRequest, ['customer_id' => $customerId])
+        ->assertSessionHasErrors([
+            'holders.0.signature_image' => 'Please upload the specimen signature for applicant 1 before continuing.',
+            'holders.0.thumb_image' => 'Please upload the thumb impression for applicant 1 before continuing.',
+        ]);
+
+    submitHolder($this, $accountOpeningRequest, ['customer_id' => $customerId, 'signature_image' => tinyPng('sig.png')])
+        ->assertSessionHasErrors('holders.0.thumb_image')
+        ->assertSessionDoesntHaveErrors('holders.0.signature_image');
+
+    expect($accountOpeningRequest->fresh()->account->holders)->toHaveCount(0);
+});
+
+test('a signatory with both images continues to the next step', function () {
+    Storage::fake('public');
+    $accountOpeningRequest = startAccountOpening($this);
+    $customerId = accountReadyForHolders($this, $accountOpeningRequest);
+
+    submitHolder($this, $accountOpeningRequest, [
+        'customer_id' => $customerId,
+        'signature_image' => tinyPng('sig.png'),
+        'thumb_image' => tinyPng('thumb.png'),
+    ])->assertSessionHasNoErrors()->assertRedirect(route('account-openings.steps.edit', [$accountOpeningRequest, 'cdd']));
+
+    $specimen = $accountOpeningRequest->fresh()->account->holders->first()->specimenSignatures->first();
+
+    expect($specimen->signature_image_path)->not->toBeNull()->and($specimen->thumb_left_image_path)->not->toBeNull();
+});
+
+test('already saved images count, so a later edit does not need them again and keeps both', function () {
+    Storage::fake('public');
+    $accountOpeningRequest = startAccountOpening($this);
+    $customerId = accountReadyForHolders($this, $accountOpeningRequest);
+
+    submitHolder($this, $accountOpeningRequest, ['customer_id' => $customerId, 'signature_image' => tinyPng('sig.png'), 'thumb_image' => tinyPng('thumb.png')]);
+    $first = $accountOpeningRequest->fresh()->account->holders->first()->specimenSignatures->first();
+
+    submitHolder($this, $accountOpeningRequest, ['customer_id' => $customerId, 'designation' => 'Manager'])->assertSessionHasNoErrors();
+    submitHolder($this, $accountOpeningRequest, ['customer_id' => $customerId, 'signature_image' => tinyPng('new-sig.png')])->assertSessionHasNoErrors();
+
+    $active = $accountOpeningRequest->fresh()->account->holders->first()->specimenSignatures()->where('is_active', true)->sole();
+
+    expect($active->signature_image_path)->not->toBe($first->signature_image_path)
+        ->and($active->thumb_left_image_path)->toBe($first->thumb_left_image_path);
+});
+
+test('a holder who does not sign needs no signature images, and save and exit keeps a draft', function () {
+    Storage::fake('public');
+    $accountOpeningRequest = startAccountOpening($this);
+    $customerId = accountReadyForHolders($this, $accountOpeningRequest);
+
+    submitHolder($this, $accountOpeningRequest, ['customer_id' => $customerId, 'is_signatory' => 0])->assertSessionHasNoErrors();
+    submitHolder($this, $accountOpeningRequest, ['customer_id' => $customerId], ['save_and_exit' => 1])->assertSessionHasNoErrors();
 });
