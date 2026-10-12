@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             ContactSeeder::class,
             RolesAndPermissionsSeeder::class,
             DivisionSeeder::class,
+            HeadOfficeSeeder::class,
             ComplaintStatusTypeSeeder::class,
             ComplaintCategorySeeder::class,
             CategorySeeder::class,

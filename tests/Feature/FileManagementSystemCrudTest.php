@@ -5,8 +5,10 @@ use App\Models\Branch;
 use App\Models\FileCategory;
 use App\Models\FileManagementSystem;
 use App\Models\FileManagementTransfer;
+use App\Models\HeadOffice;
 use App\Models\Region;
 use App\Models\User;
+use Database\Seeders\HeadOfficeSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -642,4 +644,39 @@ test('the last scanned page of a record cannot be removed', function () {
         ->assertSessionHasErrors('pages');
 
     expect($document->fresh()->media)->toHaveCount(1);
+});
+
+test('head office seeder creates the head office once so transfers have a destination', function () {
+    $this->seed(HeadOfficeSeeder::class);
+    $this->seed(HeadOfficeSeeder::class);
+
+    expect(HeadOffice::where('name', 'Head Office')->count())->toBe(1);
+});
+
+test('transfer form lists the head office as a destination option', function () {
+    $this->seed(HeadOfficeSeeder::class);
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('file-management-systems.transfer', $document))
+        ->assertSuccessful()
+        ->assertSee('<option value="'.HeadOffice::first()->id.'">Head Office</option>', false)
+        ->assertDontSee('No head office has been set up');
+});
+
+test('transfer form explains when no head office exists yet', function () {
+    $document = FileManagementSystem::factory()->create([
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'file_category_id' => $this->fileCategory->id,
+    ]);
+
+    $this->actingAs($this->admin)
+        ->get(route('file-management-systems.transfer', $document))
+        ->assertSuccessful()
+        ->assertSee('No head office has been set up');
 });
