@@ -13,11 +13,9 @@
     $selectedRoleIds = array_map('strval', old('roles', $userRoles));
     $selectedPermissionIds = array_map('strval', old('permissions', $userPermissions));
 
-    // Permissions grouped by module: "view aksic claims" -> "Aksic Claims".
-    $permissionGroups = $permissions
-        ->sortBy('name')
-        ->groupBy(fn ($p) => \Illuminate\Support\Str::of($p->name)->after(' ')->title()->value() ?: 'General')
-        ->sortKeys();
+    // Permissions arranged by product module (File management, Account opening ...), then by
+    // subject ("view aksic claims" -> "Aksic Claims"). Picking a module shows only its permissions.
+    $permissionModules = \App\Support\PermissionCatalog::build($permissions);
 
     $rolePermissionMap = $roles->mapWithKeys(fn ($role) => [
         (string) $role->id => $role->permissions->pluck('id')->map(fn ($id) => (string) $id)->values(),
@@ -260,25 +258,47 @@
                         <input type="search" x-model="search" placeholder="Search permissions…" aria-label="Search permissions"
                             class="w-full rounded-md border-gray-400 text-sm text-black shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:w-64 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100">
                     </header>
+                    {{-- Module picker: choose a module to see only its permissions --}}
+                    <div class="flex flex-wrap items-center gap-2 border-b border-gray-300 px-5 py-3" role="tablist" aria-label="Permission modules">
+                        <button type="button" role="tab" data-module-tab="all" @click="module = 'all'" :aria-selected="module === 'all'"
+                            :class="module === 'all' ? 'bg-blue-950 text-white' : 'bg-gray-100 text-black hover:bg-gray-200'"
+                            class="rounded-full border border-gray-400 px-3 py-1 text-xs font-semibold">
+                            All modules <span class="opacity-80">({{ $permissions->count() }})</span>
+                        </button>
+                        @foreach ($permissionModules as $permissionModule)
+                            @php($moduleIds = collect($permissionModule['groups'])->flatMap(fn ($g) => $g['permissions']->pluck('id'))->map(fn ($id) => (string) $id)->values())
+                            <button type="button" role="tab" data-module-tab="{{ $permissionModule['key'] }}" @click="module = '{{ $permissionModule['key'] }}'" :aria-selected="module === '{{ $permissionModule['key'] }}'"
+                                :class="module === '{{ $permissionModule['key'] }}' ? 'bg-blue-950 text-white' : 'bg-gray-100 text-black hover:bg-gray-200'"
+                                class="rounded-full border border-gray-400 px-3 py-1 text-xs font-semibold">
+                                {{ $permissionModule['label'] }}
+                                <span class="opacity-80">(<span x-text="selectedIn({{ \Illuminate\Support\Js::from($moduleIds) }})"></span>/{{ $permissionModule['count'] }})</span>
+                            </button>
+                        @endforeach
+                    </div>
+                    @foreach ($permissionModules as $permissionModule)
+                        <p class="px-5 pt-3 text-xs text-gray-700" x-show="module === '{{ $permissionModule['key'] }}'" x-cloak>{{ $permissionModule['hint'] }}</p>
+                    @endforeach
                     <div class="grid max-h-[28rem] grid-cols-1 gap-4 overflow-y-auto p-5 md:grid-cols-2 xl:grid-cols-3" style="max-height: 28rem;">
-                        @foreach ($permissionGroups as $group => $items)
-                            <fieldset class="rounded-md border border-gray-400 p-3 dark:border-gray-600"
-                                x-show="groupVisible({{ \Illuminate\Support\Js::from($items->pluck('name')->values()) }})">
-                                <legend class="px-1 text-xs font-bold uppercase tracking-wide text-black dark:text-gray-100">{{ $group }}</legend>
-                                <div class="space-y-1.5">
-                                    @foreach ($items as $permission)
-                                        <label class="flex items-center justify-between gap-2 text-sm" x-show="matches(@js($permission->name))">
-                                            <span class="flex items-center gap-2">
-                                                <input type="checkbox" name="permissions[]" value="{{ $permission->id }}" x-model="permissions"
-                                                    class="size-4 rounded border-gray-500 text-blue-700 focus:ring-blue-600">
-                                                <span class="text-black dark:text-gray-100">{{ $permission->name }}</span>
-                                            </span>
-                                            <span x-show="inheritedIds().includes('{{ $permission->id }}')"
-                                                class="shrink-0 rounded bg-green-100 px-1.5 text-[10px] font-semibold text-green-800" style="font-size:10px">via role</span>
-                                        </label>
-                                    @endforeach
-                                </div>
-                            </fieldset>
+                        @foreach ($permissionModules as $permissionModule)
+                            @foreach ($permissionModule['groups'] as $group)
+                                <fieldset class="rounded-md border border-gray-400 p-3" data-module="{{ $permissionModule['key'] }}"
+                                    x-show="moduleVisible('{{ $permissionModule['key'] }}') && groupVisible({{ \Illuminate\Support\Js::from($group['permissions']->pluck('name')->values()) }})">
+                                    <legend class="px-1 text-xs font-bold uppercase tracking-wide text-black dark:text-gray-100">{{ $group['label'] }}</legend>
+                                    <div class="space-y-1.5">
+                                        @foreach ($group['permissions'] as $permission)
+                                            <label class="flex items-center justify-between gap-2 text-sm" x-show="matches(@js($permission->name))">
+                                                <span class="flex items-center gap-2">
+                                                    <input type="checkbox" name="permissions[]" value="{{ $permission->id }}" x-model="permissions"
+                                                        class="size-4 rounded border-gray-500 text-blue-700 focus:ring-blue-600">
+                                                    <span class="text-black dark:text-gray-100">{{ $permission->name }}</span>
+                                                </span>
+                                                <span x-show="inheritedIds().includes('{{ $permission->id }}')"
+                                                    class="shrink-0 rounded bg-green-100 px-1.5 text-[10px] font-semibold text-green-800" style="font-size:10px">via role</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </fieldset>
+                            @endforeach
                         @endforeach
                     </div>
                     @error('permissions') <p class="px-5 pb-4 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -360,6 +380,7 @@
                     isSuperAdmin: config.original.isSuperAdmin || 'No',
                     password: '',
                     search: '',
+                    module: 'all',
                     review: false,
                     saving: false,
                     hasRole(name) {
@@ -372,6 +393,12 @@
                         const ids = new Set();
                         this.roles.forEach((id) => (this.rolePermissions[id] || []).forEach((p) => ids.add(p)));
                         return [...ids];
+                    },
+                    moduleVisible(key) {
+                        return this.module === 'all' || this.module === key;
+                    },
+                    selectedIn(ids) {
+                        return ids.filter((id) => this.permissions.includes(id)).length;
                     },
                     matches(name) {
                         const q = this.search.trim().toLowerCase();

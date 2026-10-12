@@ -1,13 +1,16 @@
 @php
     $ui = \App\Support\Ui::class;
     $selected = array_map('strval', old('permissions', $rolePermissions ?? []));
-    // Group by module: "view aksic claims" -> "Aksic Claims".
-    $groups = $permissions->sortBy('name')->groupBy(fn ($p) => $ui::permissionModule($p->name))->sortKeys();
+    // Arranged by product module, then by subject ("view aksic claims" -> "Aksic Claims").
+    $permissionModules = \App\Support\PermissionCatalog::build($permissions);
 @endphp
 
 <div x-data="{
         selected: @js($selected),
         search: '',
+        module: 'all',
+        moduleVisible(key) { return this.module === 'all' || this.module === key; },
+        selectedIn(ids) { return ids.filter(id => this.selected.includes(id)).length; },
         matches(name) { const q = this.search.trim().toLowerCase(); return q === '' || name.toLowerCase().includes(q); },
         groupIds(ids) { return ids.filter(id => this.selected.includes(id)).length; },
         toggleGroup(ids) {
@@ -48,26 +51,42 @@
                 <button type="button" @click="selectAll(false)" class="rounded-md border border-gray-400 bg-white px-3 py-2 text-xs font-semibold text-black hover:bg-gray-50">Clear</button>
             </div>
         </div>
+        <div class="flex flex-wrap items-center gap-2 border-b border-gray-300 px-4 py-3" role="tablist" aria-label="Permission modules">
+            <button type="button" role="tab" data-module-tab="all" @click="module = 'all'" :aria-selected="module === 'all'"
+                :class="module === 'all' ? 'bg-blue-950 text-white' : 'bg-gray-100 text-black hover:bg-gray-200'"
+                class="rounded-full border border-gray-400 px-3 py-1 text-xs font-semibold">All modules <span class="opacity-80">({{ $permissions->count() }})</span></button>
+            @foreach ($permissionModules as $permissionModule)
+                @php($moduleIds = collect($permissionModule['groups'])->flatMap(fn ($g) => $g['permissions']->pluck('id'))->map(fn ($id) => (string) $id)->values())
+                <button type="button" role="tab" data-module-tab="{{ $permissionModule['key'] }}" @click="module = '{{ $permissionModule['key'] }}'" :aria-selected="module === '{{ $permissionModule['key'] }}'"
+                    :class="module === '{{ $permissionModule['key'] }}' ? 'bg-blue-950 text-white' : 'bg-gray-100 text-black hover:bg-gray-200'"
+                    class="rounded-full border border-gray-400 px-3 py-1 text-xs font-semibold">
+                    {{ $permissionModule['label'] }}
+                    <span class="opacity-80">(<span x-text="selectedIn({{ \Illuminate\Support\Js::from($moduleIds) }})"></span>/{{ $permissionModule['count'] }})</span>
+                </button>
+            @endforeach
+        </div>
         <div class="grid grid-cols-1 gap-4 overflow-y-auto p-4 md:grid-cols-2 xl:grid-cols-3" style="max-height: 30rem;">
-            @foreach ($groups as $group => $items)
-                @php($ids = $items->pluck('id')->map(fn ($id) => (string) $id)->values())
-                <fieldset class="rounded-md border border-gray-400 p-3"
-                    x-show="{{ \Illuminate\Support\Js::from($items->pluck('name')->values()) }}.some(n => matches(n))">
-                    <legend class="flex items-center gap-2 px-1">
-                        <span class="text-xs font-bold uppercase tracking-wide text-black">{{ $group }}</span>
-                        <span class="rounded bg-gray-200 px-1.5 text-xs font-semibold text-gray-800"><span x-text="groupIds({{ $ids }})"></span>/{{ $ids->count() }}</span>
-                        <button type="button" @click="toggleGroup({{ $ids }})" class="text-xs font-semibold text-blue-700 hover:underline">toggle</button>
-                    </legend>
-                    <div class="space-y-1.5">
-                        @foreach ($items as $permission)
-                            <label class="flex items-center gap-2 text-sm" x-show="matches(@js($permission->name))">
-                                <input type="checkbox" name="permissions[]" value="{{ $permission->id }}" x-model="selected"
-                                    class="size-4 rounded border-gray-500 text-blue-700 focus:ring-blue-600">
-                                <span class="text-black">{{ $permission->name }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                </fieldset>
+            @foreach ($permissionModules as $permissionModule)
+                @foreach ($permissionModule['groups'] as $group)
+                    @php($ids = $group['permissions']->pluck('id')->map(fn ($id) => (string) $id)->values())
+                    <fieldset class="rounded-md border border-gray-400 p-3" data-module="{{ $permissionModule['key'] }}"
+                        x-show="moduleVisible('{{ $permissionModule['key'] }}') && {{ \Illuminate\Support\Js::from($group['permissions']->pluck('name')->values()) }}.some(n => matches(n))">
+                        <legend class="flex items-center gap-2 px-1">
+                            <span class="text-xs font-bold uppercase tracking-wide text-black">{{ $group['label'] }}</span>
+                            <span class="rounded bg-gray-200 px-1.5 text-xs font-semibold text-gray-800"><span x-text="groupIds({{ $ids }})"></span>/{{ $ids->count() }}</span>
+                            <button type="button" @click="toggleGroup({{ $ids }})" class="text-xs font-semibold text-blue-700 hover:underline">toggle</button>
+                        </legend>
+                        <div class="space-y-1.5">
+                            @foreach ($group['permissions'] as $permission)
+                                <label class="flex items-center gap-2 text-sm" x-show="matches(@js($permission->name))">
+                                    <input type="checkbox" name="permissions[]" value="{{ $permission->id }}" x-model="selected"
+                                        class="size-4 rounded border-gray-500 text-blue-700 focus:ring-blue-600">
+                                    <span class="text-black">{{ $permission->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+                @endforeach
             @endforeach
         </div>
     </div>
