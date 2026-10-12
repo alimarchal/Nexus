@@ -17,6 +17,7 @@ use App\Models\TransactionMode;
 use App\Models\User;
 use Database\Seeders\BajkAccountOpeningSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -231,4 +232,57 @@ test('an incomplete request cannot be submitted', function () {
         ->assertSessionHas('error');
 
     expect($accountOpeningRequest->fresh()->status)->toBe('draft');
+});
+
+/**
+ * Submit the identification step with only the mobile number varying.
+ */
+function submitMobile(mixed $test, AccountOpeningRequest $request, string $code, string $number): TestResponse
+{
+    return $test->actingAs($test->admin)
+        ->put(route('account-openings.steps.update', [$request, 'identification']), [
+            'identifications' => [[
+                'identification_document_type_id' => IdentificationDocumentType::code('CNIC')->firstOrFail()->id,
+                'document_number' => '81303-1234567-1',
+            ]],
+            'addresses' => ['permanent_residential' => ['city' => 'Muzaffarabad']],
+            'contacts' => ['mobile' => [1 => ['country_code' => $code, 'value' => $number]]],
+        ]);
+}
+
+test('a +92 mobile number must be exactly ten digits', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitMobile($this, $accountOpeningRequest, '+92', '3008169924')->assertSessionHasNoErrors();
+
+    foreach (['03008169924', '30081699245', '300816992'] as $bad) {
+        submitMobile($this, $accountOpeningRequest, '+92', $bad)
+            ->assertSessionHasErrors('contacts.mobile.1.value');
+    }
+});
+
+test('a mobile number with letters or symbols is rejected', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    foreach (['30081699ab', '300-816-9924', '300 816 9924'] as $bad) {
+        submitMobile($this, $accountOpeningRequest, '+92', $bad)
+            ->assertSessionHasErrors(['contacts.mobile.1.value' => 'The mobile number can contain digits only. Remove letters, spaces and symbols.']);
+    }
+});
+
+test('the ten digit limit applies to +92 only', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitMobile($this, $accountOpeningRequest, '+44', '7911123456')->assertSessionHasNoErrors();
+    submitMobile($this, $accountOpeningRequest, '+971', '501234567')->assertSessionHasNoErrors();
+    submitMobile($this, $accountOpeningRequest, '+44', '12')->assertSessionHasErrors('contacts.mobile.1.value');
+});
+
+test('an invalid mobile number does not overwrite the saved one', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitMobile($this, $accountOpeningRequest, '+92', '3008169924');
+    submitMobile($this, $accountOpeningRequest, '+92', '03008169924');
+
+    expect($accountOpeningRequest->fresh()->customer->contacts->firstWhere('contact_type', 'mobile')->value)->toBe('3008169924');
 });

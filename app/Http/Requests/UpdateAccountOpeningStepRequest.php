@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Support\MobileNumber;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 /**
  * Validation for one wizard step of the Account Opening Form.
@@ -50,6 +52,32 @@ class UpdateAccountOpeningStepRequest extends FormRequest
             'contacts.mobile.1.country_code.required' => 'Please enter the country code for the mobile number, for example +92.',
             'identifications.*.identification_document_type_id.required_with' => 'Please select the document type for the identification number you entered.',
         ];
+    }
+
+    /**
+     * The mobile number must suit its country code: exactly 10 digits for +92,
+     * digits only and within the international limit for any other code.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        if ((string) $this->route('step') !== 'identification') {
+            return;
+        }
+
+        $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->has('contacts.mobile.1.value')) {
+                return;
+            }
+
+            $problem = MobileNumber::problem(
+                $this->input('contacts.mobile.1.country_code'),
+                $this->input('contacts.mobile.1.value'),
+            );
+
+            if ($problem !== null) {
+                $validator->errors()->add('contacts.mobile.1.value', $problem);
+            }
+        });
     }
 
     /**
