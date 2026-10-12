@@ -179,8 +179,9 @@
 
             <div>
                 <x-label for="initial_deposit" value="Initial Deposit" />
-                <x-input id="initial_deposit" name="initial_deposit" type="number" step="0.01" min="0"
-                    class="mt-1 block w-full" :value="old('initial_deposit', $account?->initial_deposit)" />
+                <x-aof-amount-input id="initial_deposit" name="initial_deposit" :min="config('account_opening.minimum_initial_deposit')"
+                    :value="old('initial_deposit', $account?->initial_deposit)" />
+                <x-input-error for="initial_deposit" class="mt-1" />
             </div>
         </div>
     </x-aof-section>

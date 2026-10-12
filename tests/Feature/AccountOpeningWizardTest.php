@@ -414,3 +414,51 @@ test('the terms and conditions error is shown beside the checkbox', function () 
         ])
         ->assertSee('Please review and accept the Terms and Conditions before continuing.');
 });
+
+test('the initial deposit must reach the configured minimum', function () {
+    config(['account_opening.minimum_initial_deposit' => 1000]);
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitAccountStep($this, $accountOpeningRequest, ['terms_and_conditions_accepted' => 1, 'initial_deposit' => '999.99'])
+        ->assertSessionHasErrors(['initial_deposit' => 'The initial deposit must be at least 1,000.00.']);
+
+    submitAccountStep($this, $accountOpeningRequest, ['terms_and_conditions_accepted' => 1, 'initial_deposit' => '1000'])
+        ->assertSessionHasNoErrors();
+
+    expect($accountOpeningRequest->fresh()->account->initial_deposit)->toBe('1000.00');
+});
+
+test('the initial deposit rejects invalid decimals and non-numbers', function () {
+    config(['account_opening.minimum_initial_deposit' => 500]);
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitAccountStep($this, $accountOpeningRequest, ['terms_and_conditions_accepted' => 1, 'initial_deposit' => '500.123'])
+        ->assertSessionHasErrors(['initial_deposit' => 'The initial deposit can have at most 2 decimal places.']);
+
+    submitAccountStep($this, $accountOpeningRequest, ['terms_and_conditions_accepted' => 1, 'initial_deposit' => 'five hundred'])
+        ->assertSessionHasErrors('initial_deposit');
+
+    submitAccountStep($this, $accountOpeningRequest, ['terms_and_conditions_accepted' => 1, 'initial_deposit' => '500.5'])
+        ->assertSessionHasNoErrors();
+});
+
+test('the initial deposit stays optional until it is typed', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitAccountStep($this, $accountOpeningRequest, ['terms_and_conditions_accepted' => 1])->assertSessionHasNoErrors();
+});
+
+test('the initial deposit is a typed amount field showing the minimum, not a number spinner', function () {
+    config(['account_opening.minimum_initial_deposit' => 750]);
+    $accountOpeningRequest = startAccountOpening($this);
+
+    $html = $this->actingAs($this->admin)
+        ->get(route('account-openings.steps.edit', [$accountOpeningRequest, 'account']))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toContain('name="initial_deposit"')
+        ->toContain('inputmode="decimal"')
+        ->toContain('minimum 750.00')
+        ->not->toMatch('/name="initial_deposit"[^>]*type="number"|type="number"[^>]*name="initial_deposit"/');
+});

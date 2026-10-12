@@ -51,6 +51,9 @@ class UpdateAccountOpeningStepRequest extends FormRequest
         return [
             'contacts.mobile.1.value.required' => 'Please enter at least one contact number to continue.',
             'contacts.mobile.1.country_code.required' => 'Please enter the country code for the mobile number, for example +92.',
+            'initial_deposit.min' => 'The initial deposit must be at least '.number_format((float) config('account_opening.minimum_initial_deposit'), 2).'.',
+            'initial_deposit.decimal' => 'The initial deposit can have at most 2 decimal places.',
+            'initial_deposit.numeric' => 'Enter the initial deposit as an amount, for example '.number_format((float) config('account_opening.minimum_initial_deposit'), 2, '.', '').'.',
             'terms_and_conditions_accepted.accepted' => 'Please review and accept the Terms and Conditions before continuing.',
             'identifications.*.identification_document_type_id.required_with' => 'Please select the document type for the identification number you entered.',
         ];
@@ -116,6 +119,17 @@ class UpdateAccountOpeningStepRequest extends FormRequest
                 $validator->errors()->add('tax_residencies', 'Pakistan and the USA are covered elsewhere on this form; choose a different country of tax residence.');
             }
         });
+    }
+
+    /**
+     * Initial deposit: optional, but when entered it must reach the configured
+     * minimum and carry at most two decimals.
+     *
+     * @return array<int, string>
+     */
+    private function initialDepositRules(): array
+    {
+        return ['nullable', 'numeric', 'decimal:0,2', 'min:'.config('account_opening.minimum_initial_deposit')];
     }
 
     /**
@@ -328,7 +342,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
             'digital_channels_biometric_verified' => ['nullable', 'boolean'],
             'statement_delivery_mode_id' => ['nullable', 'uuid', 'exists:statement_delivery_modes,id'],
             'statement_frequency_id' => ['nullable', 'uuid', 'exists:statement_frequencies,id'],
-            'initial_deposit' => ['nullable', 'numeric', 'min:0'],
+            'initial_deposit' => $this->initialDepositRules(),
 
             'cheque_book_required' => ['nullable', 'boolean'],
             'cheque_book_quantity' => ['nullable', 'required_if:cheque_book_required,1', 'integer', 'min:1', 'max:100'],
@@ -425,7 +439,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
             'counter_party_types.*' => ['uuid', 'exists:counter_party_types,id'],
             'counter_party_other' => ['nullable', 'string', 'max:120'],
 
-            'initial_deposit' => ['nullable', 'numeric', 'min:0'],
+            'initial_deposit' => $this->initialDepositRules(),
             'expected_monthly_credit_amount' => ['nullable', 'numeric', 'min:0'],
             'expected_monthly_credit_count' => ['nullable', 'integer', 'min:0'],
             'expected_monthly_debit_amount' => ['nullable', 'numeric', 'min:0'],

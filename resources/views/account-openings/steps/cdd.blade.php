@@ -304,8 +304,9 @@
             <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div>
                     <x-label value="Initial Deposit" />
-                    <x-input name="initial_deposit" type="number" step="0.01" min="0" class="mt-1 block w-full"
+                    <x-aof-amount-input name="initial_deposit" :min="config('account_opening.minimum_initial_deposit')"
                         :value="old('initial_deposit', $dueDiligence?->initial_deposit ?? $account->initial_deposit)" />
+                    <x-input-error for="initial_deposit" class="mt-1" />
                 </div>
                 <div>
                     <x-label value="Expected Credit / month (amount)" />
