@@ -9,6 +9,7 @@ use App\Models\HeadOffice;
 use App\Models\Region;
 use App\Models\User;
 use Database\Seeders\HeadOfficeSeeder;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -740,4 +741,64 @@ test('transfer form tells the user when the chosen office has no active custodia
         ->get(route('file-management-systems.transfer', $document))
         ->assertSuccessful()
         ->assertSee('No active user is assigned to this office yet');
+});
+
+test('file list shows a visible new box button to users who can create boxes', function () {
+    $this->actingAs($this->branchUser)
+        ->get(route('file-management-systems.index'))
+        ->assertSuccessful()
+        ->assertSee('href="'.route('file-management-systems.boxes.create').'"', false)
+        ->assertSee('New box');
+});
+
+test('file list hides the new box button from users who cannot create boxes', function () {
+    Permission::firstOrCreate(['name' => 'view file management systems']);
+    $viewer = User::factory()->create(['branch_id' => $this->branch->id]);
+    $viewer->givePermissionTo('view file management systems');
+
+    $this->actingAs($viewer)
+        ->get(route('file-management-systems.index'))
+        ->assertSuccessful()
+        ->assertDontSee(route('file-management-systems.boxes.create'), false);
+});
+
+test('boxes page tells an unassigned administrator why they cannot create a box', function () {
+    $this->actingAs($this->admin)
+        ->get(route('file-management-systems.boxes'))
+        ->assertSuccessful()
+        ->assertSee('Boxes belong to an office')
+        ->assertDontSee('href="'.route('file-management-systems.boxes.create').'"', false);
+});
+
+test('a branch user can open the create box form and create a box', function () {
+    $this->actingAs($this->branchUser)
+        ->get(route('file-management-systems.boxes.create'))
+        ->assertSuccessful();
+
+    $this->actingAs($this->branchUser)
+        ->post(route('file-management-systems.boxes.store'), ['location' => 'Shelf A', 'capacity' => 50])
+        ->assertRedirect(route('file-management-systems.boxes'));
+
+    $this->assertDatabaseHas('boxes', ['location' => 'Shelf A', 'boxable_id' => $this->branch->id, 'created_by' => $this->branchUser->id]);
+});
+
+test('the seeded branch role can create and manage archive boxes', function () {
+    $this->seed(RolesAndPermissionsSeeder::class);
+
+    foreach (['branch', 'region', 'division', 'head-office'] as $roleName) {
+        $role = Role::findByName($roleName);
+
+        expect($role->hasPermissionTo('create boxes'))->toBeTrue("{$roleName} should create boxes")
+            ->and($role->hasPermissionTo('manage boxes'))->toBeTrue("{$roleName} should manage boxes");
+    }
+});
+
+test('a seeded branch manager sees the new box button on the file list', function () {
+    $this->seed(RolesAndPermissionsSeeder::class);
+    $manager = User::whereNotNull('branch_id')->whereHas('roles', fn ($q) => $q->where('name', 'branch'))->first();
+
+    $this->actingAs($manager)
+        ->get(route('file-management-systems.index'))
+        ->assertSuccessful()
+        ->assertSee('New box');
 });
