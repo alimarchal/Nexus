@@ -189,7 +189,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
         return [
             'customer_category_other' => ['nullable', 'string', 'max:150'],
             'category_code_description' => ['nullable', 'string', 'max:200'],
-            'economic_sector_id' => ['nullable', 'uuid', 'exists:economic_sectors,id'],
+            'economic_sector_code' => ['nullable', 'string', 'max:10', 'regex:/^[A-Za-z0-9.\-]+$/'],
 
             // Customer Details For Individuals
             'title' => ['nullable', 'string', 'max:10'],

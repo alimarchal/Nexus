@@ -22,7 +22,6 @@ use App\Models\Customer;
 use App\Models\CustomerCategory;
 use App\Models\CustomerDueDiligence;
 use App\Models\DocumentRequirement;
-use App\Models\EconomicSector;
 use App\Models\EducationLevel;
 use App\Models\Gender;
 use App\Models\IdentificationDocumentType;
@@ -119,7 +118,6 @@ class AccountOpeningController extends Controller implements HasMiddleware
             'branches' => Branch::orderBy('name')->get(),
             'defaultBranchId' => auth()->user()->branch_id,
             'categories' => CustomerCategory::active()->ordered()->get(),
-            'economicSectors' => EconomicSector::active()->ordered()->get(),
         ]);
     }
 
@@ -141,7 +139,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
                 'customer_category_id' => $category->id,
                 'customer_category_other' => $request->customer_category_other,
                 'category_code_description' => $request->category_code_description,
-                'economic_sector_id' => $request->economic_sector_id,
+                'economic_sector_code' => $request->aof_form_type === AccountOpeningRequest::FORM_ENTITY ? $request->economic_sector_code : null,
                 'status' => 'draft',
             ]);
 
@@ -458,7 +456,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
         $customer->update($request->safe()->only([
             'customer_category_other',
             'category_code_description',
-            'economic_sector_id',
+            'economic_sector_code',
         ]));
 
         if ($customer->needsIndividualProfile()) {
