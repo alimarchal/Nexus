@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\AccountOpeningWorkflowException;
 use App\Http\Requests\StoreAccountOpeningRequest;
 use App\Http\Requests\UpdateAccountOpeningStepRequest;
 use App\Models\Account;
@@ -37,6 +38,7 @@ use App\Models\TransactionMode;
 use App\Models\User;
 use App\Models\WealthSource;
 use App\Models\ZakatExemptionReason;
+use App\Services\AccountOpeningWorkflow;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -72,13 +74,17 @@ class AccountOpeningController extends Controller implements HasMiddleware
         'cdd' => 'Due Diligence & Documents',
     ];
 
+    public function __construct(private readonly AccountOpeningWorkflow $workflow) {}
+
     public static function middleware(): array
     {
         return [
             new Middleware('role_or_permission:view account openings', only: ['index', 'show', 'print']),
             new Middleware('role_or_permission:create account openings', only: ['create', 'store']),
             new Middleware('role_or_permission:edit account openings', only: ['editStep', 'updateStep', 'submit']),
-            new Middleware('role_or_permission:approve account openings', only: ['approve']),
+            new Middleware('role_or_permission:submit account openings', only: ['submit']),
+            new Middleware('role_or_permission:approve account openings', only: ['approve', 'reject']),
+            new Middleware('role_or_permission:unlock account openings', only: ['unlock']),
             new Middleware('role_or_permission:delete account openings', only: ['destroy']),
         ];
     }
@@ -220,6 +226,8 @@ class AccountOpeningController extends Controller implements HasMiddleware
             ]);
         });
 
+        $this->workflow->record($accountOpeningRequest, 'created', $request->user(), note: 'Request started for '.$branch->code.' '.$branch->name.'.');
+
         return redirect()
             ->route('account-openings.steps.edit', [$accountOpeningRequest, 'cif'])
             ->with('success', "Account opening request {$accountOpeningRequest->request_number} started. CIF: {$accountOpeningRequest->customer->cif_number}");
@@ -245,9 +253,16 @@ class AccountOpeningController extends Controller implements HasMiddleware
             'documents.documentType',
         ]);
 
+        $accountOpeningRequest->load(['histories.user', 'submitter', 'approver', 'rejecter', 'unlocker', 'creator']);
+        $user = auth()->user();
+
         return view('account-openings.show', [
             'accountOpeningRequest' => $accountOpeningRequest,
             'progress' => $this->progress($accountOpeningRequest),
+            'workflow' => $this->workflow,
+            'canDecide' => $this->workflow->canDecide($accountOpeningRequest, $user),
+            'isMaker' => $this->workflow->isMaker($accountOpeningRequest, $user),
+            'canUnlock' => $accountOpeningRequest->isLocked() && $user->can('unlock account openings') && $this->workflow->isSuperAdmin($user),
         ]);
     }
 
@@ -291,10 +306,14 @@ class AccountOpeningController extends Controller implements HasMiddleware
         ]);
     }
 
-    public function editStep(AccountOpeningRequest $accountOpeningRequest, string $step): View
+    public function editStep(AccountOpeningRequest $accountOpeningRequest, string $step): View|RedirectResponse
     {
         $this->authorizeVisibility($accountOpeningRequest);
         abort_unless(array_key_exists($step, self::STEPS), 404);
+
+        if ($blocked = $this->blockedFromEditing($accountOpeningRequest)) {
+            return $blocked;
+        }
 
         $accountOpeningRequest->load([
             'customer.individual', 'customer.organization', 'customer.nationalities',
@@ -320,15 +339,21 @@ class AccountOpeningController extends Controller implements HasMiddleware
         $this->authorizeVisibility($accountOpeningRequest);
         abort_unless(array_key_exists($step, self::STEPS), 404);
 
+        if ($blocked = $this->blockedFromEditing($accountOpeningRequest)) {
+            return $blocked;
+        }
+
         DB::transaction(function () use ($request, $accountOpeningRequest, $step): void {
-            match ($step) {
-                'cif' => $this->saveCif($request, $accountOpeningRequest),
-                'identification' => $this->saveIdentification($request, $accountOpeningRequest),
-                'compliance' => $this->saveCompliance($request, $accountOpeningRequest),
-                'account' => $this->saveAccount($request, $accountOpeningRequest),
-                'holders' => $this->saveHolders($request, $accountOpeningRequest),
-                'cdd' => $this->saveDueDiligence($request, $accountOpeningRequest),
-            };
+            $this->workflow->trackStep($accountOpeningRequest, $step, $request->user(), function () use ($request, $accountOpeningRequest, $step): void {
+                match ($step) {
+                    'cif' => $this->saveCif($request, $accountOpeningRequest),
+                    'identification' => $this->saveIdentification($request, $accountOpeningRequest),
+                    'compliance' => $this->saveCompliance($request, $accountOpeningRequest),
+                    'account' => $this->saveAccount($request, $accountOpeningRequest),
+                    'holders' => $this->saveHolders($request, $accountOpeningRequest),
+                    'cdd' => $this->saveDueDiligence($request, $accountOpeningRequest),
+                };
+            });
         });
 
         $next = $this->nextStep($step);
@@ -356,49 +381,54 @@ class AccountOpeningController extends Controller implements HasMiddleware
             return back()->with('error', 'Complete every step before submitting: '.$missing->map(fn ($k) => self::STEPS[$k])->implode(', '));
         }
 
-        $accountOpeningRequest->update(['status' => 'submitted']);
-        $accountOpeningRequest->customer->update(['status' => 'pending_verification']);
-
-        return redirect()
-            ->route('account-openings.show', $accountOpeningRequest)
-            ->with('success', 'Account opening request submitted for approval.');
+        return $this->runWorkflow($accountOpeningRequest, 'Account opening request submitted for approval.', function () use ($accountOpeningRequest): void {
+            $this->workflow->submit($accountOpeningRequest, auth()->user());
+        });
     }
 
     public function approve(AccountOpeningRequest $accountOpeningRequest): RedirectResponse
     {
         $this->authorizeVisibility($accountOpeningRequest);
 
-        abort_unless($accountOpeningRequest->status === 'submitted', 422);
-
-        DB::transaction(function () use ($accountOpeningRequest): void {
-            /** @var User $user */
-            $user = auth()->user();
-
-            $accountOpeningRequest->update([
-                'status' => 'approved',
-                'authorized_by_name' => $user->name,
-                'authorized_on' => now()->toDateString(),
-            ]);
-
-            $accountOpeningRequest->customer->update([
-                'status' => 'active',
-                'approved_by' => $user->id,
-                'approved_at' => now(),
-            ]);
-
-            $accountOpeningRequest->account?->update([
-                'status' => 'active',
-                'approved_by' => $user->id,
-                'approved_at' => now(),
-            ]);
+        return $this->runWorkflow($accountOpeningRequest, 'Account opening request approved. The account is now active and the request is locked.', function () use ($accountOpeningRequest): void {
+            $this->workflow->approve($accountOpeningRequest, auth()->user());
         });
+    }
 
-        return back()->with('success', 'Account opening request approved. The account is now active.');
+    public function reject(Request $request, AccountOpeningRequest $accountOpeningRequest): RedirectResponse
+    {
+        $this->authorizeVisibility($accountOpeningRequest);
+
+        $reason = $request->validate(['reason' => ['required', 'string', 'max:2000']], [
+            'reason.required' => 'Please give a reason so the maker knows what to correct.',
+        ])['reason'];
+
+        return $this->runWorkflow($accountOpeningRequest, 'Request rejected and returned to the maker.', function () use ($accountOpeningRequest, $reason): void {
+            $this->workflow->reject($accountOpeningRequest, auth()->user(), $reason);
+        });
+    }
+
+    public function unlock(Request $request, AccountOpeningRequest $accountOpeningRequest): RedirectResponse
+    {
+        $this->authorizeVisibility($accountOpeningRequest);
+
+        $reason = $request->validate(['reason' => ['required', 'string', 'max:2000']], [
+            'reason.required' => 'Please give the reason for unlocking this request.',
+        ])['reason'];
+
+        return $this->runWorkflow($accountOpeningRequest, 'Request unlocked for changes. It must be submitted and approved again.', function () use ($accountOpeningRequest, $reason): void {
+            $this->workflow->unlock($accountOpeningRequest, auth()->user(), $reason);
+        });
     }
 
     public function destroy(AccountOpeningRequest $accountOpeningRequest): RedirectResponse
     {
         $this->authorizeVisibility($accountOpeningRequest);
+
+        if ($accountOpeningRequest->isLocked()) {
+            return redirect()->route('account-openings.show', $accountOpeningRequest)
+                ->with('error', 'This request is approved and locked, so it cannot be deleted. A super admin can unlock it first.');
+        }
 
         $number = $accountOpeningRequest->request_number;
         $accountOpeningRequest->delete();
@@ -406,6 +436,34 @@ class AccountOpeningController extends Controller implements HasMiddleware
         return redirect()
             ->route('account-openings.index')
             ->with('success', "Account opening request {$number} deleted.");
+    }
+
+    /**
+     * Run one maker-checker action and turn a rule violation into a message on the show page.
+     */
+    private function runWorkflow(AccountOpeningRequest $accountOpeningRequest, string $success, \Closure $action): RedirectResponse
+    {
+        try {
+            $action();
+        } catch (AccountOpeningWorkflowException $exception) {
+            return redirect()->route('account-openings.show', $accountOpeningRequest)->with('error', $exception->getMessage());
+        }
+
+        return redirect()->route('account-openings.show', $accountOpeningRequest)->with('success', $success);
+    }
+
+    /**
+     * A locked or submitted request cannot be edited; send the user back to the request with the reason.
+     */
+    private function blockedFromEditing(AccountOpeningRequest $accountOpeningRequest): ?RedirectResponse
+    {
+        try {
+            $this->workflow->assertEditable($accountOpeningRequest);
+        } catch (AccountOpeningWorkflowException $exception) {
+            return redirect()->route('account-openings.show', $accountOpeningRequest)->with('error', $exception->getMessage());
+        }
+
+        return null;
     }
 
     /* ------------------------------------------------------------------ */
