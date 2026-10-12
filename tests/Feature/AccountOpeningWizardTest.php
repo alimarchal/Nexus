@@ -556,3 +556,64 @@ test('a holder who does not sign needs no signature images, and save and exit ke
     submitHolder($this, $accountOpeningRequest, ['customer_id' => $customerId, 'is_signatory' => 0])->assertSessionHasNoErrors();
     submitHolder($this, $accountOpeningRequest, ['customer_id' => $customerId], ['save_and_exit' => 1])->assertSessionHasNoErrors();
 });
+
+/**
+ * Start an AOF through the real store endpoint with extra fields.
+ *
+ * @param  array<string, mixed>  $extra
+ */
+function startAofWith(mixed $test, string $formType, string $categoryCode, array $extra = []): TestResponse
+{
+    return $test->actingAs($test->admin)->post(route('account-openings.store'), [
+        'branch_id' => $test->branch->id,
+        'aof_form_type' => $formType,
+        'customer_category_id' => CustomerCategory::code($categoryCode)->firstOrFail()->id,
+        'request_date' => now()->toDateString(),
+        ...$extra,
+    ]);
+}
+
+test('the government or organisation form needs a typed economic sector code', function () {
+    startAofWith($this, AccountOpeningRequest::FORM_ENTITY, 'GOVT_INSTITUTION')
+        ->assertSessionHasErrors(['economic_sector_code' => 'Please enter the Economic Sector Code for a Government / organisation account.']);
+
+    startAofWith($this, AccountOpeningRequest::FORM_ENTITY, 'GOVT_INSTITUTION', ['economic_sector_code' => 'not valid!'])
+        ->assertSessionHasErrors('economic_sector_code');
+
+    expect(AccountOpeningRequest::count())->toBe(0);
+});
+
+test('a typed economic sector code is stored on the customer for an organisation', function () {
+    startAofWith($this, AccountOpeningRequest::FORM_ENTITY, 'GOVT_INSTITUTION', ['economic_sector_code' => '8411'])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    expect(AccountOpeningRequest::firstOrFail()->customer->economic_sector_code)->toBe('8411');
+});
+
+test('an individual account does not need an economic sector code and ignores one', function () {
+    startAofWith($this, AccountOpeningRequest::FORM_INDIVIDUAL, 'INDIVIDUAL')->assertSessionHasNoErrors();
+    startAofWith($this, AccountOpeningRequest::FORM_INDIVIDUAL, 'INDIVIDUAL', ['economic_sector_code' => '8411'])->assertSessionHasNoErrors();
+
+    expect(AccountOpeningRequest::all()->map(fn ($r) => $r->customer->economic_sector_code)->filter()->all())->toBe([]);
+});
+
+test('the create form has a typed economic sector code field instead of a dropdown', function () {
+    $html = $this->actingAs($this->admin)
+        ->get(route('account-openings.create'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toContain('name="economic_sector_code"')
+        ->not->toContain('name="economic_sector_id"')
+        ->not->toContain('Select sector');
+});
+
+test('the printed form shows the typed economic sector code', function () {
+    startAofWith($this, AccountOpeningRequest::FORM_ENTITY, 'GOVT_INSTITUTION', ['economic_sector_code' => '8411']);
+
+    $this->actingAs($this->admin)
+        ->get(route('account-openings.print', AccountOpeningRequest::firstOrFail()))
+        ->assertSuccessful()
+        ->assertSee('8411');
+});

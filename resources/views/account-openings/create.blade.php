@@ -57,18 +57,15 @@
                                 <x-input-error for="branch_id" class="mt-1" />
                             </div>
 
-                            <div>
-                                <x-label for="economic_sector_id" value="Economic Sector Code" />
-                                <select id="economic_sector_id" name="economic_sector_id"
-                                    class="select2 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="">Select sector</option>
-                                    @foreach ($economicSectors as $sector)
-                                        <option value="{{ $sector->id }}" @selected(old('economic_sector_id') === $sector->id)>
-                                            {{ $sector->code }} - {{ $sector->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <p class="mt-1 text-xs text-gray-400">Mandatory when the customer category is a business.</p>
+                            {{-- Typed by hand on the Government / organisation form; Individual accounts do not need it. --}}
+                            <div x-show="formType === 'entity'" x-cloak>
+                                <x-label for="economic_sector_code" value="Economic Sector Code *" />
+                                <x-input id="economic_sector_code" name="economic_sector_code" type="text" maxlength="10"
+                                    class="mt-1 block w-full" autocomplete="off" placeholder="Enter the code"
+                                    x-bind:disabled="formType !== 'entity'" x-bind:required="formType === 'entity'"
+                                    :value="old('economic_sector_code')" />
+                                <x-input-error for="economic_sector_code" class="mt-1" />
+                                <p class="mt-1 text-xs text-gray-600">Required for Government / organisation accounts. Type the code directly.</p>
                             </div>
                         </div>
                     </x-aof-section>

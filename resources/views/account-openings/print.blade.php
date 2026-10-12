@@ -114,7 +114,7 @@
             <th>Category Code &amp; Desc.</th><td>{!! $val($customer?->category_code_description) !!}</td>
         </tr>
         <tr>
-            <th>Economic Sector Code</th><td>{!! $val($customer?->economicSector?->code) !!}</td>
+            <th>Economic Sector Code</th><td>{!! $val($customer?->economic_sector_code ?? $customer?->economicSector?->code) !!}</td>
             <th>Others (specify)</th><td>{!! $val($customer?->customer_category_other) !!}</td>
         </tr>
         @if ($customer?->specialCategories->isNotEmpty())
