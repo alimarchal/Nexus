@@ -56,7 +56,7 @@ test('can filter users by name', function () {
 
     $response->assertSuccessful();
     $response->assertSeeText('Users');
-    $response->assertSeeText('Add User');
+    $response->assertSeeText('Add user');
     $response->assertSeeText('John Doe');
     $response->assertDontSeeText('Jane Smith');
 });

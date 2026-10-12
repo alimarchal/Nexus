@@ -1,216 +1,489 @@
+{{--
+    Settings -> Users list (/settings/users). Same layout as the AKSIC list:
+    KPI cards that double as filters, Active / Suspended tabs, one search box,
+    removable filter chips, sortable dense table with comfortable / compact
+    density, bulk actions on selected rows, and a pager with rows-per-page.
+    Routes and query parameters are unchanged (filter[...], sort, per_page).
+    Styles are plain CSS (settings.partials.ui-style) -- no Tailwind rebuild needed.
+--}}
+{{--
+    Settings > User module > Users (/settings/user-module/users). Same layout as the Account Opening and
+    AKSIC lists: KPI cards that double as filters, Active / Suspended tabs, one search box, removable filter
+    chips, a sortable dense table (comfortable / compact), bulk actions on selected rows and a pager with
+    rows-per-page. Query parameters stay filter[...], sort, per_page.
+--}}
+@php
+    $authUser = auth()->user();
+    $isSuperAdmin = $authUser->is_super_admin === 'Yes' || $authUser->hasRole('super-admin');
+    $filters = array_filter((array) request('filter', []), fn ($v) => $v !== null && $v !== '');
+    $sort = (string) request('sort', '-created_at');
+    $tab = $filters['is_active'] ?? '';
+    $chips = \Illuminate\Support\Arr::except($filters, 'is_active');
+
+    $withFilters = fn (array $f) => request()->fullUrlWithQuery(['filter' => $f ?: null, 'page' => null]);
+    $tabUrl = function (string $key) use ($filters, $withFilters) {
+        $f = \Illuminate\Support\Arr::except($filters, 'is_active');
+        if ($key !== '') {
+            $f['is_active'] = $key;
+        }
+
+        return $withFilters($f);
+    };
+    $onlyUrl = fn (array $f) => $withFilters($f);
+    $sortUrl = fn (string $field) => request()->fullUrlWithQuery(['sort' => $sort === $field ? '-'.$field : $field, 'page' => null]);
+    $ariaSort = fn (string $field) => $sort === $field ? 'ascending' : ($sort === '-'.$field ? 'descending' : 'none');
+    $sortMark = fn (string $field) => $sort === $field ? "\u{25B2}" : ($sort === '-'.$field ? "\u{25BC}" : '');
+
+    $branchNames = $branches->mapWithKeys(fn ($b) => [$b->id => trim(($b->code ? $b->code.' - ' : '').$b->name)]);
+    $chipLabels = [
+        'search' => 'Search', 'role' => 'Role', 'branch_id' => 'Branch', 'is_super_admin' => 'Super admin',
+        'access' => 'Access', 'name' => 'Name', 'email' => 'Email',
+    ];
+    $chipValue = fn (string $key, $value) => match ($key) {
+        'branch_id' => $branchNames[$value] ?? $value,
+        'access' => $value === 'none' ? 'No role or permission' : $value,
+        default => $value,
+    };
+    $advancedKeys = ['is_super_admin', 'access', 'branch_id'];
+    $advancedCount = collect($advancedKeys)->filter(fn ($k) => isset($filters[$k]))->count();
+    $sortNames = ['name' => 'Name', 'email' => 'Email', 'created_at' => 'Date added'];
+    $sortField = ltrim($sort, '-');
+    $canBulk = $authUser->can('edit users');
+    $pageIds = $canBulk ? $users->getCollection()->reject(fn ($u) => $u->id === $authUser->id)->pluck('id')->map(fn ($id) => (string) $id)->values() : [];
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
-        <x-page-header title="Users" :createRoute="route('users.create')" createLabel="Add User"
-            createPermission="create users" :showSearch="true" :showRefresh="true" backRoute="user.module" />
-    </x-slot>
-
-    <x-filter-section :action="route('users.index')">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="ak-head">
             <div>
-                <x-label for="filter_name" value="Name" />
-                <x-input id="filter_name" name="filter[name]" type="text" class="mt-1 block w-full"
-                    :value="request('filter.name')" placeholder="Search by name..." />
+                <nav class="ak-crumbs" aria-label="Breadcrumb">
+                    <a href="{{ route('user.module') }}">User module</a><span aria-hidden="true">›</span><span>Users</span>
+                </nav>
+                <h1 class="ak-title">Users</h1>
+                <p class="ak-sub">Who can sign in, their roles and what they can open.</p>
             </div>
-
-            <div>
-                <x-label for="filter_email" value="Email" />
-                <x-input id="filter_email" name="filter[email]" type="email" class="mt-1 block w-full"
-                    :value="request('filter.email')" placeholder="Search by email..." />
-            </div>
-
-            <div>
-                <x-label for="filter_branch_id" value="Branch" />
-                <select id="filter_branch_id" name="filter[branch_id]"
-                    class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
-                    data-placeholder="All Branches">
-                    <option value="">All Branches</option>
-                    @foreach ($branches as $branch)
-                        <option value="{{ $branch->id }}" {{ (string) request('filter.branch_id') === (string) $branch->id ? 'selected' : '' }}>
-                            {{ $branch->code ? $branch->code . ' - ' : '' }}{{ $branch->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <x-label for="filter_role" value="Role" />
-                <select id="filter_role" name="filter[role]"
-                    class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
-                    data-placeholder="All Roles">
-                    <option value="">All Roles</option>
-                    @foreach ($roles as $role)
-                        <option value="{{ $role->name }}" {{ request('filter.role') === $role->name ? 'selected' : '' }}>
-                            {{ $role->name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <x-label for="filter_is_active" value="Status" />
-                <select id="filter_is_active" name="filter[is_active]"
-                    class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"
-                    data-placeholder="All Statuses">
-                    <option value="">All Statuses</option>
-                    <option value="Yes" {{ request('filter.is_active') === 'Yes' ? 'selected' : '' }}>Active</option>
-                    <option value="No" {{ request('filter.is_active') === 'No' ? 'selected' : '' }}>Inactive</option>
-                </select>
+            <div class="ak-head-actions">
+                <a href="{{ route('user.module') }}" class="ak-btn ak-btn-outline"><span aria-hidden="true">←</span> Back</a>
+                @can('view roles')
+                    <a href="{{ route('roles.index') }}" class="ak-btn ak-btn-outline">Roles &amp; permissions</a>
+                @endcan
+                <button type="button" class="ak-btn ak-btn-outline" onclick="window.print()">Print</button>
+                @can('create users')
+                    <a href="{{ route('users.create') }}" class="ak-btn ak-btn-primary"><span aria-hidden="true">＋</span> Add user</a>
+                @endcan
             </div>
         </div>
-    </x-filter-section>
+    </x-slot>
 
-    <x-data-table :items="$users" variant="grid" caption="Users" :headers="[
-        ['label' => '#', 'align' => 'text-center'],
-        ['label' => 'Name / Email', 'align' => 'text-left'],
-        ['label' => 'Office', 'align' => 'text-left'],
-        ['label' => 'Roles', 'align' => 'text-center'],
-        ['label' => 'Extra Permissions', 'align' => 'text-center'],
-        ['label' => 'Status', 'align' => 'text-center'],
-        ['label' => 'Actions', 'align' => 'text-center'],
-    ]" emptyMessage="No users found."
-        :emptyRoute="route('users.create')" emptyLinkText="Add a new user">
-        @foreach ($users as $index => $user)
-            @php
-                // Office the user is scoped to (branch, region, division or head office).
-                $office = match (true) {
-                    (bool) $user->branch => ['Branch', trim(($user->branch->code ? $user->branch->code.' - ' : '').$user->branch->name)],
-                    (bool) $user->region => ['Region', $user->region->name],
-                    (bool) $user->division => ['Division', $user->division->name],
-                    (bool) $user->headOffice => ['Head Office', $user->headOffice->name],
-                    (bool) $user->is_president_office => ['President Office', 'All offices'],
-                    default => [null, null],
-                };
-                // Extra permissions grouped by module for the details modal.
-                $permissionGroups = $user->permissions->sortBy('name')
-                    ->groupBy(fn ($p) => \Illuminate\Support\Str::of($p->name)->after(' ')->title()->value())
-                    ->map(fn ($items) => $items->pluck('name')->values())
-                    ->sortKeys();
-            @endphp
-            <tr class="border-b border-gray-200 text-sm text-black hover:bg-gray-100 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-700">
-                <td class="px-2 py-1.5 text-center">{{ $users->firstItem() + $index }}</td>
-                <td class="px-2 py-1.5 text-left">
-                    <div class="font-semibold">{{ $user->name }}</div>
-                    <div class="text-xs text-gray-600 dark:text-gray-400">{{ $user->email }}</div>
-                </td>
-                <td class="px-2 py-1.5 text-left">
-                    @if ($office[0])
-                        <div>{{ $office[1] }}</div>
-                        <div class="text-xs text-gray-600 dark:text-gray-400">{{ $office[0] }}</div>
-                    @else
-                        <span class="text-xs text-gray-500">&mdash;</span>
-                    @endif
-                </td>
-                <td class="px-2 py-1.5 text-center">
-                    <div class="flex flex-wrap justify-center gap-1">
-                        @forelse ($user->roles as $role)
-                            <span class="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800">{{ $role->name }}</span>
-                        @empty
-                            <span class="text-xs text-gray-500">None</span>
-                        @endforelse
+    @include('settings.partials.ui-style')
+    <style>@page { size: A4 landscape; margin: 10mm; }</style>
+
+    <div class="ak-page" x-data="userList()">
+        <div class="ak-print-head">
+            <div class="ak-print-bank">The Bank of Azad Jammu &amp; Kashmir</div>
+            <div class="ak-print-title">Users</div>
+            <table class="ak-print-meta">
+                <tr><th>Filters</th><td>{{ $filters ? collect($filters)->map(fn ($v, $k) => ($chipLabels[$k] ?? \Illuminate\Support\Str::headline($k)).': '.$chipValue($k, $v))->implode(' · ') : 'None (all users)' }}</td>
+                    <th>Printed</th><td>{{ now()->format('d.m.Y H:i') }} by {{ $authUser->name }}</td></tr>
+            </table>
+        </div>
+
+        <x-status-message />
+        @if ($errors->any())
+            <div class="ak-alert ak-alert-error" role="alert">{{ $errors->first() }}</div>
+        @endif
+
+        {{-- KPI cards (also filters) --}}
+        <section class="ak-kpis" aria-label="User summary">
+            <a href="{{ $tabUrl('') }}" class="ak-kpi{{ $tab === '' && ! isset($filters['is_super_admin']) && ! isset($filters['access']) ? ' is-active' : '' }}">
+                <span class="ak-kpi-icon ak-tone-navy" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.13a9.38 9.38 0 0 0 2.63.37 9.34 9.34 0 0 0 4.12-.95 4.13 4.13 0 0 0-7.53-2.49M15 19.13v-.01a6.37 6.37 0 0 0-.97-3.4M15 19.13v.1A12.32 12.32 0 0 1 8.62 21a12.32 12.32 0 0 1-6.37-1.77v-.11a6.38 6.38 0 0 1 11.96-3.4M12 6.38a3.38 3.38 0 1 1-6.75 0 3.38 3.38 0 0 1 6.75 0Zm8.25 2.25a2.63 2.63 0 1 1-5.25 0 2.63 2.63 0 0 1 5.25 0Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Users</span>
+                    <span class="ak-kpi-value">{{ number_format($stats['total']) }}</span>
+                    <span class="ak-kpi-hint">{{ $chips ? 'matching the filters' : 'all accounts' }}</span>
+                </span>
+            </a>
+            <a href="{{ $tabUrl('Yes') }}" class="ak-kpi{{ $tab === 'Yes' ? ' is-active' : '' }}">
+                <span class="ak-kpi-icon ak-tone-green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Active</span>
+                    <span class="ak-kpi-value">{{ number_format($stats['active']) }}</span>
+                    <span class="ak-kpi-hint">{{ number_format($stats['inactive']) }} suspended</span>
+                </span>
+            </a>
+            <a href="{{ $onlyUrl(['is_super_admin' => 'Yes']) }}" class="ak-kpi{{ ($filters['is_super_admin'] ?? '') === 'Yes' ? ' is-active' : '' }}">
+                <span class="ak-kpi-icon ak-tone-slate" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.04A11.96 11.96 0 0 1 3.6 6 12 12 0 0 0 3 9.75c0 5.6 3.82 10.3 9 11.62 5.18-1.33 9-6.03 9-11.62 0-1.31-.21-2.57-.6-3.75h-.15c-3.2 0-6.1-1.25-8.25-3.29Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Super admins</span>
+                    <span class="ak-kpi-value">{{ number_format($stats['super_admins']) }}</span>
+                    <span class="ak-kpi-hint">skip every permission check</span>
+                </span>
+            </a>
+            <a href="{{ $onlyUrl(['access' => 'none', 'is_active' => 'Yes']) }}" class="ak-kpi{{ $stats['no_access'] ? ' ak-kpi-action' : '' }}{{ ($filters['access'] ?? '') === 'none' ? ' is-active' : '' }}">
+                <span class="ak-kpi-icon ak-tone-amber" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.01" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">No access yet</span>
+                    <span class="ak-kpi-value">{{ number_format($stats['no_access']) }}</span>
+                    <span class="ak-kpi-hint">{{ $stats['no_access'] ? 'Active, but no role or permission →' : 'Everyone has access set' }}</span>
+                </span>
+            </a>
+        </section>
+
+        <section class="ak-card" aria-label="Users">
+            <div class="ak-tabs" role="tablist">
+                @foreach (['' => ['All', $stats['total']], 'Yes' => ['Active', $stats['active']], 'No' => ['Suspended', $stats['inactive']]] as $key => [$label, $count])
+                    <a href="{{ $tabUrl($key) }}" role="tab" aria-selected="{{ $tab === $key ? 'true' : 'false' }}" class="ak-tab {{ $tab === $key ? 'is-active' : '' }}">
+                        {{ $label }} <span class="ak-count">{{ number_format($count) }}</span>
+                    </a>
+                @endforeach
+            </div>
+
+            {{-- Filters --}}
+            <form method="GET" action="{{ route('users.index') }}" class="ak-filters"
+                x-data="{ advanced: {{ $advancedCount ? 'true' : 'false' }}, busy: false }" @submit="busy = true">
+                @if ($tab !== '') <input type="hidden" name="filter[is_active]" value="{{ $tab }}"> @endif
+                @if (request('sort')) <input type="hidden" name="sort" value="{{ request('sort') }}"> @endif
+
+                <div class="ak-filter-row">
+                    <div class="ak-field">
+                        <label for="f_search">Search</label>
+                        <div class="ak-search">
+                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" /></svg>
+                            <input id="f_search" type="search" name="filter[search]" value="{{ $filters['search'] ?? '' }}" autocomplete="off"
+                                placeholder="Name or email" x-ref="search"
+                                @keydown.window.slash="if (! ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) { $event.preventDefault(); $refs.search.focus(); }">
+                            <kbd aria-hidden="true">/</kbd>
+                        </div>
                     </div>
-                </td>
-                <td class="px-2 py-1.5 text-center">
-                    @if ($user->permissions->isEmpty())
-                        <span class="text-xs text-gray-500">None</span>
-                    @else
-                        {{-- Compact count; the full list opens in a modal instead of widening the table --}}
-                        <button type="button" x-data
-                            x-on:click="$dispatch('open-user-permissions-modal', {{ \Illuminate\Support\Js::from([
-                                'name' => $user->name,
-                                'total' => $user->permissions->count(),
-                                'groups' => $permissionGroups,
-                                'editUrl' => route('users.edit', $user),
-                            ]) }})"
-                            class="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800 hover:bg-green-200"
-                            title="View extra permissions">
-                            {{ $user->permissions->count() }} {{ \Illuminate\Support\Str::plural('permission', $user->permissions->count()) }}
-                            <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                    <div class="ak-field">
+                        <label for="f_role">Role</label>
+                        <select id="f_role" name="filter[role]">
+                            <option value="">All roles</option>
+                            @foreach ($roles as $role)
+                                <option value="{{ $role->name }}" @selected(($filters['role'] ?? '') === $role->name)>{{ \Illuminate\Support\Str::headline($role->name) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="ak-field">
+                        <label for="f_per_page">Rows per page</label>
+                        <select id="f_per_page" name="per_page" onchange="this.form.requestSubmit()">
+                            @foreach (\App\Http\Controllers\UserController::PER_PAGE as $n)
+                                <option value="{{ $n }}" @selected($perPage === $n)>{{ $n }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="ak-filter-buttons">
+                        <button type="button" class="ak-btn ak-btn-ghost" @click="advanced = !advanced" :aria-expanded="advanced" aria-controls="ak-advanced">
+                            More filters @if ($advancedCount)<span class="ak-count ak-count-dark">{{ $advancedCount }}</span>@endif
                         </button>
-                    @endif
-                </td>
-                <td class="px-2 py-1.5 text-center">
-                    <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold {{ $user->is_active === 'Yes' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                        {{ $user->is_active === 'Yes' ? 'Active' : 'Inactive' }}
-                    </span>
-                </td>
-                <td class="px-2 py-1.5 text-center">
-                    <div class="flex justify-center space-x-2">
-                        @can('edit users')
-                            <a href="{{ route('users.edit', $user) }}"
-                                class="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-md transition-colors duration-150"
-                                title="Edit">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                            </a>
-                        @endcan
-                        @can('delete users')
-                            @if ($user->id !== auth()->id())
-                                <button type="button" x-data
-                                    x-on:click="$dispatch('open-delete-user-modal', { url: '{{ route('users.destroy', $user) }}', number: '{{ $user->name }}' })"
-                                    class="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-md transition-colors duration-150"
-                                    title="Delete">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            @endif
-                        @endcan
-                    </div>
-                </td>
-            </tr>
-        @endforeach
-    </x-data-table>
-
-    {{-- Extra-permissions modal (same pattern as the "Approve AKSIC" modal) --}}
-    <div x-data="{ show: false, info: { name: '', total: 0, groups: {}, editUrl: '#' } }"
-        x-on:open-user-permissions-modal.window="info = $event.detail; show = true"
-        x-on:keydown.escape.window="show = false" x-show="show" x-cloak class="fixed inset-0 z-50" style="display: none;">
-        <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-            x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-            class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm" @click="show = false"></div>
-        <div class="fixed inset-0 z-10 flex items-center justify-center overflow-y-auto p-4">
-            <div x-show="show" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:scale-95"
-                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200"
-                x-transition:leave-start="opacity-100 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:scale-95"
-                class="relative w-full overflow-hidden rounded-lg bg-white text-left shadow-xl sm:max-w-lg" @click.outside="show = false">
-                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                    <div class="sm:flex sm:items-start">
-                        <div class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-emerald-100 sm:mx-0 sm:size-10">
-                            <svg class="size-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" /></svg>
-                        </div>
-                        <div class="mt-3 w-full text-center sm:ml-4 sm:mt-0 sm:text-left">
-                            <h3 class="text-lg font-medium leading-6 text-gray-900">Extra permissions &mdash; <span x-text="info.name"></span></h3>
-                            <p class="mt-1 text-sm text-gray-600">Given in addition to the user's roles (<span x-text="info.total"></span> total).</p>
-                            <div class="mt-3 max-h-80 space-y-3 overflow-y-auto rounded-md border border-gray-200 bg-gray-50 p-3" style="max-height: 20rem;">
-                                <template x-for="(items, group) in info.groups" :key="group">
-                                    <div>
-                                        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500" x-text="group"></div>
-                                        <div class="mt-1 flex flex-wrap gap-1">
-                                            <template x-for="p in items" :key="p">
-                                                <span class="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800" x-text="p"></span>
-                                            </template>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
+                        <button type="submit" class="ak-btn ak-btn-primary" :disabled="busy">
+                            <span x-show="!busy">Apply</span><span x-show="busy" x-cloak>Searching…</span>
+                        </button>
                     </div>
                 </div>
-                <div class="flex flex-row justify-end gap-3 bg-gray-100 px-6 py-4">
-                    <button type="button" @click="show = false" class="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 shadow-sm transition hover:bg-gray-50">Close</button>
-                    @can('edit users')
-                        <a :href="info.editUrl" class="inline-flex items-center rounded-md border border-transparent bg-emerald-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition hover:bg-emerald-700">Edit user</a>
-                    @endcan
+
+                <div id="ak-advanced" class="ak-filter-advanced" x-show="advanced" x-cloak x-transition>
+                    <div class="ak-field">
+                        <label for="f_super">Super admin</label>
+                        <select id="f_super" name="filter[is_super_admin]">
+                            <option value="">Any</option>
+                            <option value="Yes" @selected(($filters['is_super_admin'] ?? '') === 'Yes')>Yes</option>
+                            <option value="No" @selected(($filters['is_super_admin'] ?? '') === 'No')>No</option>
+                        </select>
+                    </div>
+                    <div class="ak-field">
+                        <label for="f_access">Access</label>
+                        <select id="f_access" name="filter[access]">
+                            <option value="">Any</option>
+                            <option value="none" @selected(($filters['access'] ?? '') === 'none')>No role or permission</option>
+                        </select>
+                    </div>
+                    <div class="ak-field">
+                        <label for="f_branch">Branch</label>
+                        <select id="f_branch" name="filter[branch_id]">
+                            <option value="">All branches</option>
+                            @foreach ($branches as $branch)
+                                <option value="{{ $branch->id }}" @selected((string) ($filters['branch_id'] ?? '') === (string) $branch->id)>{{ $branchNames[$branch->id] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </form>
+
+            @if ($chips)
+                <div class="ak-chips" aria-label="Active filters">
+                    <span class="ak-chips-label">Filtered by</span>
+                    @foreach ($chips as $key => $value)
+                        <a href="{{ $withFilters(\Illuminate\Support\Arr::except($filters, $key)) }}" class="ak-chip" aria-label="Remove filter {{ $chipLabels[$key] ?? $key }}">
+                            <b>{{ $chipLabels[$key] ?? \Illuminate\Support\Str::headline($key) }}:</b> {{ $chipValue($key, $value) }} <span aria-hidden="true">×</span>
+                        </a>
+                    @endforeach
+                    <a href="{{ $withFilters($tab !== '' ? ['is_active' => $tab] : []) }}" class="ak-chips-clear">Clear all</a>
+                </div>
+            @endif
+
+            @if ($users->count() > 0)
+                {{-- Bulk actions: checkboxes point at this form with form="bulk-form" (no nested forms). --}}
+                @if ($canBulk)
+                    <form id="bulk-form" method="POST" action="{{ route('users.bulk-update') }}" class="ak-bulk" x-show="selected.length" x-cloak @submit.prevent="askBulk($el)">
+                        @csrf
+                        <b x-text="selected.length + ' selected'"></b>
+                        <label for="bulk_action" class="sr-only">Bulk action</label>
+                        <select id="bulk_action" name="action" x-model="bulkAction" required>
+                            <option value="">Choose action…</option>
+                            <option value="activate">Activate</option>
+                            <option value="deactivate">Suspend</option>
+                            @if ($isSuperAdmin)<option value="delete">Delete</option>@endif
+                        </select>
+                        <button type="submit" class="ak-btn ak-btn-primary ak-btn-sm" :disabled="!bulkAction">Apply</button>
+                        <button type="button" class="ak-btn ak-btn-ghost ak-btn-sm" @click="clearSelection()">Clear selection</button>
+                    </form>
+                @endif
+
+                <div class="ak-table-wrap" x-data="{
+                        compact: (() => { try { return localStorage.getItem('users-density') === 'compact'; } catch (e) { return false; } })(),
+                        setDensity(v) { this.compact = v; try { localStorage.setItem('users-density', v ? 'compact' : 'comfortable'); } catch (e) {} }
+                    }">
+                    <div class="ak-dt-toolbar">
+                        <p>
+                            <b>{{ number_format($users->total()) }}</b> {{ \Illuminate\Support\Str::plural('user', $users->total()) }}
+                            &middot; sorted by <b>{{ $sortNames[$sortField] ?? 'Date added' }}</b> ({{ str_starts_with($sort, '-') ? 'newest / Z–A first' : 'oldest / A–Z first' }})
+                        </p>
+                        <div class="ak-seg ak-seg-sm" role="group" aria-label="Row density">
+                            <button type="button" @click="setDensity(false)" :aria-pressed="!compact" :class="!compact && 'is-on'">Comfortable</button>
+                            <button type="button" @click="setDensity(true)" :aria-pressed="compact" :class="compact && 'is-on'">Compact</button>
+                        </div>
+                    </div>
+                    <div class="ak-dt-scroll" :class="compact && 'is-compact'" tabindex="0" aria-label="Users table">
+                        <table class="ak-dt">
+                            <caption class="sr-only">Users, {{ $users->total() }} results</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="ak-c ak-sticky-1">
+                                        @if ($canBulk)
+                                            <input type="checkbox" aria-label="Select all users on this page" :checked="allSelected()" @change="toggleAll($event.target.checked)">
+                                        @else
+                                            #
+                                        @endif
+                                    </th>
+                                    <th scope="col" class="ak-sticky-2" aria-sort="{{ $ariaSort('name') }}"><a href="{{ $sortUrl('name') }}">User <span aria-hidden="true">{{ $sortMark('name') }}</span></a></th>
+                                    <th scope="col">Office</th>
+                                    <th scope="col">Roles</th>
+                                    <th scope="col" class="ak-c">Access</th>
+                                    <th scope="col" aria-sort="{{ $ariaSort('created_at') }}"><a href="{{ $sortUrl('created_at') }}">Added <span aria-hidden="true">{{ $sortMark('created_at') }}</span></a></th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col" class="ak-c ak-sticky-end"><span class="sr-only">Actions</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($users as $user)
+                                    @php
+                                        $isSelf = $user->id === $authUser->id;
+                                        $userIsSuper = $user->is_super_admin === 'Yes' || $user->roles->contains('name', 'super-admin');
+                                        $fromRoles = $user->roles->flatMap(fn ($r) => $r->permissions->pluck('id'))->unique();
+                                        $direct = $user->permissions->pluck('id');
+                                        $total = $fromRoles->merge($direct)->unique()->count();
+                                        $initials = collect(explode(' ', trim((string) $user->name)))->filter()->take(2)->map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)))->implode('');
+                                    @endphp
+                                    <tr>
+                                        <td class="ak-c ak-sticky-1" data-label="">
+                                            @if ($canBulk && ! $isSelf)
+                                                <input type="checkbox" name="ids[]" value="{{ $user->id }}" form="bulk-form" x-model="selected" aria-label="Select {{ $user->name }}">
+                                            @elseif ($isSelf)
+                                                <span class="ak-muted" title="Your own account">You</span>
+                                            @else
+                                                <span class="ak-muted">{{ $users->firstItem() + $loop->index }}</span>
+                                            @endif
+                                        </td>
+                                        <td data-label="User" class="ak-sticky-2">
+                                            <div class="ak-person">
+                                                <span class="ak-avatar ak-hide-compact" aria-hidden="true">{{ $initials ?: '?' }}</span>
+                                                <div style="min-width:0">
+                                                    @can('view users')
+                                                        <a href="{{ route('users.show', $user) }}" class="ak-primary-link">{{ $user->name }}</a>
+                                                    @else
+                                                        <span class="ak-strong">{{ $user->name }}</span>
+                                                    @endcan
+                                                    <div class="ak-muted" style="word-break:break-all">{{ $user->email }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td data-label="Office">
+                                            @php
+                                                $office = match (true) {
+                                                    (bool) $user->branch => ['Branch', trim(($user->branch->code ? $user->branch->code.' - ' : '').$user->branch->name)],
+                                                    (bool) $user->region => ['Region', $user->region->name],
+                                                    (bool) $user->division => ['Division', $user->division->name],
+                                                    (bool) $user->headOffice => ['Head Office', $user->headOffice->name],
+                                                    (bool) $user->is_president_office => ['President Office', 'All offices'],
+                                                    default => [null, null],
+                                                };
+                                            @endphp
+                                            @if ($office[0])
+                                                <div>{{ $office[1] }}</div>
+                                                <div class="ak-muted ak-hide-compact">{{ $office[0] }}</div>
+                                            @else
+                                                <span class="ak-muted">—</span>
+                                            @endif
+                                        </td>
+                                        <td data-label="Roles">
+                                            @if ($userIsSuper)<span class="ak-pill ak-pill-red">Super admin</span>@endif
+                                            @forelse ($user->roles->where('name', '!=', 'super-admin') as $role)
+                                                <span class="ak-pill">{{ \Illuminate\Support\Str::headline($role->name) }}</span>
+                                            @empty
+                                                @unless ($userIsSuper) <span class="ak-muted">No role</span> @endunless
+                                            @endforelse
+                                        </td>
+                                        <td class="ak-c" data-label="Access">
+                                            @if ($userIsSuper)
+                                                <span class="ak-strong">Everything</span>
+                                            @elseif ($total === 0)
+                                                <span class="ak-status ak-status-amber"><i aria-hidden="true"></i>None</span>
+                                            @else
+                                                <span class="ak-strong" title="{{ $fromRoles->count() }} from roles, {{ $direct->count() }} extra">{{ number_format($total) }}</span>
+                                                <div class="ak-muted ak-hide-compact">{{ $direct->count() ? $direct->count().' extra' : 'from roles' }}</div>
+                                            @endif
+                                        </td>
+                                        <td class="ak-mono" data-label="Added">
+                                            {{ $user->created_at?->format('d M Y') ?? '—' }}
+                                            <div class="ak-muted ak-hide-compact">{{ $user->created_at?->diffForHumans() }}</div>
+                                        </td>
+                                        <td data-label="Status">
+                                            @if ($user->is_active === 'Yes')
+                                                <span class="ak-status ak-status-green"><i aria-hidden="true"></i>Active</span>
+                                            @else
+                                                <span class="ak-status ak-status-red"><i aria-hidden="true"></i>Suspended</span>
+                                            @endif
+                                        </td>
+                                        <td class="ak-sticky-end" data-label="">
+                                            <div class="ak-actions">
+                                                @can('view users')
+                                                    <a href="{{ route('users.show', $user) }}" class="ak-icon ak-icon-view" title="View user" aria-label="View {{ $user->name }}">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                                                    </a>
+                                                @else
+                                                    <span class="ak-slot"></span>
+                                                @endcan
+                                                <span class="ak-slot">
+                                                    @can('edit users')
+                                                        <a href="{{ route('users.edit', $user) }}" class="ak-icon" title="Edit user & access" aria-label="Edit {{ $user->name }}">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m16.86 4.49 2.65 2.65M4 20l4.2-.9 10.9-10.9a1.9 1.9 0 0 0-2.7-2.7L5.5 16.4 4 20Z" /></svg>
+                                                        </a>
+                                                    @endcan
+                                                </span>
+                                                <span class="ak-slot">
+                                                    @if (! $isSelf)
+                                                        @can('delete users')
+                                                            <form method="POST" action="{{ route('users.destroy', $user) }}" @submit.prevent="askDelete($el, @js($user->name))">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="ak-icon ak-icon-danger" title="Delete user" aria-label="Delete {{ $user->name }}">
+                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.35 9m-4.78 0L9.26 9m9.97-3.21c.34.05.68.11 1.02.17m-1.02-.17L18.16 19.67A2.25 2.25 0 0 1 15.92 21.75H8.08a2.25 2.25 0 0 1-2.24-2.08L4.77 5.79m14.46 0a48.1 48.1 0 0 0-3.48-.4m-12 .57c.34-.06.68-.12 1.02-.17m0 0a48.1 48.1 0 0 1 3.48-.4m7.5 0v-.92c0-1.18-.91-2.16-2.09-2.2a51.96 51.96 0 0 0-3.32 0c-1.18.04-2.09 1.02-2.09 2.2v.92m7.5 0a48.67 48.67 0 0 0-7.5 0" /></svg>
+                                                                </button>
+                                                            </form>
+                                                        @endcan
+                                                    @endif
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="ak-pager">
+                    <p>Showing <b>{{ number_format($users->firstItem()) }}–{{ number_format($users->lastItem()) }}</b> of <b>{{ number_format($users->total()) }}</b> users</p>
+                    <div class="ak-pager-right">
+                        <form method="GET" action="{{ route('users.index') }}" class="ak-perpage">
+                            @foreach (request()->except(['per_page', 'page']) as $key => $value)
+                                @if (is_array($value))
+                                    @foreach ($value as $k => $v) <input type="hidden" name="{{ $key }}[{{ $k }}]" value="{{ $v }}"> @endforeach
+                                @else
+                                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                                @endif
+                            @endforeach
+                            <label for="per_page">Rows per page</label>
+                            <select id="per_page" name="per_page" onchange="this.form.submit()">
+                                @foreach (\App\Http\Controllers\UserController::PER_PAGE as $n)
+                                    <option value="{{ $n }}" @selected($perPage === $n)>{{ $n }}</option>
+                                @endforeach
+                            </select>
+                        </form>
+                        <div>{{ $users->onEachSide(1)->links() }}</div>
+                    </div>
+                </div>
+            @else
+                <div class="ak-empty">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" /></svg>
+                    @if ($filters)
+                        <h2>No users match these filters</h2>
+                        <p>Remove a filter or search with part of a name or email.</p>
+                        <a href="{{ route('users.index') }}" class="ak-btn ak-btn-primary">Clear all filters</a>
+                    @else
+                        <h2>No users yet</h2>
+                        <p>Add the first user with “Add user”.</p>
+                        @can('create users') <a href="{{ route('users.create') }}" class="ak-btn ak-btn-primary">＋ Add user</a> @endcan
+                    @endif
+                </div>
+            @endif
+        </section>
+
+        {{-- Confirm modal (same pattern as the Approve modal) --}}
+        <div class="uf-modal" x-show="confirm.open" x-cloak style="display:none" @keydown.escape.window="confirm.open = false" role="dialog" aria-modal="true" aria-labelledby="ul-confirm-title">
+            <div class="uf-modal-bg" x-show="confirm.open" x-transition.opacity @click="confirm.open = false"></div>
+            <div class="uf-modal-box" x-show="confirm.open" x-transition>
+                <div class="uf-modal-body">
+                    <span class="uf-modal-icon" :class="confirm.danger ? 'ak-pill-red' : 'ak-tone-amber'" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.01" /></svg>
+                    </span>
+                    <div>
+                        <h3 id="ul-confirm-title" x-text="confirm.title"></h3>
+                        <p style="margin:8px 0 0; font-size:14px; color:#334155" x-text="confirm.message"></p>
+                    </div>
+                </div>
+                <div class="uf-modal-foot">
+                    <button type="button" class="ak-btn ak-btn-outline" @click="confirm.open = false">Cancel</button>
+                    <button type="button" class="ak-btn" :class="confirm.danger ? 'ak-btn-danger-outline' : 'ak-btn-primary'" @click="runConfirm()" :disabled="confirm.busy" x-text="confirm.busy ? 'Working…' : confirm.button"></button>
                 </div>
             </div>
         </div>
     </div>
 
-    <x-alpine-confirmation-modal eventName="open-delete-user-modal" title="Delete User" confirmButtonText="Delete"
-        confirmButtonClass="bg-red-600 hover:bg-red-700" csrfMethod="DELETE">
-        <p class="text-sm text-gray-600">
-            Are you sure you want to delete this user? This action cannot be undone.
-        </p>
-    </x-alpine-confirmation-modal>
+    @push('scripts')
+        <script>
+            function userList() {
+                return {
+                    selected: [],
+                    pageIds: {{ \Illuminate\Support\Js::from($pageIds) }},
+                    bulkAction: '',
+                    confirm: { open: false, title: '', message: '', button: '', danger: false, busy: false, form: null },
+                    allSelected() { return this.pageIds.length > 0 && this.pageIds.every((id) => this.selected.includes(id)); },
+                    toggleAll(on) { this.selected = on ? [...this.pageIds] : []; },
+                    clearSelection() { this.selected = []; this.bulkAction = ''; },
+                    ask(form, title, message, button, danger) {
+                        this.confirm = { open: true, title, message, button, danger, busy: false, form };
+                    },
+                    askDelete(form, name) {
+                        this.ask(form, 'Delete ' + name + '?', 'The user will no longer be able to sign in. This cannot be undone.', 'Delete user', true);
+                    },
+                    askBulk(form) {
+                        if (!this.bulkAction || !this.selected.length) return;
+                        const words = { activate: 'Activate', deactivate: 'Suspend', delete: 'Delete' };
+                        const count = this.selected.length + (this.selected.length === 1 ? ' user' : ' users');
+                        const message = this.bulkAction === 'delete'
+                            ? 'Selected users will be deleted (the last super admin is always kept). This cannot be undone.'
+                            : (this.bulkAction === 'deactivate' ? 'Suspended users cannot sign in until activated again.' : 'Selected users will be able to sign in.');
+                        this.ask(form, words[this.bulkAction] + ' ' + count + '?', message, words[this.bulkAction] + ' ' + count, this.bulkAction === 'delete');
+                    },
+                    runConfirm() {
+                        if (this.confirm.busy || !this.confirm.form) return;
+                        this.confirm.busy = true;
+                        this.confirm.form.submit();
+                    },
+                };
+            }
+        </script>
+    @endpush
 </x-app-layout>
