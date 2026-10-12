@@ -66,6 +66,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/settings/branch/districts', DistrictController::class);
     Route::resource('/settings/roles', RoleController::class);
     Route::resource('/settings/permissions', PermissionController::class)->middleware('auth');
+    Route::post('/settings/users/bulk-update', [UserController::class, 'bulkUpdate'])->name('users.bulk-update');
     Route::resource('/settings/users', UserController::class);
 
     // Updated route to point to the ReportController's method

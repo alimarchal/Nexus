@@ -7,12 +7,16 @@ use App\Models\Division;
 use App\Models\HeadOffice;
 use App\Models\Region;
 use App\Models\User;
+use App\Support\PermissionCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Activitylog\Models\Activity;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
 class UserController extends Controller implements HasMiddleware
@@ -24,25 +28,167 @@ class UserController extends Controller implements HasMiddleware
             new Middleware('role_or_permission:create users', only: ['create', 'store']),
             new Middleware('role_or_permission:edit users', only: ['edit', 'update']),
             new Middleware('role_or_permission:delete users', only: ['destroy']),
+            new Middleware('role_or_permission:edit users', only: ['bulkUpdate']),
             new Middleware('role_or_permission:assign permissions', only: ['store', 'update']),
         ];
     }
 
+    /** Rows-per-page choices on the list. */
+    public const PER_PAGE = [10, 25, 50, 100];
+
     public function index(Request $request)
     {
-        $branches = Branch::orderBy('name')->get();
-        $roles = Role::orderBy('name')->get();
+        $perPage = in_array((int) $request->query('per_page'), self::PER_PAGE, true) ? (int) $request->query('per_page') : 25;
 
-        $users = QueryBuilder::for(User::class)
-            ->allowedFilters(User::getAllowedFilters())
-            ->allowedSorts(User::getAllowedSorts())
-            ->allowedIncludes(User::getAllowedIncludes())
-            ->with(['branch', 'region', 'division', 'headOffice', 'roles', 'permissions'])
-            ->defaultSort('-created_at')
-            ->paginate(request('per_page', 25))
-            ->appends(request()->query());
+        $users = $this->listQuery($request)
+            ->with(['branch', 'region', 'division', 'headOffice', 'roles.permissions', 'permissions'])
+            ->paginate($perPage)
+            ->withQueryString();
 
-        return view('users.index', compact('branches', 'roles', 'users'));
+        return view('users.index', [
+            'users' => $users,
+            'branches' => Branch::orderBy('name')->get(),
+            'roles' => Role::orderBy('name')->get(),
+            'perPage' => $perPage,
+            'stats' => $this->listStats($request),
+        ]);
+    }
+
+    /**
+     * Filters and sort for the list (the Active / Suspended tab is the is_active filter).
+     */
+    private function listQuery(Request $request, bool $withSort = true): QueryBuilder
+    {
+        $query = QueryBuilder::for(User::class, $request)
+            ->allowedFilters([
+                ...User::getAllowedFilters(),
+                AllowedFilter::callback('search', function ($query, $value): void {
+                    $term = trim((string) (is_array($value) ? implode(' ', $value) : $value));
+                    $query->where(fn ($inner) => $inner->where('name', 'like', "%{$term}%")->orWhere('email', 'like', "%{$term}%"));
+                }),
+                AllowedFilter::exact('is_super_admin'),
+                AllowedFilter::callback('access', function ($query, $value): void {
+                    if ($value === 'none') {
+                        $query->where('is_super_admin', '!=', 'Yes')->doesntHave('roles')->doesntHave('permissions');
+                    }
+                }),
+            ]);
+
+        if ($withSort) {
+            $query->allowedSorts(User::getAllowedSorts())->defaultSort('-created_at');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Headline numbers for the list. Tab counts follow the other filters (search, role, branch ...)
+     * but not the Active / Suspended tab itself.
+     *
+     * @return array{total: int, active: int, inactive: int, super_admins: int, no_access: int}
+     */
+    private function listStats(Request $request): array
+    {
+        $filters = array_filter((array) $request->input('filter', []), fn ($v) => $v !== null && $v !== '');
+        unset($filters['is_active']);
+
+        $byStatus = $this->listQuery(new Request(['filter' => $filters]), false)
+            ->getEloquentBuilder()
+            ->reorder()
+            ->selectRaw('is_active, COUNT(*) as aggregate')
+            ->groupBy('is_active')
+            ->pluck('aggregate', 'is_active');
+
+        return [
+            'total' => (int) $byStatus->sum(),
+            'active' => (int) ($byStatus['Yes'] ?? 0),
+            'inactive' => (int) ($byStatus['No'] ?? 0),
+            'super_admins' => User::query()->where(fn ($q) => $q->where('is_super_admin', 'Yes')->orWhereHas('roles', fn ($r) => $r->where('name', 'super-admin')))->count(),
+            'no_access' => User::query()->where('is_active', 'Yes')->where('is_super_admin', '!=', 'Yes')->doesntHave('roles')->doesntHave('permissions')->count(),
+        ];
+    }
+
+    /**
+     * Read-only profile: office, roles, what the user can open (by module, with where each
+     * permission comes from) and recent activity. Changes happen on Edit.
+     */
+    public function show(User $user)
+    {
+        $user->load(['branch', 'region', 'division', 'headOffice', 'roles.permissions', 'permissions']);
+
+        // permission id => where it comes from (extra and / or role names)
+        $grants = [];
+        foreach ($user->permissions as $permission) {
+            $grants[(string) $permission->id]['direct'] = true;
+        }
+        foreach ($user->roles as $role) {
+            foreach ($role->permissions as $permission) {
+                $grants[(string) $permission->id]['roles'][] = $role->name;
+            }
+        }
+
+        $activity = rescue(fn () => Activity::query()
+            ->where(fn ($q) => $q->where(fn ($c) => $c->where('causer_type', $user->getMorphClass())->where('causer_id', $user->id))
+                ->orWhere(fn ($s) => $s->where('subject_type', $user->getMorphClass())->where('subject_id', $user->id)))
+            ->latest()
+            ->limit(10)
+            ->get(), collect(), false);
+
+        return view('users.show', [
+            'user' => $user,
+            'modules' => PermissionCatalog::build(Permission::all()),
+            'grants' => $grants,
+            'activity' => $activity,
+        ]);
+    }
+
+    /**
+     * Activate, suspend or delete several users at once. Never touches your own account or the last super admin.
+     */
+    public function bulkUpdate(Request $request)
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:users,id'],
+            'action' => ['required', 'in:activate,deactivate,delete'],
+        ]);
+
+        if ($data['action'] === 'delete' && ! $request->user()->can('delete users')) {
+            abort(403);
+        }
+
+        $ids = collect($data['ids'])->map(fn ($id) => (int) $id)->reject(fn (int $id) => $id === auth()->id())->values();
+
+        if ($ids->isEmpty()) {
+            return back()->with('error', 'No valid users selected for this action.');
+        }
+
+        DB::transaction(function () use ($ids, $data): void {
+            if ($data['action'] === 'delete') {
+                $remainingSuperAdmins = User::role('super-admin')->count();
+
+                foreach (User::whereIn('id', $ids)->get() as $user) {
+                    if ($user->hasRole('super-admin')) {
+                        if ($remainingSuperAdmins <= 1) {
+                            continue;
+                        }
+                        $remainingSuperAdmins--;
+                    }
+
+                    $user->delete();
+                }
+
+                return;
+            }
+
+            User::whereIn('id', $ids)->update(['is_active' => $data['action'] === 'activate' ? 'Yes' : 'No']);
+        });
+
+        return redirect()->route('users.index')->with('success', match ($data['action']) {
+            'activate' => 'Users activated.',
+            'deactivate' => 'Users suspended.',
+            default => 'Users deleted (the last super admin and your own account are always kept).',
+        });
     }
 
     public function create()

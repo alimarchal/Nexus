@@ -34,21 +34,18 @@ test('user module users index uses shared page pattern', function () {
     $response->assertSuccessful();
     $response->assertViewIs('users.index');
     $response->assertSeeText('Users');
-    $response->assertSee('id="filters"', false);
-    $response->assertSee('select2/select2.min.css', false);
-    $response->assertSee('select2/select2.min.js', false);
-    $response->assertSee('initializeSelect2', false);
-    $response->assertSee('lg:grid-cols-4', false);
-    $response->assertSee('id="filter_branch_id"', false);
-    $response->assertSee('class="select2 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full"', false);
-    $response->assertSee('data-placeholder="All Branches"', false);
-    $response->assertSee('data-placeholder="All Roles"', false);
-    $response->assertSee('data-placeholder="All Statuses"', false);
-    $response->assertSee('open-delete-user-modal', false);
-    $response->assertSee('Delete User', false);
-    $response->assertSee('This action cannot be undone.', false);
-    $response->assertSee('inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-800 hover:bg-green-100 rounded-md transition-colors duration-150', false);
-    $response->assertSee('inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-md transition-colors duration-150', false);
+    // Same list pattern as the Account Opening list: KPI cards, status tabs, one search box, chips, dense table.
+    $response->assertSee('class="ak-kpis"', false);
+    $response->assertSee('class="ak-tabs"', false);
+    $response->assertSee('name="filter[search]"', false);
+    $response->assertSee('id="f_role"', false);
+    $response->assertSee('id="f_branch"', false);
+    $response->assertSee('class="ak-dt"', false);
+    $response->assertSee('Rows per page');
+    $response->assertSee('Delete Candidate');
+    // Delete uses the in-page confirmation (no browser confirm()).
+    $response->assertSee('Delete user', false);
+    $response->assertSee('This cannot be undone.', false);
     $response->assertDontSee('onsubmit="return confirm', false);
 });
 
