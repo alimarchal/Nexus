@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Models\Country;
 use App\Support\MobileNumber;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -60,6 +61,12 @@ class UpdateAccountOpeningStepRequest extends FormRequest
      */
     public function withValidator(Validator $validator): void
     {
+        if ((string) $this->route('step') === 'compliance') {
+            $this->validateTaxResidency($validator);
+
+            return;
+        }
+
         if ((string) $this->route('step') !== 'identification') {
             return;
         }
@@ -76,6 +83,36 @@ class UpdateAccountOpeningStepRequest extends FormRequest
 
             if ($problem !== null) {
                 $validator->errors()->add('contacts.mobile.1.value', $problem);
+            }
+        });
+    }
+
+    /**
+     * Tax residency details apply only to a country other than Pakistan and the
+     * USA: when the box is ticked at least one such country is needed.
+     */
+    private function validateTaxResidency(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if (! $this->boolean('is_tax_resident_other_country')) {
+                return;
+            }
+
+            $countryIds = collect($this->input('tax_residencies', []))
+                ->pluck('country_id')
+                ->filter()
+                ->values();
+
+            if ($countryIds->isEmpty()) {
+                $validator->errors()->add('tax_residencies', 'Select the country of tax residence, or untick "Tax resident of a country other than Pakistan & USA".');
+
+                return;
+            }
+
+            $excluded = Country::query()->whereIn('iso2', ['PK', 'US'])->whereIn('id', $countryIds)->exists();
+
+            if ($excluded) {
+                $validator->errors()->add('tax_residencies', 'Pakistan and the USA are covered elsewhere on this form; choose a different country of tax residence.');
             }
         });
     }
