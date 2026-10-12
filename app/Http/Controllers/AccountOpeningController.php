@@ -38,6 +38,7 @@ use App\Models\User;
 use App\Models\WealthSource;
 use App\Models\ZakatExemptionReason;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
@@ -82,11 +83,47 @@ class AccountOpeningController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index(): View
+    /** Rows-per-page choices on the list. */
+    public const PER_PAGE = [10, 25, 50, 100];
+
+    /** Status tabs on the list, in workflow order. */
+    public const LIST_STATUSES = ['draft', 'submitted', 'under_review', 'approved', 'rejected'];
+
+    public function index(Request $request): View
     {
-        $accountOpeningRequests = QueryBuilder::for(AccountOpeningRequest::class)
-            ->visibleTo(auth()->user())
+        $perPage = in_array((int) $request->query('per_page'), self::PER_PAGE, true) ? (int) $request->query('per_page') : 25;
+
+        $accountOpeningRequests = $this->listQuery($request, $request->user())
+            ->with(['branch', 'customer.individual', 'customer.organization', 'customer.customerCategory', 'account.product'])
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return view('account-openings.index', [
+            'accountOpeningRequests' => $accountOpeningRequests,
+            'branches' => Branch::orderBy('name')->get(),
+            'stats' => $this->listStats($request),
+            'perPage' => $perPage,
+        ]);
+    }
+
+    /**
+     * Filters, sort and branch visibility for the list.
+     */
+    private function listQuery(Request $request, ?User $user, bool $withSort = true): QueryBuilder
+    {
+        $query = QueryBuilder::for(AccountOpeningRequest::query()->visibleTo($user), $request)
             ->allowedFilters([
+                AllowedFilter::callback('search', function ($query, $value): void {
+                    $term = trim((string) (is_array($value) ? implode(' ', $value) : $value));
+
+                    $query->where(function ($inner) use ($term): void {
+                        $inner->where('request_number', 'like', "%{$term}%")
+                            ->orWhereHas('customer', fn ($q) => $q->where('cif_number', 'like', "%{$term}%"))
+                            ->orWhereHas('customer.individual', fn ($q) => $q->where('full_name', 'like', "%{$term}%"))
+                            ->orWhereHas('customer.organization', fn ($q) => $q->where('business_name', 'like', "%{$term}%"))
+                            ->orWhereHas('account', fn ($q) => $q->where('account_number', 'like', "%{$term}%"));
+                    });
+                }),
                 AllowedFilter::partial('request_number'),
                 AllowedFilter::exact('aof_form_type'),
                 AllowedFilter::exact('status'),
@@ -100,16 +137,43 @@ class AccountOpeningController extends Controller implements HasMiddleware
                             ->orWhereHas('customer.organization', fn ($q) => $q->where('business_name', 'like', "%{$value}%"));
                     });
                 }),
-            ])
-            ->with(['branch', 'customer.individual', 'customer.organization', 'customer.customerCategory', 'account.product'])
-            ->defaultSort('-request_date')
-            ->paginate(request('per_page', 10))
-            ->appends(request()->query());
+            ]);
 
-        return view('account-openings.index', [
-            'accountOpeningRequests' => $accountOpeningRequests,
-            'branches' => Branch::orderBy('name')->get(),
-        ]);
+        if ($withSort) {
+            $query->allowedSorts(['request_date', 'request_number', 'status', 'created_at'])
+                ->defaultSort('-request_date')
+                ->orderByDesc('created_at');
+        }
+
+        return $query;
+    }
+
+    /**
+     * Headline numbers for the list. Status counts follow the other filters
+     * (search, branch, dates ...) but not the status tab itself.
+     *
+     * @return array{total: int, by_status: array<string, int>, this_month: int, awaiting: int}
+     */
+    private function listStats(Request $request): array
+    {
+        $filters = array_filter((array) $request->input('filter', []), fn ($v) => $v !== null && $v !== '');
+        unset($filters['status']);
+
+        $byStatus = $this->listQuery(new Request(['filter' => $filters]), $request->user(), false)
+            ->getEloquentBuilder()
+            ->reorder()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $counts = collect(self::LIST_STATUSES)->mapWithKeys(fn (string $status) => [$status => (int) ($byStatus[$status] ?? 0)])->all();
+
+        return [
+            'total' => (int) $byStatus->sum(),
+            'by_status' => $counts,
+            'this_month' => AccountOpeningRequest::query()->visibleTo($request->user())->where('request_date', '>=', now()->startOfMonth()->toDateString())->count(),
+            'awaiting' => $counts['submitted'] + $counts['under_review'],
+        ];
     }
 
     public function create(): View
