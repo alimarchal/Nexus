@@ -146,3 +146,48 @@ test('row actions follow the permissions and the empty state offers a first requ
     $this->actingAs($this->admin)->get(route('account-openings.index'))
         ->assertSee('Delete '.$request->request_number);
 });
+
+test('the create screen follows the users form pattern and keeps every field name', function () {
+    $html = $this->actingAs($this->admin)
+        ->get(route('account-openings.create'))
+        ->assertSuccessful()
+        ->assertSee('1. Account opening form')
+        ->assertSee('2. Customer category')
+        ->assertSee('Summary')
+        ->assertSee('Start form')
+        ->assertSee('Back to list')
+        ->getContent();
+
+    foreach (['aof_form_type', 'request_date', 'branch_id', 'economic_sector_code', 'customer_category_id', 'customer_category_other', 'category_code_description'] as $field) {
+        expect($html)->toContain('name="'.$field.'"');
+    }
+});
+
+test('the create screen redisplays the errors and the typed values after a failed start', function () {
+    $this->actingAs($this->admin)
+        ->from(route('account-openings.create'))
+        ->followingRedirects()
+        ->post(route('account-openings.store'), [
+            'aof_form_type' => AccountOpeningRequest::FORM_ENTITY,
+            'request_date' => now()->toDateString(),
+            'customer_category_other' => 'Typed before failing',
+        ])
+        ->assertSee('Please fix the following before continuing:')
+        ->assertSee('Typed before failing')
+        ->assertSee('Please enter the Economic Sector Code for a Government / organisation account.');
+});
+
+test('a started form continues into the wizard from the redesigned screen', function () {
+    $this->actingAs($this->admin)->post(route('account-openings.store'), [
+        'branch_id' => $this->branchA->id,
+        'aof_form_type' => AccountOpeningRequest::FORM_ENTITY,
+        'customer_category_id' => CustomerCategory::code('GOVT_INSTITUTION')->firstOrFail()->id,
+        'request_date' => now()->toDateString(),
+        'economic_sector_code' => '8411',
+    ])->assertRedirect();
+
+    $request = AccountOpeningRequest::firstOrFail();
+
+    expect($request->customer->economic_sector_code)->toBe('8411')
+        ->and($request->aof_form_type)->toBe(AccountOpeningRequest::FORM_ENTITY);
+});
