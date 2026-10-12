@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Exceptions\AccountOpeningWorkflowException;
+use App\Models\AccountOpeningRequest;
 use App\Models\Country;
+use App\Services\AccountOpeningWorkflow;
 use App\Support\MobileNumber;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -22,6 +26,25 @@ class UpdateAccountOpeningStepRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()?->can('edit account openings') ?? false;
+    }
+
+    /**
+     * Validation runs before the controller, so a locked or submitted request is turned away
+     * here with the maker-checker message instead of a validation redirect or a bare 403.
+     */
+    protected function prepareForValidation(): void
+    {
+        $request = $this->route('accountOpeningRequest');
+
+        if ($request instanceof AccountOpeningRequest && ! $request->isEditable()) {
+            try {
+                app(AccountOpeningWorkflow::class)->assertEditable($request);
+            } catch (AccountOpeningWorkflowException $exception) {
+                throw new HttpResponseException(
+                    redirect()->route('account-openings.show', $request)->with('error', $exception->getMessage())
+                );
+            }
+        }
     }
 
     /**

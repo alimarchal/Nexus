@@ -40,6 +40,11 @@ class AccountOpeningRequest extends Model
             'request_date' => 'date',
             'authorized_on' => 'date',
             'checked_on' => 'date',
+            'submitted_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
+            'locked_at' => 'datetime',
+            'unlocked_at' => 'datetime',
             'terms_and_conditions_accepted' => 'boolean',
             'indemnity_undertaking_accepted' => 'boolean',
             'aof_copy_received_by_customer' => 'boolean',
@@ -62,6 +67,43 @@ class AccountOpeningRequest extends Model
     public function account(): BelongsTo
     {
         return $this->belongsTo(Account::class);
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(AccountOpeningHistory::class)->oldest('created_at')->orderBy('id');
+    }
+
+    public function submitter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function rejecter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function unlocker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'unlocked_by');
+    }
+
+    /** Approved requests are locked for everyone until a super admin unlocks them. */
+    public function isLocked(): bool
+    {
+        return $this->locked_at !== null;
+    }
+
+    /** Only a draft or a rejected request that is not locked can be edited. */
+    public function isEditable(): bool
+    {
+        return ! $this->isLocked() && in_array($this->status, ['draft', 'rejected'], true);
     }
 
     public function documents(): HasMany

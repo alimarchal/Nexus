@@ -149,6 +149,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::put('/{accountOpeningRequest}/steps/{step}', [AccountOpeningController::class, 'updateStep'])->name('steps.update');
         Route::post('/{accountOpeningRequest}/submit', [AccountOpeningController::class, 'submit'])->name('submit');
         Route::post('/{accountOpeningRequest}/approve', [AccountOpeningController::class, 'approve'])->name('approve');
+        Route::post('/{accountOpeningRequest}/reject', [AccountOpeningController::class, 'reject'])->name('reject');
+        Route::post('/{accountOpeningRequest}/unlock', [AccountOpeningController::class, 'unlock'])->name('unlock');
         Route::delete('/{accountOpeningRequest}', [AccountOpeningController::class, 'destroy'])->name('destroy');
     });
 

@@ -114,6 +114,16 @@ class RolesAndPermissionsSeeder extends Seeder
             'archive file management systems',
             'create boxes',
             'manage boxes',
+
+            // Account Opening (AOF) with maker-checker
+            'view account openings',
+            'create account openings',
+            'edit account openings',
+            'delete account openings',
+            'submit account openings',
+            'approve account openings',
+            'unlock account openings',
+            'manage account opening references',
             'approve file management transfers',
 
             // Report Management
@@ -161,6 +171,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'archive file management systems',
                 'create boxes',
                 'manage boxes',
+                'view account openings',
+                'create account openings',
+                'edit account openings',
+                'submit account openings',
             ],
             'region' => [
                 'view users',
@@ -185,6 +199,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'archive file management systems',
                 'create boxes',
                 'manage boxes',
+                'view account openings',
+                'create account openings',
+                'edit account openings',
+                'submit account openings',
             ],
             'division' => [
                 'view users',
@@ -221,6 +239,10 @@ class RolesAndPermissionsSeeder extends Seeder
                 'archive file management systems',
                 'create boxes',
                 'manage boxes',
+                'view account openings',
+                'create account openings',
+                'edit account openings',
+                'submit account openings',
             ],
             'head-office' => [
                 'view users',
@@ -279,6 +301,13 @@ class RolesAndPermissionsSeeder extends Seeder
                 'archive file management systems',
                 'create boxes',
                 'manage boxes',
+                'view account openings',
+                'create account openings',
+                'edit account openings',
+                'submit account openings',
+                'delete account openings',
+                'approve account openings',
+                'manage account opening references',
                 'approve file management transfers',
             ],
             'super-admin' => Permission::all()->pluck('name')->toArray(),
