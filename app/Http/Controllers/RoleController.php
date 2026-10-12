@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\PermissionCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -55,9 +56,15 @@ class RoleController extends Controller implements HasMiddleware
         return redirect()->route('roles.index')->with('success', 'Role created successfully with assigned permissions!');
     }
 
+    /** Rows-per-page choices on the list. */
+    public const PER_PAGE = [10, 25, 50, 100];
+
     // Display a listing of the roles with pagination
     public function index(Request $request)
     {
+        $perPage = in_array((int) $request->query('per_page'), self::PER_PAGE, true) ? (int) $request->query('per_page') : 25;
+        $sort = in_array(ltrim((string) $request->query('sort', 'name'), '-'), ['name', 'created_at', 'users_count'], true) ? (string) $request->query('sort', 'name') : 'name';
+
         // Spatie's users() relation needs a guard on the instance, so withCount('users')
         // cannot be used here; count the pivot rows directly instead.
         $query = Role::query()
@@ -66,23 +73,52 @@ class RoleController extends Controller implements HasMiddleware
                 ->selectRaw('count(*)')
                 ->whereColumn('role_id', 'roles.id')
                 ->where('model_type', (new User)->getMorphClass())])
-            ->with('permissions:id,name')
-            ->orderBy('name');
+            ->with('permissions:id,name');
 
-        // Apply filters based on request inputs
-        if ($name = $request->input('filter.name')) {
-            $query->where('name', 'LIKE', '%'.$name.'%');
+        // Filters: one search box (name), plus the older name and created date filters
+        if ($term = trim((string) $request->input('filter.search', $request->input('filter.name', '')))) {
+            $query->where('name', 'LIKE', '%'.$term.'%');
         }
 
         if ($createdAt = $request->input('filter.created_at')) {
             $query->whereDate('created_at', $createdAt);
         }
 
-        // Paginate the filtered results
-        $roles = $query->paginate(25)->withQueryString();
+        if ($request->input('filter.users') === 'none') {
+            $query->whereRaw('(select count(*) from '.config('permission.table_names.model_has_roles').' where role_id = roles.id and model_type = ?) = 0', [(new User)->getMorphClass()]);
+        }
 
-        // Return the view with roles data
-        return view('roles.index', compact('roles'));
+        $query->orderBy(ltrim($sort, '-'), str_starts_with($sort, '-') ? 'desc' : 'asc')->orderBy('name');
+
+        $roles = $query->paginate($perPage)->withQueryString();
+
+        return view('roles.index', [
+            'roles' => $roles,
+            'perPage' => $perPage,
+            'sort' => $sort,
+            'stats' => [
+                'roles' => Role::count(),
+                'permissions' => Permission::count(),
+                'users_with_roles' => DB::table(config('permission.table_names.model_has_roles'))->where('model_type', (new User)->getMorphClass())->distinct()->count('model_id'),
+                'unused' => Role::query()->whereNotIn('id', DB::table(config('permission.table_names.model_has_roles'))->where('model_type', (new User)->getMorphClass())->select('role_id'))->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Read-only role page: what the role grants, by module, and who has it.
+     */
+    public function show(Role $role)
+    {
+        $role->load('permissions');
+
+        return view('roles.show', [
+            'role' => $role,
+            'modules' => PermissionCatalog::build($role->permissions),
+            'allCount' => Permission::count(),
+            'users' => User::role($role->name)->orderBy('name')->limit(15)->get(['id', 'name', 'email', 'is_active']),
+            'usersCount' => User::role($role->name)->count(),
+        ]);
     }
 
     // Show the form for editing the specified role
