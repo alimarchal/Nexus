@@ -177,6 +177,7 @@ test('the account step creates the account with a number and IBAN', function () 
             'account_product_id' => AccountProduct::code('PLS')->firstOrFail()->id,
             'currency_id' => Currency::code('PKR')->firstOrFail()->id,
             'operating_instruction_id' => OperatingInstruction::code('SINGLY')->firstOrFail()->id,
+            'terms_and_conditions_accepted' => 1,
             'cheque_book_required' => 1,
             'cheque_book_quantity' => 1,
             'cheque_book_leaves' => 25,
@@ -201,6 +202,7 @@ test('due diligence records income sources and credit or debit modes separately'
         'account_product_id' => AccountProduct::code('PLS')->firstOrFail()->id,
         'currency_id' => Currency::code('PKR')->firstOrFail()->id,
         'operating_instruction_id' => OperatingInstruction::code('SINGLY')->firstOrFail()->id,
+        'terms_and_conditions_accepted' => 1,
     ])->assertSessionHasNoErrors();
 
     $cash = TransactionMode::code('CASH')->firstOrFail();
@@ -349,4 +351,66 @@ test('the tax residency fields are active when the other-country box was saved t
     $this->actingAs($this->admin)
         ->get(route('account-openings.steps.edit', [$accountOpeningRequest, 'compliance']))
         ->assertSee('x-data="{ other: true }"', false);
+});
+
+/**
+ * Post the account step with the minimum valid fields; $extra overrides or adds fields.
+ *
+ * @param  array<string, mixed>  $extra
+ */
+function submitAccountStep(mixed $test, AccountOpeningRequest $request, array $extra = []): TestResponse
+{
+    return $test->actingAs($test->admin)
+        ->put(route('account-openings.steps.update', [$request, 'account']), [
+            'title_of_account' => 'Ali Raza',
+            'opening_date' => now()->toDateString(),
+            'account_product_id' => AccountProduct::code('PLS')->firstOrFail()->id,
+            'currency_id' => Currency::code('PKR')->firstOrFail()->id,
+            'operating_instruction_id' => OperatingInstruction::code('SINGLY')->firstOrFail()->id,
+            ...$extra,
+        ]);
+}
+
+test('the account step cannot continue until the terms and conditions are accepted', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitAccountStep($this, $accountOpeningRequest)
+        ->assertSessionHasErrors(['terms_and_conditions_accepted' => 'Please review and accept the Terms and Conditions before continuing.']);
+
+    submitAccountStep($this, $accountOpeningRequest, ['terms_and_conditions_accepted' => 0])
+        ->assertSessionHasErrors('terms_and_conditions_accepted');
+
+    expect($accountOpeningRequest->fresh()->account)->toBeNull();
+});
+
+test('accepting the terms and conditions lets the account step continue', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitAccountStep($this, $accountOpeningRequest, ['terms_and_conditions_accepted' => 1])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('account-openings.steps.edit', [$accountOpeningRequest, 'holders']));
+});
+
+test('save and exit may keep a draft without the terms being accepted yet', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    submitAccountStep($this, $accountOpeningRequest, ['save_and_exit' => 1])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('account-openings.show', $accountOpeningRequest));
+});
+
+test('the terms and conditions error is shown beside the checkbox', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    $this->actingAs($this->admin)
+        ->from(route('account-openings.steps.edit', [$accountOpeningRequest, 'account']))
+        ->followingRedirects()
+        ->put(route('account-openings.steps.update', [$accountOpeningRequest, 'account']), [
+            'title_of_account' => 'Ali Raza',
+            'opening_date' => now()->toDateString(),
+            'account_product_id' => AccountProduct::code('PLS')->firstOrFail()->id,
+            'currency_id' => Currency::code('PKR')->firstOrFail()->id,
+            'operating_instruction_id' => OperatingInstruction::code('SINGLY')->firstOrFail()->id,
+        ])
+        ->assertSee('Please review and accept the Terms and Conditions before continuing.');
 });
