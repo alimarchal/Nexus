@@ -113,9 +113,10 @@
                         </div>
 
                         <div>
-                            <x-label value="Specimen signature (image)" />
+                            <x-label value="Specimen signature (image) *" />
                             <input type="file" name="holders[{{ $index }}][signature_image]" accept="image/*"
                                 class="mt-1 block w-full text-xs">
+                            <x-input-error for="holders.{{ $index }}.signature_image" class="mt-1" />
                             @if ($holder?->specimenSignatures->first()?->signature_image_path)
                                 <a class="text-xs text-blue-600 underline"
                                     href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($holder->specimenSignatures->first()->signature_image_path) }}"
@@ -124,9 +125,14 @@
                         </div>
 
                         <div>
-                            <x-label value="Thumb impression (image)" />
+                            <x-label value="Thumb impression (image) *" />
                             <input type="file" name="holders[{{ $index }}][thumb_image]" accept="image/*"
                                 class="mt-1 block w-full text-xs">
+                            @if ($holder?->specimenSignatures->first()?->thumb_left_image_path)
+                                <a class="text-xs text-blue-600 underline" target="_blank"
+                                    href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($holder->specimenSignatures->first()->thumb_left_image_path) }}">View current</a>
+                            @endif
+                            <x-input-error for="holders.{{ $index }}.thumb_image" class="mt-1" />
                         </div>
 
                         <div>
@@ -143,7 +149,7 @@
             @endfor
 
             <p class="text-xs text-gray-500">
-                Leave a row's customer blank to skip it. Saving replaces the applicant list with what is submitted here.
+                Leave a row's customer blank to skip it. Every applicant authorised to sign needs a specimen signature and a thumb impression (*) before you can continue; Save &amp; exit keeps a draft. Saving replaces the applicant list with what is submitted here.
             </p>
         </x-aof-section>
     @endif

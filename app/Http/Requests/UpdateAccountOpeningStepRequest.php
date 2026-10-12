@@ -71,6 +71,12 @@ class UpdateAccountOpeningStepRequest extends FormRequest
             return;
         }
 
+        if ((string) $this->route('step') === 'holders') {
+            $this->validateSignatoryImages($validator);
+
+            return;
+        }
+
         if ((string) $this->route('step') !== 'identification') {
             return;
         }
@@ -87,6 +93,47 @@ class UpdateAccountOpeningStepRequest extends FormRequest
 
             if ($problem !== null) {
                 $validator->errors()->add('contacts.mobile.1.value', $problem);
+            }
+        });
+    }
+
+    /**
+     * Every authorised signatory needs a specimen signature and a thumb
+     * impression before the wizard moves on. An image saved earlier counts, so a
+     * later edit does not have to upload it again. "Save & exit" keeps a draft.
+     */
+    private function validateSignatoryImages(Validator $validator): void
+    {
+        if ($this->boolean('save_and_exit')) {
+            return;
+        }
+
+        $validator->after(function (Validator $validator): void {
+            $account = $this->route('accountOpeningRequest')?->account;
+
+            foreach ((array) $this->input('holders', []) as $index => $row) {
+                if (blank($row['customer_id'] ?? null) || ! ($row['is_signatory'] ?? false)) {
+                    continue;
+                }
+
+                $saved = $account?->holders()
+                    ->where('customer_id', $row['customer_id'])
+                    ->where('holder_role', $row['holder_role'] ?? null)
+                    ->first()
+                    ?->specimenSignatures()
+                    ->where('is_active', true)
+                    ->latest('effective_from')
+                    ->first();
+
+                $number = (int) $index + 1;
+
+                if (! $this->hasFile("holders.{$index}.signature_image") && blank($saved?->signature_image_path) && ! $validator->errors()->has("holders.{$index}.signature_image")) {
+                    $validator->errors()->add("holders.{$index}.signature_image", "Please upload the specimen signature for applicant {$number} before continuing.");
+                }
+
+                if (! $this->hasFile("holders.{$index}.thumb_image") && blank($saved?->thumb_left_image_path) && ! $validator->errors()->has("holders.{$index}.thumb_image")) {
+                    $validator->errors()->add("holders.{$index}.thumb_image", "Please upload the thumb impression for applicant {$number} before continuing.");
+                }
             }
         });
     }
