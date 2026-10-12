@@ -109,6 +109,9 @@
                                 @foreach ($headOffices as $headOffice)
                                 <option value="{{ $headOffice->id }}">{{ $headOffice->name }}</option>@endforeach
                             </select>
+                            @if ($headOffices->isEmpty())
+                                <p class="mt-1 text-sm text-amber-700">No head office has been set up yet, so files cannot be transferred there. Ask an administrator to run the head office seeder.</p>
+                            @endif
                         </div>
                         @error('destination_fileable_id') <span class="text-sm text-red-500">{{ $message }}</span>
                         @enderror
