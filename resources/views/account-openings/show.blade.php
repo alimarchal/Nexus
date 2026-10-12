@@ -8,44 +8,134 @@
 
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="ak-head">
             <div>
-                <h2 class="inline-block text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    {{ $accountOpeningRequest->request_number }}
-                </h2>
-                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {{ $accountOpeningRequest->aof_version }}
+                <nav class="ak-crumbs" aria-label="Breadcrumb">
+                    <a href="{{ route('product.index') }}">Product</a><span aria-hidden="true">›</span>
+                    <a href="{{ route('account-openings.index') }}">Account opening</a><span aria-hidden="true">›</span>
+                    <span>{{ $accountOpeningRequest->request_number }}</span>
+                </nav>
+                <h1 class="ak-title">{{ $customer?->displayName() ?: 'New customer' }} <span class="ak-muted" style="font-size:16px; font-weight:600">{{ $accountOpeningRequest->request_number }}</span></h1>
+                <p class="ak-sub">
+                    {{ $accountOpeningRequest->aof_version }} &middot; {{ $accountOpeningRequest->branch?->code }} {{ $accountOpeningRequest->branch?->name }}
                 </p>
             </div>
-
-            <div class="flex items-center space-x-2">
+            <div class="ak-head-actions">
+                <a href="{{ route('account-openings.index') }}" class="ak-btn ak-btn-outline"><span aria-hidden="true">←</span> Back to list</a>
+                <a href="{{ route('account-openings.print', $accountOpeningRequest) }}" target="_blank" class="ak-btn ak-btn-outline">Print form</a>
                 @can('edit account openings')
                     @if ($accountOpeningRequest->isEditable())
-                        <a href="{{ route('account-openings.steps.edit', [$accountOpeningRequest, 'cif']) }}"
-                            class="inline-flex items-center rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-green-800">
-                            Continue Form
+                        <a href="{{ route('account-openings.steps.edit', [$accountOpeningRequest, $nextStep]) }}" class="ak-btn ak-btn-primary">
+                            {{ $allComplete ? 'Review the form' : 'Continue: '.$steps[$nextStep] }}
                         </a>
                     @endif
                 @endcan
-
-                <a href="{{ route('account-openings.print', $accountOpeningRequest) }}" target="_blank"
-                    class="inline-flex items-center rounded-md border border-transparent bg-green-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-green-900">
-                    Print Form
-                </a>
-
-                <a href="{{ route('account-openings.index') }}"
-                    class="inline-flex items-center rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white hover:bg-green-800">
-                    <svg class="size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                </a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-6">
-        <div class="mx-auto max-w-7xl space-y-4 sm:px-6 lg:px-8">
-            <x-status-message />
+    @include('settings.partials.ui-style')
+    <style>
+        .aof-grid { display: grid; gap: 20px; grid-template-columns: 1fr; }
+        @media (min-width: 1024px) { .aof-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); } }
+        .aof-side { display: flex; flex-direction: column; gap: 16px; }
+        @media (min-width: 1024px) { .aof-side { position: sticky; top: 16px; align-self: start; } }
+        .aof-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+        .aof-steps li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+        .aof-steps li:last-child { border-bottom: 0; }
+        .aof-dot { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; border: 2px solid var(--ak-border); color: var(--ak-muted); background: #fff; }
+        .aof-dot.is-done { background: var(--ak-green); border-color: var(--ak-green); color: #fff; }
+        .aof-dot.is-current { border-color: var(--ak-navy); color: var(--ak-navy); box-shadow: 0 0 0 3px var(--ak-navy-tint); }
+        .aof-dot.is-locked { background: var(--ak-slate-bg); }
+        .aof-steps a, .aof-steps .aof-off { font-weight: 600; color: var(--ak-text); text-decoration: none; }
+        .aof-steps a:hover { text-decoration: underline; }
+        .aof-steps .aof-off { color: var(--ak-muted); cursor: not-allowed; }
+        .aof-steps small { display: block; font-weight: 400; color: var(--ak-muted); font-size: 12px; }
+        @media print { .aof-grid { display: block; } .aof-side { position: static; } }
+    </style>
+
+    <div class="ak-page">
+        <x-status-message />
+
+        @php
+            $stepsDone = collect($progress)->filter(fn (array $row): bool => $row['complete'])->count();
+            $lockedSteps = \App\Support\AccountOpeningSteps::locked($progress);
+            $strictSteps = \App\Support\AccountOpeningSteps::strict();
+        @endphp
+
+        {{-- KPI cards --}}
+        <section class="ak-kpis" aria-label="Request summary">
+            <div class="ak-kpi">
+                <span class="ak-kpi-icon {{ $accountOpeningRequest->status === 'approved' ? 'ak-tone-green' : ($accountOpeningRequest->status === 'rejected' ? 'ak-tone-amber' : 'ak-tone-navy') }}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Status</span>
+                    <span class="ak-kpi-value ak-kpi-value-sm">{{ \Illuminate\Support\Str::headline($accountOpeningRequest->status) }}{{ $accountOpeningRequest->isLocked() ? ' · locked' : '' }}</span>
+                    <span class="ak-kpi-hint">{{ $accountOpeningRequest->submitted_at ? 'submitted '.$accountOpeningRequest->submitted_at->format('d.m.Y') : 'not submitted yet' }}</span>
+                </span>
+            </div>
+            <div class="ak-kpi">
+                <span class="ak-kpi-icon ak-tone-navy" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Steps complete</span>
+                    <span class="ak-kpi-value">{{ $stepsDone }} / {{ count($progress) }}</span>
+                    <span class="ak-kpi-hint">{{ $allComplete ? 'Ready to submit' : 'Next: '.$steps[$nextStep] }}</span>
+                </span>
+            </div>
+            <div class="ak-kpi">
+                <span class="ak-kpi-icon ak-tone-slate" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.12a7.5 7.5 0 0 1 15 0A17.93 17.93 0 0 1 12 21.75c-2.68 0-5.22-.58-7.5-1.63Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Customer</span>
+                    <span class="ak-kpi-value ak-kpi-value-sm">{{ $customer?->displayName() ?: 'Not captured yet' }}</span>
+                    <span class="ak-kpi-hint">CIF {{ $customer?->cif_number ?? '—' }}</span>
+                </span>
+            </div>
+            <div class="ak-kpi">
+                <span class="ak-kpi-icon ak-tone-green" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" /></svg></span>
+                <span class="ak-kpi-body">
+                    <span class="ak-kpi-label">Account</span>
+                    <span class="ak-kpi-value ak-kpi-value-sm">{{ $account?->account_number ?? 'Not created yet' }}</span>
+                    <span class="ak-kpi-hint">{{ $account?->product?->name ?? 'Created in step 4' }}</span>
+                </span>
+            </div>
+        </section>
+
+        <div class="aof-grid">
+            <div class="space-y-4">
+                {{-- Step-wise progress --}}
+                <section class="uf-card" aria-label="Steps" id="steps">
+                    <header class="uf-card-head">
+                        <h2 class="uf-card-title">Step-wise progress</h2>
+                        <span class="ak-sub" style="margin:0">{{ $strictSteps ? 'Each step opens after the one before it is complete.' : 'Steps can be filled in any order.' }}</span>
+                    </header>
+                    <div style="padding: 6px 20px 12px">
+                        <ol class="aof-steps">
+                            @foreach ($steps as $key => $label)
+                                @php
+                                    $done = $progress[$key]['complete'];
+                                    $isLockedStep = isset($lockedSteps[$key]);
+                                    $isNext = $key === $nextStep && ! $allComplete;
+                                    $canOpen = $accountOpeningRequest->isEditable() && ! $isLockedStep;
+                                @endphp
+                                <li data-step="{{ $key }}" data-state="{{ $done ? 'complete' : ($isLockedStep ? 'locked' : 'open') }}">
+                                    <span class="aof-dot {{ $done ? 'is-done' : ($isNext ? 'is-current' : ($isLockedStep ? 'is-locked' : '')) }}" aria-hidden="true">{{ $done ? '✓' : ($isLockedStep ? '🔒' : $loop->iteration) }}</span>
+                                    <div>
+                                        @if ($canOpen)
+                                            <a href="{{ route('account-openings.steps.edit', [$accountOpeningRequest, $key]) }}">{{ $loop->iteration }}. {{ $label }}</a>
+                                        @else
+                                            <span class="aof-off" @if ($isLockedStep) title="Complete “{{ $steps[$lockedSteps[$key]] }}” first" @endif>{{ $loop->iteration }}. {{ $label }}</span>
+                                        @endif
+                                        <small>
+                                            @if ($done) Complete
+                                            @elseif ($isLockedStep) Locked until “{{ $steps[$lockedSteps[$key]] }}” is complete
+                                            @elseif ($isNext) Next step to fill in
+                                            @else Not started @endif
+                                        </small>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ol>
+                    </div>
+                </section>
 
             {{-- Maker-checker workflow --}}
             @php
@@ -151,22 +241,6 @@
                     </form>
                 @endif
 
-                <ol class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
-                    @foreach ($steps as $key => $label)
-                        <li>
-                            <a href="{{ $accountOpeningRequest->isEditable() ? route('account-openings.steps.edit', [$accountOpeningRequest, $key]) : '#workflow' }}"
-                                class="block rounded-lg border px-3 py-2 text-xs
-                                    {{ $progress[$key]['complete']
-                                        ? 'border-green-300 bg-green-50 text-green-900'
-                                        : 'border-gray-200 bg-white text-gray-600 dark:bg-gray-800 dark:text-gray-300' }}">
-                                <span class="block font-bold">
-                                    Step {{ $loop->iteration }} {{ $progress[$key]['complete'] ? '✓' : '' }}
-                                </span>
-                                <span class="block leading-tight">{{ $label }}</span>
-                            </a>
-                        </li>
-                    @endforeach
-                </ol>
             </div>
 
             {{-- Customer --}}
@@ -327,6 +401,9 @@
                 </table>
             </div>
 
+            </div>
+
+            <aside class="aof-side" aria-label="History">
             {{-- History: what changed, who, when --}}
             @php
                 $eventLabels = ['created' => 'Started', 'step_saved' => 'Saved', 'submitted' => 'Submitted', 'approved' => 'Approved', 'rejected' => 'Rejected', 'unlocked' => 'Unlocked'];
@@ -368,6 +445,7 @@
                     @endforelse
                 </ol>
             </div>
+            </aside>
         </div>
     </div>
 </x-app-layout>

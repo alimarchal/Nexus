@@ -14,6 +14,9 @@
 |                                      Ignored when maker-checker is disabled.
 |   AOF_LOCK_AFTER_APPROVAL=true      An approved request is locked for every user; only a
 |                                      super admin can unlock one particular request (with a reason).
+|   AOF_STRICT_STEPS=true             Step-wise wizard: a step opens only when the steps before it are
+|                                      complete, and Save & Continue moves on only when the step is
+|                                      complete. Set false to let staff jump between steps freely.
 |
 */
 
@@ -26,4 +29,6 @@ return [
     ],
 
     'lock_after_approval' => (bool) env('AOF_LOCK_AFTER_APPROVAL', true),
+
+    'strict_steps' => (bool) env('AOF_STRICT_STEPS', true),
 ];

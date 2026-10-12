@@ -48,6 +48,9 @@
             <x-status-message />
             <x-validation-errors class="mb-4" />
 
+            @php
+                $lockedSteps = \App\Support\AccountOpeningSteps::locked($progress);
+            @endphp
             {{-- Wizard navigation: the printed form's own section order --}}
             <ol class="mb-4 grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">
                 @foreach ($steps as $key => $label)
@@ -56,6 +59,13 @@
                         $isCurrent = $key === $step;
                     @endphp
                     <li>
+                        @if (isset($lockedSteps[$key]))
+                            <span class="block cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-xs text-gray-500" aria-disabled="true"
+                                data-step-locked="{{ $key }}" title="Complete “{{ $steps[$lockedSteps[$key]] }}” first">
+                                <span class="block font-bold">Step {{ $loop->iteration }} &#128274;</span>
+                                <span class="block leading-tight">{{ $label }}</span>
+                            </span>
+                        @else
                         <a href="{{ route('account-openings.steps.edit', [$accountOpeningRequest, $key]) }}"
                             class="block rounded-lg border px-3 py-2 text-xs transition
                                 {{ $isCurrent
@@ -71,6 +81,7 @@
                             </span>
                             <span class="block leading-tight">{{ $label }}</span>
                         </a>
+                        @endif
                     </li>
                 @endforeach
             </ol>
