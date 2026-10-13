@@ -73,6 +73,7 @@
                             <p class="{{ $ui::CARD_SUBTITLE }}">Which printed form is being filled, the date and the branch. Form reference: AOF page 1 — Particulars of Account.</p>
                         </header>
                         <div class="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+                            @unless ($isOldEdition)
                             <div class="md:col-span-2">
                                 <label for="aof_form_type" class="{{ $ui::LABEL }}">Which printed form? <span class="text-red-600">*</span></label>
                                 <select id="aof_form_type" name="aof_form_type" x-model="formType" required class="{{ $ui::CONTROL }}">
@@ -82,6 +83,7 @@
                                 </select>
                                 <x-input-error for="aof_form_type" class="mt-1" />
                             </div>
+                            @endunless
 
                             <div>
                                 <label for="request_date" class="{{ $ui::LABEL }}">Date <span class="text-red-600">*</span></label>
@@ -103,6 +105,7 @@
                             </div>
 
                             {{-- Typed by hand on the Government / organisation form; Individual accounts do not need it. --}}
+                            @unless ($isOldEdition)
                             <div class="md:col-span-2" x-show="isEntity" x-cloak>
                                 <label for="economic_sector_code" class="{{ $ui::LABEL }}">Economic Sector Code <span class="text-red-600">*</span></label>
                                 <input id="economic_sector_code" name="economic_sector_code" type="text" maxlength="10" autocomplete="off"
@@ -111,6 +114,10 @@
                                 <x-input-error for="economic_sector_code" class="mt-1" />
                                 <p class="{{ $ui::HINT }}">Required for Government / organisation accounts. Type the code directly.</p>
                             </div>
+                            @endunless
+                            @if ($isOldEdition)
+                                <p class="{{ $ui::HINT }} md:col-span-2">The old BAJK paper form takes the nature of account and every other detail on the form itself, in the order of the paper form.</p>
+                            @endif
                         </div>
                     </section>
 
@@ -131,6 +138,7 @@
                 </div>
 
                 {{-- 2. Category -------------------------------------------------- --}}
+                @unless ($isOldEdition)
                 <section class="{{ $ui::CARD }} mt-5">
                     <header class="{{ $ui::CARD_HEAD }}">
                         <h3 class="{{ $ui::CARD_TITLE }}">2. Customer category</h3>
@@ -168,10 +176,11 @@
                         </div>
                     </div>
                 </section>
+                @endunless
 
                 {{-- Sticky action bar ------------------------------------------------ --}}
                 <div class="{{ $ui::ACTION_BAR }}">
-                    <p class="text-xs text-gray-700">Fields marked <span class="font-bold text-red-600">*</span> are required. After starting, the wizard takes you through each section.</p>
+                    <p class="text-xs text-gray-700">Fields marked <span class="font-bold text-red-600">*</span> are required. After starting, {{ $isOldEdition ? 'the old paper form opens' : 'the wizard takes you through each section' }}.</p>
                     <div class="flex items-center gap-3">
                         <a href="{{ route('account-openings.index') }}" class="{{ $ui::BTN_SECONDARY }}">Cancel</a>
                         <button type="submit" class="{{ $ui::BTN_PRIMARY }}">Start form</button>

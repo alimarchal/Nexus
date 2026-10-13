@@ -44,7 +44,7 @@
     $advancedCount = collect($advancedKeys)->filter(fn ($k) => isset($filters[$k]))->count();
     $sortNames = ['request_date' => 'Request date', 'request_number' => 'Request no', 'status' => 'Status', 'created_at' => 'Date added'];
     $sortField = ltrim($sort, '-');
-    $customerName = fn ($request) => $request->customer?->displayName() ?: 'Not captured yet';
+    $customerName = fn ($request) => $request->customer?->displayName() ?: ($request->paperForm?->display_name ?: 'Not captured yet');
 @endphp
 
 <x-app-layout>
@@ -252,7 +252,7 @@
                                         </td>
                                         <td data-label="Customer">
                                             <div>{{ $customerName($accountOpeningRequest) }}</div>
-                                            <div class="ak-muted ak-hide-compact ak-mono">CIF {{ $accountOpeningRequest->customer?->cif_number ?? '—' }}</div>
+                                            <div class="ak-muted ak-hide-compact ak-mono">{{ $accountOpeningRequest->isOldEdition() ? 'Old paper form' : 'CIF '.($accountOpeningRequest->customer?->cif_number ?? '—') }}</div>
                                         </td>
                                         <td data-label="Form / category">
                                             <div>{{ $accountOpeningRequest->aof_form_type === 'entity' ? 'Entity' : 'Individual' }} <span class="ak-muted" data-form-edition>({{ $accountOpeningRequest->editionLabel() }} form)</span></div>
