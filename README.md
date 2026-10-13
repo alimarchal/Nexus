@@ -68,6 +68,14 @@ Every option below is optional; the value shown is what you get when the line is
 | `AOF_LOCK_AFTER_APPROVAL` | `true` | An approved request is locked for every user. Only a super admin can unlock one particular request, with a reason. |
 | `AOF_STRICT_STEPS` | `true` | Step-wise wizard: a step opens only when the steps before it are complete. `false` allows free navigation. |
 
+### File management (`config/file_management.php`)
+
+| Variable | Default | What it does |
+|---|---|---|
+| `FMS_MAKER_CHECKER_ENABLED` | `true` | Records are approved by a second person before they are final. `false`: no approval, always editable. |
+| `FMS_ALLOW_SELF_APPROVAL` | `false` | Lets one person act as maker and checker. |
+| `FMS_LOCK_AFTER_APPROVAL` | `true` | An approved record is locked until a super admin unlocks it. |
+
 ### AKSIC
 
 | Variable | Default | What it does |
@@ -196,6 +204,27 @@ The command is safe at any time: it adds missing options and refreshes existing 
 File management keeps digital records (with scanned pages) for branches, regions and divisions, archives them into boxes, and transfers them between offices with a custodian and a decision.
 
 **File categories** (Settings → File categories) are the 20 official *Categories of Branch Records to Be Stored in the Old Record Unit (ORU)*, `FC-001` to `FC-020`: Account Opening Records, Cash Transaction Records, Cheque and Payment Records, Clearing Records, Remittance and Funds Transfer Records, Deposit Account Records, General Ledger and Accounting Records, Reconciliation and Suspense Accounts, Advances and Credit Records, Collateral and Securities Records, AML/CFT and Compliance Records, Audit and Inspection Records, Fraud, Investigation and Legal Records, Cheque Book and Security Stationery Records, Cash Management Records, Regulatory and Tax Records, Branch Administrative Records, Customer Complaints and Claims, Dormant and Unclaimed Account Records, and Fixed Assets and Other Registers.
+
+### Maker-checker, locking and the access trail
+
+File records follow the same maker-checker idea as Account Opening, driven by permissions:
+
+| Permission | Default holders | Can do |
+|---|---|---|
+| `create / edit file management systems` | office roles | Make and change a record (the maker) |
+| `submit file management systems` | branch, region, division, head office | Submit a complete record (it needs at least one scanned page) |
+| `approve file management systems` | branch, region, division, head office, super admin | Approve or reject a submitted record (the checker) |
+| `unlock file management systems` | super admin only | Unlock one approved record |
+
+Flow: `draft → submitted → approved (locked)`; a checker can **reject with a reason**, which returns it to the maker to correct and resubmit.
+
+- The maker (creator or submitter) cannot approve their own record, not even a super admin (`FMS_ALLOW_SELF_APPROVAL=true` allows it). Any other user of the same office, with the permission, can be the checker.
+- **Approval locks the record for everyone**: no edit, no page added or removed, no delete. A **super admin unlocks that one record**, giving a reason; it goes back to Draft and must be approved again. Other records stay locked. (`FMS_LOCK_AFTER_APPROVAL=false` turns the lock off; `FMS_MAKER_CHECKER_ENABLED=false` turns the whole workflow off.)
+- Transfers and archiving into a box are separate, already-audited actions and stay available on an approved record.
+- Records that existed before this feature are treated as approved but not locked.
+- **Who sees what**: everyone posted to an office sees that office's records (all users of the same branch see the same files); other offices' records are hidden. Take a permission away from a role or a user and the matching button disappears.
+- **Access trail** (History on every record): who created it, every field change with its old and new value, pages uploaded or removed, who **opened the record** (once per user every 5 minutes), who **opened each scanned page**, submitted, approved, rejected, unlocked (with the reason), transferred and archived. Scanned pages open through a logged link; the thumbnail previews are loaded straight from storage and are not logged.
+- The file list shows an **Approval** badge (Draft, Submitted, Approved · locked, Rejected) and can be filtered by it.
 
 - Every category has a **Description** (the records that belong in it), shown in the category list, on the create and edit pages, and under the category picker when a file is created or edited.
 - Upgrading from the old ten default categories: files keep their category. They are moved to the matching ORU category (for example Audit Reports → Audit and Inspection Records, Legal & Litigation → Fraud, Investigation and Legal Records), and categories you created yourself are kept.

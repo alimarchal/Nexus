@@ -2,6 +2,13 @@
 
 All notable changes to Nexus. Issue and pull request numbers refer to https://github.com/alimarchal/Nexus.
 
+## [1.4.0] - 2026-10-13
+
+### Added
+- **File management maker-checker** with permissions `submit`, `approve` and `unlock file management systems`: draft → submitted → approved, reject with a reason, approval locks the record, and a super admin unlocks one record at a time with a reason. Run `php artisan migrate`.
+- **Access trail** on every file record: field changes with old and new values, who opened the record, who opened each scanned page, and every workflow action.
+- Approval badge and filter on the file list; settings `FMS_MAKER_CHECKER_ENABLED`, `FMS_ALLOW_SELF_APPROVAL`, `FMS_LOCK_AFTER_APPROVAL`.
+
 ## [1.3.0] - 2026-10-13
 
 ### Added

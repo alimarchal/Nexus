@@ -126,6 +126,11 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
     Route::resource('/settings/categories', CategoryController::class);
     Route::resource('/settings/file-categories', FileCategoryController::class)->except(['show']);
+    Route::post('/product/file-management-systems/{fileManagementSystem}/submit', [FileManagementSystemController::class, 'submit'])->name('file-management-systems.submit');
+    Route::post('/product/file-management-systems/{fileManagementSystem}/approve', [FileManagementSystemController::class, 'approve'])->name('file-management-systems.approve');
+    Route::post('/product/file-management-systems/{fileManagementSystem}/reject', [FileManagementSystemController::class, 'reject'])->name('file-management-systems.reject');
+    Route::post('/product/file-management-systems/{fileManagementSystem}/unlock', [FileManagementSystemController::class, 'unlock'])->name('file-management-systems.unlock');
+    Route::get('/product/file-management-systems/{fileManagementSystem}/pages/{media}', [FileManagementSystemController::class, 'page'])->name('file-management-systems.pages.show');
     Route::get('/product/file-management-systems/{fileManagementSystem}/transfer', [FileManagementSystemController::class, 'transfer'])->name('file-management-systems.transfer');
     Route::post('/product/file-management-systems/{fileManagementSystem}/transfer', [FileManagementSystemController::class, 'storeTransfer'])->name('file-management-systems.transfers.store');
     Route::patch('/product/file-management-systems/{fileManagementSystem}/transfers/{transfer}', [FileManagementSystemController::class, 'decideTransfer'])->name('file-management-systems.transfers.decide');

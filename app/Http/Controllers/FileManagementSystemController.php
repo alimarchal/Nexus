@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\FileManagementWorkflowException;
 use App\Http\Requests\DecideFileManagementTransferRequest;
 use App\Http\Requests\StoreBoxRequest;
 use App\Http\Requests\StoreFileArchivingRequest;
@@ -19,8 +20,10 @@ use App\Models\Region;
 use App\Models\User;
 use App\Services\FileManagementExportService;
 use App\Services\FileManagementSystemPathGenerator;
+use App\Services\FileManagementWorkflow;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -34,6 +37,8 @@ use Spatie\QueryBuilder\QueryBuilder;
 
 class FileManagementSystemController extends Controller implements HasMiddleware
 {
+    public function __construct(private readonly FileManagementWorkflow $workflow) {}
+
     public static function middleware(): array
     {
         return [
@@ -44,6 +49,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             new Middleware('role_or_permission:transfer file management systems', only: ['transfer', 'storeTransfer']),
             new Middleware('role_or_permission:approve file management transfers', only: ['decideTransfer']),
             new Middleware('role_or_permission:delete file management systems', only: ['destroy']),
+            new Middleware('role_or_permission:submit file management systems', only: ['submit']),
+            new Middleware('role_or_permission:approve file management systems', only: ['approve', 'reject']),
+            new Middleware('role_or_permission:unlock file management systems', only: ['unlock']),
+            new Middleware('role_or_permission:view file management systems', only: ['page']),
             new Middleware('role_or_permission:archive file management systems', only: ['archiveForm', 'storeArchive']),
             new Middleware('role_or_permission:create boxes', only: ['createBox', 'storeBox']),
             new Middleware('role_or_permission:manage boxes', only: ['boxesList']),
@@ -167,6 +176,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         return [
             AllowedFilter::exact('file_category_id'),
+            AllowedFilter::exact('approval', 'status'),
             AllowedFilter::partial('digital_id'),
             AllowedFilter::partial('file_no'),
             AllowedFilter::partial('title'),
@@ -253,6 +263,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             'fileable_type' => $fileable['type'],
             'fileable_id' => $fileable['id'],
             'current_custodian_id' => auth()->id(),
+            'status' => $this->workflow->makerCheckerEnabled() ? 'draft' : 'approved',
             'digital_id' => generateUniqueIdWithPrefix($orgUnit->code ?? $fileable['type'], 'file_management_systems', 'digital_id'),
         ]);
 
@@ -273,9 +284,12 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             404
         );
 
-        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'currentCustodian', 'media', 'box', 'transfers.recipient', 'transfers.requester', 'transfers.decider']);
+        $this->workflow->recordView($fileManagementSystem, auth()->user());
+
+        $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'currentCustodian', 'media', 'box', 'transfers.recipient', 'transfers.requester', 'transfers.decider', 'submitter', 'approver', 'rejecter', 'unlocker']);
 
         return view('file-management-systems.show', [
+            'workflow' => $this->workflow,
             'fileManagementSystem' => $fileManagementSystem,
             'activityHistory' => $this->activityHistory($fileManagementSystem),
             'approvableTransferIds' => $this->approvableTransferIds($fileManagementSystem),
@@ -289,6 +303,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     public function edit(FileManagementSystem $fileManagementSystem)
     {
         $this->findVisible($fileManagementSystem);
+
+        if ($blocked = $this->blockedFromEditing($fileManagementSystem)) {
+            return $blocked;
+        }
 
         $fileManagementSystem->load(['fileCategory', 'fileable', 'creator', 'updater', 'currentCustodian', 'media', 'transfers.recipient', 'transfers.requester', 'transfers.decider']);
 
@@ -306,6 +324,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     public function update(UpdateFileManagementSystemRequest $request, FileManagementSystem $fileManagementSystem)
     {
         $this->findVisible($fileManagementSystem);
+
+        if ($blocked = $this->blockedFromEditing($fileManagementSystem)) {
+            return $blocked;
+        }
 
         $fileManagementSystem->update([
             ...$request->safe()->except(['pages']),
@@ -419,6 +441,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         $this->findVisible($fileManagementSystem);
 
+        if ($blocked = $this->blockedFromEditing($fileManagementSystem)) {
+            return $blocked;
+        }
+
         $fileManagementSystem->delete();
 
         return redirect()->route('file-management-systems.index')->with('success', 'Document record deleted successfully.');
@@ -432,6 +458,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         abort_unless(auth()->user()->can('edit file management systems'), 403);
 
         $this->findVisible($fileManagementSystem);
+
+        if ($blocked = $this->blockedFromEditing($fileManagementSystem)) {
+            return $blocked;
+        }
 
         $page = Media::query()
             ->whereKey($media)
@@ -577,6 +607,83 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             ->filter(fn (FileManagementTransfer $transfer): bool => $transfer->status === 'pending' && $this->canApproveTransfer($transfer))
             ->pluck('id')
             ->all();
+    }
+
+    /**
+     * A locked or submitted record cannot be changed; send the user back to the record with the reason.
+     */
+    private function blockedFromEditing(FileManagementSystem $fileManagementSystem): ?RedirectResponse
+    {
+        try {
+            $this->workflow->assertEditable($fileManagementSystem);
+        } catch (FileManagementWorkflowException $exception) {
+            return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('error', $exception->getMessage());
+        }
+
+        return null;
+    }
+
+    public function submit(FileManagementSystem $fileManagementSystem): RedirectResponse
+    {
+        return $this->runWorkflow($fileManagementSystem, 'Record submitted for approval.', fn () => $this->workflow->submit($fileManagementSystem, auth()->user()));
+    }
+
+    public function approve(FileManagementSystem $fileManagementSystem): RedirectResponse
+    {
+        return $this->runWorkflow($fileManagementSystem, 'Record approved'.(config('file_management.lock_after_approval', true) ? ' and locked.' : '.'), fn () => $this->workflow->approve($fileManagementSystem, auth()->user()));
+    }
+
+    public function reject(Request $request, FileManagementSystem $fileManagementSystem): RedirectResponse
+    {
+        $reason = (string) $request->validate(['reason' => ['required', 'string', 'max:2000']])['reason'];
+
+        return $this->runWorkflow($fileManagementSystem, 'Record rejected and returned to the maker.', fn () => $this->workflow->reject($fileManagementSystem, auth()->user(), $reason));
+    }
+
+    public function unlock(Request $request, FileManagementSystem $fileManagementSystem): RedirectResponse
+    {
+        $reason = (string) $request->validate(['reason' => ['required', 'string', 'max:2000']])['reason'];
+
+        return $this->runWorkflow($fileManagementSystem, 'Record unlocked for changes. It must be submitted and approved again.', fn () => $this->workflow->unlock($fileManagementSystem, auth()->user(), $reason));
+    }
+
+    /**
+     * Open one scanned page. Going through here (and not the raw storage link) writes who opened it to the history.
+     */
+    public function page(FileManagementSystem $fileManagementSystem, int $media)
+    {
+        $this->findVisible($fileManagementSystem);
+
+        $page = Media::query()
+            ->whereKey($media)
+            ->where('model_type', $fileManagementSystem->getMorphClass())
+            ->where('model_id', $fileManagementSystem->getKey())
+            ->firstOrFail();
+
+        activity('file-management')
+            ->performedOn($fileManagementSystem)
+            ->causedBy(auth()->user())
+            ->event('page_viewed')
+            ->withProperties($this->pageActivityProperties($page))
+            ->log('Opened a scanned page');
+
+        return Storage::disk($page->disk)->response($page->getPathRelativeToRoot(), $page->getCustomProperty('original_filename', $page->file_name));
+    }
+
+    /**
+     * Run one maker-checker action and turn a rule violation into a message on the record.
+     */
+    private function runWorkflow(FileManagementSystem $fileManagementSystem, string $success, \Closure $action): RedirectResponse
+    {
+        $this->findVisible($fileManagementSystem);
+
+        try {
+            $action();
+        } catch (FileManagementWorkflowException $exception) {
+            return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('error', $exception->getMessage());
+        }
+
+        return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('success', $success);
     }
 
     private function findVisible(FileManagementSystem $fileManagementSystem): FileManagementSystem

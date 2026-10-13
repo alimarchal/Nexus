@@ -53,6 +53,11 @@ class FileManagementSystem extends Model implements HasMedia
             'document_date' => 'date',
             'archived_at' => 'datetime',
             'is_archived' => 'boolean',
+            'submitted_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'rejected_at' => 'datetime',
+            'locked_at' => 'datetime',
+            'unlocked_at' => 'datetime',
         ];
     }
 
@@ -69,6 +74,52 @@ class FileManagementSystem extends Model implements HasMedia
     public function currentCustodian(): BelongsTo
     {
         return $this->belongsTo(User::class, 'current_custodian_id');
+    }
+
+    /**
+     * An approved record is locked for everyone until a super admin unlocks it.
+     */
+    public function isLocked(): bool
+    {
+        return $this->locked_at !== null;
+    }
+
+    /**
+     * Whether the record's details and pages may be changed right now. A record that is waiting for its
+     * checker, or that is approved and locked, cannot be edited. Without maker-checker everything is editable.
+     */
+    public function isEditable(): bool
+    {
+        if (! config('file_management.maker_checker.enabled', true)) {
+            return true;
+        }
+
+        if ($this->isLocked()) {
+            return false;
+        }
+
+        // Records that existed before maker-checker are approved but were never locked, so they stay editable.
+        return in_array($this->status, ['draft', 'rejected', 'approved'], true);
+    }
+
+    public function submitter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function rejecter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function unlocker(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'unlocked_by');
     }
 
     public function transfers(): HasMany
@@ -200,6 +251,7 @@ class FileManagementSystem extends Model implements HasMedia
     {
         return LogOptions::defaults()
             ->logAll()
+            ->logExcept(['updated_by', 'updated_at', 'status', 'submitted_by', 'submitted_at', 'approved_by', 'approved_at', 'rejected_by', 'rejected_at', 'rejection_reason', 'locked_at', 'unlocked_by', 'unlocked_at', 'unlock_reason'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
             ->setDescriptionForEvent(fn (string $eventName): string => "File Management System has been {$eventName}");
