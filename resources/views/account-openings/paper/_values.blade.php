@@ -11,7 +11,7 @@
             'checks' => implode(', ', array_map(fn ($key) => $options[$key] ?? $key, (array) $value)),
             'radio', 'select' => $options[$value] ?? $value,
             'secret' => str_repeat('•', min(mb_strlen((string) $value), 12)),
-            'number' => number_format((float) $value, 2),
+            'number' => ($field['integer'] ?? false) ? (string) $value : number_format((float) $value, 2),
             default => (string) $value,
         };
 
@@ -34,7 +34,7 @@
                                 <thead><tr class="bg-gray-100 text-left"><th class="px-2 py-1">S.No.</th>@foreach ($field['columns'] as $column)<th class="px-2 py-1">{{ $column['label'] }}</th>@endforeach</tr></thead>
                                 <tbody>
                                     @forelse ($values[$field['name']] ?? [] as $row)
-                                        <tr class="border-b border-gray-100"><td class="px-2 py-1">{{ $loop->iteration }}</td>@foreach ($field['columns'] as $column)<td class="px-2 py-1">{{ $row[$column['name']] ?? '—' }}</td>@endforeach</tr>
+                                        <tr class="border-b border-gray-100"><td class="px-2 py-1">{{ $loop->iteration }}</td>@foreach ($field['columns'] as $column)<td class="px-2 py-1">@if (($column['type'] ?? 'text') === 'checkbox'){{ ($row[$column['name']] ?? false) ? 'Yes' : '—' }}@else{{ $row[$column['name']] ?? '—' }}@endif</td>@endforeach</tr>
                                     @empty
                                         <tr><td class="px-2 py-1 text-gray-400" colspan="{{ count($field['columns']) + 1 }}">—</td></tr>
                                     @endforelse

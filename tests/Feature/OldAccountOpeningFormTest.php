@@ -133,6 +133,7 @@ test('the request page lists the mandatory fields still empty and blocks submitt
     saveOldForm($this, $request, [
         'account_nature' => 'individual', 'individual_kind' => 'single',
         'title_of_account' => 'Ali Raza', 'key_word' => 'Kashmir2026',
+        'introducer_name' => 'Imran Khan', 'introducer_bank_branch' => 'BAJK Main Branch', 'introducer_account_no' => '0012345',
     ])->assertSessionHasNoErrors();
 
     $this->actingAs($this->admin)->post(route('account-openings.submit', $request))->assertSessionHas('success');
@@ -173,4 +174,96 @@ test('the old request appears in the list under its title and can be found by it
     $this->actingAs($this->admin)->get(route('account-openings.index', ['filter' => ['search' => 'Zubair']]))
         ->assertSee('Zubair Ahmed')
         ->assertSee($request->request_number);
+});
+
+test('other banks, products of interest and the introducer are saved and shown', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, [
+        'account_nature' => 'individual', 'individual_kind' => 'single', 'title_of_account' => 'Ali Raza',
+        'other_banks' => [
+            ['bank_name' => 'HBL', 'deposit' => '1', 'credit_cards' => '0', 'loans' => '1', 'other' => ''],
+            ['bank_name' => 'UBL', 'deposit' => '0', 'credit_cards' => '1', 'loans' => '0', 'other' => 'Locker'],
+        ],
+        'other_products' => ['credit_cards', 'other'],
+        'other_products_other' => 'Takaful',
+        'introducer_name' => 'Imran Khan', 'introducer_cnic' => '82101-1234567-1', 'introducer_telephone' => '0300-1234567',
+        'introducer_address' => 'Muzaffarabad', 'introducer_bank_branch' => 'BAJK Main Branch', 'introducer_account_no' => '0012345',
+        'introducer_signed' => '1', 'introducer_known_years' => '3', 'introducer_known_months' => '6', 'introducer_verified_by' => 'Branch Manager',
+    ])->assertSessionHasNoErrors();
+
+    $data = $request->fresh()->paperForm->data;
+
+    expect($data['other_banks'])->toHaveCount(2)
+        ->and($data['other_banks'][0])->toMatchArray(['bank_name' => 'HBL', 'deposit' => true, 'credit_cards' => false, 'loans' => true])
+        ->and($data['other_banks'][1])->toMatchArray(['bank_name' => 'UBL', 'credit_cards' => true, 'other' => 'Locker'])
+        ->and($data['other_products'])->toBe(['credit_cards', 'other'])
+        ->and($data['other_products_other'])->toBe('Takaful')
+        ->and($data)->toMatchArray(['introducer_name' => 'Imran Khan', 'introducer_known_years' => 3, 'introducer_known_months' => 6, 'introducer_signed' => true]);
+
+    foreach (['show', 'print'] as $page) {
+        $this->actingAs($this->admin)->get(route("account-openings.$page", $request))
+            ->assertSuccessful()
+            ->assertSee('Your Relationship with Other Banks')
+            ->assertSee('HBL')->assertSee('UBL')->assertSee('Locker')
+            ->assertSee('Credit Cards, Other (specify) — Takaful', false)
+            ->assertSee('Imran Khan')->assertSee('BAJK Main Branch');
+    }
+});
+
+test('the specify box for Other products is dropped when Other is not ticked', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, ['account_nature' => 'individual', 'individual_kind' => 'single', 'other_products' => ['mortgage'], 'other_products_other' => 'stale'])
+        ->assertSessionHasNoErrors();
+
+    expect($request->fresh()->paperForm->data['other_products_other'])->toBeNull();
+});
+
+test('contact persons and existing BAJK relationships belong to business accounts only', function () {
+    $request = startOldForm($this);
+
+    $business = [
+        'account_nature' => 'business',
+        'contact_persons' => [
+            ['name' => 'Sara', 'designation' => 'Accountant', 'telephone' => '05822-1'],
+            ['name' => '', 'designation' => '', 'telephone' => ''],
+            ['name' => 'Bilal', 'designation' => 'Director', 'telephone' => '05822-2'],
+        ],
+        'bajk_relationships' => [['branch_name' => 'Main', 'branch_code' => '0101', 'account_no' => '555', 'account_title' => 'Current']],
+    ];
+
+    saveOldForm($this, $request, $business)->assertSessionHasNoErrors();
+    $data = $request->fresh()->paperForm->data;
+
+    expect($data['contact_persons'])->toHaveCount(2)
+        ->and($data['contact_persons'][1]['name'])->toBe('Bilal')
+        ->and($data['bajk_relationships'][0]['branch_code'])->toBe('0101');
+
+    $this->actingAs($this->admin)->get(route('account-openings.show', $request))
+        ->assertSee('Contact Persons')->assertSee('Accountant')->assertSee('Your Existing Relationships with BAJK');
+
+    saveOldForm($this, $request, ['account_nature' => 'individual', 'individual_kind' => 'single'] + $business)->assertSessionHasNoErrors();
+    expect($request->fresh()->paperForm->data)->not->toHaveKeys(['contact_persons', 'bajk_relationships']);
+});
+
+test('no more than four contact persons and two other banks are taken', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, ['account_nature' => 'business', 'contact_persons' => array_fill(0, 5, ['name' => 'X'])])
+        ->assertSessionHasErrors('data.contact_persons');
+    saveOldForm($this, $request, ['account_nature' => 'business', 'other_banks' => array_fill(0, 3, ['bank_name' => 'X'])])
+        ->assertSessionHasErrors('data.other_banks');
+});
+
+test('the introducer name, bank/branch and account number are mandatory before submitting', function () {
+    $request = startOldForm($this);
+    saveOldForm($this, $request, ['account_nature' => 'individual', 'individual_kind' => 'single', 'title_of_account' => 'Ali Raza', 'key_word' => 'Kashmir2026'])->assertSessionHasNoErrors();
+
+    $this->actingAs($this->admin)->get(route('account-openings.show', $request))
+        ->assertSee('Mandatory fields still empty')
+        ->assertSee('Bank/Branch')->assertSee('Account No.');
+
+    saveOldForm($this, $request, ['account_nature' => 'individual', 'individual_kind' => 'single', 'introducer_known_months' => '12'])
+        ->assertSessionHasErrors('data.introducer_known_months');
 });
