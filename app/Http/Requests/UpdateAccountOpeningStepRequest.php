@@ -78,6 +78,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
             'initial_deposit.decimal' => 'The initial deposit can have at most 2 decimal places.',
             'initial_deposit.numeric' => 'Enter the initial deposit as an amount, for example '.number_format((float) config('account_opening.minimum_initial_deposit'), 2, '.', '').'.',
             'terms_and_conditions_accepted.accepted' => 'Please review and accept the Terms and Conditions before continuing.',
+            'nationalities.*.distinct' => 'Each nationality must be a different country.',
             'identifications.*.identification_document_type_id.required_with' => 'Please select the document type for the identification number you entered.',
         ];
     }
@@ -105,6 +106,8 @@ class UpdateAccountOpeningStepRequest extends FormRequest
         }
 
         $validator->after(function (Validator $validator): void {
+            $this->validateDistinctIdentifications($validator);
+
             if ($validator->errors()->has('contacts.mobile.1.value')) {
                 return;
             }
@@ -118,6 +121,28 @@ class UpdateAccountOpeningStepRequest extends FormRequest
                 $validator->errors()->add('contacts.mobile.1.value', $problem);
             }
         });
+    }
+
+    /**
+     * The same document type with the same number cannot be entered twice for one customer.
+     */
+    private function validateDistinctIdentifications(Validator $validator): void
+    {
+        $seen = [];
+
+        foreach ((array) $this->input('identifications', []) as $index => $row) {
+            if (blank($row['document_number'] ?? null)) {
+                continue;
+            }
+
+            $key = ($row['identification_document_type_id'] ?? '').'|'.mb_strtolower(trim((string) $row['document_number']));
+
+            if (isset($seen[$key])) {
+                $validator->errors()->add("identifications.{$index}.document_number", 'This document number is already entered above. Enter each identification document once.');
+            }
+
+            $seen[$key] = true;
+        }
     }
 
     /**
@@ -277,7 +302,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
             'witness_signature' => ['nullable', 'file', 'mimes:jpg,jpeg,png', 'max:2048'],
 
             'nationalities' => ['nullable', 'array', 'max:3'],
-            'nationalities.*' => ['nullable', 'uuid', 'exists:countries,id'],
+            'nationalities.*' => ['nullable', 'uuid', 'exists:countries,id', 'distinct'],
             'special_categories' => ['nullable', 'array'],
             'special_categories.*' => ['uuid', 'exists:special_categories,id'],
             'special_category_values' => ['nullable', 'array'],

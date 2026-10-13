@@ -219,7 +219,7 @@ final class PaperFormSections
                 ['name' => 'business_ntn', 'type' => 'text', 'label' => 'NTN', 'max' => 30],
                 ['name' => 'business_cnic', 'type' => 'text', 'label' => 'CNIC No. (for sole proprietorship only)', 'required' => true, 'max' => 20,
                     'show' => ['business_kind' => 'sole_proprietorship']],
-                ['name' => 'hold_mail', 'type' => 'radio', 'label' => 'Hold Mail', 'options' => self::YES_NO],
+                ['name' => 'business_hold_mail', 'type' => 'radio', 'label' => 'Hold Mail', 'options' => self::YES_NO],
                 ['name' => 'contact_persons', 'type' => 'repeater', 'label' => 'Contact Persons', 'rows' => 4, 'columns' => [
                     ['name' => 'name', 'label' => 'Name'],
                     ['name' => 'designation', 'label' => 'Designation'],
@@ -442,8 +442,8 @@ final class PaperFormSections
             [
                 'key' => 'kyc_business', 'number' => 18, 'title' => 'For Bank Use Only: KYC (Business Account)', 'show' => $business,
                 'fields' => [
-                    ['name' => 'kyc_customer_type', 'type' => 'radio', 'label' => 'Type of Customer', 'options' => ['walk_in' => 'Walk in', 'marketed' => 'Marketed', 'referred' => 'Referred by']],
-                    ['name' => 'kyc_referred_by', 'type' => 'text', 'label' => 'Referred by', 'show' => ['kyc_customer_type' => 'referred']],
+                    ['name' => 'kyc_business_customer_type', 'type' => 'radio', 'label' => 'Type of Customer', 'options' => ['walk_in' => 'Walk in', 'marketed' => 'Marketed', 'referred' => 'Referred by']],
+                    ['name' => 'kyc_business_referred_by', 'type' => 'text', 'label' => 'Referred by', 'show' => ['kyc_business_customer_type' => 'referred']],
                     ['name' => 'kyc_parent_company', 'type' => 'text', 'label' => 'Parent Company/Group Name'],
                     ['name' => 'kyc_group_companies', 'type' => 'text', 'label' => 'Other Companies of the Group'],
                     ['name' => 'kyc_geographic_area', 'type' => 'text', 'label' => 'Main Geographic Area of Activity'],

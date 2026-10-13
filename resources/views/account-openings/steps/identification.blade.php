@@ -67,7 +67,6 @@
     <x-aof-section title="Identification"
         reference="AOF page 2 — CNIC / NICOP / POC / ARC / PoR / Passport, Issued & Expiry Date">
         <div x-data="{ rows: {{ count($identifications) }} }">
-            <template x-for="index in rows" :key="index"></template>
 
             @foreach ($identifications as $index => $row)
                 <div class="mb-3 grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-6 dark:border-gray-700">

@@ -9,6 +9,11 @@ All notable changes to Nexus. Issue and pull request numbers refer to https://gi
 - **Access trail** on every file record: field changes with old and new values, who opened the record, who opened each scanned page, and every workflow action.
 - Approval badge and filter on the file list; settings `FMS_MAKER_CHECKER_ENABLED`, `FMS_ALLOW_SELF_APPROVAL`, `FMS_LOCK_AFTER_APPROVAL`.
 
+### Fixed
+- Choosing the same nationality twice, or entering the same identification document twice, gave a server error (HTTP 500); it is now a validation message.
+- A stray empty template on the Identification step raised a JavaScript error in the browser.
+- Old paper form: the Hold Mail and Type of Customer choices of business accounts shared a name with the individual ones, so a browser could not tick them.
+
 ## [1.3.0] - 2026-10-13
 
 ### Added
