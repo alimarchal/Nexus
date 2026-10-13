@@ -17,7 +17,7 @@
                 </nav>
                 <h1 class="ak-title">{{ $customer?->displayName() ?: 'New customer' }} <span class="ak-muted" style="font-size:16px; font-weight:600">{{ $accountOpeningRequest->request_number }}</span></h1>
                 <p class="ak-sub">
-                    {{ $accountOpeningRequest->aof_version }} &middot; {{ $accountOpeningRequest->branch?->code }} {{ $accountOpeningRequest->branch?->name }}
+                    {{ $accountOpeningRequest->aof_version }} &middot; <strong data-form-edition>{{ $accountOpeningRequest->editionLabel() }} form</strong> &middot; {{ $accountOpeningRequest->branch?->code }} {{ $accountOpeningRequest->branch?->name }}
                 </p>
             </div>
             <div class="ak-head-actions">

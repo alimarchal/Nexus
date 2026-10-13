@@ -133,6 +133,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
                 }),
                 AllowedFilter::partial('request_number'),
                 AllowedFilter::exact('aof_form_type'),
+                AllowedFilter::exact('form_edition'),
                 AllowedFilter::exact('status'),
                 AllowedFilter::scope('branch_id'),
                 AllowedFilter::scope('request_date_from', 'requestDateFrom'),
@@ -183,9 +184,12 @@ class AccountOpeningController extends Controller implements HasMiddleware
         ];
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         return view('account-openings.create', [
+            'formEdition' => $request->query('edition') === AccountOpeningRequest::EDITION_OLD
+                ? AccountOpeningRequest::EDITION_OLD
+                : AccountOpeningRequest::EDITION_NEW,
             'branches' => Branch::orderBy('name')->get(),
             'defaultBranchId' => auth()->user()->branch_id,
             'categories' => CustomerCategory::active()->ordered()->get(),
@@ -217,6 +221,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
             return AccountOpeningRequest::create([
                 'request_number' => generateUniqueIdWithPrefix($branch->code, 'account_opening_requests', 'request_number'),
                 'aof_form_type' => $request->aof_form_type,
+                'form_edition' => $request->input('form_edition', AccountOpeningRequest::EDITION_NEW),
                 'aof_version' => $request->aof_form_type === AccountOpeningRequest::FORM_ENTITY
                     ? 'BAJK-AOF-Govt-Public-Private-28-Jan-2026'
                     : 'BAJK-AOF-Individual-19-Jan-2026',

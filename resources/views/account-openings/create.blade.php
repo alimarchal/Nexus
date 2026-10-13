@@ -11,6 +11,7 @@
     ];
     $branchLabels = $branches->mapWithKeys(fn ($b) => [(string) $b->id => trim(($b->code ? $b->code.' - ' : '').$b->name)]);
     $categoryNames = $categories->mapWithKeys(fn ($c) => [(string) $c->id => $c->name]);
+    $isOldEdition = ($formEdition ?? 'new') === 'old';
 @endphp
 
 <x-app-layout>
@@ -19,9 +20,9 @@
             <div>
                 <nav class="ak-crumbs" aria-label="Breadcrumb">
                     <a href="{{ route('product.index') }}">Product</a><span aria-hidden="true">›</span>
-                    <a href="{{ route('account-openings.index') }}">Account opening</a><span aria-hidden="true">›</span><span>New</span>
+                    <a href="{{ route('account-openings.index') }}">Account opening</a><span aria-hidden="true">›</span><span>{{ $isOldEdition ? 'Old form' : 'New' }}</span>
                 </nav>
-                <h1 class="ak-title">New Account Opening</h1>
+                <h1 class="ak-title">{{ $isOldEdition ? 'Old Account Opening (BAJK paper form)' : 'New Account Opening' }}</h1>
                 <p class="ak-sub">Pick the printed form and the customer category; the wizard then shows only the sections that form contains.</p>
             </div>
             <div class="ak-head-actions">
@@ -62,6 +63,7 @@
                 {{-- select2 fires a jQuery change, which Alpine's x-model does not see --}}
                 x-init="$nextTick(() => { if (window.jQuery) { window.jQuery('#branch_id').on('change', (e) => { branchId = e.target.value; }); } })">
                 @csrf
+                <input type="hidden" name="form_edition" value="{{ $isOldEdition ? 'old' : 'new' }}">
 
                 <div class="grid grid-cols-1 gap-5 lg:grid-cols-3">
                     {{-- 1. Form ----------------------------------------------------- --}}
