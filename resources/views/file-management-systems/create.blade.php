@@ -115,9 +115,10 @@
                                         <select id="file_category_id" name="file_category_id" required class="{{ $ui::CONTROL }}" x-model="category">
                                             <option value="">Select a category</option>
                                             @foreach ($fileCategories as $fileCategory)
-                                                <option value="{{ $fileCategory->id }}" @selected(old('file_category_id') == $fileCategory->id)>{{ $fileCategory->category_name }}</option>
+                                                <option value="{{ $fileCategory->id }}" data-description="{{ $fileCategory->description }}" @selected(old('file_category_id') == $fileCategory->id)>{{ $fileCategory->category_name }}</option>
                                             @endforeach
                                         </select>
+                                        <p class="mt-1 text-xs text-gray-600" x-show="categoryDescription()" x-text="categoryDescription()" data-category-description></p>
                                         @error('file_category_id') <p class="{{ $ui::ERROR }}">{{ $message }}</p> @enderror
                                     </div>
                                     <div>
@@ -355,6 +356,11 @@
                         if (bytes < 1024) return bytes + ' B';
                         if (bytes < 1048576) return Math.round(bytes / 1024) + ' KB';
                         return (bytes / 1048576).toFixed(1) + ' MB';
+                    },
+                    categoryDescription() {
+                        const el = document.getElementById('file_category_id');
+                        const opt = el && this.category ? [...el.options].find((o) => o.value === this.category) : null;
+                        return opt ? (opt.dataset.description || '') : '';
                     },
                     categoryLabel() {
                         // Reads this.category so the summary updates when the category changes.

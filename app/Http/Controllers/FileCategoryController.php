@@ -33,7 +33,7 @@ class FileCategoryController extends Controller implements HasMiddleware
                 AllowedFilter::exact('category_code'),
                 AllowedFilter::exact('is_active'),
             ])
-            ->defaultSort('category_name')
+            ->defaultSort('category_code')
             ->paginate(request('per_page', 10))
             ->appends(request()->query());
 

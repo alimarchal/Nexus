@@ -91,14 +91,16 @@
                     <div class="mb-4">
                         <label class="block text-gray-700 dark:text-gray-300">Category:</label>
                         <select name="file_category_id"
+                            onchange="document.getElementById('file_category_description').textContent = this.selectedOptions[0]?.dataset.description || ''"
                             class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm"
                             required>
                             @foreach ($fileCategories as $fileCategory)
-                                <option value="{{ $fileCategory->id }}" {{ old('file_category_id', $fileManagementSystem->file_category_id) == $fileCategory->id ? 'selected' : '' }}>
+                                <option value="{{ $fileCategory->id }}" data-description="{{ $fileCategory->description }}" {{ old('file_category_id', $fileManagementSystem->file_category_id) == $fileCategory->id ? 'selected' : '' }}>
                                     {{ $fileCategory->category_name }}
                                 </option>
                             @endforeach
                         </select>
+                        <p class="mt-1 text-xs text-gray-600 dark:text-gray-400" id="file_category_description">{{ $fileCategories->firstWhere('id', old('file_category_id', $fileManagementSystem->file_category_id))?->description }}</p>
                         @error('file_category_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                     </div>
 
