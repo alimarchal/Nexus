@@ -36,6 +36,7 @@ class KycReferenceSeeder extends Seeder
             ['SELF_EMPLOYED', 'Self Employed', 'سیلف ایمپلائیڈ', 'both', false, false, false, false, 6],
             ['LABOR_DAILY_WAGES', 'Labor/Daily Wages', 'مزدور/یومیہ اجرت', 'individual', false, false, false, false, 7],
             ['AGRICULTURIST', 'Agriculturist', 'زمیندار', 'individual', false, false, false, false, 8],
+            ['FAMILY_BUSINESS', 'Family Business', 'خاندانی کاروبار', 'individual', false, false, false, false, 19],
             ['STOCK_INVESTMENT', 'Stock/Investment', 'اسٹاک/سرمایہ کاری', 'individual', false, false, false, false, 9],
             ['RENTED_PROPERTY', 'Rented Property', 'کرایہ کی جائیداد', 'both', false, false, false, false, 10],
             ['HOME_REMITTANCE', 'Home Remittance', 'ترسیلات زر', 'individual', false, false, true, false, 11],

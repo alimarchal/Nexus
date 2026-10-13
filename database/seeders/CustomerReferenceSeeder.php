@@ -88,7 +88,8 @@ class CustomerReferenceSeeder extends Seeder
             ['SALARY', 'Salary', 'تنخواہ', false, null, false, 15],
             ['PHYSICAL_HANDICAP', 'Physically Handicapped', 'معذور افراد', false, null, false, 16],
             ['NON_RESIDENT', 'Non-Resident (in years)', 'بیرون ملک رہائشی', true, 'Time since residing out side Pakistan (in years)', false, 17],
-            ['SPECIAL_OTHERS', 'Others', 'دیگر', false, null, true, 18],
+            ['ILLITERATE', 'Illiterate', 'ناخواندہ', false, null, false, 18],
+            ['SPECIAL_OTHERS', 'Others', 'دیگر', false, null, true, 19],
         ];
 
         foreach ($special as [$code, $name, $nameUr, $extra, $label, $isOther, $sort]) {
