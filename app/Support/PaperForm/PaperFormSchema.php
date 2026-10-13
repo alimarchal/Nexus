@@ -11,156 +11,26 @@ use Illuminate\Validation\Rule;
  * fields in each section, their options and when they apply. The same description draws the entry form, the
  * saved view and the print, and builds the validation, so they can never drift apart.
  *
- * Field types: text, secret, textarea, date, number, select, radio, checkbox, checks, repeater.
+ * Field types: text, email, secret, textarea, date, number, select, radio, checkbox, checks, repeater, plus
+ * heading (a caption inside a section) and terms (the Terms & Conditions text). Both carry no value.
+ * A condition may also be ['any' => [condition, condition]]: it holds when one of them does.
  * A field (or section) with a "show" condition applies only while every condition holds, for example
  * ['account_nature' => 'individual'] or ['individual_kind' => ['joint']]. A value that is not shown is ignored.
  * An option listed in a field's "other" gets an "Other (specify)" text box, saved as "{name}_other".
  */
 final class PaperFormSchema
 {
-    /** @var array<string, string> */
-    public const YES_NO = ['yes' => 'Yes', 'no' => 'No'];
-
     /**
-     * The sections in the order of the paper form.
+     * The sections in the order of the paper form (sections with the same number keep their order).
      *
      * @return list<array<string, mixed>>
      */
     public static function sections(): array
     {
-        $sections = self::definitions();
+        $sections = PaperFormSections::all();
         usort($sections, fn (array $a, array $b): int => $a['number'] <=> $b['number']);
 
         return $sections;
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private static function definitions(): array
-    {
-        return [
-            [
-                'key' => 'nature',
-                'number' => 3,
-                'title' => 'Nature of Account',
-                'fields' => [
-                    ['name' => 'account_nature', 'type' => 'radio', 'label' => 'Nature of Account', 'required' => true,
-                        'options' => ['individual' => 'Individual A/c', 'business' => 'Business A/c']],
-                    ['name' => 'individual_kind', 'type' => 'radio', 'label' => 'Individual A/c', 'required' => true,
-                        'show' => ['account_nature' => 'individual'], 'options' => ['single' => 'Single', 'joint' => 'Joint']],
-                ],
-            ],
-            [
-                'key' => 'particulars',
-                'number' => 4,
-                'title' => 'Particulars of Account (Individual: Single/Joint)',
-                'show' => ['account_nature' => 'individual'],
-                'fields' => [
-                    ['name' => 'title_of_account', 'type' => 'text', 'label' => 'Title of Account', 'required' => true],
-                    ['name' => 'key_word', 'type' => 'secret', 'label' => 'Key/Secret Word (at least 6 characters)', 'required' => true, 'min' => 6, 'max' => 50,
-                        'help' => 'Kept encrypted. Used to identify the customer on the phone.'],
-                    ['name' => 'hold_mail', 'type' => 'radio', 'label' => 'Hold Mail', 'options' => self::YES_NO],
-                ],
-            ],
-            [
-                'key' => 'business_contacts',
-                'number' => 7,
-                'title' => 'Particulars of Account (Business Account) - Contact Persons',
-                'show' => ['account_nature' => 'business'],
-                'fields' => [
-                    ['name' => 'contact_persons', 'type' => 'repeater', 'label' => 'Contact Persons', 'rows' => 4, 'columns' => [
-                        ['name' => 'name', 'label' => 'Name'],
-                        ['name' => 'designation', 'label' => 'Designation'],
-                        ['name' => 'telephone', 'label' => 'Telephone No.', 'max' => 30],
-                    ]],
-                ],
-            ],
-            [
-                'key' => 'bajk_relationships',
-                'number' => 8,
-                'title' => 'Your Existing Relationships with BAJK (Business Account)',
-                'show' => ['account_nature' => 'business'],
-                'fields' => [
-                    ['name' => 'bajk_relationships', 'type' => 'repeater', 'label' => 'Existing relationships with BAJK', 'rows' => 3, 'columns' => [
-                        ['name' => 'branch_name', 'label' => 'Branch Name'],
-                        ['name' => 'branch_code', 'label' => 'Branch Code', 'max' => 20],
-                        ['name' => 'account_no', 'label' => 'Account/Loan/Card No.', 'max' => 40],
-                        ['name' => 'account_title', 'label' => 'Account/Loan/Card Title'],
-                    ]],
-                ],
-            ],
-            [
-                'key' => 'other_banks',
-                'number' => 9,
-                'title' => 'Your Relationship with Other Banks',
-                'fields' => [
-                    ['name' => 'other_banks', 'type' => 'repeater', 'label' => 'Other banks (up to 2)', 'rows' => 2, 'columns' => [
-                        ['name' => 'bank_name', 'label' => 'Bank Name'],
-                        ['name' => 'deposit', 'label' => 'Deposit', 'type' => 'checkbox'],
-                        ['name' => 'credit_cards', 'label' => 'Credit Cards', 'type' => 'checkbox'],
-                        ['name' => 'loans', 'label' => 'Loans', 'type' => 'checkbox'],
-                        ['name' => 'other', 'label' => 'Other (specify)'],
-                    ]],
-                ],
-            ],
-            [
-                'key' => 'personal',
-                'number' => 5,
-                'title' => 'Personal Information',
-                'show' => ['account_nature' => 'individual'],
-                'fields' => [
-                    ['name' => 'preferred_language_1', 'type' => 'text', 'label' => 'Preferred Language (Applicant 1)', 'max' => 60],
-                    ['name' => 'preferred_language_2', 'type' => 'text', 'label' => 'Preferred Language (Applicant 2)', 'max' => 60,
-                        'show' => ['individual_kind' => 'joint']],
-                ],
-            ],
-            [
-                'key' => 'wallet',
-                'number' => 10,
-                'title' => 'BAJK Wallet',
-                'fields' => [
-                    ['name' => 'supplementary_card', 'type' => 'radio', 'label' => 'Supplementary Card Required (fill the prescribed form)',
-                        'options' => self::YES_NO],
-                ],
-            ],
-            [
-                'key' => 'products',
-                'number' => 12,
-                'title' => 'Other BAJK Products of Interest',
-                'fields' => [
-                    ['name' => 'other_products', 'type' => 'checks', 'label' => 'Products of interest', 'other' => 'other', 'options' => [
-                        'credit_cards' => 'Credit Cards', 'personal_loan' => 'Personal Loan', 'car_financing' => 'Car Financing',
-                        'mortgage' => 'Mortgage', 'other' => 'Other (specify)',
-                    ]],
-                ],
-            ],
-            [
-                'key' => 'introducer',
-                'number' => 15,
-                'title' => 'Introducer',
-                'fields' => [
-                    ['name' => 'introducer_name', 'type' => 'text', 'label' => 'Name', 'required' => true],
-                    ['name' => 'introducer_cnic', 'type' => 'text', 'label' => 'CNIC No.', 'max' => 20],
-                    ['name' => 'introducer_telephone', 'type' => 'text', 'label' => 'Telephone No.', 'max' => 30],
-                    ['name' => 'introducer_address', 'type' => 'textarea', 'label' => 'Address', 'max' => 500],
-                    ['name' => 'introducer_bank_branch', 'type' => 'text', 'label' => 'Bank/Branch', 'required' => true],
-                    ['name' => 'introducer_account_no', 'type' => 'text', 'label' => 'Account No.', 'required' => true, 'max' => 40],
-                    ['name' => 'introducer_signed', 'type' => 'checkbox', 'label' => 'Introducer signature taken on the form'],
-                    ['name' => 'introducer_known_years', 'type' => 'number', 'label' => 'How long has the introducer known the applicant: Years', 'integer' => true, 'max' => 99],
-                    ['name' => 'introducer_known_months', 'type' => 'number', 'label' => 'How long has the introducer known the applicant: Months', 'integer' => true, 'max' => 11],
-                    ['name' => 'introducer_verified_by', 'type' => 'text', 'label' => 'Verified By'],
-                ],
-            ],
-            [
-                'key' => 'bank_use',
-                'number' => 18,
-                'title' => 'For Bank Use Only',
-                'fields' => [
-                    ['name' => 'expected_average_balance', 'type' => 'number', 'label' => 'Expected Average Balance'],
-                ],
-            ],
-        ];
     }
 
     /**
@@ -172,6 +42,14 @@ final class PaperFormSchema
     public static function holds(array $show, array $values): bool
     {
         foreach ($show as $name => $expected) {
+            if ($name === 'any') {
+                if (! array_filter((array) $expected, fn (array $alternative): bool => self::holds($alternative, $values))) {
+                    return false;
+                }
+
+                continue;
+            }
+
             $actual = $values[$name] ?? null;
             $actual = is_array($actual) ? $actual : [$actual];
 
@@ -221,8 +99,12 @@ final class PaperFormSchema
     {
         $rules = ['data' => ['required', 'array']];
 
-        foreach (self::visibleSections($values) as $section) {
+        foreach (self::visibleSections(self::clean($values)) as $section) {
             foreach ($section['fields'] as $field) {
+                if (self::carriesNoValue($field)) {
+                    continue;
+                }
+
                 $name = 'data.'.$field['name'];
 
                 if ($field['type'] === 'repeater') {
@@ -262,9 +144,10 @@ final class PaperFormSchema
 
         return match ($field['type']) {
             'text' => ['nullable', 'string', 'max:'.$max],
+            'email' => ['nullable', 'email', 'max:'.$max],
             'secret' => ['nullable', 'string', 'min:'.($field['min'] ?? 6), 'max:'.$max],
             'textarea' => ['nullable', 'string', 'max:'.($field['max'] ?? 2000)],
-            'date' => ['nullable', 'date'],
+            'date' => ['nullable', 'date', ...(($field['past'] ?? false) ? ['before:today'] : [])],
             'number' => ['nullable', ($field['integer'] ?? false) ? 'integer' : 'numeric', 'min:0', ...(isset($field['max']) ? ['max:'.$field['max']] : [])],
             'select', 'radio' => ['nullable', Rule::in(array_keys($field['options']))],
             'checkbox' => ['nullable', 'boolean'],
@@ -283,8 +166,18 @@ final class PaperFormSchema
     {
         $clean = [];
 
-        foreach (self::visibleSections($input) as $section) {
+        // A field applies only if the answers kept before it say so, so a stale answer in a hidden field
+        // (for example a business kind left over after switching to an individual account) switches nothing on.
+        foreach (self::sections() as $section) {
+            if (! self::holds($section['show'] ?? [], $clean)) {
+                continue;
+            }
+
             foreach ($section['fields'] as $field) {
+                if (self::carriesNoValue($field) || ! self::holds($field['show'] ?? [], $clean)) {
+                    continue;
+                }
+
                 $name = $field['name'];
 
                 if ($field['type'] === 'repeater') {
@@ -330,7 +223,7 @@ final class PaperFormSchema
 
         foreach (self::visibleSections($values) as $section) {
             foreach ($section['fields'] as $field) {
-                if (($field['required'] ?? false) && self::isBlank($values[$field['name']] ?? null)) {
+                if (($field['required'] ?? false) && ! self::carriesNoValue($field) && self::isBlank($values[$field['name']] ?? null)) {
                     $missing[] = $field['label'];
                 }
             }
@@ -350,7 +243,9 @@ final class PaperFormSchema
 
         foreach (self::sections() as $section) {
             foreach ($section['fields'] as $field) {
-                $labels[$field['name']] = $field['label'];
+                if (! self::carriesNoValue($field)) {
+                    $labels[$field['name']] = $field['label'];
+                }
             }
         }
 
@@ -397,6 +292,16 @@ final class PaperFormSchema
 
     private static function isBlank(mixed $value): bool
     {
-        return $value === null || $value === '' || $value === [];
+        return $value === null || $value === '' || $value === [] || $value === false;
+    }
+
+    /**
+     * Headings and the Terms & Conditions text are shown on the form but hold no answer.
+     *
+     * @param  array<string, mixed>  $field
+     */
+    private static function carriesNoValue(array $field): bool
+    {
+        return in_array($field['type'], ['heading', 'terms'], true);
     }
 }

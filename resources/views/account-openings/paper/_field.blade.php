@@ -1,46 +1,52 @@
 {{-- One field of the old paper form, drawn from PaperFormSchema. Needs $field. --}}
 @php
     $name = $field['name'];
+    $current = $values[$name] ?? null;
     $id = 'paper_'.$name;
     $control = 'mt-1 block w-full rounded-md border-gray-300 shadow-sm';
     $show = $field['show'] ?? [];
 @endphp
 
-<div @class(['md:col-span-2' => in_array($field['type'], ['textarea', 'repeater'], true)]) data-field="{{ $name }}"
+<div @class(['md:col-span-2' => in_array($field['type'], ['textarea', 'repeater', 'heading', 'terms'], true)]) data-field="{{ $name }}"
     @if ($show !== []) x-show="holds(@js($show))" x-cloak @endif>
-    @if ($field['type'] === 'checkbox')
+    @if ($field['type'] === 'heading')
+        <h4 class="mt-2 border-b border-gray-200 pb-1 text-sm font-bold text-gray-800">{{ rtrim(rtrim($field['label'], '*')) }}@if (str_ends_with($field['label'], '*')) <span class="font-bold text-red-600">*</span>@endif</h4>
+    @elseif ($field['type'] === 'terms')
+        @include('account-openings.paper._terms')
+    @elseif ($field['type'] === 'checkbox')
         <label class="inline-flex items-center text-sm">
             <input type="hidden" name="data[{{ $name }}]" value="0">
-            <input type="checkbox" name="data[{{ $name }}]" value="1" x-model="d.{{ $name }}" class="rounded border-gray-300">
-            <span class="ml-2">{{ $field['label'] }}</span>
+            <input type="checkbox" name="data[{{ $name }}]" value="1" @checked((bool) $current) x-model="d.{{ $name }}" class="rounded border-gray-300">
+            <span class="ml-2">{{ $field['label'] }}@if ($field['required'] ?? false) <span class="font-bold text-red-600" title="Required">*</span>@endif</span>
         </label>
     @else
         <x-label :for="$id" :value="$field['label'].(($field['required'] ?? false) ? ' *' : '')" />
 
         @switch($field['type'])
             @case('text')
+            @case('email')
             @case('secret')
-                <x-input :id="$id" :name="'data['.$name.']'" type="text" autocomplete="off"
-                    :maxlength="$field['max'] ?? 150" class="{{ $control }}" x-model="d.{{ $name }}" />
+                <x-input :id="$id" :name="'data['.$name.']'" type="{{ $field['type'] === 'email' ? 'email' : 'text' }}" autocomplete="off"
+                    :maxlength="$field['max'] ?? 150" :value="$current" class="{{ $control }}" x-model="d.{{ $name }}" />
                 @break
 
             @case('textarea')
-                <textarea id="{{ $id }}" name="data[{{ $name }}]" rows="3" maxlength="{{ $field['max'] ?? 2000 }}" class="{{ $control }}" x-model="d.{{ $name }}"></textarea>
+                <textarea id="{{ $id }}" name="data[{{ $name }}]" rows="3" maxlength="{{ $field['max'] ?? 2000 }}" class="{{ $control }}" x-model="d.{{ $name }}">{{ $current }}</textarea>
                 @break
 
             @case('date')
-                <input id="{{ $id }}" type="date" name="data[{{ $name }}]" class="{{ $control }}" x-model="d.{{ $name }}">
+                <input id="{{ $id }}" type="date" name="data[{{ $name }}]" value="{{ $current }}" class="{{ $control }}" x-model="d.{{ $name }}">
                 @break
 
             @case('number')
-                <input id="{{ $id }}" type="number" step="0.01" min="0" name="data[{{ $name }}]" class="{{ $control }}" x-model="d.{{ $name }}">
+                <input id="{{ $id }}" type="number" step="0.01" min="0" name="data[{{ $name }}]" value="{{ $current }}" class="{{ $control }}" x-model="d.{{ $name }}">
                 @break
 
             @case('select')
                 <select id="{{ $id }}" name="data[{{ $name }}]" class="{{ $control }}" x-model="d.{{ $name }}">
                     <option value="">-</option>
                     @foreach ($field['options'] as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
+                        <option value="{{ $value }}" @selected((string) $current === (string) $value)>{{ $label }}</option>
                     @endforeach
                 </select>
                 @break
@@ -49,7 +55,7 @@
                 <div class="mt-1 flex flex-wrap gap-x-6 gap-y-2" role="radiogroup" aria-label="{{ $field['label'] }}">
                     @foreach ($field['options'] as $value => $label)
                         <label class="inline-flex items-center text-sm">
-                            <input type="radio" name="data[{{ $name }}]" value="{{ $value }}" x-model="d.{{ $name }}" class="border-gray-300">
+                            <input type="radio" name="data[{{ $name }}]" value="{{ $value }}" @checked((string) $current === (string) $value) x-model="d.{{ $name }}" class="border-gray-300">
                             <span class="ml-2">{{ $label }}</span>
                         </label>
                     @endforeach
@@ -60,7 +66,7 @@
                 <div class="mt-1 flex flex-wrap gap-x-6 gap-y-2">
                     @foreach ($field['options'] as $value => $label)
                         <label class="inline-flex items-center text-sm">
-                            <input type="checkbox" name="data[{{ $name }}][]" value="{{ $value }}" x-model="d.{{ $name }}" class="rounded border-gray-300">
+                            <input type="checkbox" name="data[{{ $name }}][]" value="{{ $value }}" @checked(in_array((string) $value, array_map('strval', (array) $current), true)) x-model="d.{{ $name }}" class="rounded border-gray-300">
                             <span class="ml-2">{{ $label }}</span>
                         </label>
                     @endforeach
@@ -106,7 +112,7 @@
 
         @if (isset($field['other']))
             <div class="mt-2" x-show="picked('{{ $name }}', @js((array) $field['other']))" x-cloak>
-                <x-input :name="'data['.$name.'_other]'" type="text" maxlength="150" placeholder="Other (specify)" aria-label="Other (specify)"
+                <x-input :name="'data['.$name.'_other]'" type="text" maxlength="150" :value="$values[$name.'_other'] ?? ''" placeholder="Other (specify)" aria-label="Other (specify)"
                     class="{{ $control }}" x-model="d.{{ $name }}_other" />
                 <x-input-error :for="'data.'.$name.'_other'" class="mt-1" />
             </div>
