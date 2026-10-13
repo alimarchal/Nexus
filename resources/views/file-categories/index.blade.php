@@ -36,6 +36,7 @@
         ['label' => '#', 'align' => 'text-center'],
         ['label' => 'Category Code', 'align' => 'text-center'],
         ['label' => 'Category Name', 'align' => 'text-center'],
+        ['label' => 'Description', 'align' => 'text-left'],
         ['label' => 'Status', 'align' => 'text-center'],
         ['label' => 'Actions', 'align' => 'text-center'],
     ]" emptyMessage="No file categories found." :emptyRoute="route('file-categories.create')"
@@ -50,6 +51,9 @@
                 </td>
                 <td class="px-2 py-1 text-center">
                     {{ $fileCategory->category_name }}
+                </td>
+                <td class="px-2 py-1 text-left text-xs text-gray-600 dark:text-gray-300">
+                    {{ $fileCategory->description }}
                 </td>
                 <td class="px-2 py-1 text-center">
                     <span

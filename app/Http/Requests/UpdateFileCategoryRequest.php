@@ -27,6 +27,7 @@ class UpdateFileCategoryRequest extends FormRequest
         return [
             'category_code' => ['required', 'string', 'max:20', 'unique:file_categories,category_code,'.$fileCategory->id],
             'category_name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string', 'max:2000'],
             'is_active' => ['required', 'in:0,1'],
         ];
     }

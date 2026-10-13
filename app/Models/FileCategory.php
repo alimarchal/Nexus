@@ -27,6 +27,7 @@ class FileCategory extends Model
     protected $fillable = [
         'category_code',
         'category_name',
+        'description',
         'is_active',
     ];
 

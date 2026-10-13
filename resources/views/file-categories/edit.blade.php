@@ -41,6 +41,13 @@
                     </div>
 
                     <div class="mb-4">
+                        <label class="block text-gray-700 dark:text-gray-300">Description (records kept in this category):</label>
+                        <textarea name="description" rows="3" maxlength="2000"
+                            class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">{{ old('description', $fileCategory->description) }}</textarea>
+                        @error('description') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div class="mb-4">
                         <label class="block text-gray-700 dark:text-gray-300">Status:</label>
                         <select name="is_active"
                             class="w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm">
