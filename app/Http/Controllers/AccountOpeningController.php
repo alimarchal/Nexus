@@ -40,6 +40,7 @@ use App\Models\WealthSource;
 use App\Models\ZakatExemptionReason;
 use App\Services\AccountOpeningWorkflow;
 use App\Support\AccountOpeningSteps;
+use App\Support\PaperForm\PaperFormSchema;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -101,7 +102,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
         $perPage = in_array((int) $request->query('per_page'), self::PER_PAGE, true) ? (int) $request->query('per_page') : 25;
 
         $accountOpeningRequests = $this->listQuery($request, $request->user())
-            ->with(['branch', 'customer.individual', 'customer.organization', 'customer.customerCategory', 'account.product'])
+            ->with(['branch', 'paperForm', 'customer.individual', 'customer.organization', 'customer.customerCategory', 'account.product'])
             ->paginate($perPage)
             ->withQueryString();
 
@@ -128,7 +129,8 @@ class AccountOpeningController extends Controller implements HasMiddleware
                             ->orWhereHas('customer', fn ($q) => $q->where('cif_number', 'like', "%{$term}%"))
                             ->orWhereHas('customer.individual', fn ($q) => $q->where('full_name', 'like', "%{$term}%"))
                             ->orWhereHas('customer.organization', fn ($q) => $q->where('business_name', 'like', "%{$term}%"))
-                            ->orWhereHas('account', fn ($q) => $q->where('account_number', 'like', "%{$term}%"));
+                            ->orWhereHas('account', fn ($q) => $q->where('account_number', 'like', "%{$term}%"))
+                            ->orWhereHas('paperForm', fn ($q) => $q->where('display_name', 'like', "%{$term}%"));
                     });
                 }),
                 AllowedFilter::partial('request_number'),
@@ -142,7 +144,8 @@ class AccountOpeningController extends Controller implements HasMiddleware
                     $query->where(function ($inner) use ($value): void {
                         $inner->whereHas('customer', fn ($q) => $q->where('cif_number', 'like', "%{$value}%"))
                             ->orWhereHas('customer.individual', fn ($q) => $q->where('full_name', 'like', "%{$value}%"))
-                            ->orWhereHas('customer.organization', fn ($q) => $q->where('business_name', 'like', "%{$value}%"));
+                            ->orWhereHas('customer.organization', fn ($q) => $q->where('business_name', 'like', "%{$value}%"))
+                            ->orWhereHas('paperForm', fn ($q) => $q->where('display_name', 'like', "%{$value}%"));
                     });
                 }),
             ]);
@@ -201,6 +204,10 @@ class AccountOpeningController extends Controller implements HasMiddleware
      */
     public function store(StoreAccountOpeningRequest $request): RedirectResponse
     {
+        if ($request->input('form_edition') === AccountOpeningRequest::EDITION_OLD) {
+            return $this->storeOldEdition($request);
+        }
+
         $category = CustomerCategory::findOrFail($request->customer_category_id);
         $branch = Branch::findOrFail($request->branch_id);
 
@@ -239,9 +246,42 @@ class AccountOpeningController extends Controller implements HasMiddleware
             ->with('success', "Account opening request {$accountOpeningRequest->request_number} started. CIF: {$accountOpeningRequest->customer->cif_number}");
     }
 
+    /**
+     * Start an old (paper form) request. It has no CIF or account of its own: the paper form is all it holds.
+     */
+    private function storeOldEdition(StoreAccountOpeningRequest $request): RedirectResponse
+    {
+        $branch = Branch::findOrFail($request->branch_id);
+
+        $accountOpeningRequest = DB::transaction(function () use ($request, $branch): AccountOpeningRequest {
+            $accountOpeningRequest = AccountOpeningRequest::create([
+                'request_number' => generateUniqueIdWithPrefix($branch->code, 'account_opening_requests', 'request_number'),
+                'aof_form_type' => AccountOpeningRequest::FORM_INDIVIDUAL,
+                'form_edition' => AccountOpeningRequest::EDITION_OLD,
+                'aof_version' => 'BAJK-AOF-Old-Paper-Form',
+                'branch_id' => $branch->id,
+                'request_date' => $request->request_date,
+                'status' => 'draft',
+            ]);
+            $accountOpeningRequest->paperForm()->create(['data' => []]);
+
+            return $accountOpeningRequest;
+        });
+
+        $this->workflow->record($accountOpeningRequest, 'created', $request->user(), note: 'Old account opening form started for '.$branch->code.' '.$branch->name.'.');
+
+        return redirect()
+            ->route('account-openings.paper.edit', $accountOpeningRequest)
+            ->with('success', "Old account opening request {$accountOpeningRequest->request_number} started.");
+    }
+
     public function show(AccountOpeningRequest $accountOpeningRequest): View
     {
         $this->authorizeVisibility($accountOpeningRequest);
+
+        if ($accountOpeningRequest->isOldEdition()) {
+            return $this->showOldEdition($accountOpeningRequest);
+        }
 
         $accountOpeningRequest->load([
             'branch',
@@ -273,6 +313,23 @@ class AccountOpeningController extends Controller implements HasMiddleware
         ]);
     }
 
+    private function showOldEdition(AccountOpeningRequest $accountOpeningRequest): View
+    {
+        $accountOpeningRequest->load(['branch', 'paperForm', 'histories.user', 'submitter', 'approver', 'rejecter', 'unlocker', 'creator']);
+        $user = auth()->user();
+        $values = $accountOpeningRequest->paperForm?->values() ?? [];
+
+        return view('account-openings.paper.show', [
+            'accountOpeningRequest' => $accountOpeningRequest,
+            'values' => $values,
+            'missing' => PaperFormSchema::missingRequired($values),
+            'workflow' => $this->workflow,
+            'canDecide' => $this->workflow->canDecide($accountOpeningRequest, $user),
+            'isMaker' => $this->workflow->isMaker($accountOpeningRequest, $user),
+            'canUnlock' => $accountOpeningRequest->isLocked() && $user->can('unlock account openings') && $this->workflow->isSuperAdmin($user),
+        ]);
+    }
+
     /**
      * A print-ready copy of the completed form, laid out in the same order as
      * the printed AOF so a branch can file it alongside the paper original.
@@ -280,6 +337,13 @@ class AccountOpeningController extends Controller implements HasMiddleware
     public function print(AccountOpeningRequest $accountOpeningRequest): View
     {
         $this->authorizeVisibility($accountOpeningRequest);
+
+        if ($accountOpeningRequest->isOldEdition()) {
+            return view('account-openings.paper.print', [
+                'accountOpeningRequest' => $accountOpeningRequest->load(['branch', 'paperForm']),
+                'values' => $accountOpeningRequest->paperForm?->values() ?? [],
+            ]);
+        }
 
         $accountOpeningRequest->load([
             'branch',
@@ -316,6 +380,10 @@ class AccountOpeningController extends Controller implements HasMiddleware
     public function editStep(AccountOpeningRequest $accountOpeningRequest, string $step): View|RedirectResponse
     {
         $this->authorizeVisibility($accountOpeningRequest);
+
+        if ($accountOpeningRequest->isOldEdition()) {
+            return redirect()->route('account-openings.paper.edit', $accountOpeningRequest);
+        }
         abort_unless(array_key_exists($step, self::STEPS), 404);
 
         if ($blocked = $this->blockedFromEditing($accountOpeningRequest) ?? $this->blockedByEarlierStep($accountOpeningRequest, $step)) {
@@ -344,6 +412,10 @@ class AccountOpeningController extends Controller implements HasMiddleware
     public function updateStep(UpdateAccountOpeningStepRequest $request, AccountOpeningRequest $accountOpeningRequest, string $step): RedirectResponse
     {
         $this->authorizeVisibility($accountOpeningRequest);
+
+        if ($accountOpeningRequest->isOldEdition()) {
+            return redirect()->route('account-openings.paper.edit', $accountOpeningRequest);
+        }
         abort_unless(array_key_exists($step, self::STEPS), 404);
 
         if ($blocked = $this->blockedFromEditing($accountOpeningRequest) ?? $this->blockedByEarlierStep($accountOpeningRequest, $step)) {
@@ -387,6 +459,18 @@ class AccountOpeningController extends Controller implements HasMiddleware
     public function submit(AccountOpeningRequest $accountOpeningRequest): RedirectResponse
     {
         $this->authorizeVisibility($accountOpeningRequest);
+
+        if ($accountOpeningRequest->isOldEdition()) {
+            $missing = PaperFormSchema::missingRequired($accountOpeningRequest->paperForm?->values() ?? []);
+
+            if ($missing !== []) {
+                return back()->with('error', 'Fill in the mandatory fields before submitting: '.implode(', ', $missing));
+            }
+
+            return $this->runWorkflow($accountOpeningRequest, 'Account opening request submitted for approval.', function () use ($accountOpeningRequest): void {
+                $this->workflow->submit($accountOpeningRequest, auth()->user());
+            });
+        }
 
         $missing = collect($this->progress($accountOpeningRequest))
             ->reject(fn (array $s): bool => $s['complete'])

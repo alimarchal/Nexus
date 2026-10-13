@@ -25,9 +25,18 @@ class StoreAccountOpeningRequest extends FormRequest
      */
     public function rules(): array
     {
+        // The old paper form picks its customer category on the form itself, so only the branch and date are asked here.
+        if ($this->input('form_edition') === AccountOpeningRequest::EDITION_OLD) {
+            return [
+                'form_edition' => ['required', Rule::in([AccountOpeningRequest::EDITION_OLD])],
+                'branch_id' => ['required', 'integer', 'exists:branches,id'],
+                'request_date' => ['required', 'date'],
+            ];
+        }
+
         return [
+            'form_edition' => ['nullable', Rule::in([AccountOpeningRequest::EDITION_NEW])],
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
-            'form_edition' => ['nullable', Rule::in([AccountOpeningRequest::EDITION_NEW, AccountOpeningRequest::EDITION_OLD])],
             'aof_form_type' => ['required', Rule::in([AccountOpeningRequest::FORM_INDIVIDUAL, AccountOpeningRequest::FORM_ENTITY])],
             'customer_category_id' => ['required', 'uuid', 'exists:customer_categories,id'],
             'customer_category_other' => ['nullable', 'string', 'max:150'],

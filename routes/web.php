@@ -32,6 +32,7 @@ use App\Http\Controllers\EmployeeResourceController;
 use App\Http\Controllers\FileCategoryController;
 use App\Http\Controllers\FileManagementSystemController;
 use App\Http\Controllers\ManagerController;
+use App\Http\Controllers\PaperAccountOpeningController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\PrintedStationeryController;
 use App\Http\Controllers\ProductController;
@@ -146,6 +147,8 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::post('/', [AccountOpeningController::class, 'store'])->name('store');
         Route::get('/{accountOpeningRequest}', [AccountOpeningController::class, 'show'])->name('show');
         Route::get('/{accountOpeningRequest}/print', [AccountOpeningController::class, 'print'])->name('print');
+        Route::get('/{accountOpeningRequest}/paper', [PaperAccountOpeningController::class, 'edit'])->name('paper.edit');
+        Route::put('/{accountOpeningRequest}/paper', [PaperAccountOpeningController::class, 'update'])->name('paper.update');
         Route::get('/{accountOpeningRequest}/steps/{step}', [AccountOpeningController::class, 'editStep'])->name('steps.edit');
         Route::put('/{accountOpeningRequest}/steps/{step}', [AccountOpeningController::class, 'updateStep'])->name('steps.update');
         Route::post('/{accountOpeningRequest}/submit', [AccountOpeningController::class, 'submit'])->name('submit');
