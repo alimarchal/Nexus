@@ -4,6 +4,7 @@ use App\Models\AccountOpeningRequest;
 use App\Models\Branch;
 use App\Models\CustomerCategory;
 use App\Models\User;
+use App\Support\PaperForm\PaperFormSchema;
 use Database\Seeders\BajkAccountOpeningSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
@@ -455,4 +456,20 @@ test('a stale answer left in a hidden field does not switch other fields on', fu
         ->assertSessionHasNoErrors();
 
     expect($request->fresh()->paperForm->data)->not->toHaveKeys(['business_kind', 'partnership_kind', 'docs_partnership']);
+});
+
+test('no radio group name is used in two sections, because a browser treats them as one group', function () {
+    $radios = collect(PaperFormSchema::sections())
+        ->flatMap(fn ($section) => collect($section['fields'])->where('type', 'radio')->pluck('name'));
+
+    expect($radios->duplicates()->all())->toBe([]);
+});
+
+test('the business hold mail and customer type are saved under their own names', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, ['account_nature' => 'business', 'business_hold_mail' => 'yes', 'kyc_business_customer_type' => 'referred', 'kyc_business_referred_by' => 'Imran'])
+        ->assertSessionHasNoErrors();
+
+    expect($request->fresh()->paperForm->data)->toMatchArray(['business_hold_mail' => 'yes', 'kyc_business_customer_type' => 'referred', 'kyc_business_referred_by' => 'Imran']);
 });

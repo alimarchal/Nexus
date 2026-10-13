@@ -636,3 +636,42 @@ test('mandatory field labels show a red star after the label text', function () 
 
     expect($html)->toMatch('/Name \(as per CNIC\)\s*<span class="font-bold text-red-600"[^>]*>\*<\/span>/');
 });
+
+test('the same nationality chosen twice is a validation message, not a server error', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+    $pakistan = Country::where('iso2', 'PK')->firstOrFail()->id;
+
+    $this->actingAs($this->admin)
+        ->put(route('account-openings.steps.update', [$accountOpeningRequest, 'cif']), [
+            'full_name' => 'Ali Raza', 'date_of_birth' => '1990-05-15',
+            'nationalities' => [$pakistan, $pakistan],
+        ])
+        ->assertSessionHasErrors(['nationalities.1' => 'Each nationality must be a different country.']);
+});
+
+test('the same identification document entered twice is a validation message, not a server error', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+    $cnic = IdentificationDocumentType::code('CNIC')->firstOrFail()->id;
+
+    $this->actingAs($this->admin)
+        ->put(route('account-openings.steps.update', [$accountOpeningRequest, 'identification']), [
+            'identifications' => [
+                ['identification_document_type_id' => $cnic, 'document_number' => '81303-1234567-1'],
+                ['identification_document_type_id' => $cnic, 'document_number' => '81303-1234567-1'],
+            ],
+            'addresses' => ['permanent_residential' => ['city' => 'Muzaffarabad']],
+            'contacts' => ['mobile' => [1 => ['country_code' => '+92', 'value' => '3008169924']]],
+        ])
+        ->assertSessionHasErrors('identifications.1.document_number');
+
+    expect($accountOpeningRequest->fresh()->customer->identifications)->toHaveCount(0);
+});
+
+test('the identification step renders without a broken empty template', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    $this->actingAs($this->admin)
+        ->get(route('account-openings.steps.edit', [$accountOpeningRequest, 'identification']))
+        ->assertSuccessful()
+        ->assertDontSee('x-for="index in rows"', false);
+});
