@@ -2,6 +2,26 @@
 
 All notable changes to Nexus. Issue and pull request numbers refer to https://github.com/alimarchal/Nexus.
 
+## [1.3.0] - 2026-10-13
+
+### Added
+- **Old account opening** (#120, #121). A second button, **+ Old account opening**, next to **+ New account opening**; each request records whether it was made with the Old or the New form (list, filter, request page, print). The old BAJK paper form is built in full: 19 sections in paper order, conditional sections (individual / business / joint applicant 2), Other (specify) boxes, mandatory checks before submission, a documents checklist per nature of account, and a view and print in paper layout. It never mixes with the new form. Run `php artisan migrate`.
+- Paper-form fields the system lacked (#115, #116, #117): Key / Secret Word (encrypted), preferred language, Hold Mail for individuals, supplementary card, other banks, other BAJK products, introducer, existing BAJK relationships, contact persons, expected average balance.
+- **ORU record categories** (#122): the 20 official Categories of Branch Records to Be Stored in the Old Record Unit, with a Description on the create, edit and list pages and under the category picker. Files in the old categories move to the matching new one.
+- `php artisan aof:sync-reference-data` and a migration that runs it (#119).
+- README: full documentation of the modules, flows, configuration, deployment and troubleshooting.
+
+### Changed
+- Account Opening options (#118): JPY, Foreign Currency Term and BMBA accounts, Silver and Gold debit cards, the Illiterate special category, Family Business as source of funds, Hold Mail for individual accounts.
+- The mandatory-field star is red and sits after the label on every Account Opening field (#123).
+
+### Fixed
+- The Account Opening option lists were empty on a production database that was imported and migrated (#119).
+
+### Needs input
+- The official Terms & Conditions (1-52) and Indemnity & Undertaking text for the old form go in `resources/paper-form/terms.txt` and `indemnity.txt`.
+- Whether the paper form's Relationship ID is the same as the CIF number (#118).
+
 ## [1.2.0] - 2026-10-12
 
 ### Added
