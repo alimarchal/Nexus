@@ -617,3 +617,22 @@ test('the printed form shows the typed economic sector code', function () {
         ->assertSuccessful()
         ->assertSee('8411');
 });
+
+test('mandatory field labels show a red star after the label text', function () {
+    $accountOpeningRequest = startAccountOpening($this);
+
+    foreach (['cif', 'identification', 'holders'] as $step) {
+        $html = $this->actingAs($this->admin)
+            ->get(route('account-openings.steps.edit', [$accountOpeningRequest, $step]))
+            ->getContent();
+
+        expect($html)->not->toMatch('/<label[^>]*>\s*\*(?!\*)[A-Za-z]/');
+    }
+
+    $html = $this->actingAs($this->admin)
+        ->get(route('account-openings.steps.edit', [$accountOpeningRequest, 'cif']))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toMatch('/Name \(as per CNIC\)\s*<span class="font-bold text-red-600"[^>]*>\*<\/span>/');
+});
