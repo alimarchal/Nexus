@@ -3,6 +3,10 @@
     $state = [];
     foreach (\App\Support\PaperForm\PaperFormSchema::sections() as $section) {
         foreach ($section['fields'] as $field) {
+            if (in_array($field['type'], ['heading', 'terms'], true)) {
+                continue;
+            }
+
             $default = match ($field['type']) {
                 'checks' => [],
                 'checkbox' => false,
@@ -41,7 +45,7 @@
             <form method="POST" action="{{ route('account-openings.paper.update', $accountOpeningRequest) }}" id="paper-form"
                 x-data="{
                     d: @js($state),
-                    holds(show) { return Object.entries(show).every(([name, expected]) => [].concat(expected).some((value) => [].concat(this.d[name] ?? []).includes(value))); },
+                    holds(show) { return Object.entries(show).every(([name, expected]) => name === 'any' ? expected.some((alternative) => this.holds(alternative)) : [].concat(expected).some((value) => [].concat(this.d[name] ?? []).includes(value))); },
                     picked(name, keys) { return [].concat(keys).some((key) => [].concat(this.d[name] ?? []).includes(key)); },
                 }">
                 @csrf
@@ -49,15 +53,16 @@
 
                 <div class="space-y-6 overflow-hidden bg-white p-6 shadow-xl dark:bg-gray-800 sm:rounded-lg">
                     @foreach ($sections as $section)
-                        <x-aof-section :title="$section['number'].'. '.$section['title']" :subtitle="$section['subtitle'] ?? null"
-                            data-section="{{ $section['key'] }}"
-                            x-show="holds(@js($section['show'] ?? []))" x-cloak>
-                            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                @foreach ($section['fields'] as $field)
-                                    @include('account-openings.paper._field', ['field' => $field, 'values' => $values])
-                                @endforeach
-                            </div>
-                        </x-aof-section>
+                        {{-- A wrapper carries the x-show: Blade does not compile @js inside a component tag. --}}
+                        <div data-section="{{ $section['key'] }}" x-show="holds(@js($section['show'] ?? []))" x-cloak>
+                            <x-aof-section :title="$section['number'].'. '.$section['title']" :subtitle="$section['subtitle'] ?? null">
+                                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                    @foreach ($section['fields'] as $field)
+                                        @include('account-openings.paper._field', ['field' => $field, 'values' => $values])
+                                    @endforeach
+                                </div>
+                            </x-aof-section>
+                        </div>
                     @endforeach
                 </div>
 

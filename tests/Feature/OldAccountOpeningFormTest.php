@@ -34,6 +34,27 @@ function startOldForm(mixed $test): AccountOpeningRequest
     return AccountOpeningRequest::latest('id')->firstOrFail();
 }
 
+/**
+ * Every mandatory field of a single individual account.
+ *
+ * @param  array<string, mixed>  $overrides
+ * @return array<string, mixed>
+ */
+function completeIndividual(array $overrides = []): array
+{
+    return [
+        'account_nature' => 'individual', 'individual_kind' => 'single',
+        'title_of_account' => 'Ali Raza', 'key_word' => 'Kashmir2026',
+        'mailing_tehsil_district' => 'Muzaffarabad', 'mailing_city' => 'Muzaffarabad', 'mailing_telephone' => '05822-1234',
+        'a1_name' => 'Ali Raza', 'a1_parent_relation' => 'so', 'a1_parent_name' => 'Hussain Raza', 'a1_gender' => 'male',
+        'a1_marital_status' => 'married', 'a1_nationality' => 'Pakistani', 'a1_country_of_residence' => 'Pakistan', 'a1_occupation' => 'private_service',
+        'introducer_name' => 'Imran Khan', 'introducer_bank_branch' => 'BAJK Main Branch', 'introducer_account_no' => '0012345',
+        'authorized_by_name' => 'Manager One', 'authorized_by_employee_no' => 'E-1', 'checker_name' => 'Checker One', 'checker_employee_no' => 'E-2',
+        'terms_accepted' => '1',
+        ...$overrides,
+    ];
+}
+
 function saveOldForm(mixed $test, AccountOpeningRequest $request, array $data): TestResponse
 {
     return $test->actingAs($test->admin)->put(route('account-openings.paper.update', $request), ['data' => $data]);
@@ -111,10 +132,10 @@ test('applicant 2 and individual sections only apply to the matching nature of a
 
     saveOldForm($this, $request, [
         'account_nature' => 'business',
-        'key_word' => 'secretword', 'hold_mail' => 'yes', 'preferred_language_1' => 'Urdu',
+        'key_word' => 'secretword', 'son_of' => 'Someone', 'preferred_language_1' => 'Urdu',
     ])->assertSessionHasNoErrors();
 
-    expect($request->fresh()->paperForm->data)->not->toHaveKeys(['hold_mail', 'preferred_language_1'])
+    expect($request->fresh()->paperForm->data)->not->toHaveKeys(['son_of', 'preferred_language_1'])
         ->and($request->fresh()->paperForm->key_word)->toBeNull();
 });
 
@@ -130,11 +151,7 @@ test('the request page lists the mandatory fields still empty and blocks submitt
     $this->actingAs($this->admin)->post(route('account-openings.submit', $request))->assertSessionHas('error');
     expect($request->fresh()->status)->toBe('draft');
 
-    saveOldForm($this, $request, [
-        'account_nature' => 'individual', 'individual_kind' => 'single',
-        'title_of_account' => 'Ali Raza', 'key_word' => 'Kashmir2026',
-        'introducer_name' => 'Imran Khan', 'introducer_bank_branch' => 'BAJK Main Branch', 'introducer_account_no' => '0012345',
-    ])->assertSessionHasNoErrors();
+    saveOldForm($this, $request, completeIndividual())->assertSessionHasNoErrors();
 
     $this->actingAs($this->admin)->post(route('account-openings.submit', $request))->assertSessionHas('success');
     expect($request->fresh()->status)->toBe('submitted');
@@ -163,7 +180,7 @@ test('the history records the change without the key word', function () {
 
     $history = $request->histories()->where('event', 'step_saved')->firstOrFail();
 
-    expect($history->changes['Title of Account']['new'])->toBe('Ali Raza')
+    expect(collect($history->changes)->first(fn ($change, $label) => str_starts_with($label, 'Title of Account'))['new'])->toBe('Ali Raza')
         ->and(json_encode($history->changes))->not->toContain('Kashmir2026');
 });
 
@@ -206,7 +223,7 @@ test('other banks, products of interest and the introducer are saved and shown',
             ->assertSuccessful()
             ->assertSee('Your Relationship with Other Banks')
             ->assertSee('HBL')->assertSee('UBL')->assertSee('Locker')
-            ->assertSee('Credit Cards, Other (specify) — Takaful', false)
+            ->assertSee('Takaful')
             ->assertSee('Imran Khan')->assertSee('BAJK Main Branch');
     }
 });
@@ -266,4 +283,176 @@ test('the introducer name, bank/branch and account number are mandatory before s
 
     saveOldForm($this, $request, ['account_nature' => 'individual', 'individual_kind' => 'single', 'introducer_known_months' => '12'])
         ->assertSessionHasErrors('data.introducer_known_months');
+});
+
+test('the edit screen lists every section of the paper form in paper order', function () {
+    $request = startOldForm($this);
+
+    $html = $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))->assertSuccessful()->getContent();
+
+    $keys = ['header', 'currency_type', 'nature', 'particulars', 'personal', 'next_of_kin', 'business', 'bajk_relationships', 'other_banks', 'wallet',
+        'zakat', 'products', 'operating', 'special_instructions', 'introducer', 'terms', 'signatures', 'bank_use', 'kyc_individual', 'kyc_business',
+        'recommendation', 'authorization', 'documents'];
+    $positions = array_map(fn ($key) => strpos($html, 'data-section="'.$key.'"'), $keys);
+
+    expect($positions)->each->not->toBeFalse()
+        ->and($positions)->toBe(collect($positions)->sort()->values()->all());
+});
+
+test('the header starts with the branch and date of the request', function () {
+    $request = startOldForm($this);
+
+    $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))
+        ->assertSee('value="'.$this->branch->code.'"', false)
+        ->assertSee('value="'.now()->toDateString().'"', false);
+});
+
+test('a complete individual form saves and then submits for approval', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, completeIndividual([
+        'branch_code' => '0101', 'account_no' => '77-1', 'relationship_id' => 'R-9',
+        'pkr_account_types' => ['pls_saving', 'other'], 'pkr_account_types_other' => 'Roshan',
+        'fcy_account_types' => ['term'], 'currency' => 'jpy',
+        'email' => 'ali@example.com', 'mobile' => '0300-1234567', 'a1_dob' => '1990-05-01', 'a1_id_type' => 'cnic', 'a1_id_number' => '82101-1111111-1',
+        'nok_name' => 'Sara Raza', 'nok_relationship' => 'Wife',
+        'card_type' => 'gold', 'name_on_card' => 'ALI RAZA', 'zakat_deduction' => 'yes',
+        'signing_authority' => 'other', 'signing_authority_other' => 'Wife on death', 'special_instructions' => 'Call before 5pm',
+        'signatories' => [['name' => 'Ali Raza', 'signed' => '1', 'stamped' => '0']],
+        'special_category' => ['illiterate'], 'kyc_customer_type' => 'referred', 'kyc_referred_by' => 'Imran',
+        'kyc_source_of_funds' => ['family_business'], 'kyc_transaction_mode' => ['cash', 'other'], 'kyc_transaction_mode_other' => 'Hawala',
+        'kyc_purpose' => ['personal_saving'], 'initial_deposit' => '5000',
+        'recommendation' => [['name' => 'Staff One', 'employee_no' => 'E-5', 'signed' => '1']],
+        'docs_individual' => ['d1', 'd2'],
+    ]))->assertSessionHasNoErrors();
+
+    $data = $request->fresh()->paperForm->data;
+
+    expect($data)->toMatchArray([
+        'currency' => 'jpy', 'fcy_account_types' => ['term'], 'pkr_account_types_other' => 'Roshan', 'signing_authority_other' => 'Wife on death',
+        'kyc_transaction_mode_other' => 'Hawala', 'docs_individual' => ['d1', 'd2'], 'terms_accepted' => true,
+    ])->and($data['signatories'][0])->toMatchArray(['name' => 'Ali Raza', 'signed' => true, 'stamped' => false]);
+
+    $this->actingAs($this->admin)->post(route('account-openings.submit', $request))->assertSessionHas('success');
+    expect($request->fresh()->status)->toBe('submitted');
+
+    $this->actingAs($this->admin)->get(route('account-openings.print', $request))
+        ->assertSee('Illiterate')->assertSee('Roshan')->assertSee('Hawala')->assertSee('Documents/Papers to be Obtained')
+        ->assertSee('Attested copy of CNIC/Passport');
+});
+
+test('the Other specify text is kept only while Other is chosen', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, ['account_nature' => 'individual', 'individual_kind' => 'single', 'a1_occupation' => 'student', 'a1_occupation_other' => 'stale text'])
+        ->assertSessionHasNoErrors();
+    expect($request->fresh()->paperForm->data['a1_occupation_other'])->toBeNull();
+
+    saveOldForm($this, $request, ['account_nature' => 'individual', 'individual_kind' => 'single', 'a1_occupation' => 'other', 'a1_occupation_other' => 'Shopkeeper'])
+        ->assertSessionHasNoErrors();
+    expect($request->fresh()->paperForm->data['a1_occupation_other'])->toBe('Shopkeeper');
+});
+
+test('a joint account needs applicant 2 and a single account ignores applicant 2', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, completeIndividual(['a2_name' => 'Ignored', 'a2_gender' => 'female']))->assertSessionHasNoErrors();
+    expect($request->fresh()->paperForm->data)->not->toHaveKey('a2_name');
+
+    saveOldForm($this, $request, completeIndividual(['individual_kind' => 'joint']))->assertSessionHasNoErrors();
+    $this->actingAs($this->admin)->get(route('account-openings.show', $request))->assertSee('Applicant 2: Name');
+
+    $this->actingAs($this->admin)->post(route('account-openings.submit', $request))->assertSessionHas('error');
+    expect($request->fresh()->status)->toBe('draft');
+});
+
+test('the business sections and mandatory fields apply to business accounts only', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, ['account_nature' => 'business', 'business_kind' => 'sole_proprietorship', 'title_of_account' => 'Raza Traders', 'business_name' => 'Raza Traders',
+        'nature_of_business' => 'import_export', 'business_cnic' => '82101-2222222-2', 'a1_name' => 'Ignored', 'nok_name' => 'Ignored'])
+        ->assertSessionHasNoErrors();
+
+    expect($request->fresh()->paperForm->data)->toMatchArray(['business_name' => 'Raza Traders', 'business_cnic' => '82101-2222222-2'])
+        ->not->toHaveKeys(['a1_name', 'nok_name']);
+
+    $this->actingAs($this->admin)->get(route('account-openings.show', $request))
+        ->assertSee('Particulars of Account (Business Account)')
+        ->assertSee('For Bank Use Only: KYC (Business Account)')
+        ->assertDontSee('Next of Kin')
+        ->assertSee('Office E-mail')->assertSee('Office Fax');
+});
+
+test('the documents checklist follows the nature of account', function () {
+    $request = startOldForm($this);
+
+    $checklists = [
+        ['individual', null, 'Attested copy of CNIC/Passport', 'Partnership deed signed by all partners'],
+        ['business', 'partnership', 'Partnership deed signed by all partners', 'Board resolution'],
+        ['business', 'joint_stock', 'Certificate of Commencement of Business', 'Partnership deed signed by all partners'],
+        ['business', 'sole_proprietorship', 'NTN/Sales Tax Registration certificate (optional)', 'Board resolution'],
+        ['business', 'association', 'Instrument of Trust', 'Board resolution'],
+        ['business', 'foreign_mission', 'Documents as per the Foreign Exchange manual', 'Instrument of Trust'],
+        ['business', 'other', 'Letter of Administration or Probate', 'Instrument of Trust'],
+    ];
+
+    foreach ($checklists as [$nature, $kind, $shown, $hidden]) {
+        saveOldForm($this, $request, array_filter(['account_nature' => $nature, 'individual_kind' => 'single', 'business_kind' => $kind]))->assertSessionHasNoErrors();
+
+        $this->actingAs($this->admin)->get(route('account-openings.print', $request))->assertSee($shown)->assertDontSee($hidden);
+    }
+});
+
+test('the BAJK Wallet card applies to individual and sole proprietorship accounts only', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, ['account_nature' => 'business', 'business_kind' => 'partnership', 'card_type' => 'gold', 'name_on_card' => 'X'])->assertSessionHasNoErrors();
+    expect($request->fresh()->paperForm->data)->not->toHaveKeys(['card_type', 'name_on_card']);
+
+    saveOldForm($this, $request, ['account_nature' => 'business', 'business_kind' => 'sole_proprietorship', 'card_type' => 'silver', 'name_on_card' => 'RAZA TRADERS'])->assertSessionHasNoErrors();
+    expect($request->fresh()->paperForm->data)->toMatchArray(['card_type' => 'silver', 'name_on_card' => 'RAZA TRADERS']);
+});
+
+test('field formats are validated', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, completeIndividual(['email' => 'not-an-email', 'a1_dob' => now()->addDay()->toDateString(), 'card_type' => 'platinum', 'currency' => 'yen']))
+        ->assertSessionHasErrors(['data.email', 'data.a1_dob', 'data.card_type', 'data.currency']);
+});
+
+test('the terms and conditions must be accepted before submitting, and the official text comes from the config files', function () {
+    $request = startOldForm($this);
+    saveOldForm($this, $request, completeIndividual(['terms_accepted' => '0']))->assertSessionHasNoErrors();
+
+    $this->actingAs($this->admin)->post(route('account-openings.submit', $request))->assertSessionHas('error');
+    $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))->assertSee('has not been loaded yet');
+
+    config(['paper_form.terms' => ['The customer shall keep the key word secret.', 'The bank may close dormant accounts.'], 'paper_form.indemnity' => 'I indemnify the Bank.']);
+
+    $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))
+        ->assertSee('The customer shall keep the key word secret.')->assertSee('I indemnify the Bank.')->assertDontSee('has not been loaded yet');
+    $this->actingAs($this->admin)->get(route('account-openings.print', $request))->assertSee('The bank may close dormant accounts.');
+
+    saveOldForm($this, $request, completeIndividual())->assertSessionHasNoErrors();
+    $this->actingAs($this->admin)->post(route('account-openings.submit', $request))->assertSessionHas('success');
+});
+
+test('an approved old form is locked and cannot be edited', function () {
+    $request = startOldForm($this);
+    saveOldForm($this, $request, completeIndividual())->assertSessionHasNoErrors();
+    $request->update(['status' => 'approved', 'locked_at' => now()]);
+
+    $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))->assertRedirect(route('account-openings.show', $request));
+    saveOldForm($this, $request, completeIndividual(['title_of_account' => 'Changed']))->assertRedirect(route('account-openings.show', $request));
+
+    expect($request->fresh()->paperForm->display_name)->toBe('Ali Raza');
+});
+
+test('a stale answer left in a hidden field does not switch other fields on', function () {
+    $request = startOldForm($this);
+
+    saveOldForm($this, $request, ['account_nature' => 'individual', 'individual_kind' => 'single', 'business_kind' => 'partnership', 'partnership_kind' => 'registered', 'docs_partnership' => ['d1']])
+        ->assertSessionHasNoErrors();
+
+    expect($request->fresh()->paperForm->data)->not->toHaveKeys(['business_kind', 'partnership_kind', 'docs_partnership']);
 });

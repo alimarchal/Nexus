@@ -42,7 +42,11 @@ class PaperAccountOpeningController extends Controller implements HasMiddleware
 
         return view('account-openings.paper.edit', [
             'accountOpeningRequest' => $accountOpeningRequest,
-            'values' => old('data', $accountOpeningRequest->paperForm?->values() ?? []),
+            'values' => old('data', ($accountOpeningRequest->paperForm?->values() ?? []) + [
+                'branch_code' => $accountOpeningRequest->branch?->code,
+                'branch_name' => $accountOpeningRequest->branch?->name,
+                'form_date' => $accountOpeningRequest->request_date?->toDateString(),
+            ]),
         ]);
     }
 

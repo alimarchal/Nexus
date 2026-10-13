@@ -22,6 +22,6 @@
     <h1>Bank of Azad Jammu &amp; Kashmir &mdash; Account Opening Form (old form)</h1>
     <p>{{ $accountOpeningRequest->request_number }} &middot; {{ $accountOpeningRequest->branch?->code }} {{ $accountOpeningRequest->branch?->name }} &middot; {{ $accountOpeningRequest->request_date?->format('d.m.Y') }} &middot; {{ $accountOpeningRequest->editionLabel() }} form</p>
 
-    @include('account-openings.paper._values')
+    @include('account-openings.paper._values', ['printing' => true])
 </body>
 </html>
