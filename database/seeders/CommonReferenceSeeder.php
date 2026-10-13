@@ -44,6 +44,7 @@ class CommonReferenceSeeder extends Seeder
             ['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€', 'is_local' => false, 'sort_order' => 4],
             ['code' => 'AED', 'name' => 'UAE Dirham', 'symbol' => 'د.إ', 'is_local' => false, 'sort_order' => 5],
             ['code' => 'SAR', 'name' => 'Saudi Riyal', 'symbol' => '﷼', 'is_local' => false, 'sort_order' => 6],
+            ['code' => 'JPY', 'name' => 'Japanese Yen', 'symbol' => '¥', 'is_local' => false, 'sort_order' => 7],
         ];
 
         foreach ($currencies as $row) {

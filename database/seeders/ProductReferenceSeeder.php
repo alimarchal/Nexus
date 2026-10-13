@@ -18,7 +18,7 @@ use Illuminate\Database\Seeder;
  *
  * Dono forms ke farq yahin data mein handle hue hain:
  *   PPRSA + Debit Card      -> available_for = individual
- *   Hold Mail Facility      -> available_for = entity
+ *   Hold Mail Facility      -> available_for = both (individual accounts too, as on the paper form)
  *   Cheque leaves 10/25/50  -> Individual products
  *   Cheque leaves 25/50/100 -> Entity products
  */
@@ -39,6 +39,8 @@ class ProductReferenceSeeder extends Seeder
             ['PPRSA', 'Premium Plus Remittance Saving Account (PPRSA)', 'پریمیم پلس ریمیٹنس سیونگ اکاؤنٹ', 'saving', 'local', 'individual', true, true, $indLeaves, 5],
             ['BCA_FCY', 'BAJK Current Account - FCY', 'بی اے جے کے کرنٹ اکاؤنٹ ایف سی وائی', 'current', 'foreign', 'both', false, false, $entLeaves, 6],
             ['BSA_FCY', 'BAJK Saving Account - FCY', 'بی اے جے کے سیونگ اکاؤنٹ ایف سی وائی', 'saving', 'foreign', 'both', false, false, $entLeaves, 7],
+            ['BMBA_FCY', 'Bemisal Mahana Bachat Account (BMBA) - FCY', 'بے مثال ماہانہ بچت اکاؤنٹ ایف سی وائی', 'saving', 'foreign', 'both', false, false, $entLeaves, 8],
+            ['TERM_FCY', 'BAJK Term Account - FCY', 'بی اے جے کے ٹرم اکاؤنٹ ایف سی وائی', 'term', 'foreign', 'both', false, false, $entLeaves, 9],
         ];
 
         foreach ($products as [$code, $name, $nameUr, $class, $curr, $for, $zakat, $card, $leaves, $sort]) {
@@ -93,11 +95,21 @@ class ProductReferenceSeeder extends Seeder
             'sort_order' => 1, 'is_active' => true,
         ]);
 
+        /* Paper form: ATM/Debit Card type -- tick one, Silver or Gold. */
+        foreach ([['BAJK_SILVER', 'BAJK Silver Debit Card', 'بی اے جے کے سلور ڈیبٹ کارڈ', 2], ['BAJK_GOLD', 'BAJK Gold Debit Card', 'بی اے جے کے گولڈ ڈیبٹ کارڈ', 3]] as [$code, $name, $nameUr, $sort]) {
+            CardType::updateOrCreate(['code' => $code], [
+                'name' => $name, 'name_ur' => $nameUr,
+                'name_on_card_max_length' => 19,
+                'available_for' => 'individual',
+                'sort_order' => $sort, 'is_active' => true,
+            ]);
+        }
+
         /* #23 Statement delivery modes */
         $modes = [
             ['E_STATEMENT', 'BAJK E-Statement', 'بی اے جے کے ای اسٹیٹمنٹ', true, 'both', 1],
             ['POST_COURIER', 'Mail by Post/Courier', 'بذریعہ ڈاک یا کورئیر', false, 'both', 2],
-            ['HOLD_MAIL', 'Hold Mail Facility', 'ڈاک روکنے کی سہولت', false, 'entity', 3],
+            ['HOLD_MAIL', 'Hold Mail Facility', 'ڈاک روکنے کی سہولت', false, 'both', 3],
         ];
 
         foreach ($modes as [$code, $name, $nameUr, $email, $for, $sort]) {
