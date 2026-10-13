@@ -67,7 +67,7 @@
             {{ $isEntity
                 ? 'Government, Partnership, Public/Private Limited Companies, NGOs/NPOs/Charities, Clubs, Societies and Associations'
                 : 'Individual / Joint & Sole Proprietor Account' }}
-            &nbsp;&middot;&nbsp; {{ $request->aof_version }}
+            &nbsp;&middot;&nbsp; {{ $request->aof_version }} &middot; {{ $request->editionLabel() }} form
         </div>
     </header>
 

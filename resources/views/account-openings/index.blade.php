@@ -27,14 +27,16 @@
 
     $branchNames = $branches->mapWithKeys(fn ($b) => [$b->id => trim(($b->code ? $b->code.' - ' : '').$b->name)]);
     $formNames = ['individual_joint_sole' => 'Individual / Joint / Sole proprietor', 'entity' => 'Government / Company / NGO'];
+    $editionNames = ['new' => 'New form', 'old' => 'Old form'];
     $statusNames = ['draft' => 'Draft', 'submitted' => 'Submitted', 'under_review' => 'Under review', 'approved' => 'Approved', 'rejected' => 'Rejected'];
     $statusTone = ['draft' => 'slate', 'submitted' => 'blue', 'under_review' => 'amber', 'approved' => 'green', 'rejected' => 'red'];
     $chipLabels = [
-        'search' => 'Search', 'aof_form_type' => 'Form', 'branch_id' => 'Branch', 'request_date_from' => 'Dated from',
+        'search' => 'Search', 'aof_form_type' => 'Form', 'form_edition' => 'Old / New', 'branch_id' => 'Branch', 'request_date_from' => 'Dated from',
         'request_date_to' => 'Dated to', 'request_number' => 'Request no', 'customer' => 'Customer',
     ];
     $chipValue = fn (string $key, $value) => match ($key) {
         'aof_form_type' => $formNames[$value] ?? $value,
+        'form_edition' => $editionNames[$value] ?? $value,
         'branch_id' => $branchNames[$value] ?? $value,
         default => $value,
     };
@@ -60,6 +62,7 @@
                 <button type="button" class="ak-btn ak-btn-outline" onclick="window.print()">Print</button>
                 @can('create account openings')
                     <a href="{{ route('account-openings.create') }}" class="ak-btn ak-btn-primary"><span aria-hidden="true">＋</span> New account opening</a>
+                    <a href="{{ route('account-openings.create', ['edition' => 'old']) }}" class="ak-btn ak-btn-primary"><span aria-hidden="true">＋</span> Old account opening</a>
                 @endcan
             </div>
         </div>
@@ -157,6 +160,15 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="ak-field">
+                        <label for="f_edition">Old / New</label>
+                        <select id="f_edition" name="filter[form_edition]">
+                            <option value="">Old and new</option>
+                            @foreach ($editionNames as $value => $label)
+                                <option value="{{ $value }}" @selected(($filters['form_edition'] ?? '') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="ak-filter-buttons">
                         <button type="button" class="ak-btn ak-btn-ghost" @click="advanced = !advanced" :aria-expanded="advanced" aria-controls="aof-advanced">
                             More filters @if ($advancedCount)<span class="ak-count ak-count-dark">{{ $advancedCount }}</span>@endif
@@ -243,7 +255,7 @@
                                             <div class="ak-muted ak-hide-compact ak-mono">CIF {{ $accountOpeningRequest->customer?->cif_number ?? '—' }}</div>
                                         </td>
                                         <td data-label="Form / category">
-                                            <div>{{ $accountOpeningRequest->aof_form_type === 'entity' ? 'Entity' : 'Individual' }}</div>
+                                            <div>{{ $accountOpeningRequest->aof_form_type === 'entity' ? 'Entity' : 'Individual' }} <span class="ak-muted" data-form-edition>({{ $accountOpeningRequest->editionLabel() }} form)</span></div>
                                             <div class="ak-muted ak-hide-compact">{{ $accountOpeningRequest->customer?->customerCategory?->name ?? '—' }}</div>
                                         </td>
                                         <td data-label="Account">
@@ -323,7 +335,7 @@
                     @else
                         <h2>No account opening requests yet</h2>
                         <p>Start the first one and the wizard will take you through every section.</p>
-                        @can('create account openings') <a href="{{ route('account-openings.create') }}" class="ak-btn ak-btn-primary">＋ New account opening</a> @endcan
+                        @can('create account openings') <a href="{{ route('account-openings.create') }}" class="ak-btn ak-btn-primary">＋ New account opening</a> <a href="{{ route('account-openings.create', ['edition' => 'old']) }}" class="ak-btn ak-btn-primary">＋ Old account opening</a> @endcan
                     @endif
                 </div>
             @endif

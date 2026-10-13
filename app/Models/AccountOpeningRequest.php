@@ -32,6 +32,12 @@ class AccountOpeningRequest extends Model
 
     public const FORM_ENTITY = 'entity';
 
+    /** The current Account Opening Form. */
+    public const EDITION_NEW = 'new';
+
+    /** The old BAJK paper Account Opening Form. */
+    public const EDITION_OLD = 'old';
+
     protected $guarded = ['id'];
 
     protected function casts(): array
@@ -92,6 +98,17 @@ class AccountOpeningRequest extends Model
     public function unlocker(): BelongsTo
     {
         return $this->belongsTo(User::class, 'unlocked_by');
+    }
+
+    public function isOldEdition(): bool
+    {
+        return $this->form_edition === self::EDITION_OLD;
+    }
+
+    /** "Old" or "New": which Account Opening Form the request was made with. */
+    public function editionLabel(): string
+    {
+        return $this->isOldEdition() ? 'Old' : 'New';
     }
 
     /** Approved requests are locked for everyone until a super admin unlocks them. */

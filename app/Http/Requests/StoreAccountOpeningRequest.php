@@ -27,6 +27,7 @@ class StoreAccountOpeningRequest extends FormRequest
     {
         return [
             'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'form_edition' => ['nullable', Rule::in([AccountOpeningRequest::EDITION_NEW, AccountOpeningRequest::EDITION_OLD])],
             'aof_form_type' => ['required', Rule::in([AccountOpeningRequest::FORM_INDIVIDUAL, AccountOpeningRequest::FORM_ENTITY])],
             'customer_category_id' => ['required', 'uuid', 'exists:customer_categories,id'],
             'customer_category_other' => ['nullable', 'string', 'max:150'],
@@ -53,6 +54,7 @@ class StoreAccountOpeningRequest extends FormRequest
         return [
             'economic_sector_code' => 'economic sector code',
             'aof_form_type' => 'account opening form',
+            'form_edition' => 'form edition',
             'customer_category_id' => 'customer category',
         ];
     }
