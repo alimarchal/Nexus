@@ -85,9 +85,15 @@
                                     <td class="px-2 py-1">{{ $row + 1 }}</td>
                                     @foreach ($field['columns'] as $column)
                                         <td class="px-2 py-1">
-                                            <input type="text" name="data[{{ $name }}][{{ $row }}][{{ $column['name'] }}]" maxlength="{{ $column['max'] ?? 150 }}"
-                                                value="{{ $rows[$row][$column['name']] ?? '' }}" aria-label="{{ $column['label'] }} {{ $row + 1 }}"
-                                                class="block w-full rounded-md border-gray-300 text-sm shadow-sm">
+                                            @if (($column['type'] ?? 'text') === 'checkbox')
+                                                <input type="hidden" name="data[{{ $name }}][{{ $row }}][{{ $column['name'] }}]" value="0">
+                                                <input type="checkbox" name="data[{{ $name }}][{{ $row }}][{{ $column['name'] }}]" value="1" @checked($rows[$row][$column['name']] ?? false)
+                                                    aria-label="{{ $column['label'] }} {{ $row + 1 }}" class="rounded border-gray-300">
+                                            @else
+                                                <input type="text" name="data[{{ $name }}][{{ $row }}][{{ $column['name'] }}]" maxlength="{{ $column['max'] ?? 150 }}"
+                                                    value="{{ $rows[$row][$column['name']] ?? '' }}" aria-label="{{ $column['label'] }} {{ $row + 1 }}"
+                                                    class="block w-full rounded-md border-gray-300 text-sm shadow-sm">
+                                            @endif
                                         </td>
                                     @endforeach
                                 </tr>

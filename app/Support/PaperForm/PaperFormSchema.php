@@ -22,9 +22,22 @@ final class PaperFormSchema
     public const YES_NO = ['yes' => 'Yes', 'no' => 'No'];
 
     /**
+     * The sections in the order of the paper form.
+     *
      * @return list<array<string, mixed>>
      */
     public static function sections(): array
+    {
+        $sections = self::definitions();
+        usort($sections, fn (array $a, array $b): int => $a['number'] <=> $b['number']);
+
+        return $sections;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private static function definitions(): array
     {
         return [
             [
@@ -51,6 +64,47 @@ final class PaperFormSchema
                 ],
             ],
             [
+                'key' => 'business_contacts',
+                'number' => 7,
+                'title' => 'Particulars of Account (Business Account) - Contact Persons',
+                'show' => ['account_nature' => 'business'],
+                'fields' => [
+                    ['name' => 'contact_persons', 'type' => 'repeater', 'label' => 'Contact Persons', 'rows' => 4, 'columns' => [
+                        ['name' => 'name', 'label' => 'Name'],
+                        ['name' => 'designation', 'label' => 'Designation'],
+                        ['name' => 'telephone', 'label' => 'Telephone No.', 'max' => 30],
+                    ]],
+                ],
+            ],
+            [
+                'key' => 'bajk_relationships',
+                'number' => 8,
+                'title' => 'Your Existing Relationships with BAJK (Business Account)',
+                'show' => ['account_nature' => 'business'],
+                'fields' => [
+                    ['name' => 'bajk_relationships', 'type' => 'repeater', 'label' => 'Existing relationships with BAJK', 'rows' => 3, 'columns' => [
+                        ['name' => 'branch_name', 'label' => 'Branch Name'],
+                        ['name' => 'branch_code', 'label' => 'Branch Code', 'max' => 20],
+                        ['name' => 'account_no', 'label' => 'Account/Loan/Card No.', 'max' => 40],
+                        ['name' => 'account_title', 'label' => 'Account/Loan/Card Title'],
+                    ]],
+                ],
+            ],
+            [
+                'key' => 'other_banks',
+                'number' => 9,
+                'title' => 'Your Relationship with Other Banks',
+                'fields' => [
+                    ['name' => 'other_banks', 'type' => 'repeater', 'label' => 'Other banks (up to 2)', 'rows' => 2, 'columns' => [
+                        ['name' => 'bank_name', 'label' => 'Bank Name'],
+                        ['name' => 'deposit', 'label' => 'Deposit', 'type' => 'checkbox'],
+                        ['name' => 'credit_cards', 'label' => 'Credit Cards', 'type' => 'checkbox'],
+                        ['name' => 'loans', 'label' => 'Loans', 'type' => 'checkbox'],
+                        ['name' => 'other', 'label' => 'Other (specify)'],
+                    ]],
+                ],
+            ],
+            [
                 'key' => 'personal',
                 'number' => 5,
                 'title' => 'Personal Information',
@@ -68,6 +122,34 @@ final class PaperFormSchema
                 'fields' => [
                     ['name' => 'supplementary_card', 'type' => 'radio', 'label' => 'Supplementary Card Required (fill the prescribed form)',
                         'options' => self::YES_NO],
+                ],
+            ],
+            [
+                'key' => 'products',
+                'number' => 12,
+                'title' => 'Other BAJK Products of Interest',
+                'fields' => [
+                    ['name' => 'other_products', 'type' => 'checks', 'label' => 'Products of interest', 'other' => 'other', 'options' => [
+                        'credit_cards' => 'Credit Cards', 'personal_loan' => 'Personal Loan', 'car_financing' => 'Car Financing',
+                        'mortgage' => 'Mortgage', 'other' => 'Other (specify)',
+                    ]],
+                ],
+            ],
+            [
+                'key' => 'introducer',
+                'number' => 15,
+                'title' => 'Introducer',
+                'fields' => [
+                    ['name' => 'introducer_name', 'type' => 'text', 'label' => 'Name', 'required' => true],
+                    ['name' => 'introducer_cnic', 'type' => 'text', 'label' => 'CNIC No.', 'max' => 20],
+                    ['name' => 'introducer_telephone', 'type' => 'text', 'label' => 'Telephone No.', 'max' => 30],
+                    ['name' => 'introducer_address', 'type' => 'textarea', 'label' => 'Address', 'max' => 500],
+                    ['name' => 'introducer_bank_branch', 'type' => 'text', 'label' => 'Bank/Branch', 'required' => true],
+                    ['name' => 'introducer_account_no', 'type' => 'text', 'label' => 'Account No.', 'required' => true, 'max' => 40],
+                    ['name' => 'introducer_signed', 'type' => 'checkbox', 'label' => 'Introducer signature taken on the form'],
+                    ['name' => 'introducer_known_years', 'type' => 'number', 'label' => 'How long has the introducer known the applicant: Years', 'integer' => true, 'max' => 99],
+                    ['name' => 'introducer_known_months', 'type' => 'number', 'label' => 'How long has the introducer known the applicant: Months', 'integer' => true, 'max' => 11],
+                    ['name' => 'introducer_verified_by', 'type' => 'text', 'label' => 'Verified By'],
                 ],
             ],
             [
@@ -147,7 +229,9 @@ final class PaperFormSchema
                     $rules[$name] = ['nullable', 'array', 'max:'.$field['rows']];
 
                     foreach ($field['columns'] as $column) {
-                        $rules[$name.'.*.'.$column['name']] = ['nullable', 'string', 'max:'.($column['max'] ?? 150)];
+                        $rules[$name.'.*.'.$column['name']] = ($column['type'] ?? 'text') === 'checkbox'
+                            ? ['nullable', 'boolean']
+                            : ['nullable', 'string', 'max:'.($column['max'] ?? 150)];
                     }
 
                     continue;
@@ -181,7 +265,7 @@ final class PaperFormSchema
             'secret' => ['nullable', 'string', 'min:'.($field['min'] ?? 6), 'max:'.$max],
             'textarea' => ['nullable', 'string', 'max:'.($field['max'] ?? 2000)],
             'date' => ['nullable', 'date'],
-            'number' => ['nullable', 'numeric', 'min:0'],
+            'number' => ['nullable', ($field['integer'] ?? false) ? 'integer' : 'numeric', 'min:0', ...(isset($field['max']) ? ['max:'.$field['max']] : [])],
             'select', 'radio' => ['nullable', Rule::in(array_keys($field['options']))],
             'checkbox' => ['nullable', 'boolean'],
             'checks' => ['nullable', 'array'],
@@ -206,10 +290,10 @@ final class PaperFormSchema
                 if ($field['type'] === 'repeater') {
                     $clean[$name] = array_values(array_filter(
                         array_map(
-                            fn ($row): array => array_map(fn ($cell) => self::blankToNull($cell), array_intersect_key((array) $row, array_flip(array_column($field['columns'], 'name')))),
+                            fn ($row): array => self::cleanRow((array) $row, $field['columns']),
                             array_slice((array) ($input[$name] ?? []), 0, $field['rows']),
                         ),
-                        fn (array $row): bool => array_filter($row, fn ($cell) => $cell !== null) !== [],
+                        fn (array $row): bool => array_filter($row, fn ($cell) => $cell !== null && $cell !== false) !== [],
                     ));
 
                     continue;
@@ -218,7 +302,7 @@ final class PaperFormSchema
                 $clean[$name] = match ($field['type']) {
                     'checkbox' => filter_var($input[$name] ?? false, FILTER_VALIDATE_BOOLEAN),
                     'checks' => array_values(array_intersect(array_keys($field['options']), (array) ($input[$name] ?? []))),
-                    'number' => self::blankToNull($input[$name] ?? null) === null ? null : (float) $input[$name],
+                    'number' => self::blankToNull($input[$name] ?? null) === null ? null : (($field['integer'] ?? false) ? (int) $input[$name] : (float) $input[$name]),
                     default => self::blankToNull($input[$name] ?? null),
                 };
 
@@ -283,6 +367,27 @@ final class PaperFormSchema
         $name = $values['title_of_account'] ?? null;
 
         return is_string($name) && trim($name) !== '' ? trim($name) : null;
+    }
+
+    /**
+     * One row of a repeater: only its own columns, blank cells as null, ticks as booleans.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  list<array<string, mixed>>  $columns
+     * @return array<string, mixed>
+     */
+    private static function cleanRow(array $row, array $columns): array
+    {
+        $clean = [];
+
+        foreach ($columns as $column) {
+            $value = $row[$column['name']] ?? null;
+            $clean[$column['name']] = ($column['type'] ?? 'text') === 'checkbox'
+                ? filter_var($value, FILTER_VALIDATE_BOOLEAN)
+                : self::blankToNull($value);
+        }
+
+        return $clean;
     }
 
     private static function blankToNull(mixed $value): mixed
