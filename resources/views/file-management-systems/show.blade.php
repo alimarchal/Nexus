@@ -27,7 +27,10 @@
     $eventStyles = [
         'created' => 'ak-status-blue', 'updated' => 'ak-status-slate', 'transferred' => 'ak-status-amber',
         'archived' => 'ak-status-slate', 'page_uploaded' => 'ak-status-green', 'page_removed' => 'ak-status-red',
+        'submitted' => 'ak-status-blue', 'approved' => 'ak-status-green', 'rejected' => 'ak-status-red', 'unlocked' => 'ak-status-amber',
+        'viewed' => 'ak-status-slate', 'page_viewed' => 'ak-status-slate',
     ];
+    $canEditNow = $file->isEditable();
 @endphp
 
 <x-app-layout>
@@ -49,11 +52,15 @@
             <div class="ak-head-actions">
                 <a href="{{ $listUrl }}" class="ak-btn ak-btn-outline" title="Back to the file list"><span aria-hidden="true">←</span> Back</a>
                 @can('delete file management systems')
+                    @if ($canEditNow)
                     <button type="button" x-data class="ak-btn ak-btn-danger-outline"
                         x-on:click="$dispatch('open-delete-fms-modal', { url: '{{ route('file-management-systems.destroy', $file) }}' })">Delete</button>
+                    @endif
                 @endcan
                 @can('edit file management systems')
-                    <a href="{{ route('file-management-systems.edit', $file) }}" class="ak-btn ak-btn-outline">Edit</a>
+                    @if ($canEditNow)
+                        <a href="{{ route('file-management-systems.edit', $file) }}" class="ak-btn ak-btn-outline">Edit</a>
+                    @endif
                 @endcan
                 @can('transfer file management systems')
                     @unless ($file->is_archived)
@@ -135,6 +142,8 @@
                 </div>
             @endif
 
+            @include('file-management-systems._workflow')
+
             {{-- Snapshot --}}
             <div class="fm-card">
                 <div class="fm-card-head">
@@ -213,7 +222,9 @@
                 <div class="fm-card-head">
                     <h2 id="fm-pages">Scanned pages ({{ $file->media->count() }})</h2>
                     @can('edit file management systems')
-                        <a href="{{ route('file-management-systems.edit', $file) }}" class="ak-btn ak-btn-outline">Add or remove pages</a>
+                        @if ($canEditNow)
+                            <a href="{{ route('file-management-systems.edit', $file) }}" class="ak-btn ak-btn-outline">Add or remove pages</a>
+                        @endif
                     @endcan
                 </div>
                 <div class="fm-card-body">
@@ -225,7 +236,7 @@
                                     $isImage = str_starts_with((string) $page->mime_type, 'image/');
                                     $ext = strtoupper(pathinfo($name, PATHINFO_EXTENSION) ?: 'FILE');
                                 @endphp
-                                <a href="{{ $page->getUrl() }}" target="_blank" rel="noopener" class="fm-page" title="Open {{ $name }}">
+                                <a href="{{ route('file-management-systems.pages.show', [$file, $page->id]) }}" target="_blank" rel="noopener" class="fm-page" title="Open {{ $name }} (the opening is recorded in the history)">
                                     <span class="fm-thumb">
                                         <span class="fm-no">Page {{ $loop->iteration }}</span>
                                         <span class="fm-type">{{ $ext }}</span>
@@ -324,6 +335,14 @@
                                             {{ data_get($activity->properties, 'original_filename', $activity->description) }}
                                         @elseif ($activity->event === 'archived')
                                             Archived to {{ data_get($activity->properties, 'box_number') }}, position {{ data_get($activity->properties, 'position_in_box') }}
+                                        @elseif (in_array($activity->event, ['page_viewed'], true))
+                                            Opened {{ data_get($activity->properties, 'original_filename') }}
+                                        @elseif ($activity->event === 'updated' && data_get($activity->properties, 'attributes'))
+                                            @foreach (data_get($activity->properties, 'attributes', []) as $field => $new)
+                                                <div><b>{{ \Illuminate\Support\Str::headline($field) }}:</b>
+                                                    <span class="text-red-800">{{ is_scalar(data_get($activity->properties, 'old.'.$field)) ? data_get($activity->properties, 'old.'.$field) : '—' }}</span>
+                                                    &rarr; <span class="text-green-800">{{ is_scalar($new) ? $new : '—' }}</span></div>
+                                            @endforeach
                                         @else
                                             {{ $activity->description }}
                                         @endif

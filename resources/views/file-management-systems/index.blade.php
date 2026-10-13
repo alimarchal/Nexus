@@ -32,9 +32,11 @@
     $chipLabels = [
         'search' => 'Search', 'file_category_id' => 'Category', 'branch_id' => 'Branch', 'region_id' => 'Region',
         'division_id' => 'Division', 'document_date_from' => 'Dated from', 'document_date_to' => 'Dated to',
-        'box_number' => 'Box', 'digital_id' => 'Digital ID', 'file_no' => 'File no', 'title' => 'Title',
+        'box_number' => 'Box', 'digital_id' => 'Digital ID', 'file_no' => 'File no', 'title' => 'Title', 'approval' => 'Approval',
     ];
+    $approvalNames = ['draft' => 'Draft', 'submitted' => 'Submitted', 'approved' => 'Approved', 'rejected' => 'Rejected'];
     $chipValue = fn ($key, $value) => match ($key) {
+        'approval' => $approvalNames[$value] ?? $value,
         'file_category_id' => $categoryNames[$value] ?? $value,
         'branch_id' => $branchNames[$value] ?? $value,
         'region_id' => $regionNames[$value] ?? $value,
@@ -214,6 +216,15 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="ak-field">
+                        <label for="f_approval">Approval</label>
+                        <select id="f_approval" name="filter[approval]">
+                            <option value="">All</option>
+                            @foreach ($approvalNames as $value => $label)
+                                <option value="{{ $value }}" @selected(($filters['approval'] ?? '') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="ak-filter-buttons">
                         <button type="button" class="ak-btn ak-btn-ghost" @click="advanced = !advanced" :aria-expanded="advanced" aria-controls="fm-advanced">
                             More filters @if ($advancedCount)<span class="ak-count ak-count-dark">{{ $advancedCount }}</span>@endif
@@ -370,6 +381,9 @@
                                                 <div class="ak-muted ak-hide-compact">{{ $file->box?->box_number }}{{ $file->position_in_box ? ' · pos '.$file->position_in_box : '' }}</div>
                                             @else
                                                 <span class="ak-status ak-status-blue"><i aria-hidden="true"></i>In circulation</span>
+                                            @endif
+                                            @if (config('file_management.maker_checker.enabled', true))
+                                                <div data-approval="{{ $file->status }}"><span class="ak-status {{ ['draft' => 'ak-status-slate', 'submitted' => 'ak-status-blue', 'approved' => 'ak-status-green', 'rejected' => 'ak-status-red'][$file->status] ?? 'ak-status-slate' }}"><i aria-hidden="true"></i>{{ $approvalNames[$file->status] ?? $file->status }}{{ $file->isLocked() ? ' · locked' : '' }}</span></div>
                                             @endif
                                         </td>
                                         <td class="ak-sticky-end print:hidden" data-label="">
