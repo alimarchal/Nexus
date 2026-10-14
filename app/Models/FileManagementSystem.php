@@ -193,6 +193,19 @@ class FileManagementSystem extends Model implements HasMedia
     }
 
     /**
+     * Whether the user may create archive boxes: they hold the permission and either belong to an office or, as a
+     * super admin, may pick the office the box belongs to.
+     */
+    public static function canCreateBoxes(User $user): bool
+    {
+        if (! $user->can('create boxes')) {
+            return false;
+        }
+
+        return self::officeUnitOf($user) !== null || $user->is_super_admin === 'Yes' || $user->hasRole('super-admin');
+    }
+
+    /**
      * "What am I looking at" label for list and dashboard headers.
      */
     public static function officeLabelFor(User $user): string

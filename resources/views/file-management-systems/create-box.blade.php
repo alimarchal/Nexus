@@ -40,6 +40,7 @@
                     </div>
                 @endif
 
+                @if ($userOrgUnit)
                 <!-- Organization Unit Info -->
                 <div class="mb-6 rounded-lg bg-blue-50 p-4 dark:bg-blue-900">
                     <p class="text-sm font-semibold text-blue-900 dark:text-blue-100">
@@ -59,9 +60,32 @@
                         All files archived to this box will be associated with your organization unit.
                     </p>
                 </div>
+                @else
+                    <div class="mb-6 rounded-lg bg-blue-50 p-4 dark:bg-blue-900" data-office-choice>
+                        <label for="office" class="block text-sm font-semibold text-blue-900 dark:text-blue-100">
+                            Office this box belongs to <span class="text-red-600">*</span>
+                        </label>
+                        <p class="mb-2 text-sm text-blue-800 dark:text-blue-200">
+                            You are not posted to an office, so choose the branch, region, division or head office that will hold this box.
+                        </p>
+                        <select id="office" name="office" form="box-form" required class="block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="">Select office</option>
+                            @foreach ($officeOptions as $group => $options)
+                                @if ($options !== [])
+                                    <optgroup label="{{ $group }}">
+                                        @foreach ($options as $value => $label)
+                                            <option value="{{ $value }}" @selected(old('office') === $value)>{{ $label }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                            @endforeach
+                        </select>
+                        @error('office') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                @endif
 
                 <!-- Box Creation Form -->
-                <form method="POST" action="{{ route('file-management-systems.boxes.store') }}" class="space-y-6">
+                <form id="box-form" method="POST" action="{{ route('file-management-systems.boxes.store') }}" class="space-y-6">
                     @csrf
 
                     <div>

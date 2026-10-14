@@ -3,7 +3,7 @@
         <h2 class="inline-block text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
             Archive Boxes Inventory
         </h2>
-        @php $canCreateBox = auth()->user()->can('create boxes') && \App\Models\FileManagementSystem::officeUnitOf(auth()->user()); @endphp
+        @php $canCreateBox = \App\Models\FileManagementSystem::canCreateBoxes(auth()->user()); @endphp
         <div class="float-right flex items-center justify-center">
             @if ($canCreateBox)
                 <a href="{{ route('file-management-systems.boxes.create') }}"
@@ -11,7 +11,7 @@
                     New Box
                 </a>
             @elseif (auth()->user()->can('create boxes'))
-                <p class="max-w-xs text-right text-xs text-gray-600 dark:text-gray-400">Boxes belong to an office. Sign in as a user assigned to a branch, region, division or head office to create one.</p>
+                <p class="max-w-xs text-right text-xs text-gray-600 dark:text-gray-400">Boxes belong to an office. You are not posted to a branch, region, division or head office, so you cannot create one. Ask an administrator to assign your office.</p>
             @endif
         </div>
     </x-slot>

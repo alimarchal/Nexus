@@ -23,6 +23,7 @@ use App\Services\FileManagementSystemPathGenerator;
 use App\Services\FileManagementWorkflow;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -823,7 +824,25 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         $userOrgUnit = $this->getUserOrgUnit();
 
-        return view('file-management-systems.create-box', compact('userOrgUnit'));
+        return view('file-management-systems.create-box', [
+            'userOrgUnit' => $userOrgUnit,
+            'officeOptions' => $userOrgUnit === null ? $this->boxOfficeOptions() : [],
+        ]);
+    }
+
+    /**
+     * The offices a super admin can create a box for, as "type:id" => label, grouped by office type.
+     *
+     * @return array<string, array<string, string>>
+     */
+    private function boxOfficeOptions(): array
+    {
+        return [
+            'Head office' => HeadOffice::orderBy('name')->get()->mapWithKeys(fn ($o) => ['head-office:'.$o->id => $o->name])->all(),
+            'Division' => Division::orderBy('name')->get()->mapWithKeys(fn ($o) => ['division:'.$o->id => $o->name])->all(),
+            'Region' => Region::orderBy('name')->get()->mapWithKeys(fn ($o) => ['region:'.$o->id => $o->name])->all(),
+            'Branch' => Branch::orderBy('code')->get()->mapWithKeys(fn ($o) => ['branch:'.$o->id => trim($o->code.' - '.$o->name)])->all(),
+        ];
     }
 
     /**
@@ -832,7 +851,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     public function storeBox(StoreBoxRequest $request)
     {
         $validated = $request->validated();
-        $userOrgUnit = $this->getUserOrgUnit();
+        $userOrgUnit = $this->getUserOrgUnit() ?? $this->chosenBoxOffice((string) ($validated['office'] ?? ''));
 
         $box = DB::transaction(function () use ($validated, $userOrgUnit) {
             $box = Box::create([
@@ -881,7 +900,28 @@ class FileManagementSystemController extends Controller implements HasMiddleware
      *
      * @return array{type: string, id: int}
      */
-    private function getUserOrgUnit(): array
+    /**
+     * The office a super admin picked for a new box ("type:id").
+     *
+     * @return array{type: string, id: int}
+     */
+    private function chosenBoxOffice(string $office): array
+    {
+        [$type, $id] = array_pad(explode(':', $office, 2), 2, null);
+        $model = $type ? Relation::getMorphedModel($type) : null;
+
+        abort_unless($model && $id !== null && $model::whereKey($id)->exists(), 422, 'Choose the office this box belongs to.');
+
+        return ['type' => $type, 'id' => (int) $id];
+    }
+
+    /**
+     * The office of the signed-in user, or null for a user with no office posting (a super admin).
+     * Anyone else without an office cannot create boxes.
+     *
+     * @return array{type: string, id: int}|null
+     */
+    private function getUserOrgUnit(): ?array
     {
         $user = auth()->user();
 
@@ -901,7 +941,11 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             return ['type' => (new HeadOffice)->getMorphClass(), 'id' => $user->head_office_id];
         }
 
-        abort(403, 'User does not belong to any organization unit');
+        if ($this->isSuperAdmin()) {
+            return null;
+        }
+
+        abort(403, 'You are not posted to a branch, region, division or head office, so you cannot create archive boxes. Ask an administrator to assign your office.');
     }
 
     /**

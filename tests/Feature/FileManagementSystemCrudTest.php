@@ -436,8 +436,9 @@ test('archive and new box links show only for the office that holds the file', f
         ->assertOk()->assertSee(route('file-management-systems.archive-form', $document), false);
     $this->actingAs($this->admin)->get(route('file-management-systems.show', $document))
         ->assertOk()->assertDontSee(route('file-management-systems.archive-form', $document), false);
+    // A super admin has no office but may pick one, so the New Box button is offered (see FileManagementBoxTest).
     $this->actingAs($this->admin)->get(route('file-management-systems.boxes'))
-        ->assertOk()->assertDontSee(route('file-management-systems.boxes.create'), false);
+        ->assertOk()->assertSee(route('file-management-systems.boxes.create'), false);
 });
 
 test('file list searches, filters by status tab and counts the tabs', function () {
@@ -762,8 +763,14 @@ test('file list hides the new box button from users who cannot create boxes', fu
         ->assertDontSee(route('file-management-systems.boxes.create'), false);
 });
 
-test('boxes page tells an unassigned administrator why they cannot create a box', function () {
-    $this->actingAs($this->admin)
+test('boxes page tells an office-less user why they cannot create a box', function () {
+    // A super admin may pick the office (see FileManagementBoxTest); anyone else without an office is told why not.
+    Permission::firstOrCreate(['name' => 'create boxes']);
+    Permission::firstOrCreate(['name' => 'manage boxes']);
+    $officeLess = User::factory()->create();
+    $officeLess->givePermissionTo(['view file management systems', 'create boxes', 'manage boxes']);
+
+    $this->actingAs($officeLess)
         ->get(route('file-management-systems.boxes'))
         ->assertSuccessful()
         ->assertSee('Boxes belong to an office')
