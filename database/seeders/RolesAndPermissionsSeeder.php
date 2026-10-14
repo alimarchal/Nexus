@@ -65,6 +65,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // AKSIC Management
             'view aksics',
+            'view aksic applications',
             'create aksics',
             'edit aksics',
             'delete aksics',
@@ -73,6 +74,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'edit aksic rules',
             'delete aksic rules',
             'approve aksics',
+            'sync aksic applications',
+            'update aksic application status',
             'import aksics',
 
             // Branch Management
@@ -191,6 +194,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'assign complaints',
                 'view audits',
                 'view aksics',
+                'view aksic applications',
                 'view aksic rules',
                 'view branches',
                 'view dashboard',
@@ -227,6 +231,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'create audits',
                 'edit audits',
                 'view aksics',
+                'view aksic applications',
                 'create aksics',
                 'edit aksics',
                 'view aksic rules',
@@ -279,6 +284,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'conduct audits',
                 'review audits',
                 'view aksics',
+                'view aksic applications',
                 'create aksics',
                 'edit aksics',
                 'delete aksics',
@@ -287,6 +293,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'edit aksic rules',
                 'delete aksic rules',
                 'approve aksics',
+                'sync aksic applications',
+                'update aksic application status',
                 'import aksics',
                 'view branches',
                 'edit branches',
@@ -330,6 +338,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'view complaints',
             'view audits',
             'view aksics',
+            'view aksic applications',
             'view aksic rules',
             'view branches',
             'view dashboard',

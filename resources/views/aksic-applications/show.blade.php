@@ -420,7 +420,7 @@
 
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <!-- Status Update Form -->
-                            <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="bg-gray-50 p-4 rounded-lg" @cannot('update aksic application status') style="display:none" @endcannot>
                                 <h4 class="font-medium text-gray-900 mb-4">Update Status</h4>
                                 <form id="statusUpdateForm">
                                     @csrf
