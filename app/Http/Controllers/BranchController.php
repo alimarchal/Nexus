@@ -92,7 +92,8 @@ class BranchController extends Controller implements HasMiddleware
      */
     public function show(Branch $branch)
     {
-        // Return the view to show the branch details
+        $branch->load(['region', 'district', 'users.roles']);
+
         return view('branches.show', compact('branch'));
     }
 
