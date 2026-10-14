@@ -26,7 +26,7 @@ class AuditController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('role_or_permission:view audits', only: ['index', 'show']),
+            new Middleware('role_or_permission:view audits', only: ['index', 'show', 'fullData']),
             new Middleware('role_or_permission:create audits', only: ['create', 'store']),
             new Middleware('role_or_permission:edit audits', only: ['edit', 'update']),
             new Middleware('role_or_permission:delete audits', only: ['destroy']),
