@@ -49,11 +49,6 @@ final class PermissionCatalog
             'hint' => 'Complaint handling, assignment and escalation.',
             'subjects' => ['complaints'],
         ],
-        'audits' => [
-            'label' => 'Audits',
-            'hint' => 'Audit planning, conduct and review.',
-            'subjects' => ['audits'],
-        ],
         'organisation' => [
             'label' => 'Organisation',
             'hint' => 'Branches, regions, divisions and categories.',

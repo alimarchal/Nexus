@@ -23,7 +23,6 @@ it('places each permission in the module its subject belongs to', function (stri
     ['create boxes', 'file-management'],
     ['edit file categories', 'file-management'],
     ['assign complaints', 'complaints'],
-    ['conduct audits', 'audits'],
     ['edit branches', 'organisation'],
     ['create categories', 'organisation'],
     ['view dashboard', 'general'],

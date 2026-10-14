@@ -2,6 +2,15 @@
 
 All notable changes to Nexus. Issue and pull request numbers refer to https://github.com/alimarchal/Nexus.
 
+## [2.1.0] - 2026-10-14
+
+### Removed (breaking)
+- The **Audits**, **Circulars**, **Stationery** (printed stationeries and stationery transactions), **Dispatch Register** and **Daily Positions** features (#151): models, controllers, requests, policies, factories, seeders, views, routes, dashboard / product / report cards, the stationery and daily-position reports, the audit permissions (`view / create / edit / delete / conduct / review audits`) and the Audits module in the permission pickers. Their original create-table migrations were deleted too.
+- **`php artisan migrate` now drops their tables** (the 18 `audit_*` tables, `circulars`, `printed_stationeries`, `stationery_transactions`, `dispatch_registers`, `daily_positions`) and deletes their permissions, activity-log rows and media rows. **This deletes the data in them: take a backup first.** The deposit / advances and accounts reports are unchanged.
+
+### Changed
+- The Complaint activity log now says "Complaint has been ..." instead of "Circular has been ...".
+
 ## [2.0.0] - 2026-10-14
 
 A major release: the old BAJK paper Account Opening Form, maker-checker for File Management, AKSIC access control and a round of security and bug fixes. It rolls up 1.3.0, 1.4.0 and 1.5.0 below.

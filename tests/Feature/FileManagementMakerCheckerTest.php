@@ -28,7 +28,7 @@ beforeEach(function () {
 /**
  * Act as another user with a clean session: the session password hash of the previous user would log this one out.
  */
-function actAs(mixed $test, User $user): mixed
+function actAsFmsUser(mixed $test, User $user): mixed
 {
     $test->flushSession();
     app('auth')->forgetGuards();
@@ -56,7 +56,7 @@ function activityEvents(FileManagementSystem $file): array
 }
 
 test('new files start as drafts and the office roles hold the maker-checker permissions', function () {
-    actAs($this, $this->maker)->post(route('file-management-systems.store'), [
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.store'), [
         'file_category_id' => FileCategory::factory()->create()->id,
         'document_date' => now()->toDateString(), 'title' => 'New file', 'fileable_type' => 'branch', 'fileable_id' => $this->branch->id,
         'pages' => [UploadedFile::fake()->create('a.pdf', 20, 'application/pdf')],
@@ -72,11 +72,11 @@ test('new files start as drafts and the office roles hold the maker-checker perm
 test('the maker submits, a different user in the same branch approves, and the file is locked', function () {
     $file = makerFile($this);
 
-    actAs($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('success');
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('success');
     expect($file->fresh())->status->toBe('submitted')->submitted_by->toBe($this->maker->id);
 
-    actAs($this, $this->checker)->get(route('file-management-systems.show', $file))->assertSuccessful()->assertSee('Approve');
-    actAs($this, $this->checker)->post(route('file-management-systems.approve', $file))->assertSessionHas('success');
+    actAsFmsUser($this, $this->checker)->get(route('file-management-systems.show', $file))->assertSuccessful()->assertSee('Approve');
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.approve', $file))->assertSessionHas('success');
 
     $file = $file->fresh();
     expect($file->status)->toBe('approved')->and($file->approved_by)->toBe($this->checker->id)->and($file->isLocked())->toBeTrue();
@@ -87,9 +87,9 @@ test('the maker cannot approve or reject their own file', function () {
     $file = makerFile($this, 'submitted');
     $file->forceFill(['submitted_by' => $this->maker->id])->save();
 
-    actAs($this, $this->maker)->post(route('file-management-systems.approve', $file))->assertSessionHas('error');
-    actAs($this, $this->maker)->post(route('file-management-systems.reject', $file), ['reason' => 'x'])->assertSessionHas('error');
-    actAs($this, $this->superAdmin)->post(route('file-management-systems.approve', $file))->assertSessionHas('success');
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.approve', $file))->assertSessionHas('error');
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.reject', $file), ['reason' => 'x'])->assertSessionHas('error');
+    actAsFmsUser($this, $this->superAdmin)->post(route('file-management-systems.approve', $file))->assertSessionHas('success');
 
     expect($file->fresh()->status)->toBe('approved');
 });
@@ -98,34 +98,34 @@ test('self approval can be allowed by configuration', function () {
     config(['file_management.maker_checker.allow_self_approval' => true]);
     $file = makerFile($this, 'submitted');
 
-    actAs($this, $this->maker)->post(route('file-management-systems.approve', $file))->assertSessionHas('success');
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.approve', $file))->assertSessionHas('success');
 });
 
 test('a user from another branch cannot see or act on the file', function () {
     $file = makerFile($this, 'submitted');
 
-    actAs($this, $this->outsider)->get(route('file-management-systems.show', $file))->assertNotFound();
-    actAs($this, $this->outsider)->post(route('file-management-systems.approve', $file))->assertNotFound();
+    actAsFmsUser($this, $this->outsider)->get(route('file-management-systems.show', $file))->assertNotFound();
+    actAsFmsUser($this, $this->outsider)->post(route('file-management-systems.approve', $file))->assertNotFound();
 });
 
 test('a rejection needs a reason, returns the file to the maker and it can be fixed and resubmitted', function () {
     $file = makerFile($this, 'submitted');
 
-    actAs($this, $this->checker)->post(route('file-management-systems.reject', $file), ['reason' => ''])->assertSessionHasErrors('reason');
-    actAs($this, $this->checker)->post(route('file-management-systems.reject', $file), ['reason' => 'Page 2 is missing'])->assertSessionHas('success');
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.reject', $file), ['reason' => ''])->assertSessionHasErrors('reason');
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.reject', $file), ['reason' => 'Page 2 is missing'])->assertSessionHas('success');
 
     expect($file->fresh())->status->toBe('rejected')->rejection_reason->toBe('Page 2 is missing');
-    actAs($this, $this->maker)->get(route('file-management-systems.show', $file))->assertSee('Page 2 is missing');
-    actAs($this, $this->maker)->get(route('file-management-systems.edit', $file))->assertSuccessful();
+    actAsFmsUser($this, $this->maker)->get(route('file-management-systems.show', $file))->assertSee('Page 2 is missing');
+    actAsFmsUser($this, $this->maker)->get(route('file-management-systems.edit', $file))->assertSuccessful();
 
-    actAs($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('success');
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('success');
     expect($file->fresh()->status)->toBe('submitted');
 });
 
 test('a file without a scanned page cannot be submitted', function () {
     $file = FileManagementSystem::factory()->create(['fileable_type' => 'branch', 'fileable_id' => $this->branch->id, 'created_by' => $this->maker->id, 'status' => 'draft']);
 
-    actAs($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('error');
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('error');
     expect($file->fresh()->status)->toBe('draft');
 });
 
@@ -138,18 +138,18 @@ test('nobody can edit, add pages to, remove pages from or delete a submitted or 
         $page = $file->media()->first();
 
         foreach ([$this->maker, $this->checker, $this->superAdmin] as $user) {
-            actAs($this, $user)->get(route('file-management-systems.edit', $file))->assertRedirect(route('file-management-systems.show', $file));
-            actAs($this, $user)->put(route('file-management-systems.update', $file), ['title' => 'Changed', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01'])
+            actAsFmsUser($this, $user)->get(route('file-management-systems.edit', $file))->assertRedirect(route('file-management-systems.show', $file));
+            actAsFmsUser($this, $user)->put(route('file-management-systems.update', $file), ['title' => 'Changed', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01'])
                 ->assertRedirect(route('file-management-systems.show', $file));
-            actAs($this, $user)->delete(route('file-management-systems.media.destroy', [$file, $page->id]))->assertRedirect(route('file-management-systems.show', $file));
+            actAsFmsUser($this, $user)->delete(route('file-management-systems.media.destroy', [$file, $page->id]))->assertRedirect(route('file-management-systems.show', $file));
         }
 
-        actAs($this, $this->superAdmin)->delete(route('file-management-systems.destroy', $file))->assertRedirect(route('file-management-systems.show', $file));
+        actAsFmsUser($this, $this->superAdmin)->delete(route('file-management-systems.destroy', $file))->assertRedirect(route('file-management-systems.show', $file));
 
         expect($file->fresh()->title)->toBe('Loan file')->and($file->fresh()->media()->count())->toBe(1)->and(FileManagementSystem::find($file->id))->not->toBeNull();
     }
 
-    actAs($this, $this->maker)->get(route('file-management-systems.show', $file))->assertDontSee('Add or remove pages');
+    actAsFmsUser($this, $this->maker)->get(route('file-management-systems.show', $file))->assertDontSee('Add or remove pages');
 });
 
 test('only a super admin can unlock one approved file, with a reason, and it needs approval again', function () {
@@ -158,21 +158,21 @@ test('only a super admin can unlock one approved file, with a reason, and it nee
     $other = makerFile($this, 'approved');
     $other->forceFill(['locked_at' => now()])->save();
 
-    actAs($this, $this->checker)->post(route('file-management-systems.unlock', $file), ['reason' => 'Wrong date'])->assertForbidden();
-    actAs($this, $this->superAdmin)->post(route('file-management-systems.unlock', $file), ['reason' => ''])->assertSessionHasErrors('reason');
-    actAs($this, $this->superAdmin)->post(route('file-management-systems.unlock', $file), ['reason' => 'Wrong date on the file'])->assertSessionHas('success');
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.unlock', $file), ['reason' => 'Wrong date'])->assertForbidden();
+    actAsFmsUser($this, $this->superAdmin)->post(route('file-management-systems.unlock', $file), ['reason' => ''])->assertSessionHasErrors('reason');
+    actAsFmsUser($this, $this->superAdmin)->post(route('file-management-systems.unlock', $file), ['reason' => 'Wrong date on the file'])->assertSessionHas('success');
 
     $file = $file->fresh();
     expect($file)->status->toBe('draft')->unlock_reason->toBe('Wrong date on the file')->unlocked_by->toBe($this->superAdmin->id)
         ->and($file->isLocked())->toBeFalse()->and($file->isEditable())->toBeTrue()
         ->and($other->fresh()->isLocked())->toBeTrue();
 
-    actAs($this, $this->maker)->put(route('file-management-systems.update', $file), ['title' => 'Fixed title', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01'])
+    actAsFmsUser($this, $this->maker)->put(route('file-management-systems.update', $file), ['title' => 'Fixed title', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01'])
         ->assertRedirect(route('file-management-systems.index'));
     expect($file->fresh()->title)->toBe('Fixed title');
 
-    actAs($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('success');
-    actAs($this, $this->checker)->post(route('file-management-systems.approve', $file))->assertSessionHas('success');
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('success');
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.approve', $file))->assertSessionHas('success');
     expect($file->fresh()->isLocked())->toBeTrue();
 
     $unlock = Activity::where('event', 'unlocked')->firstOrFail();
@@ -182,11 +182,11 @@ test('only a super admin can unlock one approved file, with a reason, and it nee
 test('the history records who made, submitted, approved, edited, opened and unlocked the file', function () {
     $file = makerFile($this);
 
-    actAs($this, $this->maker)->put(route('file-management-systems.update', $file), ['title' => 'Loan file v2', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01']);
-    actAs($this, $this->maker)->post(route('file-management-systems.submit', $file));
-    actAs($this, $this->checker)->get(route('file-management-systems.show', $file));
-    actAs($this, $this->checker)->post(route('file-management-systems.approve', $file));
-    actAs($this, $this->superAdmin)->post(route('file-management-systems.unlock', $file), ['reason' => 'Audit correction']);
+    actAsFmsUser($this, $this->maker)->put(route('file-management-systems.update', $file), ['title' => 'Loan file v2', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01']);
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $file));
+    actAsFmsUser($this, $this->checker)->get(route('file-management-systems.show', $file));
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.approve', $file));
+    actAsFmsUser($this, $this->superAdmin)->post(route('file-management-systems.unlock', $file), ['reason' => 'Audit correction']);
 
     $events = Activity::where('subject_id', $file->id)->get();
 
@@ -196,19 +196,19 @@ test('the history records who made, submitted, approved, edited, opened and unlo
         ->and($events->firstWhere('event', 'updated')->properties['old']['title'])->toBe('Loan file')
         ->and($events->firstWhere('event', 'updated')->properties['attributes']['title'])->toBe('Loan file v2');
 
-    actAs($this, $this->superAdmin)->get(route('file-management-systems.show', $file))
+    actAsFmsUser($this, $this->superAdmin)->get(route('file-management-systems.show', $file))
         ->assertSee('Loan file v2')->assertSee($this->checker->name)->assertSee('Audit correction')->assertSee('Viewed');
 });
 
 test('workflow changes do not add noise events and reloading does not flood the history with views', function () {
     $file = makerFile($this);
 
-    actAs($this, $this->maker)->post(route('file-management-systems.submit', $file));
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $file));
     expect(activityEvents($file))->not->toContain('updated');
 
-    actAs($this, $this->checker)->get(route('file-management-systems.show', $file));
-    actAs($this, $this->checker)->get(route('file-management-systems.show', $file));
-    actAs($this, $this->maker)->get(route('file-management-systems.show', $file));
+    actAsFmsUser($this, $this->checker)->get(route('file-management-systems.show', $file));
+    actAsFmsUser($this, $this->checker)->get(route('file-management-systems.show', $file));
+    actAsFmsUser($this, $this->maker)->get(route('file-management-systems.show', $file));
 
     expect(array_count_values(activityEvents($file))['viewed'])->toBe(2);
 });
@@ -217,8 +217,8 @@ test('opening a scanned page is recorded with who opened which file', function (
     $file = makerFile($this);
     $page = $file->media()->first();
 
-    actAs($this, $this->checker)->get(route('file-management-systems.pages.show', [$file, $page->id]))->assertSuccessful();
-    actAs($this, $this->outsider)->get(route('file-management-systems.pages.show', [$file, $page->id]))->assertNotFound();
+    actAsFmsUser($this, $this->checker)->get(route('file-management-systems.pages.show', [$file, $page->id]))->assertSuccessful();
+    actAsFmsUser($this, $this->outsider)->get(route('file-management-systems.pages.show', [$file, $page->id]))->assertNotFound();
 
     $log = Activity::where('event', 'page_viewed')->get();
     expect($log)->toHaveCount(1)->and((int) $log->first()->causer_id)->toBe($this->checker->id)->and($log->first()->properties['stored_filename'])->toBe($page->file_name);
@@ -229,8 +229,8 @@ test('the list shows and filters by approval status', function () {
     $approved = makerFile($this, 'approved');
     $approved->forceFill(['locked_at' => now(), 'title' => 'Approved loan file'])->save();
 
-    actAs($this, $this->checker)->get(route('file-management-systems.index'))->assertSee('data-approval="draft"', false)->assertSee('· locked');
-    actAs($this, $this->checker)->get(route('file-management-systems.index', ['filter' => ['approval' => 'approved']]))
+    actAsFmsUser($this, $this->checker)->get(route('file-management-systems.index'))->assertSee('data-approval="draft"', false)->assertSee('· locked');
+    actAsFmsUser($this, $this->checker)->get(route('file-management-systems.index', ['filter' => ['approval' => 'approved']]))
         ->assertSee('Approved loan file')->assertDontSee($draft->digital_id);
 });
 
@@ -240,9 +240,9 @@ test('with maker-checker switched off files need no approval and stay editable',
     $file->forceFill(['locked_at' => now()])->save();
 
     expect($file->fresh()->isEditable())->toBeTrue();
-    actAs($this, $this->maker)->get(route('file-management-systems.edit', $file))->assertSuccessful();
-    actAs($this, $this->maker)->get(route('file-management-systems.show', $file))->assertDontSee('Approval (maker-checker)');
-    actAs($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('error');
+    actAsFmsUser($this, $this->maker)->get(route('file-management-systems.edit', $file))->assertSuccessful();
+    actAsFmsUser($this, $this->maker)->get(route('file-management-systems.show', $file))->assertDontSee('Approval (maker-checker)');
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $file))->assertSessionHas('error');
 });
 
 test('records that existed before maker-checker stay approved and editable', function () {
@@ -257,6 +257,6 @@ test('the permissions can be taken away from a user to remove the buttons', func
     $this->checker->roles->each->revokePermissionTo('approve file management systems');
     app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-    actAs($this, $this->checker)->post(route('file-management-systems.approve', $file))->assertForbidden();
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.approve', $file))->assertForbidden();
     expect(Permission::where('name', 'approve file management systems')->exists())->toBeTrue();
 });

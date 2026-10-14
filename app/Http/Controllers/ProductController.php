@@ -19,9 +19,4 @@ class ProductController extends Controller
                 : 0,
         ]);
     }
-
-    public function branchSetting(): View
-    {
-        return view('product.daily-positions');
-    }
 }

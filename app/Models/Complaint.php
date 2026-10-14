@@ -285,6 +285,6 @@ class Complaint extends Model
             ->logAll()
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs()
-            ->setDescriptionForEvent(fn(string $eventName) => "Circular has been {$eventName}");
+            ->setDescriptionForEvent(fn(string $eventName) => "Complaint has been {$eventName}");
     }
 }

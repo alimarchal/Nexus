@@ -132,17 +132,6 @@
 
                 <!-- Add more cards for other resources as needed
 
-                <a href="{{ route('circulars.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Circular::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Circulars</div>
-
-                        </div>
-                        <img src="{{ url('icons-images/circular.png') }}" alt="Account" class="h-16 w-16">
-                    </div>
-                </a>
 
 
                 <a href="{{ route('complaints.index') }}"
@@ -187,16 +176,6 @@
 
                
 
-                <a href="{{ route('audits.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">{{ \App\Models\Audit::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Audits</div>
-                        </div>
-                        <img src="{{ url('icons-images/audits.png') }}" alt="Audit" class="h-16 w-16">
-                    </div>
-                </a>
                  
 
                 <a href={{ route('employee_resources.index') }}
@@ -212,53 +191,8 @@
 
 
 
-                <a href="{{ route('printed-stationeries.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">{{ \App\Models\PrintedStationery::count() }}
-                            </div>
-                            <div class="mt-1 text-base font-extrabold text-black">Printed Stationeries</div>
-
-                        </div>
-                        <img src="{{ url('icons-images/stationary.png') }}" alt="Account" class="h-16 w-16">
-                    </div>
-                </a>
 
 
-                <a href="{{ route('stationery-transactions.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">
-                                &nbsp;{{ \App\Models\StationeryTransaction::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Stationery Transactions</div>
-
-                        </div>
-                        <img src="{{ url('icons-images/stat-report.png') }}" alt="Account" class="h-16 w-16">
-                    </div>
-                </a>
-                <a href="{{ route('dispatch-registers.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">
-                                &nbsp;{{ \App\Models\DispatchRegister::count() }}</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Dispatch Record</div>
-                        </div>
-                        <img src="{{ url('icons-images/dispatch.png') }}" alt="Account" class="h-16 w-16">
-                    </div>
-                </a>
-                <a href="{{ route('daily-positions.index') }}"
-                    class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
-                    <div class="p-5 flex justify-between">
-                        <div>
-                            <div class="text-3xl font-bold leading-8">Branch</div>
-                            <div class="mt-1 text-base font-extrabold text-black">Daily Position</div>
-                        </div>
-                        <img src="{{ url('icons-images/report.png') }}" alt="Account" class="h-16 w-16">
-                    </div>
-                </a>
 
 -->
 
