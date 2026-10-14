@@ -2,6 +2,21 @@
 
 All notable changes to Nexus. Issue and pull request numbers refer to https://github.com/alimarchal/Nexus.
 
+## [2.0.0] - 2026-10-14
+
+A major release: the old BAJK paper Account Opening Form, maker-checker for File Management, AKSIC access control and a round of security and bug fixes. It rolls up 1.3.0, 1.4.0 and 1.5.0 below.
+
+### Highlights
+- **Old account opening form**: "+ Old account opening" button, the full 19-section BAJK paper form with view, print and maker-checker (#115-#121).
+- **File management maker-checker** with approval lock, per-record super-admin unlock and a full access trail.
+- **ORU record categories** (20 official categories with descriptions) replace the old file categories (#122).
+- **AKSIC**: configurable API address, separate view / sync / status permissions, 422 validation (#135-#140).
+- **Security**: audit and complaint data endpoints now need their view permissions (#142).
+- **Create Box** works for the super admin; branch details page; Account Opening option lists load on every `migrate`.
+
+### Upgrading
+Run `php artisan migrate --force`, then `php artisan config:clear`. Fill `resources/paper-form/terms.txt` and `indemnity.txt` with the bank's official text, and confirm `AKSIC_API_URL` with the AKSIC team.
+
 ## [1.5.0] - 2026-10-14
 
 ### Added
