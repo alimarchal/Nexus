@@ -80,6 +80,7 @@ Every option below is optional; the value shown is what you get when the line is
 
 | Variable | Default | What it does |
 |---|---|---|
+| `AKSIC_API_URL` | `https://pmylp.admin.gok.pk/api/bank` | Base address of the government AKSIC API (sync and status updates). Change it here when the API moves; confirm the current address with the AKSIC team. |
 | `AKSIC_API_TOKEN` | empty | Token for the AKSIC applications sync. Keep it only in your private `.env`. |
 | `AKSIC_EXCEL_IMPORT` | `false` | Shows the Excel template and "Import from Excel". |
 | `AKSIC_EXCEL_EXPORT` | `false` | Shows "Export to Excel (CSV)" in the Export / Print menu. |

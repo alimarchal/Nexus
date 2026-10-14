@@ -133,6 +133,8 @@ return [
     |
     */
 
+    'aksic_api_url' => env('AKSIC_API_URL', 'https://pmylp.admin.gok.pk/api/bank'),
+
     'aksic_api_token' => env('AKSIC_API_TOKEN'),
 
     /*

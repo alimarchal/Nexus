@@ -8,11 +8,14 @@ use App\Http\Requests\UpdateAksicApplicationRequest;
 use App\Models\AksicApplication;
 use App\Models\AksicApplicationEducation;
 use App\Models\AksicApplicationStatusLog;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
@@ -21,7 +24,7 @@ class AksicApplicationController extends Controller
     /**
      * Display a listing of AKSIC applications with filtering capabilities
      *
-     * @return \Illuminate\View\View
+     * @return View
      */
     public function index(Request $request)
     {
@@ -61,6 +64,14 @@ class AksicApplicationController extends Controller
     /**
      * Update single application status back to the API
      */
+    /**
+     * A URL on the AKSIC government API. The base address comes from AKSIC_API_URL so a move needs no deployment.
+     */
+    private function aksicApiUrl(string $path): string
+    {
+        return rtrim((string) config('app.aksic_api_url'), '/').$path;
+    }
+
     private function updateSingleApplicationStatus($applicationId)
     {
         try {
@@ -72,7 +83,7 @@ class AksicApplicationController extends Controller
                     'verify' => false, // Disable SSL verification
                     'timeout' => 30,
                 ])
-                ->post('https://sic.ajk.gov.pk/pmylp/api/bank/applications/status-update', [
+                ->post($this->aksicApiUrl('/applications/status-update'), [
                     'applications' => [
                         [
                             'id' => $applicationId,
@@ -132,7 +143,7 @@ class AksicApplicationController extends Controller
                     'verify' => false, // Disable SSL verification
                     'timeout' => 30,
                 ])
-                ->post('https://sic.ajk.gov.pk/pmylp/api/bank/applications/status-update', [
+                ->post($this->aksicApiUrl('/applications/status-update'), [
                     'applications' => $statusUpdatePayload,
                 ]);
 
@@ -177,7 +188,7 @@ class AksicApplicationController extends Controller
                     'verify' => false, // Disable SSL verification
                     'timeout' => 30,
                 ])
-                ->get('https://sic.ajk.gov.pk/pmylp/api/bank/applications');
+                ->get($this->aksicApiUrl('/applications'));
 
             if (! $response->successful()) {
                 Log::error('API call failed', ['status' => $response->status(), 'body' => $response->body()]);
@@ -447,7 +458,7 @@ class AksicApplicationController extends Controller
         $aksicApplication->load(['educations', 'statusLogs', 'businessCategory', 'businessSubCategory']);
 
         // Generate PDF using dompdf
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('aksic-applications.pdf', compact('aksicApplication'));
+        $pdf = Pdf::loadView('aksic-applications.pdf', compact('aksicApplication'));
 
         // Set paper size and orientation
         $pdf->setPaper('A4', 'portrait');
@@ -525,7 +536,7 @@ class AksicApplicationController extends Controller
                         'timeout' => 30,
                     ])
                     ->asForm() // Use form data instead of JSON as shown in Postman
-                    ->post("https://sic.ajk.gov.pk/pmylp/api/bank/applications/{$request->applicant_id}/status-update", [
+                    ->post($this->aksicApiUrl("/applications/{$request->applicant_id}/status-update"), [
                         'status' => $request->new_status,
                         'remarks' => $request->remarks,
                     ]);
@@ -668,7 +679,7 @@ class AksicApplicationController extends Controller
             file_put_contents($tempFilePath, $imageContent);
 
             // Create an UploadedFile instance from the temporary file
-            $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $uploadedFile = new UploadedFile(
                 $tempFilePath,
                 $originalFilename,
                 mime_content_type($tempFilePath),
