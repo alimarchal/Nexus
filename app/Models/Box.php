@@ -80,13 +80,14 @@ class Box extends Model
     {
         $year = now()->year;
 
-        // Count existing boxes for this org unit in the current year
-        $count = self::where('boxable_type', $boxableType)
-            ->where('boxable_id', $boxableId)
-            ->whereYear('created_at', $year)
-            ->count();
+        // The box number is unique across the whole bank, so the sequence runs across all offices for the year.
+        $last = self::query()
+            ->where('box_number', 'like', "BOX-{$year}-%")
+            ->pluck('box_number')
+            ->map(fn (string $number): int => (int) substr($number, strlen("BOX-{$year}-")))
+            ->max() ?? 0;
 
-        $sequence = str_pad($count + 1, 3, '0', STR_PAD_LEFT);
+        $sequence = str_pad((string) ($last + 1), 3, '0', STR_PAD_LEFT);
 
         return "BOX-{$year}-{$sequence}";
     }

@@ -231,6 +231,7 @@ Flow: `draft → submitted → approved (locked)`; a checker can **reject with a
 
 - The maker (creator or submitter) cannot approve their own record, not even a super admin (`FMS_ALLOW_SELF_APPROVAL=true` allows it). Any other user of the same office, with the permission, can be the checker.
 - **Approval locks the record for everyone**: no edit, no page added or removed, no delete. A **super admin unlocks that one record**, giving a reason; it goes back to Draft and must be approved again. Other records stay locked. (`FMS_LOCK_AFTER_APPROVAL=false` turns the lock off; `FMS_MAKER_CHECKER_ENABLED=false` turns the whole workflow off.)
+- **Archive boxes** belong to an office. A user posted to a branch, region, division or head office creates boxes for it; a **super admin chooses the office** on the Create Box page; any other user without an office sees why they cannot. Box numbers (`BOX-<year>-<seq>`) are unique across the bank.
 - Transfers and archiving into a box are separate, already-audited actions and stay available on an approved record.
 - Records that existed before this feature are treated as approved but not locked.
 - **Who sees what**: everyone posted to an office sees that office's records (all users of the same branch see the same files); other offices' records are hidden. Take a permission away from a role or a user and the matching button disappears.
