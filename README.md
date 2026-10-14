@@ -26,7 +26,7 @@ Nexus is the Bank of Azad Jammu & Kashmir's internal Laravel application: accoun
 |---|---|---|
 | **Account Opening (AOF)** | Opens customer accounts on the new BAJK form (6-step wizard) or the old BAJK paper form (one 19-section page), with maker-checker approval and a full history | Product → Account openings |
 | **File management** | Digital file records with scanned pages, archive boxes, transfers between offices, and the 20 ORU record categories | Product → File management, Settings → File categories |
-| **AKSIC** | Loan cases, amortization, claims, budget and rules | Product → AKSIC |
+| **AKSIC** | Loan cases, amortization, claims, budget and rules, plus the AKSIC 2025 applications synced from the government API (own view / sync / status permissions) | Product → AKSIC, Products → AKSIC 2025 |
 | **Complaints** | Complaints with categories, assignments, escalation, comments, witnesses and metrics | Products → Complaints |
 | **Audits** | Audit planning, scope, findings, actions, risks and schedules | Products → Audits |
 | **Circulars, stationery, dispatch register, daily positions, employee resources** | Day-to-day registers and records for offices | Product / Products menus |
@@ -76,16 +76,6 @@ Every option below is optional; the value shown is what you get when the line is
 | `FMS_ALLOW_SELF_APPROVAL` | `false` | Lets one person act as maker and checker. |
 | `FMS_LOCK_AFTER_APPROVAL` | `true` | An approved record is locked until a super admin unlocks it. |
 
-### AKSIC permissions
-
-| Permission | Default holders | Can do |
-|---|---|---|
-| `view aksic applications` | every role that has `view aksics`, super admin | Open the AKSIC 2025 applications list, details and PDF |
-| `sync aksic applications` | every role that has `approve aksics`, super admin | Run **Sync API** (pulls applications and marks them In Progress on the government system) |
-| `update aksic application status` | every role that has `approve aksics`, super admin | Change an application's status on the government system |
-
-Without the permission the page or action returns 403 and the button is hidden. They sit under the AKSIC module in the role and user pickers; `php artisan migrate` grants them to existing roles on the same basis.
-
 ### AKSIC
 
 | Variable | Default | What it does |
@@ -107,6 +97,16 @@ Rules of thumb:
 - A user sees a menu item and a button only when they hold the permission; direct URLs are guarded too (403).
 - Office scope: branch → own branch, region → branches of the region, division / head office / super admin → everything.
 - A new permission reaches existing roles only when the seeders run (see [Upgrading](#deploying-and-upgrading)).
+
+### AKSIC permissions
+
+| Permission | Default holders | Can do |
+|---|---|---|
+| `view aksic applications` | every role that has `view aksics`, super admin | Open the AKSIC 2025 applications list, details and PDF |
+| `sync aksic applications` | every role that has `approve aksics`, super admin | Run **Sync API** (pulls applications and marks them In Progress on the government system) |
+| `update aksic application status` | every role that has `approve aksics`, super admin | Change an application's status on the government system |
+
+Without the permission the page or action returns 403 and the button is hidden. They sit under the AKSIC module in the role and user pickers; `php artisan migrate` grants them to existing roles on the same basis.
 
 ## Account Opening (AOF)
 
@@ -313,3 +313,7 @@ The Audit and Complaint feature tests had failures before the 1.1 / 1.2 work; th
 | Old form shows "text has not been loaded yet" | Fill `resources/paper-form/terms.txt` and `indemnity.txt`, then `php artisan config:clear` |
 | A request cannot be edited | It is submitted (waiting for the checker) or approved and locked; see [Maker-checker](#maker-checker-both-forms) |
 | `.env` change has no effect | `php artisan config:clear` |
+| AKSIC **Sync API** fails with 404 | The government API moved: set `AKSIC_API_URL` in `.env` (confirm the address with the AKSIC team) and run `php artisan config:clear` |
+| A user gets 403 on AKSIC applications, Sync or Update Status | Give the role or user `view aksic applications`, `sync aksic applications` or `update aksic application status` |
+| Create Box says you are not posted to an office | Assign the user to a branch, region, division or head office (a super admin picks the office on the page) |
+| A file record cannot be edited | It is submitted or approved and locked; the checker decides, or a super admin unlocks that one record with a reason |

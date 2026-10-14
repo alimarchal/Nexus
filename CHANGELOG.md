@@ -2,6 +2,22 @@
 
 All notable changes to Nexus. Issue and pull request numbers refer to https://github.com/alimarchal/Nexus.
 
+## [1.5.0] - 2026-10-14
+
+### Added
+- **AKSIC permissions** (#137, #140): `view aksic applications`, `sync aksic applications` and `update aksic application status`. Sync and status update write to the government AKSIC system and were open to every user; now they, and the applications list, details and PDF, are permission-guarded and their buttons are hidden without the permission. Run `php artisan migrate` (existing roles get them from `view aksics` / `approve aksics`).
+- **Branch details page** (#141) with the branch's region, district and users, and a View button in the Branches list.
+- `AKSIC_API_URL` setting (#135, #138) for the base address of the AKSIC government API.
+
+### Changed
+- The AKSIC API now defaults to `https://pmylp.admin.gok.pk/api/bank` (confirm with the AKSIC team) (#135, #138).
+- **Create Box** (#143): a super admin chooses the office the box belongs to; other users without an office get a clear message instead of a bare 403. Box numbers are sequenced across all offices so two offices can no longer clash.
+
+### Fixed
+- AKSIC status update with missing fields returned a logged HTTP 500; it is now a 422 validation error (#136, #139).
+- `/products/audits/{id}/full`, the complaint full data, the complaint analytics data, analytics page, export and attachment download were open to every logged-in user; they now need `view audits` / `view complaints` (#142).
+- `/settings/branch/branches/{id}` gave a server error because its view did not exist (#141).
+
 ## [1.4.0] - 2026-10-13
 
 ### Added
