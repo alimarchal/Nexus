@@ -76,6 +76,16 @@ Every option below is optional; the value shown is what you get when the line is
 | `FMS_ALLOW_SELF_APPROVAL` | `false` | Lets one person act as maker and checker. |
 | `FMS_LOCK_AFTER_APPROVAL` | `true` | An approved record is locked until a super admin unlocks it. |
 
+### AKSIC permissions
+
+| Permission | Default holders | Can do |
+|---|---|---|
+| `view aksic applications` | every role that has `view aksics`, super admin | Open the AKSIC 2025 applications list, details and PDF |
+| `sync aksic applications` | every role that has `approve aksics`, super admin | Run **Sync API** (pulls applications and marks them In Progress on the government system) |
+| `update aksic application status` | every role that has `approve aksics`, super admin | Change an application's status on the government system |
+
+Without the permission the page or action returns 403 and the button is hidden. They sit under the AKSIC module in the role and user pickers; `php artisan migrate` grants them to existing roles on the same basis.
+
 ### AKSIC
 
 | Variable | Default | What it does |

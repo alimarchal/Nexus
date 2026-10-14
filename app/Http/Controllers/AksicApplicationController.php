@@ -12,6 +12,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -19,8 +21,17 @@ use Illuminate\View\View;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\QueryBuilder;
 
-class AksicApplicationController extends Controller
+class AksicApplicationController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('role_or_permission:view aksic applications', only: ['index', 'show', 'downloadPdf']),
+            new Middleware('role_or_permission:sync aksic applications', only: ['syncApplications']),
+            new Middleware('role_or_permission:update aksic application status', only: ['updateStatus']),
+        ];
+    }
+
     /**
      * Display a listing of AKSIC applications with filtering capabilities
      *
