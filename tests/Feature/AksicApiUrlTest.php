@@ -5,6 +5,7 @@ use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 beforeEach(function () {
     $this->seed(RolesAndPermissionsSeeder::class);
@@ -39,4 +40,28 @@ test('a status update calls the configured AKSIC address', function () {
     ]);
 
     Http::assertSent(fn (Request $request): bool => $request->url() === 'https://pmylp.admin.gok.pk/api/bank/applications/77/status-update');
+});
+
+test('a status update with missing fields is a 422 validation error and is not logged as a server failure', function () {
+    Http::fake();
+    Log::spy();
+    $application = AksicApplication::factory()->create();
+
+    $this->actingAs($this->superAdmin)->postJson(route('aksic-applications.update-status', $application), [])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['old_status', 'new_status', 'applicant_id']);
+
+    Http::assertNothingSent();
+    Log::shouldNotHaveReceived('error');
+});
+
+test('a real failure of the AKSIC API is still a 500 and is logged', function () {
+    Http::fake(['*' => Http::response('down', 503)]);
+    $application = AksicApplication::factory()->create();
+
+    $this->actingAs($this->superAdmin)->postJson(route('aksic-applications.update-status', $application), [
+        'old_status' => 'Pending', 'new_status' => 'Approved', 'applicant_id' => 77,
+    ])->assertStatus(500)->assertJson(['success' => false]);
+
+    expect($application->fresh()->status)->toBe('Pending');
 });
