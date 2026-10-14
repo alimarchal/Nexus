@@ -498,14 +498,15 @@ class AksicApplicationController extends Controller
      */
     public function updateStatus(Request $request, AksicApplication $aksicApplication)
     {
-        try {
-            $request->validate([
-                'old_status' => 'required|string',
-                'new_status' => 'required|string',
-                'remarks' => 'nullable|string',
-                'applicant_id' => 'required|integer',
-            ]);
+        // Validated before the try block: a missing field is a 422 for the user, not a logged 500.
+        $request->validate([
+            'old_status' => 'required|string',
+            'new_status' => 'required|string',
+            'remarks' => 'nullable|string',
+            'applicant_id' => 'required|integer',
+        ]);
 
+        try {
             Log::info('Starting status update', [
                 'application_id' => $aksicApplication->id,
                 'applicant_id' => $request->applicant_id,
