@@ -78,6 +78,8 @@ it('returns full JSON snapshot for audit', function () {
         'reference_no' => generateUniqueId('audit', 'audits', 'reference_no'),
         'title' => 'Snapshot Test Audit'
     ]);
+    // The full snapshot now needs the same permission as the audit page.
+    $this->user->givePermissionTo(Spatie\Permission\Models\Permission::firstOrCreate(['name' => 'view audits', 'guard_name' => 'web']));
     $resp = $this->get(route('audits.full', $audit));
     $resp->assertStatus(200)->assertJsonStructure(['audit' => ['id', 'reference_no', 'title'], 'exported_at', 'version']);
 });

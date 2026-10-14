@@ -41,7 +41,7 @@ class ComplaintController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('role_or_permission:view complaints', only: ['index', 'show']),
+            new Middleware('role_or_permission:view complaints', only: ['index', 'show', 'fullData', 'analyticsData', 'analytics', 'export', 'downloadAttachment']),
             new Middleware('role_or_permission:create complaints', only: ['create', 'store']),
             new Middleware('role_or_permission:edit complaints', only: ['edit', 'update']),
             new Middleware('role_or_permission:delete complaints', only: ['destroy']),
