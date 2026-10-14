@@ -1,6 +1,6 @@
 # Nexus
 
-Nexus is the Bank of Azad Jammu & Kashmir's internal Laravel application: account opening (AOF), AKSIC loan cases and budget, file management and archive boxes, complaints, audits, circulars, stationery, reports, and the user module (users, roles, permissions).
+Nexus is the Bank of Azad Jammu & Kashmir's internal Laravel application: account opening (AOF), AKSIC loan cases and budget, file management and archive boxes, complaints, employee resources, reports, and the user module (users, roles, permissions).
 
 - Laravel 13, PHP 8.4+ (PHP 8.3 is not enough: Symfony 8 needs 8.4), Livewire / Jetstream, Alpine.js, Tailwind CSS
 - Spatie packages: permission, activitylog, medialibrary, query-builder
@@ -28,8 +28,7 @@ Nexus is the Bank of Azad Jammu & Kashmir's internal Laravel application: accoun
 | **File management** | Digital file records with scanned pages, archive boxes, transfers between offices, and the 20 ORU record categories | Product → File management, Settings → File categories |
 | **AKSIC** | Loan cases, amortization, claims, budget and rules, plus the AKSIC 2025 applications synced from the government API (own view / sync / status permissions) | Product → AKSIC, Products → AKSIC 2025 |
 | **Complaints** | Complaints with categories, assignments, escalation, comments, witnesses and metrics | Products → Complaints |
-| **Audits** | Audit planning, scope, findings, actions, risks and schedules | Products → Audits |
-| **Circulars, stationery, dispatch register, daily positions, employee resources** | Day-to-day registers and records for offices | Product / Products menus |
+| **Employee resources** | Records for employees | Products → Employee resources |
 | **Settings** | Branches, regions, districts, branch targets, managers, categories, users, roles, permissions | Settings |
 
 Access to every module is permission-driven (see [Roles and permissions](#roles-and-permissions)) and every list is limited to the user's own office: branch users see their branch, region users their region's branches, head office and super admin see everything.
@@ -301,7 +300,7 @@ vendor/bin/pint --dirty                                     # format changed PHP
 
 Account Opening is covered by `AccountOpeningWizardTest`, `AccountOpeningStrictStepsTest`, `AccountOpeningMakerCheckerTest`, `AccountOpeningIndexTest`, `AccountOpeningEditionTest`, `AccountOpeningOptionsTest`, `AccountOpeningReferenceDataTest` and `OldAccountOpeningFormTest`; file categories by `FileCategoryCrudTest`.
 
-The Audit and Complaint feature tests had failures before the 1.1 / 1.2 work; they are unrelated to the changes listed in the [changelog](CHANGELOG.md).
+The Complaint feature tests (`ComplaintFeatureTest`) had failures before the 1.1 / 1.2 work; they are unrelated to the changes listed in the [changelog](CHANGELOG.md).
 
 ## Troubleshooting
 
@@ -316,4 +315,5 @@ The Audit and Complaint feature tests had failures before the 1.1 / 1.2 work; th
 | AKSIC **Sync API** fails with 404 | The government API moved: set `AKSIC_API_URL` in `.env` (confirm the address with the AKSIC team) and run `php artisan config:clear` |
 | A user gets 403 on AKSIC applications, Sync or Update Status | Give the role or user `view aksic applications`, `sync aksic applications` or `update aksic application status` |
 | Create Box says you are not posted to an office | Assign the user to a branch, region, division or head office (a super admin picks the office on the page) |
+| Audits, Circulars, Stationery, Dispatch Register or Daily Positions are missing | They were removed in 2.1.0 (#151); `php artisan migrate` drops their tables, so restore a backup if the data is needed |
 | A file record cannot be edited | It is submitted or approved and locked; the checker decides, or a super admin unlocks that one record with a reason |

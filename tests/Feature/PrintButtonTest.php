@@ -29,7 +29,6 @@ it('renders a print trigger wired to window.print on :route', function (string $
     'roles.index',
     'users.index',
     'managers.index',
-    'report.printed-stationeries',
 ]);
 
 it('keeps the shared page header print button a plain button wired to window.print', function () {
