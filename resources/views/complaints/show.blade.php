@@ -607,7 +607,7 @@
                                     @if($complaint->resolved_by && $complaint->resolved_at)
                                     <div class="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
                                         <div class="text-sm text-gray-600">
-                                            Resolved by: <span class="font-medium">{{ $complaint->resolvedBy->name
+                                            Resolved by: <span class="font-medium">{{ $complaint->resolvedBy?->name
                                                 }}</span>
                                         </div>
                                         <div class="text-sm text-gray-600">
@@ -648,20 +648,20 @@
                                     @if($complaint->branch)
                                     <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
                                         <span class="text-sm font-medium text-gray-600">Branch</span>
-                                        <span class="text-sm text-gray-800">{{ $complaint->branch->name }}</span>
+                                        <span class="text-sm text-gray-800">{{ $complaint->branch?->name }}</span>
                                     </div>
                                     @endif
                                     @if($complaint->region)
                                     <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
                                         <span class="text-sm font-medium text-gray-600">Region</span>
-                                        <span class="text-sm text-gray-800">{{ $complaint->region->name }}</span>
+                                        <span class="text-sm text-gray-800">{{ $complaint->region?->name }}</span>
                                     </div>
                                     @endif
                                     @if($complaint->division)
                                     <div class="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
                                         <span class="text-sm font-medium text-gray-600">Division</span>
                                         <span class="text-sm text-gray-800">{{ $complaint->division->short_name ??
-                                            $complaint->division->name }}</span>
+                                            $complaint->division?->name }}</span>
                                     </div>
                                     @endif
                                     <div class="grid grid-cols-3 gap-2 pt-2">
@@ -723,7 +723,7 @@
                                             <div>
                                                 <span class="text-sm font-medium text-gray-600">Assigned To</span>
                                                 <p class="text-lg font-bold text-blue-600">{{
-                                                    $complaint->assignedTo->name }}</p>
+                                                    $complaint->assignedTo?->name }}</p>
                                             </div>
                                             <div class="p-2 bg-blue-100 rounded-lg">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600"
@@ -757,7 +757,7 @@
                                     <div class="p-3 bg-white rounded-lg shadow-sm">
                                         <div class="flex justify-between">
                                             <span class="text-sm font-medium text-gray-600">Assigned By</span>
-                                            <span class="text-sm text-gray-800">{{ $complaint->assignedBy->name
+                                            <span class="text-sm text-gray-800">{{ $complaint->assignedBy?->name
                                                 }}</span>
                                         </div>
                                     </div>

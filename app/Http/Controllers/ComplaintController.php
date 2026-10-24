@@ -2,35 +2,39 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\FileStorageHelper;
 use App\Http\Requests\StoreComplaintRequest;
 use App\Http\Requests\UpdateComplaintRequest;
-use App\Models\User;
 use App\Models\Branch;
 use App\Models\Complaint;
-use App\Models\ComplaintHistory;
-use App\Models\ComplaintComment;
+use App\Models\ComplaintAssignment;
 use App\Models\ComplaintAttachment;
 use App\Models\ComplaintCategory;
-use App\Models\ComplaintAssignment;
+use App\Models\ComplaintComment;
 use App\Models\ComplaintEscalation;
-use App\Models\ComplaintWatcher;
+use App\Models\ComplaintHistory;
 use App\Models\ComplaintMetric;
 use App\Models\ComplaintStatusType;
 use App\Models\ComplaintTemplate;
+use App\Models\ComplaintWatcher;
 use App\Models\ComplaintWitness;
+use App\Models\Region;
+use App\Models\User;
 use App\View\Components\Division;
+use Carbon\Carbon;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Helpers\FileStorageHelper;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
-use Spatie\QueryBuilder\QueryBuilder;
-use Spatie\QueryBuilder\AllowedFilter;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Routing\Controllers\HasMiddleware;
-use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\QueryBuilder;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * ComplaintController handles comprehensive CRUD operations for complaints
@@ -52,9 +56,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Display paginated list of complaints with advanced filtering capabilities
-     * 
-     * @param Request $request
-     * @return \Illuminate\View\View
+     *
+     * @return View
      */
     public function index(Request $request)
     {
@@ -135,7 +138,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 }),
                 AllowedFilter::callback('resolved_date_to', function ($query, $value) {
                     $query->whereDate('resolved_at', '<=', $value);
-                })
+                }),
             ])
             ->allowedSorts([
                 'id',
@@ -147,7 +150,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 'updated_at',
                 'assigned_at',
                 'resolved_at',
-                'expected_resolution_date'
+                'expected_resolution_date',
             ])
             ->with([
                 'branch',
@@ -161,7 +164,7 @@ class ComplaintController extends Controller implements HasMiddleware
                     $query->latest()->limit(2);
                 },
                 'attachments',
-                'metrics'
+                'metrics',
             ])
             ->latest()
             ->paginate(15);
@@ -172,7 +175,7 @@ class ComplaintController extends Controller implements HasMiddleware
         $statusTypes = ComplaintStatusType::active()->orderBy('name')->get();
         // Added: categories, regions, divisions for dropdown filters in index view
         $categories = ComplaintCategory::orderBy('category_name')->get();
-        $regions = \App\Models\Region::orderBy('name')->get();
+        $regions = Region::orderBy('name')->get();
         $divisions = \App\Models\Division::orderBy('short_name')->orderBy('name')->get();
 
         // Get statistics for dashboard
@@ -201,8 +204,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Show form to create new complaint
-     * 
-     * @return \Illuminate\View\View
+     *
+     * @return View
      */
     public function create()
     {
@@ -210,7 +213,7 @@ class ComplaintController extends Controller implements HasMiddleware
         $users = User::orderBy('name')->get();
         $categories = ComplaintCategory::topLevel()->orderBy('category_name')->get();
         $templates = ComplaintTemplate::orderBy('template_name')->get();
-        $regions = \App\Models\Region::orderBy('name')->get();
+        $regions = Region::orderBy('name')->get();
         $divisions = \App\Models\Division::orderBy('short_name')->orderBy('name')->get();
 
         return view('complaints.create', compact('branches', 'users', 'categories', 'templates', 'regions', 'divisions'));
@@ -219,13 +222,13 @@ class ComplaintController extends Controller implements HasMiddleware
     /**
      * Store new complaint with comprehensive data handling
      * Uses transaction for data consistency
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @param  Request  $request
+     * @return RedirectResponse
      */
     public function store(StoreComplaintRequest $request)
     {
-        // 
+        //
         $validated = $request->validated();
 
         // Start database transaction
@@ -239,7 +242,7 @@ class ComplaintController extends Controller implements HasMiddleware
             $validated['status'] = 'Open';
             $validated['assigned_by'] = auth()->id();
 
-            if ($validated['assigned_to']) {
+            if (! empty($validated['assigned_to'])) {
                 $validated['assigned_at'] = now();
             }
 
@@ -248,13 +251,13 @@ class ComplaintController extends Controller implements HasMiddleware
                 $priority = $validated['priority'] ?? 'Medium';
                 $prioritySlaDays = ['Critical' => 1, 'High' => 3, 'Medium' => 7, 'Low' => 14];
                 $targetDate = null;
-                if (!empty($validated['category_id'])) {
+                if (! empty($validated['category_id'])) {
                     $catForSla = ComplaintCategory::find($validated['category_id']);
                     if ($catForSla && $catForSla->sla_hours) {
                         $targetDate = now()->copy()->addHours($catForSla->sla_hours);
                     }
                 }
-                if (!$targetDate) {
+                if (! $targetDate) {
                     $days = $prioritySlaDays[$priority] ?? 7;
                     $targetDate = now()->copy()->addDays($days);
                 }
@@ -262,7 +265,7 @@ class ComplaintController extends Controller implements HasMiddleware
             }
 
             // If category_id provided, also copy its name into legacy 'category' field for backward compatibility
-            if (!empty($validated['category_id'])) {
+            if (! empty($validated['category_id'])) {
                 $cat = ComplaintCategory::find($validated['category_id']);
                 if ($cat) {
                     $validated['category'] = $cat->category_name;
@@ -273,17 +276,17 @@ class ComplaintController extends Controller implements HasMiddleware
             $complaint = Complaint::create($validated);
 
             // Persist witnesses if harassment or grievance category and witnesses provided
-            if (!empty($validated['category_id'])) {
+            if (! empty($validated['category_id'])) {
                 $cat = ComplaintCategory::find($validated['category_id']);
                 if ($cat && (strcasecmp($cat->category_name, 'Harassment') === 0 || strcasecmp($cat->category_name, 'Grievance') === 0)) {
                     $groupedSets = [
                         $request->input('witnesses', []), // harassment witness fields
-                        $request->input('grievance_witnesses', []) // grievance witness fields
+                        $request->input('grievance_witnesses', []), // grievance witness fields
                     ];
                     foreach ($groupedSets as $witnesses) {
                         if (is_array($witnesses)) {
                             foreach ($witnesses as $w) {
-                                if (!empty($w['name'])) {
+                                if (! empty($w['name'])) {
                                     ComplaintWitness::create([
                                         'complaint_id' => $complaint->id,
                                         'employee_number' => $w['employee_number'] ?? null,
@@ -300,7 +303,7 @@ class ComplaintController extends Controller implements HasMiddleware
             }
 
             // Create folder path for attachments
-            $folderName = 'Complaints/' . $complaint->complaint_number;
+            $folderName = 'Complaints/'.$complaint->complaint_number;
 
             // Handle file attachments
             if ($request->hasFile('attachments')) {
@@ -396,8 +399,9 @@ class ComplaintController extends Controller implements HasMiddleware
                 ->route('complaints.show', $complaint)
                 ->with('success', "Complaint '{$complaint->title}' created successfully with number: {$complaint->complaint_number}");
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             DB::rollBack();
+
             return redirect()->back()
                 ->withInput()
                 ->withErrors($e->errors());
@@ -410,21 +414,21 @@ class ComplaintController extends Controller implements HasMiddleware
             Log::error('Error creating complaint', [
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
-                'request_data' => $request->except(['attachments'])
+                'request_data' => $request->except(['attachments']),
             ]);
 
-            $detail = app()->environment('local') ? (' Details: ' . $e->getMessage()) : '';
+            $detail = app()->environment('local') ? (' Details: '.$e->getMessage()) : '';
+
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Failed to create complaint. Please try again.' . $detail);
+                ->with('error', 'Failed to create complaint. Please try again.'.$detail);
         }
     }
 
     /**
      * Display the specified complaint with all related data
-     * 
-     * @param Complaint $complaint
-     * @return \Illuminate\View\View
+     *
+     * @return View
      */
     public function show(Complaint $complaint)
     {
@@ -474,7 +478,7 @@ class ComplaintController extends Controller implements HasMiddleware
             // Performance metrics and SLA tracking data
             'metrics',
             // Witnesses for harassment complaints
-            'witnesses'
+            'witnesses',
         ]);
 
         // Fetch additional reference data needed for complaint management forms
@@ -491,7 +495,7 @@ class ComplaintController extends Controller implements HasMiddleware
 
         // All branches / regions / divisions for transfer operations
         $branches = Branch::orderBy('name')->get();
-        $regions = \App\Models\Region::orderBy('name')->get();
+        $regions = Region::orderBy('name')->get();
         $divisions = \App\Models\Division::orderBy('short_name')->orderBy('name')->get();
 
         // Return the complaint detail view with all loaded data
@@ -505,10 +509,10 @@ class ComplaintController extends Controller implements HasMiddleware
                 $newVal = $h->new_value;
                 if ($h->action_type === 'Reassigned') {
                     if (is_numeric($oldVal)) {
-                        $oldVal = $userNameMap[$oldVal] ?? ('User #' . $oldVal);
+                        $oldVal = $userNameMap[$oldVal] ?? ('User #'.$oldVal);
                     }
                     if (is_numeric($newVal)) {
-                        $newVal = $userNameMap[$newVal] ?? ('User #' . $newVal);
+                        $newVal = $userNameMap[$newVal] ?? ('User #'.$newVal);
                     }
                 }
                 // Attach non-persistent attributes for Blade rendering
@@ -516,6 +520,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 $h->display_new_value = $newVal;
             }
         }
+
         return view('complaints.show', compact('complaint', 'users', 'statusTypes', 'templates', 'branches', 'regions', 'divisions'));
     }
 
@@ -543,7 +548,7 @@ class ComplaintController extends Controller implements HasMiddleware
             'escalations.escalatedTo',
             'watchers.user',
             'metrics',
-            'witnesses'
+            'witnesses',
         ]);
 
         // Compute handling duration (post first response) on-the-fly for export
@@ -570,10 +575,10 @@ class ComplaintController extends Controller implements HasMiddleware
                 foreach ($complaint->histories as $h) {
                     if ($h->action_type === 'Reassigned') {
                         if (is_numeric($h->old_value)) {
-                            $h->old_value = $userNameMap[(int) $h->old_value] ?? ('User #' . $h->old_value);
+                            $h->old_value = $userNameMap[(int) $h->old_value] ?? ('User #'.$h->old_value);
                         }
                         if (is_numeric($h->new_value)) {
-                            $h->new_value = $userNameMap[(int) $h->new_value] ?? ('User #' . $h->new_value);
+                            $h->new_value = $userNameMap[(int) $h->new_value] ?? ('User #'.$h->new_value);
                         }
                     }
                 }
@@ -591,15 +596,14 @@ class ComplaintController extends Controller implements HasMiddleware
             'templates' => $templates,
             'categories' => $categories,
             'exported_at' => now()->toIso8601String(),
-            'version' => '1.1'
+            'version' => '1.1',
         ]);
     }
 
     /**
      * Show form to edit existing complaint
-     * 
-     * @param Complaint $complaint
-     * @return \Illuminate\View\View
+     *
+     * @return View
      */
     public function edit(Complaint $complaint)
     {
@@ -611,10 +615,9 @@ class ComplaintController extends Controller implements HasMiddleware
     /**
      * Update existing complaint with comprehensive data handling
      * Uses transaction for data consistency
-     * 
-     * @param Request $request
-     * @param Complaint $complaint
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @param  Request  $request
+     * @return RedirectResponse
      */
     public function update(UpdateComplaintRequest $request, Complaint $complaint)
     {
@@ -655,7 +658,7 @@ class ComplaintController extends Controller implements HasMiddleware
             $complaint->update($validated);
 
             // Create folder path for new attachments
-            $folderName = 'Complaints/' . $complaint->complaint_number;
+            $folderName = 'Complaints/'.$complaint->complaint_number;
 
             // Handle new file attachments
             if ($request->hasFile('attachments')) {
@@ -707,14 +710,14 @@ class ComplaintController extends Controller implements HasMiddleware
             DB::commit();
 
             // Add history entry for newly attached files (single consolidated record)
-            if (!empty($newAttachmentNames)) {
+            if (! empty($newAttachmentNames)) {
                 $statusType = ComplaintStatusType::first();
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
                     'action_type' => 'File Attached',
                     'old_value' => null,
-                    'new_value' => count($newAttachmentNames) . ' file(s)',
-                    'comments' => 'Attached: ' . implode(', ', array_slice($newAttachmentNames, 0, 5)) . (count($newAttachmentNames) > 5 ? '…' : ''),
+                    'new_value' => count($newAttachmentNames).' file(s)',
+                    'comments' => 'Attached: '.implode(', ', array_slice($newAttachmentNames, 0, 5)).(count($newAttachmentNames) > 5 ? '…' : ''),
                     'status_id' => $statusType?->id ?? 1,
                     'performed_by' => auth()->id(),
                     'performed_at' => now(),
@@ -722,14 +725,15 @@ class ComplaintController extends Controller implements HasMiddleware
                 ]);
             }
 
-            $message = !empty($newAttachmentNames)
-                ? (count($newAttachmentNames) . ' attachment(s) uploaded successfully.')
+            $message = ! empty($newAttachmentNames)
+                ? (count($newAttachmentNames).' attachment(s) uploaded successfully.')
                 : "Complaint '{$complaint->title}' updated successfully.";
 
             return redirect()->route('complaints.show', $complaint)->with('success', $message);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             DB::rollBack();
+
             return redirect()->back()
                 ->withInput()
                 ->withErrors($e->errors());
@@ -742,7 +746,7 @@ class ComplaintController extends Controller implements HasMiddleware
             Log::error('Error updating complaint', [
                 'complaint_id' => $complaint->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return redirect()->back()
@@ -754,20 +758,18 @@ class ComplaintController extends Controller implements HasMiddleware
     /**
      * Add new attachments only (without other field validation)
      *
-     * @param Request $request
-     * @param Complaint $complaint
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function addAttachments(Request $request, Complaint $complaint)
     {
         $request->validate([
             'attachments' => 'required|array|max:10',
-            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,txt,zip,rar|max:10240'
+            'attachments.*' => 'file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png,gif,txt,zip,rar|max:10240',
         ]);
 
         DB::beginTransaction();
         try {
-            $folderName = 'Complaints/' . $complaint->complaint_number;
+            $folderName = 'Complaints/'.$complaint->complaint_number;
             $newAttachmentNames = [];
 
             foreach ($request->file('attachments', []) as $file) {
@@ -785,14 +787,14 @@ class ComplaintController extends Controller implements HasMiddleware
                 }
             }
 
-            if (!empty($newAttachmentNames)) {
+            if (! empty($newAttachmentNames)) {
                 $statusType = ComplaintStatusType::first();
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
                     'action_type' => 'File Attached',
                     'old_value' => null,
-                    'new_value' => count($newAttachmentNames) . ' file(s)',
-                    'comments' => 'Attached: ' . implode(', ', array_slice($newAttachmentNames, 0, 5)) . (count($newAttachmentNames) > 5 ? '…' : ''),
+                    'new_value' => count($newAttachmentNames).' file(s)',
+                    'comments' => 'Attached: '.implode(', ', array_slice($newAttachmentNames, 0, 5)).(count($newAttachmentNames) > 5 ? '…' : ''),
                     'status_id' => $statusType?->id ?? 1,
                     'performed_by' => auth()->id(),
                     'performed_at' => now(),
@@ -803,14 +805,15 @@ class ComplaintController extends Controller implements HasMiddleware
             DB::commit();
 
             return redirect()->route('complaints.show', $complaint)
-                ->with('success', count($newAttachmentNames) . ' attachment(s) uploaded successfully.');
+                ->with('success', count($newAttachmentNames).' attachment(s) uploaded successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Attachment upload failed', [
                 'complaint_id' => $complaint->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
+
             return redirect()->back()->with('error', 'Failed to upload attachments.');
         }
     }
@@ -818,15 +821,13 @@ class ComplaintController extends Controller implements HasMiddleware
     /**
      * Update only the status of a complaint (used by operations tab)
      *
-     * @param Request $request
-     * @param Complaint $complaint
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function updateStatus(Request $request, Complaint $complaint)
     {
         $validated = $request->validate([
             'status' => 'required|in:Open,In Progress,Pending,Resolved,Closed,Reopened',
-            'status_change_reason' => 'nullable|string|max:255'
+            'status_change_reason' => 'nullable|string|max:255',
         ]);
 
         DB::beginTransaction();
@@ -877,7 +878,7 @@ class ComplaintController extends Controller implements HasMiddleware
             Log::error('Error updating complaint status', [
                 'complaint_id' => $complaint->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return redirect()->back()->with('error', 'Failed to update status. Please try again.');
@@ -886,9 +887,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Remove the specified complaint from storage (soft delete)
-     * 
-     * @param Complaint $complaint
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @return RedirectResponse
      */
     public function destroy(Complaint $complaint)
     {
@@ -900,10 +900,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Add comment to complaint
-     * 
-     * @param Request $request
-     * @param Complaint $complaint
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @return RedirectResponse
      */
     public function addComment(Request $request, Complaint $complaint)
     {
@@ -932,8 +930,8 @@ class ComplaintController extends Controller implements HasMiddleware
                     'complaint_id' => $complaint->id,
                     'action_type' => 'Comment Added',
                     'old_value' => null,
-                    'new_value' => $validated['comment_type'] . ' comment',
-                    'comments' => 'Comment added: ' . substr($validated['comment_text'], 0, 100),
+                    'new_value' => $validated['comment_type'].' comment',
+                    'comments' => 'Comment added: '.substr($validated['comment_text'], 0, 100),
                     'status_id' => $statusType->id,
                     'performed_by' => auth()->id(),
                     'performed_at' => now(),
@@ -949,6 +947,7 @@ class ComplaintController extends Controller implements HasMiddleware
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
                 ->with('error', 'Failed to add comment. Please try again.');
         }
@@ -956,10 +955,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Escalate complaint to higher authority
-     * 
-     * @param Request $request
-     * @param Complaint $complaint
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @return RedirectResponse
      */
     public function escalate(Request $request, Complaint $complaint)
     {
@@ -974,7 +971,7 @@ class ComplaintController extends Controller implements HasMiddleware
         try {
             // Ensure metrics record exists (in case it wasn't created at complaint creation)
             $metrics = $complaint->metrics()->first();
-            if (!$metrics) {
+            if (! $metrics) {
                 $metrics = $complaint->metrics()->create([
                     'time_to_first_response' => 0,
                     'time_to_resolution' => 0,
@@ -1006,7 +1003,7 @@ class ComplaintController extends Controller implements HasMiddleware
 
             // Create history record
             $statusType = ComplaintStatusType::where('code', 'ESCALATED')->first();
-            if (!$statusType) {
+            if (! $statusType) {
                 // Create a dummy ESCALATED status type if it doesn't exist
                 $statusType = ComplaintStatusType::firstOrCreate(
                     ['code' => 'ESCALATED'],
@@ -1022,8 +1019,8 @@ class ComplaintController extends Controller implements HasMiddleware
                 ComplaintHistory::create([
                     'complaint_id' => $complaint->id,
                     'action_type' => 'Escalated',
-                    'old_value' => 'Level ' . ($validated['escalation_level'] - 1),
-                    'new_value' => 'Level ' . $validated['escalation_level'],
+                    'old_value' => 'Level '.($validated['escalation_level'] - 1),
+                    'new_value' => 'Level '.$validated['escalation_level'],
                     'comments' => $validated['escalation_reason'],
                     'status_id' => $statusType->id,
                     'performed_by' => auth()->id(),
@@ -1045,23 +1042,22 @@ class ComplaintController extends Controller implements HasMiddleware
                 'error' => $e->getMessage(),
                 'trace' => substr($e->getTraceAsString(), 0, 1000),
             ]);
-            $msg = app()->environment('local') ? ('Failed to escalate: ' . $e->getMessage()) : 'Failed to escalate complaint. Please try again.';
+            $msg = app()->environment('local') ? ('Failed to escalate: '.$e->getMessage()) : 'Failed to escalate complaint. Please try again.';
+
             return redirect()->back()->with('error', $msg);
         }
     }
 
     /**
      * Add/Remove watchers for complaint
-     * 
-     * @param Request $request
-     * @param Complaint $complaint
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @return RedirectResponse
      */
     public function updateWatchers(Request $request, Complaint $complaint)
     {
         $validated = $request->validate([
             'watchers' => 'nullable|array',
-            'watchers.*' => 'exists:users,id'
+            'watchers.*' => 'exists:users,id',
         ]);
 
         DB::beginTransaction();
@@ -1071,7 +1067,7 @@ class ComplaintController extends Controller implements HasMiddleware
             $complaint->watchers()->delete();
 
             // Add new watchers
-            if (!empty($validated['watchers'])) {
+            if (! empty($validated['watchers'])) {
                 foreach ($validated['watchers'] as $userId) {
                     ComplaintWatcher::create([
                         'complaint_id' => $complaint->id,
@@ -1088,6 +1084,7 @@ class ComplaintController extends Controller implements HasMiddleware
 
         } catch (\Exception $e) {
             DB::rollBack();
+
             return redirect()->back()
                 ->with('error', 'Failed to update watchers. Please try again.');
         }
@@ -1095,14 +1092,13 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Download attachment file
-     * 
-     * @param ComplaintAttachment $attachment
-     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     *
+     * @return BinaryFileResponse
      */
     public function downloadAttachment(ComplaintAttachment $attachment)
     {
         try {
-            if (!Storage::disk('local')->exists($attachment->file_path)) {
+            if (! Storage::disk('local')->exists($attachment->file_path)) {
                 return redirect()->back()
                     ->with('error', 'File not found.');
             }
@@ -1116,7 +1112,7 @@ class ComplaintController extends Controller implements HasMiddleware
             Log::error('Error downloading attachment', [
                 'attachment_id' => $attachment->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return redirect()->back()
@@ -1126,9 +1122,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Delete attachment file
-     * 
-     * @param ComplaintAttachment $attachment
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @return RedirectResponse
      */
     public function deleteAttachment(ComplaintAttachment $attachment)
     {
@@ -1154,7 +1149,7 @@ class ComplaintController extends Controller implements HasMiddleware
             Log::error('Error deleting attachment', [
                 'attachment_id' => $attachment->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return redirect()->back()
@@ -1164,10 +1159,7 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Create history records for complaint changes
-     * 
-     * @param Complaint $complaint
-     * @param array $originalValues
-     * @param array $newValues
+     *
      * @return void
      */
     private function createHistoryRecords(Complaint $complaint, array $originalValues, array $newValues)
@@ -1180,7 +1172,7 @@ class ComplaintController extends Controller implements HasMiddleware
             'category' => 'Category Changed',
             'branch_id' => 'Branch Transfer',
             'region_id' => 'Region Transfer',
-            'division_id' => 'Division Transfer'
+            'division_id' => 'Division Transfer',
         ];
 
         foreach ($trackableFields as $field => $actionType) {
@@ -1193,14 +1185,14 @@ class ComplaintController extends Controller implements HasMiddleware
                 // For foreign keys, fetch readable names
                 if (in_array($field, ['branch_id', 'region_id', 'division_id'])) {
                     $oldVal = match ($field) {
-                        'branch_id' => $oldVal ? optional(\App\Models\Branch::find($oldVal))->name : 'None',
-                        'region_id' => $oldVal ? optional(\App\Models\Region::find($oldVal))->name : 'None',
+                        'branch_id' => $oldVal ? optional(Branch::find($oldVal))->name : 'None',
+                        'region_id' => $oldVal ? optional(Region::find($oldVal))->name : 'None',
                         'division_id' => $oldVal ? optional(\App\Models\Division::find($oldVal))->short_name ?? optional(\App\Models\Division::find($oldVal))->name : 'None',
                         default => $oldVal,
                     };
                     $newVal = match ($field) {
-                        'branch_id' => $newVal ? optional(\App\Models\Branch::find($newVal))->name : 'None',
-                        'region_id' => $newVal ? optional(\App\Models\Region::find($newVal))->name : 'None',
+                        'branch_id' => $newVal ? optional(Branch::find($newVal))->name : 'None',
+                        'region_id' => $newVal ? optional(Region::find($newVal))->name : 'None',
                         'division_id' => $newVal ? (optional(\App\Models\Division::find($newVal))->short_name ?? optional(\App\Models\Division::find($newVal))->name) : 'None',
                         default => $newVal,
                     };
@@ -1216,7 +1208,7 @@ class ComplaintController extends Controller implements HasMiddleware
                     'action_type' => $actionType,
                     'old_value' => $oldVal ?? 'None',
                     'new_value' => $newVal ?? 'None',
-                    'comments' => "{$field} changed from '" . ($oldVal ?? 'None') . "' to '" . ($newVal ?? 'None') . "'",
+                    'comments' => "{$field} changed from '".($oldVal ?? 'None')."' to '".($newVal ?? 'None')."'",
                     'status_id' => $statusType->id,
                     'performed_by' => auth()->id(),
                     'performed_at' => now(),
@@ -1228,16 +1220,13 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Update complaint metrics based on changes
-     * 
-     * @param Complaint $complaint
-     * @param array $originalValues
-     * @param array $newValues
+     *
      * @return void
      */
     private function updateComplaintMetrics(Complaint $complaint, array $originalValues, array $newValues)
     {
         $metrics = $complaint->metrics;
-        if (!$metrics) {
+        if (! $metrics) {
             return;
         }
 
@@ -1247,7 +1236,7 @@ class ComplaintController extends Controller implements HasMiddleware
 
         // Calculate time to first response (if this is the first status change)
         if (
-            !$metrics->time_to_first_response &&
+            ! $metrics->time_to_first_response &&
             $origStatus === 'Open' &&
             $newStatus !== 'Open'
         ) {
@@ -1260,7 +1249,7 @@ class ComplaintController extends Controller implements HasMiddleware
         }
 
         // Lazy backfill first_response_at if historical data exists without timestamp
-        if ($metrics->time_to_first_response && !$metrics->first_response_at) {
+        if ($metrics->time_to_first_response && ! $metrics->first_response_at) {
             $backfill = $complaint->created_at->copy()->addMinutes($metrics->time_to_first_response);
             $metrics->update(['first_response_at' => $backfill]);
         }
@@ -1270,7 +1259,7 @@ class ComplaintController extends Controller implements HasMiddleware
             $resolvedAt = $complaint->resolved_at ?? now();
             $ttr = $complaint->created_at->diffInMinutes($resolvedAt);
             // Optionally compute handling duration separately if a definition change is desired.
-            if (!$metrics->time_to_resolution || $metrics->time_to_resolution != $ttr) {
+            if (! $metrics->time_to_resolution || $metrics->time_to_resolution != $ttr) {
                 $metrics->update(['time_to_resolution' => $ttr]);
             }
         }
@@ -1290,9 +1279,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Bulk update complaints status
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @return RedirectResponse
      */
     public function bulkUpdateStatus(Request $request)
     {
@@ -1300,7 +1288,7 @@ class ComplaintController extends Controller implements HasMiddleware
             'complaint_ids' => 'required|array',
             'complaint_ids.*' => 'exists:complaints,id',
             'status' => 'required|in:Open,In Progress,Pending,Resolved,Closed',
-            'bulk_comment' => 'nullable|string'
+            'bulk_comment' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -1333,7 +1321,7 @@ class ComplaintController extends Controller implements HasMiddleware
                             'action_type' => 'Status Changed',
                             'old_value' => $oldStatus,
                             'new_value' => $validated['status'],
-                            'comments' => 'Bulk status update: ' . ($validated['bulk_comment'] ?? 'No comment'),
+                            'comments' => 'Bulk status update: '.($validated['bulk_comment'] ?? 'No comment'),
                             'status_id' => $statusType->id,
                             'performed_by' => auth()->id(),
                             'performed_at' => now(),
@@ -1357,7 +1345,7 @@ class ComplaintController extends Controller implements HasMiddleware
             Log::error('Error in bulk status update', [
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
-                'complaint_ids' => $validated['complaint_ids']
+                'complaint_ids' => $validated['complaint_ids'],
             ]);
 
             return redirect()->back()
@@ -1367,9 +1355,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Bulk assign complaints to user
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @return RedirectResponse
      */
     public function bulkAssign(Request $request)
     {
@@ -1377,7 +1364,7 @@ class ComplaintController extends Controller implements HasMiddleware
             'complaint_ids' => 'required|array',
             'complaint_ids.*' => 'exists:complaints,id',
             'assigned_to' => 'required|exists:users,id',
-            'assignment_reason' => 'nullable|string'
+            'assignment_reason' => 'nullable|string',
         ]);
 
         DB::beginTransaction();
@@ -1410,7 +1397,7 @@ class ComplaintController extends Controller implements HasMiddleware
                         'assigned_by' => auth()->id(),
                         'assignment_type' => 'Primary',
                         'assigned_at' => now(),
-                        'reason' => 'Bulk assignment: ' . ($validated['assignment_reason'] ?? 'No reason provided'),
+                        'reason' => 'Bulk assignment: '.($validated['assignment_reason'] ?? 'No reason provided'),
                         'is_active' => true,
                     ]);
 
@@ -1427,7 +1414,7 @@ class ComplaintController extends Controller implements HasMiddleware
                             'action_type' => 'Reassigned',
                             'old_value' => $oldAssigneeName,
                             'new_value' => $newAssigneeName,
-                            'comments' => 'Bulk assignment: ' . ($validated['assignment_reason'] ?? 'No reason provided'),
+                            'comments' => 'Bulk assignment: '.($validated['assignment_reason'] ?? 'No reason provided'),
                             'status_id' => $statusType->id,
                             'performed_by' => auth()->id(),
                             'performed_at' => now(),
@@ -1451,7 +1438,7 @@ class ComplaintController extends Controller implements HasMiddleware
             Log::error('Error in bulk assignment', [
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
-                'complaint_ids' => $validated['complaint_ids']
+                'complaint_ids' => $validated['complaint_ids'],
             ]);
 
             return redirect()->back()
@@ -1461,9 +1448,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Export complaints to CSV
-     * 
-     * @param Request $request
-     * @return \Symfony\Component\HttpFoundation\StreamedResponse
+     *
+     * @return StreamedResponse
      */
     public function export(Request $request)
     {
@@ -1485,7 +1471,7 @@ class ComplaintController extends Controller implements HasMiddleware
 
             $complaints = $query->get();
 
-            $filename = 'complaints_export_' . now()->format('Y_m_d_H_i_s') . '.csv';
+            $filename = 'complaints_export_'.now()->format('Y_m_d_H_i_s').'.csv';
 
             $headers = [
                 'Content-Type' => 'text/csv',
@@ -1514,7 +1500,7 @@ class ComplaintController extends Controller implements HasMiddleware
                     'Assigned At',
                     'Resolved At',
                     'Expected Resolution Date',
-                    'SLA Breached'
+                    'SLA Breached',
                 ]);
 
                 // CSV Data
@@ -1537,7 +1523,7 @@ class ComplaintController extends Controller implements HasMiddleware
                         $complaint->assigned_at ? $complaint->assigned_at->format('Y-m-d H:i:s') : '',
                         $complaint->resolved_at ? $complaint->resolved_at->format('Y-m-d H:i:s') : '',
                         $complaint->expected_resolution_date ? $complaint->expected_resolution_date->format('Y-m-d H:i:s') : '',
-                        $complaint->sla_breached ? 'Yes' : 'No'
+                        $complaint->sla_breached ? 'Yes' : 'No',
                     ]);
                 }
 
@@ -1547,14 +1533,15 @@ class ComplaintController extends Controller implements HasMiddleware
         } catch (\Exception $e) {
             Log::error('Error exporting complaints', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
-            $filename = 'complaints_export_error_' . now()->format('Y_m_d_H_i_s') . '.csv';
+            $filename = 'complaints_export_error_'.now()->format('Y_m_d_H_i_s').'.csv';
             $headers = [
                 'Content-Type' => 'text/csv',
                 'Content-Disposition' => "attachment; filename=\"{$filename}\"",
             ];
+
             return response()->stream(function () use ($e) {
                 $handle = fopen('php://output', 'w');
                 fputcsv($handle, ['Export Failed']);
@@ -1566,9 +1553,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
     /**
      * Generate complaint analytics/dashboard data
-     * 
-     * @param Request $request
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     *
+     * @return View|RedirectResponse
      */
     public function analytics(Request $request)
     {
@@ -1627,7 +1613,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 ->whereBetween('complaints.created_at', [$dateFrom, $dateTo])
                 ->whereNotNull('time_to_resolution')
                 ->when($request->filled('filter.category'), function ($q) use ($request) {
-                    $q->where('complaints.category', 'like', '%' . $request->input('filter.category') . '%');
+                    $q->where('complaints.category', 'like', '%'.$request->input('filter.category').'%');
                 })
                 ->avg('time_to_resolution');
 
@@ -1635,8 +1621,8 @@ class ComplaintController extends Controller implements HasMiddleware
 
             // Monthly trend constrained within selected date range (group by month)
             $monthlyTrend = Complaint::query()
-                ->when($dateFrom, fn($q) => $q->where('created_at', '>=', $dateFrom))
-                ->when($dateTo, fn($q) => $q->where('created_at', '<=', $dateTo))
+                ->when($dateFrom, fn ($q) => $q->where('created_at', '>=', $dateFrom))
+                ->when($dateTo, fn ($q) => $q->where('created_at', '<=', $dateTo))
                 ->tap(function ($q) use ($request) {
                     // Apply the same non-date filters for consistency
                     $this->applyAnalyticsFilters($q, $request, null, null, true); // skip date in second pass
@@ -1677,7 +1663,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 ->orderByDesc('count')
                 ->get();
             $topResolvers = (clone $baseQuery)
-                ->whereIn('status', ["Resolved", "Closed"])
+                ->whereIn('status', ['Resolved', 'Closed'])
                 ->whereNotNull('resolved_by')
                 ->join('users as resolver', 'complaints.resolved_by', '=', 'resolver.id')
                 ->selectRaw('resolver.name as user_name, COUNT(*) as resolved_count')
@@ -1699,6 +1685,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 ->get()
                 ->map(function ($r) {
                     $r->resolution_rate = $r->total > 0 ? round(($r->resolved / $r->total) * 100, 1) : 0;
+
                     return $r;
                 });
 
@@ -1727,8 +1714,9 @@ class ComplaintController extends Controller implements HasMiddleware
         } catch (\Exception $e) {
             Log::error('Error generating complaint analytics', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
+
             return redirect()->back()->with('error', 'Failed to generate analytics. Please try again.');
         }
     }
@@ -1773,8 +1761,8 @@ class ComplaintController extends Controller implements HasMiddleware
                 ->groupBy('source')->get();
 
             $monthlyTrend = Complaint::query()
-                ->when($dateFrom, fn($q) => $q->where('created_at', '>=', $dateFrom))
-                ->when($dateTo, fn($q) => $q->where('created_at', '<=', $dateTo))
+                ->when($dateFrom, fn ($q) => $q->where('created_at', '>=', $dateFrom))
+                ->when($dateTo, fn ($q) => $q->where('created_at', '<=', $dateTo))
                 ->tap(function ($q) use ($request) {
                     $this->applyAnalyticsFilters($q, $request, null, null, true);
                 })
@@ -1798,7 +1786,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 ->orderByDesc('count')
                 ->get();
             $topResolvers = (clone $baseQuery)
-                ->whereIn('status', ["Resolved", "Closed"])
+                ->whereIn('status', ['Resolved', 'Closed'])
                 ->whereNotNull('resolved_by')
                 ->join('users as resolver', 'complaints.resolved_by', '=', 'resolver.id')
                 ->selectRaw('resolver.name as user_name, COUNT(*) as resolved_count')
@@ -1820,6 +1808,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 ->get()
                 ->map(function ($r) {
                     $r->resolution_rate = $r->total > 0 ? round(($r->resolved / $r->total) * 100, 1) : 0;
+
                     return $r;
                 });
 
@@ -1867,6 +1856,7 @@ class ComplaintController extends Controller implements HasMiddleware
             ]);
         } catch (\Exception $e) {
             Log::error('analyticsData failure', ['error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Analytics generation failed'], 500);
         }
     }
@@ -1877,20 +1867,22 @@ class ComplaintController extends Controller implements HasMiddleware
      */
     protected function applyAnalyticsFilters($query, Request $request, $dateFrom = null, $dateTo = null, $skipDate = false)
     {
-        if (!$skipDate && $dateFrom && $dateTo) {
+        if (! $skipDate && $dateFrom && $dateTo) {
             $query->whereBetween('complaints.created_at', [$dateFrom, $dateTo]);
         }
         $filter = $request->input('filter', []);
-        if (!is_array($filter))
+        if (! is_array($filter)) {
             return;
+        }
 
         $like = function ($value) {
-            return '%' . $value . '%';
+            return '%'.$value.'%';
         };
 
         foreach ($filter as $key => $value) {
-            if ($value === '' || $value === null)
+            if ($value === '' || $value === null) {
                 continue;
+            }
             switch ($key) {
                 case 'id':
                     $query->where('id', $value);
@@ -2021,36 +2013,35 @@ class ComplaintController extends Controller implements HasMiddleware
         } else {
             $dateTo = now()->endOfDay();
         }
+
         return [$dateFrom, $dateTo];
     }
 
     /**
      * Update customer satisfaction score
-     * 
-     * @param Request $request
-     * @param Complaint $complaint
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @return RedirectResponse
      */
     public function updateSatisfactionScore(Request $request, Complaint $complaint)
     {
         $validated = $request->validate([
-            'customer_satisfaction_score' => 'required|numeric|min:1|max:5'
+            'customer_satisfaction_score' => 'required|numeric|min:1|max:5',
         ]);
 
         try {
             // Only allow for resolved / closed complaints
-            if (!$complaint->isResolved()) {
+            if (! $complaint->isResolved()) {
                 return redirect()->back()->with('error', 'Satisfaction score can only be set for resolved or closed complaints.');
             }
 
             // Ensure metrics record exists
             if ($complaint->metrics) {
                 $complaint->metrics->update([
-                    'customer_satisfaction_score' => $validated['customer_satisfaction_score']
+                    'customer_satisfaction_score' => $validated['customer_satisfaction_score'],
                 ]);
             } else {
                 $complaint->metrics()->create([
-                    'customer_satisfaction_score' => $validated['customer_satisfaction_score']
+                    'customer_satisfaction_score' => $validated['customer_satisfaction_score'],
                 ]);
             }
 
@@ -2062,7 +2053,7 @@ class ComplaintController extends Controller implements HasMiddleware
                     'complaint_id' => $complaint->id,
                     'action_type' => 'Feedback', // Added to enum via migration 2025_08_19_000001_*
                     'old_value' => null,
-                    'new_value' => $validated['customer_satisfaction_score'] . '/5',
+                    'new_value' => $validated['customer_satisfaction_score'].'/5',
                     'comments' => 'Customer satisfaction score updated',
                     'status_id' => $statusType->id,
                     'performed_by' => auth()->id(),
@@ -2079,7 +2070,7 @@ class ComplaintController extends Controller implements HasMiddleware
             Log::error('Error updating satisfaction score', [
                 'complaint_id' => $complaint->id,
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return redirect()->back()
@@ -2087,13 +2078,10 @@ class ComplaintController extends Controller implements HasMiddleware
         }
     }
 
-
-
     /**
      * Handle bulk operations on complaints
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     *
+     * @return RedirectResponse
      */
     public function bulkUpdate(Request $request)
     {
@@ -2116,7 +2104,6 @@ class ComplaintController extends Controller implements HasMiddleware
             'confirm_deletion' => 'required_if:operation_type,bulk_delete|accepted',
         ]);
 
-
         DB::beginTransaction();
 
         try {
@@ -2127,8 +2114,9 @@ class ComplaintController extends Controller implements HasMiddleware
 
             foreach ($complaintIds as $complaintId) {
                 $complaint = Complaint::find($complaintId);
-                if (!$complaint)
+                if (! $complaint) {
                     continue;
+                }
 
                 switch ($operationType) {
                     case 'status_update':
@@ -2162,6 +2150,7 @@ class ComplaintController extends Controller implements HasMiddleware
             DB::commit();
 
             $operationName = str_replace('_', ' ', $operationType);
+
             return redirect()
                 ->route('complaints.index')
                 ->with('success', "Successfully performed {$operationName} on {$updatedCount} complaint(s).");
@@ -2173,7 +2162,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 'operation_type' => $operationType,
                 'error' => $e->getMessage(),
                 'user_id' => auth()->id(),
-                'complaint_ids' => $complaintIds
+                'complaint_ids' => $complaintIds,
             ]);
 
             return redirect()->back()
@@ -2209,7 +2198,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 'action_type' => 'Status Changed',
                 'old_value' => $oldStatus,
                 'new_value' => $validated['status'],
-                'comments' => 'Bulk status update: ' . ($validated['status_change_reason'] ?? 'No reason provided'),
+                'comments' => 'Bulk status update: '.($validated['status_change_reason'] ?? 'No reason provided'),
                 'status_id' => $statusType->id,
                 'performed_by' => auth()->id(),
                 'performed_at' => now(),
@@ -2249,7 +2238,7 @@ class ComplaintController extends Controller implements HasMiddleware
             'assigned_by' => auth()->id(),
             'assignment_type' => 'Primary',
             'assigned_at' => now(),
-            'reason' => 'Bulk assignment: ' . ($validated['assignment_reason'] ?? 'No reason provided'),
+            'reason' => 'Bulk assignment: '.($validated['assignment_reason'] ?? 'No reason provided'),
             'is_active' => true,
         ]);
 
@@ -2266,7 +2255,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 'action_type' => 'Reassigned',
                 'old_value' => $oldAssigneeName,
                 'new_value' => $newAssigneeName,
-                'comments' => 'Bulk assignment: ' . ($validated['assignment_reason'] ?? 'No reason provided'),
+                'comments' => 'Bulk assignment: '.($validated['assignment_reason'] ?? 'No reason provided'),
                 'status_id' => $statusType->id,
                 'performed_by' => auth()->id(),
                 'performed_at' => now(),
@@ -2294,7 +2283,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 'action_type' => 'Priority Changed',
                 'old_value' => $oldPriority,
                 'new_value' => $validated['priority'],
-                'comments' => 'Bulk priority change: ' . ($validated['priority_change_reason'] ?? 'No reason provided'),
+                'comments' => 'Bulk priority change: '.($validated['priority_change_reason'] ?? 'No reason provided'),
                 'status_id' => $statusType->id,
                 'performed_by' => auth()->id(),
                 'performed_at' => now(),
@@ -2351,8 +2340,8 @@ class ComplaintController extends Controller implements HasMiddleware
                 'complaint_id' => $complaint->id,
                 'action_type' => 'Comment Added',
                 'old_value' => null,
-                'new_value' => $validated['comment_type'] . ' comment',
-                'comments' => 'Bulk comment: ' . substr($validated['comment_text'], 0, 100),
+                'new_value' => $validated['comment_type'].' comment',
+                'comments' => 'Bulk comment: '.substr($validated['comment_text'], 0, 100),
                 'status_id' => $statusType->id,
                 'performed_by' => auth()->id(),
                 'performed_at' => now(),
@@ -2373,7 +2362,7 @@ class ComplaintController extends Controller implements HasMiddleware
                 'action_type' => 'Closed',
                 'old_value' => $complaint->status,
                 'new_value' => 'Deleted',
-                'comments' => 'Bulk deletion: ' . $validated['deletion_reason'],
+                'comments' => 'Bulk deletion: '.$validated['deletion_reason'],
                 'status_id' => $statusType->id,
                 'performed_by' => auth()->id(),
                 'performed_at' => now(),
