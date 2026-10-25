@@ -40,7 +40,7 @@ class ReportController extends Controller implements HasMiddleware
             $reports->where('branch_code', $request->branch_code);
         }
         if ($request->filled('branch_name')) {
-            $reports->where('branch_name', $request->branch_code);
+            $reports->where('branch_name', $request->branch_name);
         }
 
         return view('reports.index', [

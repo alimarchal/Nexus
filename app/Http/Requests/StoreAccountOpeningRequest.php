@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use App\Models\AccountOpeningRequest;
+use App\Models\CustomerCategory;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -29,16 +30,16 @@ class StoreAccountOpeningRequest extends FormRequest
         if ($this->input('form_edition') === AccountOpeningRequest::EDITION_OLD) {
             return [
                 'form_edition' => ['required', Rule::in([AccountOpeningRequest::EDITION_OLD])],
-                'branch_id' => ['required', 'integer', 'exists:branches,id'],
+                'branch_id' => $this->branchRules(),
                 'request_date' => ['required', 'date'],
             ];
         }
 
         return [
             'form_edition' => ['nullable', Rule::in([AccountOpeningRequest::EDITION_NEW])],
-            'branch_id' => ['required', 'integer', 'exists:branches,id'],
+            'branch_id' => $this->branchRules(),
             'aof_form_type' => ['required', Rule::in([AccountOpeningRequest::FORM_INDIVIDUAL, AccountOpeningRequest::FORM_ENTITY])],
-            'customer_category_id' => ['required', 'uuid', 'exists:customer_categories,id'],
+            'customer_category_id' => ['required', 'uuid', 'exists:customer_categories,id', $this->categoryMatchesForm(...)],
             'customer_category_other' => ['nullable', 'string', 'max:150'],
             'category_code_description' => ['nullable', 'string', 'max:200'],
             // Typed, not picked: required for the Government / organisation form, not used for Individual accounts.
@@ -48,6 +49,41 @@ class StoreAccountOpeningRequest extends FormRequest
             ],
             'request_date' => ['required', 'date'],
         ];
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private function branchRules(): array
+    {
+        return [
+            'required', 'integer', 'exists:branches,id',
+            function (string $attribute, mixed $value, \Closure $fail): void {
+                $allowed = AccountOpeningRequest::branchIdsStartableBy($this->user());
+
+                if ($allowed !== null && ! in_array((int) $value, $allowed, true)) {
+                    $fail('You can only start a request for a branch you are allowed to use.');
+                }
+            },
+        ];
+    }
+
+    /**
+     * The category must apply to the selected printed form (Individual, Entity or Both).
+     */
+    private function categoryMatchesForm(string $attribute, mixed $value, \Closure $fail): void
+    {
+        $appliesTo = CustomerCategory::whereKey($value)->value('applies_to');
+
+        if ($appliesTo === null) {
+            return;
+        }
+
+        $formAppliesTo = $this->input('aof_form_type') === AccountOpeningRequest::FORM_ENTITY ? 'entity' : 'individual';
+
+        if ($appliesTo !== 'both' && $appliesTo !== $formAppliesTo) {
+            $fail('This customer category does not apply to the selected account opening form.');
+        }
     }
 
     public function messages(): array

@@ -45,7 +45,7 @@ test('a user with only file management access cannot open, sync or update AKSIC 
 });
 
 test('a viewer can open the applications but cannot sync or change a status', function () {
-    $user = aksicUser(['view aksic applications']);
+    $user = aksicUser(['view aksic applications', 'view all aksic cases']);
 
     $this->actingAs($user)->get(route('aksic-applications.index'))->assertSuccessful();
     $this->actingAs($user)->get(route('aksic-applications.show', $this->application))->assertSuccessful();
@@ -65,7 +65,7 @@ test('the sync permission allows a sync and the status permission allows a statu
 });
 
 test('the buttons are hidden for users without the permission and shown to those with it', function () {
-    $viewer = aksicUser(['view aksic applications']);
+    $viewer = aksicUser(['view aksic applications', 'view all aksic cases']);
     expect($this->actingAs($viewer)->get(route('aksic-applications.index'))->getContent())->toMatch('/id="syncBtn"\s+style="display:none"/');
     $this->actingAs($viewer)->get(route('aksic-applications.show', $this->application))->assertSee('style="display:none"', false);
 

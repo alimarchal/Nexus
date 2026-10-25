@@ -89,10 +89,9 @@ test('with strict steps on, an incomplete step cannot continue but Save and exit
         'identifications' => [['identification_document_type_id' => IdentificationDocumentType::code('CNIC')->firstOrFail()->id]],
         'addresses' => ['permanent_residential' => ['city' => 'Muzaffarabad']],
         'contacts' => ['mobile' => [1 => ['country_code' => '+92', 'value' => '3008169924']]],
-    ])->assertRedirect(route('account-openings.steps.edit', [$request, 'identification']))
-        ->assertSessionHas('error');
+    ])->assertSessionHasErrors('identifications.0.document_number');
 
-    expect($request->fresh()->customer->addresses)->toHaveCount(1);
+    expect($request->fresh()->customer->addresses)->toHaveCount(0);
 
     $this->actingAs($this->admin)->put(route('account-openings.steps.update', [$request, 'identification']), [
         'identifications' => [['identification_document_type_id' => IdentificationDocumentType::code('CNIC')->firstOrFail()->id]],

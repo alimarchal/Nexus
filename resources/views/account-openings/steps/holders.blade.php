@@ -41,20 +41,21 @@
                     <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
                         <div class="md:col-span-2">
                             <x-label value="Customer (CIF)" />
-                            <select name="holders[{{ $index }}][customer_id]"
-                                class="select2 mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            @php
+                                $selectedCustomerId = old("holders.$index.customer_id", $holder?->customer_id ?? ($index === 0 ? $customer->id : null));
+                                $selectedCustomer = $selectedCustomerId ? $holderCustomers->get($selectedCustomerId) : null;
+                            @endphp
+                            <select name="holders[{{ $index }}][customer_id]" data-customer-search="{{ route('account-openings.customers.search') }}"
+                                data-placeholder="Search by name, CIF number or CNIC"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
                                 <option value="">-</option>
-                                <option value="{{ $customer->id }}"
-                                    @selected(old("holders.$index.customer_id", $holder?->customer_id ?? ($index === 0 ? $customer->id : null)) === $customer->id)>
-                                    {{ $customer->cif_number }} - {{ $customer->displayName() }}
-                                </option>
-                                @foreach ($otherCustomers as $other)
-                                    <option value="{{ $other->id }}"
-                                        @selected(old("holders.$index.customer_id", $holder?->customer_id) === $other->id)>
-                                        {{ $other->cif_number }} - {{ $other->displayName() }}
+                                @if ($selectedCustomer)
+                                    <option value="{{ $selectedCustomer->id }}" selected>
+                                        {{ $selectedCustomer->cif_number }} - {{ $selectedCustomer->displayName() }}
                                     </option>
-                                @endforeach
+                                @endif
                             </select>
+                            <x-input-error for="holders.{{ $index }}.customer_id" class="mt-1" />
                         </div>
 
                         <div>
@@ -154,3 +155,29 @@
         </x-aof-section>
     @endif
 </x-aof-step>
+
+<script>
+    window.addEventListener('load', function () {
+        if (!window.jQuery || !jQuery.fn.select2) {
+            return;
+        }
+
+        jQuery('select[data-customer-search]').each(function () {
+            const $select = jQuery(this);
+
+            $select.select2({
+                width: '100%',
+                allowClear: true,
+                placeholder: $select.data('placeholder'),
+                minimumInputLength: 2,
+                ajax: {
+                    url: $select.data('customer-search'),
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) { return { q: params.term }; },
+                    processResults: function (data) { return data; },
+                },
+            });
+        });
+    });
+</script>
