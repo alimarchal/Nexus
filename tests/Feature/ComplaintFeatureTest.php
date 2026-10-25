@@ -6,12 +6,15 @@ use App\Models\District;
 use App\Models\Division;
 use App\Models\Region;
 use App\Models\User;
+use Database\Seeders\ComplaintStatusTypeSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 
 beforeEach(function () {
     Storage::fake('local');
+
+    $this->seed(ComplaintStatusTypeSeeder::class);
 
     // Create test users
     $this->admin = User::factory()->create(['name' => 'Admin User']);
@@ -188,17 +191,18 @@ describe('Complaint Controller - CRUD Operations', function () {
         expect($complaint->resolution)->toBe('Partial resolution details');
     });
 
-    it('deletes a complaint', function () {
+    it('refuses to delete a complaint', function () {
         $complaint = Complaint::factory()->create();
 
         $this->actingAs($this->admin);
 
         $response = $this->delete(route('complaints.destroy', $complaint));
 
-        $response->assertRedirect();
+        $response->assertRedirect(route('complaints.show', $complaint));
+        $response->assertSessionHas('error');
 
-        // Should be soft deleted
-        $this->assertSoftDeleted('complaints', ['id' => $complaint->id]);
+        // Complaints are protected from deletion
+        $this->assertNotSoftDeleted('complaints', ['id' => $complaint->id]);
     });
 });
 
@@ -220,11 +224,10 @@ describe('Complaint Controller - File Attachments', function () {
     it('downloads an attachment', function () {
         $complaint = Complaint::factory()->create();
         $attachment = $complaint->attachments()->create([
-            'original_name' => 'test.pdf',
+            'file_name' => 'test.pdf',
             'file_path' => 'test/path.pdf',
             'file_size' => 1024,
-            'mime_type' => 'application/pdf',
-            'uploaded_by' => $this->admin->id,
+            'file_type' => 'application/pdf',
         ]);
 
         Storage::put($attachment->file_path, 'test content');
@@ -238,11 +241,10 @@ describe('Complaint Controller - File Attachments', function () {
     it('deletes an attachment', function () {
         $complaint = Complaint::factory()->create();
         $attachment = $complaint->attachments()->create([
-            'original_name' => 'test.pdf',
+            'file_name' => 'test.pdf',
             'file_path' => 'test/path.pdf',
             'file_size' => 1024,
-            'mime_type' => 'application/pdf',
-            'uploaded_by' => $this->admin->id,
+            'file_type' => 'application/pdf',
         ]);
 
         $this->actingAs($this->admin);
@@ -250,7 +252,7 @@ describe('Complaint Controller - File Attachments', function () {
         $response = $this->delete(route('complaints.delete-attachment', $attachment));
         $response->assertRedirect();
 
-        $this->assertDatabaseMissing('complaint_attachments', ['id' => $attachment->id]);
+        $this->assertSoftDeleted('complaint_attachments', ['id' => $attachment->id]);
     });
 });
 
@@ -261,15 +263,16 @@ describe('Complaint Controller - Comments', function () {
         $this->actingAs($this->admin);
 
         $response = $this->post(route('complaints.add-comment', $complaint), [
-            'comment' => 'This is a test comment',
+            'comment_text' => 'This is a test comment',
+            'comment_type' => 'Internal',
         ]);
 
         $response->assertRedirect();
 
         $this->assertDatabaseHas('complaint_comments', [
             'complaint_id' => $complaint->id,
-            'comment' => 'This is a test comment',
-            'commented_by' => $this->admin->id,
+            'comment_text' => 'This is a test comment',
+            'comment_type' => 'Internal',
         ]);
     });
 });
@@ -306,6 +309,7 @@ describe('Complaint Controller - Bulk Operations', function () {
             'operation_type' => 'assignment',
             'complaint_ids' => [$complaint1->id, $complaint2->id],
             'assigned_to' => $this->assignee->id,
+            'assignment_reason' => 'Workload balancing',
         ]);
 
         $response->assertRedirect();
@@ -340,7 +344,7 @@ describe('Complaint Controller - Escalations', function () {
             'escalated_to' => $supervisor->id,
             'escalation_reason' => 'Needs supervisor attention',
             'escalation_level' => 1,
-            'escalated_by' => $this->admin->id,
+            'escalated_from' => $this->admin->id,
         ]);
     });
 });
@@ -354,7 +358,7 @@ describe('Complaint Controller - Watchers', function () {
         $this->actingAs($this->admin);
 
         $response = $this->post(route('complaints.update-watchers', $complaint), [
-            'watcher_ids' => [$watcher1->id, $watcher2->id],
+            'watchers' => [$watcher1->id, $watcher2->id],
         ]);
 
         $response->assertRedirect();

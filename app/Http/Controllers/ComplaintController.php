@@ -2101,7 +2101,7 @@ class ComplaintController extends Controller implements HasMiddleware
             'comment_type' => 'required_if:operation_type,bulk_comment|in:Internal,Customer,System',
             'is_private' => 'nullable|boolean',
             'deletion_reason' => 'required_if:operation_type,bulk_delete|string',
-            'confirm_deletion' => 'required_if:operation_type,bulk_delete|accepted',
+            'confirm_deletion' => 'accepted_if:operation_type,bulk_delete',
         ]);
 
         DB::beginTransaction();
