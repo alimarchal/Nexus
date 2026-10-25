@@ -104,7 +104,7 @@ class ManagerController extends Controller implements HasMiddleware
      */
     public function show(Manager $manager)
     {
-        return view('managers.show', compact('manager'));
+        return redirect()->route('managers.edit', $manager);
     }
 
     /**

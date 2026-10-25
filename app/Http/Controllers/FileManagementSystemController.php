@@ -745,8 +745,9 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         }
 
         $userOrgUnit = $this->getUserOrgUnit();
-        if ($fileManagementSystem->fileable_type !== $userOrgUnit['type'] ||
-            $fileManagementSystem->fileable_id !== $userOrgUnit['id']) {
+        if ($userOrgUnit !== null && (
+            $fileManagementSystem->fileable_type !== $userOrgUnit['type'] ||
+            $fileManagementSystem->fileable_id !== $userOrgUnit['id'])) {
             abort(403, 'You cannot archive files outside your organization unit');
         }
 
