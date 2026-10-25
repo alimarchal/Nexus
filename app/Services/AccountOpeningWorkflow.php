@@ -50,6 +50,40 @@ final class AccountOpeningWorkflow
         return (int) $request->created_by === $user->id || (int) $request->submitted_by === $user->id;
     }
 
+    /**
+     * Whether anyone other than the maker could approve this request. Maker-checker needs a second person
+     * with the "approve account openings" permission (or a super admin), otherwise it waits for ever.
+     */
+    public function hasAnotherChecker(AccountOpeningRequest $request, ?User $submitter = null): bool
+    {
+        if ($this->selfApprovalAllowed()) {
+            return true;
+        }
+
+        $makers = array_filter([(int) $request->created_by, (int) $request->submitted_by, (int) $submitter?->id]);
+
+        return User::query()
+            ->whereNotIn('id', $makers)
+            ->where(fn ($query) => $query->where('is_super_admin', 'Yes')
+                ->orWhereHas('roles', fn ($roles) => $roles->where('name', 'super-admin')->orWhereHas('permissions', fn ($permissions) => $permissions->where('name', 'approve account openings')))
+                ->orWhereHas('permissions', fn ($permissions) => $permissions->where('name', 'approve account openings')))
+            ->exists();
+    }
+
+    /**
+     * A checker who opens a submitted request puts it under review.
+     */
+    public function markUnderReview(AccountOpeningRequest $request, User $user): void
+    {
+        if ($request->status !== 'submitted' || $request->isLocked() || ! $this->canDecide($request, $user)) {
+            return;
+        }
+
+        $request->update(['status' => 'under_review']);
+
+        $this->record($request, 'under_review', $user, note: 'Opened by the checker for review.');
+    }
+
     /** Whether this user may approve or reject the request right now. */
     public function canDecide(AccountOpeningRequest $request, User $user): bool
     {
@@ -133,6 +167,7 @@ final class AccountOpeningWorkflow
                 'rejection_reason' => $reason,
             ]);
             $request->customer?->update(['status' => 'draft']);
+            $request->account?->update(['status' => 'pending']);
 
             $this->record($request, 'rejected', $user, note: $reason);
         });

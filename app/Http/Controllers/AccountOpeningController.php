@@ -40,11 +40,14 @@ use App\Models\WealthSource;
 use App\Models\ZakatExemptionReason;
 use App\Services\AccountOpeningWorkflow;
 use App\Support\AccountOpeningSteps;
+use App\Support\PakistanIban;
 use App\Support\PaperForm\PaperFormSchema;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -83,8 +86,9 @@ class AccountOpeningController extends Controller implements HasMiddleware
         return [
             new Middleware('role_or_permission:view account openings', only: ['index', 'show', 'print']),
             new Middleware('role_or_permission:create account openings', only: ['create', 'store']),
-            new Middleware('role_or_permission:edit account openings', only: ['editStep', 'updateStep', 'submit']),
+            new Middleware('role_or_permission:edit account openings', only: ['editStep', 'updateStep']),
             new Middleware('role_or_permission:submit account openings', only: ['submit']),
+            new Middleware('role_or_permission:edit account openings', only: ['searchCustomers']),
             new Middleware('role_or_permission:approve account openings', only: ['approve', 'reject']),
             new Middleware('role_or_permission:unlock account openings', only: ['unlock']),
             new Middleware('role_or_permission:delete account openings', only: ['destroy']),
@@ -193,7 +197,9 @@ class AccountOpeningController extends Controller implements HasMiddleware
             'formEdition' => $request->query('edition') === AccountOpeningRequest::EDITION_OLD
                 ? AccountOpeningRequest::EDITION_OLD
                 : AccountOpeningRequest::EDITION_NEW,
-            'branches' => Branch::orderBy('name')->get(),
+            'branches' => Branch::orderBy('name')
+                ->when(AccountOpeningRequest::branchIdsStartableBy(auth()->user()) !== null, fn ($query) => $query->whereIn('id', AccountOpeningRequest::branchIdsStartableBy(auth()->user())))
+                ->get(),
             'defaultBranchId' => auth()->user()->branch_id,
             'categories' => CustomerCategory::active()->ordered()->get(),
         ]);
@@ -299,6 +305,8 @@ class AccountOpeningController extends Controller implements HasMiddleware
             'documents.documentType',
         ]);
 
+        $this->workflow->markUnderReview($accountOpeningRequest, auth()->user());
+
         $accountOpeningRequest->load(['histories.user', 'submitter', 'approver', 'rejecter', 'unlocker', 'creator']);
         $user = auth()->user();
 
@@ -315,6 +323,8 @@ class AccountOpeningController extends Controller implements HasMiddleware
 
     private function showOldEdition(AccountOpeningRequest $accountOpeningRequest): View
     {
+        $this->workflow->markUnderReview($accountOpeningRequest, auth()->user());
+
         $accountOpeningRequest->load(['branch', 'paperForm', 'histories.user', 'submitter', 'approver', 'rejecter', 'unlocker', 'creator']);
         $user = auth()->user();
         $values = $accountOpeningRequest->paperForm?->values() ?? [];
@@ -467,7 +477,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
                 return back()->with('error', 'Fill in the mandatory fields before submitting: '.implode(', ', $missing));
             }
 
-            return $this->runWorkflow($accountOpeningRequest, 'Account opening request submitted for approval.', function () use ($accountOpeningRequest): void {
+            return $this->runWorkflow($accountOpeningRequest, $this->submittedMessage($accountOpeningRequest), function () use ($accountOpeningRequest): void {
                 $this->workflow->submit($accountOpeningRequest, auth()->user());
             });
         }
@@ -480,9 +490,23 @@ class AccountOpeningController extends Controller implements HasMiddleware
             return back()->with('error', 'Complete every step before submitting: '.$missing->map(fn ($k) => self::STEPS[$k])->implode(', '));
         }
 
-        return $this->runWorkflow($accountOpeningRequest, 'Account opening request submitted for approval.', function () use ($accountOpeningRequest): void {
+        return $this->runWorkflow($accountOpeningRequest, $this->submittedMessage($accountOpeningRequest), function () use ($accountOpeningRequest): void {
             $this->workflow->submit($accountOpeningRequest, auth()->user());
         });
+    }
+
+    /**
+     * The success message after a submit. It warns when nobody but the maker could approve the request.
+     */
+    private function submittedMessage(AccountOpeningRequest $accountOpeningRequest): string
+    {
+        $message = 'Account opening request submitted for approval.';
+
+        if (! $this->workflow->hasAnotherChecker($accountOpeningRequest, auth()->user())) {
+            $message .= ' Warning: no other user has the permission to approve it. Ask an administrator to add a head-office checker, otherwise it will wait for ever.';
+        }
+
+        return $message;
     }
 
     public function approve(AccountOpeningRequest $accountOpeningRequest): RedirectResponse
@@ -529,8 +553,31 @@ class AccountOpeningController extends Controller implements HasMiddleware
                 ->with('error', 'This request is approved and locked, so it cannot be deleted. A super admin can unlock it first.');
         }
 
+        if (! $accountOpeningRequest->isEditable()) {
+            return redirect()->route('account-openings.show', $accountOpeningRequest)
+                ->with('error', 'Only a draft or rejected request can be deleted. This one is waiting for the checker.');
+        }
+
         $number = $accountOpeningRequest->request_number;
-        $accountOpeningRequest->delete();
+
+        DB::transaction(function () use ($accountOpeningRequest): void {
+            $account = $accountOpeningRequest->account;
+            $customer = $accountOpeningRequest->customer;
+
+            $accountOpeningRequest->delete();
+
+            if ($account && ! AccountOpeningRequest::where('account_id', $account->id)->exists()) {
+                $account->delete();
+            }
+
+            $customerInUse = $customer
+                && (AccountOpeningRequest::where('customer_id', $customer->id)->exists()
+                    || $customer->accounts()->whereNull('accounts.deleted_at')->exists());
+
+            if ($customer && ! $customerInUse) {
+                $customer->delete();
+            }
+        });
 
         return redirect()
             ->route('account-openings.index')
@@ -673,13 +720,56 @@ class AccountOpeningController extends Controller implements HasMiddleware
                 ->where('customer_category_id', $accountOpeningRequest->customer?->customer_category_id)
                 ->orderBy('sort_order')
                 ->get(),
-            'otherCustomers' => Customer::visibleTo(auth()->user())
-                ->whereKeyNot($accountOpeningRequest->customer_id)
-                ->with(['individual', 'organization'])
-                ->orderByDesc('created_at')
-                ->limit(200)
-                ->get(),
+            'holderCustomers' => $this->holderCustomers($accountOpeningRequest),
         ];
+    }
+
+    /**
+     * The customers already chosen on the Applicants step (saved holders, the request's own CIF and any
+     * unsaved selection after a validation error). Everyone else is found by the search box, not listed.
+     *
+     * @return Collection<string, Customer>
+     */
+    private function holderCustomers(AccountOpeningRequest $accountOpeningRequest): Collection
+    {
+        $ids = collect([$accountOpeningRequest->customer_id])
+            ->merge($accountOpeningRequest->account?->holders()->pluck('customer_id') ?? [])
+            ->merge(collect(old('holders', []))->pluck('customer_id'))
+            ->filter()
+            ->unique();
+
+        return Customer::with(['individual', 'organization'])->whereIn('id', $ids)->get()->keyBy('id');
+    }
+
+    /**
+     * Find any customer the user may see by name, CIF number or CNIC / identification number (for the holder box).
+     */
+    public function searchCustomers(Request $request): JsonResponse
+    {
+        $term = trim((string) $request->query('q', ''));
+
+        $customers = Customer::visibleTo($request->user())
+            ->with(['individual', 'organization'])
+            ->when($term !== '', function ($query) use ($term): void {
+                $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term).'%';
+
+                $query->where(function ($inner) use ($like): void {
+                    $inner->where('cif_number', 'like', $like)
+                        ->orWhereHas('individual', fn ($q) => $q->where('full_name', 'like', $like))
+                        ->orWhereHas('organization', fn ($q) => $q->where('business_name', 'like', $like))
+                        ->orWhereHas('identifications', fn ($q) => $q->where('document_number', 'like', $like));
+                });
+            })
+            ->orderBy('cif_number')
+            ->limit(30)
+            ->get();
+
+        return response()->json([
+            'results' => $customers->map(fn (Customer $customer): array => [
+                'id' => $customer->id,
+                'text' => $customer->cif_number.' - '.($customer->displayName() ?? '-'),
+            ])->values(),
+        ]);
     }
 
     /* ------------------------------------------------------------------ */
@@ -810,6 +900,8 @@ class AccountOpeningController extends Controller implements HasMiddleware
 
         foreach ($request->input('addresses', []) as $type => $row) {
             if (blank($row['city'] ?? null) && blank($row['street_area'] ?? null)) {
+                $customer->addresses()->where('address_type', $type)->delete();
+
                 continue;
             }
 
@@ -988,7 +1080,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
         } else {
             $account = Account::create($payload + [
                 'account_number' => generateUniqueIdWithPrefix($branch->code, 'accounts', 'account_number'),
-                'iban' => $this->buildIban($branch->code),
+                'iban' => $this->buildIban($branch),
                 'status' => 'pending',
             ]);
 
@@ -1032,13 +1124,18 @@ class AccountOpeningController extends Controller implements HasMiddleware
     }
 
     /**
-     * BAJK IBAN skeleton: PK## BAJK + branch code + account serial.
+     * A valid Pakistan IBAN (PK + check digits + BAJK + branch code and serial), numbered in sequence per branch
+     * and checked against every IBAN already issued, so a repeat cannot happen.
      */
-    private function buildIban(string $branchCode): string
+    private function buildIban(Branch $branch): string
     {
-        $serial = str_pad((string) random_int(1, 99999999999), 11, '0', STR_PAD_LEFT);
+        $serial = Account::withTrashed()->where('branch_id', $branch->id)->count();
 
-        return 'PK00BAJK'.str_pad(substr($branchCode, 0, 5), 5, '0', STR_PAD_LEFT).$serial;
+        do {
+            $iban = PakistanIban::make(PakistanIban::accountNumber($branch->code, ++$serial));
+        } while (Account::withTrashed()->where('iban', $iban)->exists());
+
+        return $iban;
     }
 
     /* ------------------------------------------------------------------ */

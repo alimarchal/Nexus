@@ -128,6 +128,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/', [AccountOpeningController::class, 'index'])->name('index');
         Route::get('/create', [AccountOpeningController::class, 'create'])->name('create');
         Route::post('/', [AccountOpeningController::class, 'store'])->name('store');
+        Route::get('/customers/search', [AccountOpeningController::class, 'searchCustomers'])->name('customers.search');
         Route::get('/{accountOpeningRequest}', [AccountOpeningController::class, 'show'])->name('show');
         Route::get('/{accountOpeningRequest}/print', [AccountOpeningController::class, 'print'])->name('print');
         Route::get('/{accountOpeningRequest}/paper', [PaperAccountOpeningController::class, 'edit'])->name('paper.edit');

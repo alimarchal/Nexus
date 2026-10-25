@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateAksicApplicationRequest;
 use App\Models\AksicApplication;
 use App\Models\AksicApplicationEducation;
 use App\Models\AksicApplicationStatusLog;
+use App\Models\Branch;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -33,6 +34,17 @@ class AksicApplicationController extends Controller implements HasMiddleware
     }
 
     /**
+     * A user opens only applications of the branches they may see (OfficeAccess); others look like they do not exist.
+     */
+    private function abortUnlessVisible(AksicApplication $aksicApplication): void
+    {
+        abort_unless(
+            AksicApplication::query()->visibleTo(request()->user())->whereKey($aksicApplication->getKey())->exists(),
+            404
+        );
+    }
+
+    /**
      * Display a listing of AKSIC applications with filtering capabilities
      *
      * @return View
@@ -40,7 +52,7 @@ class AksicApplicationController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         // Build query with filters using Spatie QueryBuilder
-        $applications = QueryBuilder::for(AksicApplication::class)
+        $applications = QueryBuilder::for(AksicApplication::query()->visibleTo($request->user()))
             ->allowedFilters([
                 AllowedFilter::exact('status'),                    // Filter by status
                 AllowedFilter::exact('fee_status'),               // Filter by fee status
@@ -81,6 +93,18 @@ class AksicApplicationController extends Controller implements HasMiddleware
     private function aksicApiUrl(string $path): string
     {
         return rtrim((string) config('app.aksic_api_url'), '/').$path;
+    }
+
+    /**
+     * The local branch for a branch code the API sent, or null when the code is missing or unknown.
+     */
+    private function branchIdForCode(?string $branchCode): ?int
+    {
+        if (blank($branchCode)) {
+            return null;
+        }
+
+        return Branch::query()->where('code', $branchCode)->value('id');
     }
 
     private function updateSingleApplicationStatus($applicationId)
@@ -228,6 +252,7 @@ class AksicApplicationController extends Controller implements HasMiddleware
                 'created' => 0,
                 'failed' => 0,
                 'errors' => [],
+                'unlinked_branches' => [],
             ];
 
             // Track successfully processed applications for batch status update
@@ -320,7 +345,7 @@ class AksicApplicationController extends Controller implements HasMiddleware
                         'district_id' => $appData['district_id'],
                         'tehsil_id' => $appData['tehsil_id'],
                         'applicant_choosed_branch_id' => $appData['applicant_choosed_branch'],
-                        'branch_id' => $appData['branch_id'],
+                        'branch_id' => $appData['branch_id'] ?? $this->branchIdForCode($appData['applicant_choosed_branch_code'] ?? null),
                         'challan_branch_id' => $appData['challan_branch_id'],
                         'challan_fee' => $appData['challan_fee'],
                         // Store local file paths if downloaded, otherwise original filenames from API
@@ -341,6 +366,13 @@ class AksicApplicationController extends Controller implements HasMiddleware
                         'challan_branch_code' => $appData['challan_branch_code'],
                         'api_call_json' => $appData, // Store entire API response including URLs
                     ];
+
+                    if ($applicationData['branch_id'] === null) {
+                        $syncResults['unlinked_branches'][] = [
+                            'application_no' => $appData['application_no'],
+                            'branch_code' => $appData['applicant_choosed_branch_code'] ?? null,
+                        ];
+                    }
 
                     // Check if application exists
                     $existingApp = AksicApplication::where('applicant_id', $appData['id'])->first();
@@ -364,7 +396,11 @@ class AksicApplicationController extends Controller implements HasMiddleware
 
                     // Insert educations
                     if (isset($appData['educations']) && is_array($appData['educations'])) {
-                        foreach ($appData['educations'] as $education) {
+                        $uniqueEducations = collect($appData['educations'])->unique(fn ($education) => json_encode([
+                            $education['education_level'], $education['degree_title'], $education['institute'], $education['passing_year'],
+                        ]));
+
+                        foreach ($uniqueEducations as $education) {
                             AksicApplicationEducation::create([
                                 'aksic_application_id' => $application->id,
                                 'applicant_id' => $appData['id'],
@@ -454,6 +490,8 @@ class AksicApplicationController extends Controller implements HasMiddleware
      */
     public function show(AksicApplication $aksicApplication)
     {
+        $this->abortUnlessVisible($aksicApplication);
+
         // Load relationships for detailed view
         $aksicApplication->load(['educations', 'statusLogs', 'businessCategory', 'businessSubCategory']);
 
@@ -465,6 +503,8 @@ class AksicApplicationController extends Controller implements HasMiddleware
      */
     public function downloadPdf(AksicApplication $aksicApplication)
     {
+        $this->abortUnlessVisible($aksicApplication);
+
         // Load relationships for PDF generation
         $aksicApplication->load(['educations', 'statusLogs', 'businessCategory', 'businessSubCategory']);
 

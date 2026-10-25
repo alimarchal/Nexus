@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\OfficeAccess;
+use Database\Factories\AksicApplicationFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AksicApplication extends Model
 {
-    /** @use HasFactory<\Database\Factories\AksicApplicationFactory> */
+    /** @use HasFactory<AksicApplicationFactory> */
     use HasFactory, HasUuids;
 
     protected $fillable = [
@@ -51,7 +54,7 @@ class AksicApplication extends Model
         'tehsil_name',
         'api_call_json',
         'applicant_choosed_branch_code',
-        'challan_branch_code'
+        'challan_branch_code',
     ];
 
     protected $casts = [
@@ -92,5 +95,31 @@ class AksicApplication extends Model
     public function businessSubCategory(): BelongsTo
     {
         return $this->belongsTo(AksicBusinessCategory::class, 'business_sub_category_id');
+    }
+
+    /**
+     * Applications the user may see: linked to an allowed branch, or (for rows the sync could not link yet)
+     * naming an allowed branch's code as the branch the applicant chose.
+     */
+    public function scopeVisibleTo(Builder $query, ?User $user): Builder
+    {
+        $ids = OfficeAccess::branchIds($user);
+
+        if ($ids === null) {
+            return $query;
+        }
+
+        if ($ids === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $codes = Branch::query()->whereIn('id', $ids)->pluck('code')->all();
+
+        return $query->where(function (Builder $visible) use ($ids, $codes) {
+            $visible->whereIn('branch_id', $ids)
+                ->orWhere(function (Builder $unlinked) use ($codes) {
+                    $unlinked->whereNull('branch_id')->whereIn('applicant_choosed_branch_code', $codes);
+                });
+        });
     }
 }

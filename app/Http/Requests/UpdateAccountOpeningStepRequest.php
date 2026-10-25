@@ -6,9 +6,15 @@ namespace App\Http\Requests;
 
 use App\Exceptions\AccountOpeningWorkflowException;
 use App\Models\AccountOpeningRequest;
+use App\Models\AccountPurpose;
 use App\Models\Country;
+use App\Models\Currency;
+use App\Models\Customer;
+use App\Models\DocumentRequirement;
+use App\Models\IncomeSource;
 use App\Services\AccountOpeningWorkflow;
 use App\Support\MobileNumber;
+use Carbon\Carbon;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -74,7 +80,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
         return [
             'contacts.mobile.1.value.required' => 'Please enter at least one contact number to continue.',
             'contacts.mobile.1.country_code.required' => 'Please enter the country code for the mobile number, for example +92.',
-            'initial_deposit.min' => 'The initial deposit must be at least '.number_format((float) config('account_opening.minimum_initial_deposit'), 2).'.',
+            'initial_deposit.min' => 'The initial deposit cannot be negative.',
             'initial_deposit.decimal' => 'The initial deposit can have at most 2 decimal places.',
             'initial_deposit.numeric' => 'Enter the initial deposit as an amount, for example '.number_format((float) config('account_opening.minimum_initial_deposit'), 2, '.', '').'.',
             'terms_and_conditions_accepted.accepted' => 'Please review and accept the Terms and Conditions before continuing.',
@@ -89,38 +95,182 @@ class UpdateAccountOpeningStepRequest extends FormRequest
      */
     public function withValidator(Validator $validator): void
     {
+        $validator->after(function (Validator $validator): void {
+            match ((string) $this->route('step')) {
+                'cif' => $this->validateMinorMatchesDateOfBirth($validator),
+                'identification' => $this->validateIdentificationStep($validator),
+                'account' => $this->validateMinimumInitialDeposit($validator),
+                'holders' => $this->validateDistinctHolders($validator),
+                'cdd' => $this->validateDueDiligenceOptions($validator),
+                default => null,
+            };
+        });
+
         if ((string) $this->route('step') === 'compliance') {
             $this->validateTaxResidency($validator);
-
-            return;
         }
 
         if ((string) $this->route('step') === 'holders') {
             $this->validateSignatoryImages($validator);
+        }
+    }
+
+    private function validateIdentificationStep(Validator $validator): void
+    {
+        $this->validateDistinctIdentifications($validator);
+        $this->validateIdentificationRows($validator);
+
+        if ($validator->errors()->has('contacts.mobile.1.value')) {
+            return;
+        }
+
+        $problem = MobileNumber::problem(
+            $this->input('contacts.mobile.1.country_code'),
+            $this->input('contacts.mobile.1.value'),
+        );
+
+        if ($problem !== null) {
+            $validator->errors()->add('contacts.mobile.1.value', $problem);
+        }
+    }
+
+    /**
+     * An individual needs at least one identification document; every expiry date must fall after its
+     * issue date, and a document that has already expired needs the "expired accepted" tick.
+     */
+    private function validateIdentificationRows(Validator $validator): void
+    {
+        $customer = $this->route('accountOpeningRequest')?->customer;
+        $rows = collect((array) $this->input('identifications', []));
+
+        if (! $this->boolean('save_and_exit') && ($customer?->needsIndividualProfile() ?? true) && $rows->doesntContain(fn ($row): bool => filled($row['document_number'] ?? null))) {
+            $validator->errors()->add('identifications.0.document_number', 'Enter at least one identification document.');
 
             return;
         }
 
-        if ((string) $this->route('step') !== 'identification') {
+        if ($this->boolean('save_and_exit')) {
             return;
         }
 
-        $validator->after(function (Validator $validator): void {
-            $this->validateDistinctIdentifications($validator);
-
-            if ($validator->errors()->has('contacts.mobile.1.value')) {
-                return;
+        foreach ($rows as $index => $row) {
+            if (blank($row['document_number'] ?? null) || blank($row['expiry_date'] ?? null)) {
+                continue;
             }
 
-            $problem = MobileNumber::problem(
-                $this->input('contacts.mobile.1.country_code'),
-                $this->input('contacts.mobile.1.value'),
-            );
+            if (filled($row['issue_date'] ?? null) && $this->dateOrNull($row['expiry_date'])?->lte($this->dateOrNull($row['issue_date']))) {
+                $validator->errors()->add("identifications.{$index}.expiry_date", 'The expiry date must be after the issue date.');
 
-            if ($problem !== null) {
-                $validator->errors()->add('contacts.mobile.1.value', $problem);
+                continue;
             }
-        });
+
+            if ($this->dateOrNull($row['expiry_date'])?->isPast() && ! ($row['is_expired_accepted'] ?? false)) {
+                $validator->errors()->add("identifications.{$index}.is_expired_accepted", 'This document has expired. Tick "expired accepted" to continue with it.');
+            }
+        }
+    }
+
+    private function dateOrNull(mixed $value): ?Carbon
+    {
+        try {
+            return filled($value) ? Carbon::parse((string) $value)->startOfDay() : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * The "Minor" tick and the date of birth must agree: a minor is under 18.
+     */
+    private function validateMinorMatchesDateOfBirth(Validator $validator): void
+    {
+        $dateOfBirth = $this->dateOrNull($this->input('date_of_birth'));
+
+        if ($dateOfBirth === null || $validator->errors()->has('date_of_birth')) {
+            return;
+        }
+
+        $isUnderEighteen = $dateOfBirth->diffInYears(now()->startOfDay(), true) < 18;
+
+        if ($this->boolean('is_minor') && ! $isUnderEighteen) {
+            $validator->errors()->add('is_minor', 'The date of birth shows the customer is 18 or older, so "Minor" cannot be ticked.');
+        }
+
+        if (! $this->boolean('is_minor') && $isUnderEighteen) {
+            $validator->errors()->add('is_minor', 'The date of birth shows the customer is under 18. Tick "Minor" and enter the guardian.');
+        }
+    }
+
+    /**
+     * The minimum opening deposit applies to local currency accounts only, and is checked on the Account step only.
+     */
+    private function validateMinimumInitialDeposit(Validator $validator): void
+    {
+        $deposit = $this->input('initial_deposit');
+
+        if (blank($deposit) || $validator->errors()->has('initial_deposit') || ! is_numeric($deposit)) {
+            return;
+        }
+
+        $isLocal = Currency::query()->whereKey($this->input('currency_id'))->value('is_local');
+        $minimum = (float) config('account_opening.minimum_initial_deposit');
+
+        if ($isLocal && (float) $deposit < $minimum) {
+            $validator->errors()->add('initial_deposit', 'The initial deposit must be at least '.number_format($minimum, 2).'.');
+        }
+    }
+
+    /**
+     * One applicant row per customer and role: the same customer in the same role twice would share one holder record.
+     */
+    private function validateDistinctHolders(Validator $validator): void
+    {
+        $seen = [];
+
+        foreach ((array) $this->input('holders', []) as $index => $row) {
+            if (blank($row['customer_id'] ?? null)) {
+                continue;
+            }
+
+            $key = $row['customer_id'].'|'.($row['holder_role'] ?? '');
+
+            if (isset($seen[$key])) {
+                $validator->errors()->add("holders.{$index}.customer_id", 'This customer is already entered with the same role. Enter each applicant once per role.');
+            }
+
+            $seen[$key] = true;
+        }
+    }
+
+    /**
+     * Documents, income sources and account purposes must be the ones the server offers for this customer category / form.
+     */
+    private function validateDueDiligenceOptions(Validator $validator): void
+    {
+        $accountOpeningRequest = $this->route('accountOpeningRequest');
+        $formType = $accountOpeningRequest?->aof_form_type === AccountOpeningRequest::FORM_ENTITY ? 'entity' : 'individual';
+
+        $requiredTypeIds = DocumentRequirement::query()
+            ->where('customer_category_id', $accountOpeningRequest?->customer?->customer_category_id)
+            ->pluck('document_type_id')
+            ->map(fn ($id): string => (string) $id)
+            ->all();
+
+        foreach (array_keys((array) $this->input('documents', [])) as $documentTypeId) {
+            if (! in_array((string) $documentTypeId, $requiredTypeIds, true)) {
+                $validator->errors()->add("documents.{$documentTypeId}", 'This document type is not part of the checklist for the customer category.');
+            }
+        }
+
+        foreach ([['income_sources', IncomeSource::class], ['account_purposes', AccountPurpose::class]] as [$field, $model]) {
+            $offered = $model::query()->active()->forForm($formType)->pluck('id')->map(fn ($id): string => (string) $id)->all();
+
+            foreach ((array) $this->input($field, []) as $index => $id) {
+                if (! in_array((string) $id, $offered, true) && ! $validator->errors()->has("{$field}.{$index}")) {
+                    $validator->errors()->add("{$field}.{$index}", 'This option is not available for the selected account opening form.');
+                }
+            }
+        }
     }
 
     /**
@@ -224,7 +374,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
      */
     private function initialDepositRules(): array
     {
-        return ['nullable', 'numeric', 'decimal:0,2', 'min:'.config('account_opening.minimum_initial_deposit')];
+        return ['nullable', 'numeric', 'decimal:0,2', 'min:0'];
     }
 
     /**
@@ -234,6 +384,10 @@ class UpdateAccountOpeningStepRequest extends FormRequest
      */
     private function cifRules(): array
     {
+        $customerType = $this->route('accountOpeningRequest')?->customer?->customer_type;
+        $nameRequired = in_array($customerType, [Customer::TYPE_INDIVIDUAL, Customer::TYPE_SOLE_PROPRIETOR], true);
+        $businessNameRequired = in_array($customerType, [Customer::TYPE_ENTITY, Customer::TYPE_SOLE_PROPRIETOR], true);
+
         return [
             'customer_category_other' => ['nullable', 'string', 'max:150'],
             'category_code_description' => ['nullable', 'string', 'max:200'],
@@ -241,7 +395,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
 
             // Customer Details For Individuals
             'title' => ['nullable', 'string', 'max:10'],
-            'full_name' => ['nullable', 'required_without:business_name', 'string', 'max:150'],
+            'full_name' => [$nameRequired ? 'required' : 'nullable', 'string', 'max:150'],
             'full_name_ur' => ['nullable', 'string', 'max:150'],
             'parentage_relationship_id' => ['nullable', 'uuid', 'exists:relationships,id'],
             'parent_or_spouse_name' => ['nullable', 'string', 'max:150'],
@@ -272,7 +426,7 @@ class UpdateAccountOpeningStepRequest extends FormRequest
             'witness_cnic' => ['nullable', 'string', 'max:25'],
 
             // Customer Details For Business
-            'business_name' => ['nullable', 'required_without:full_name', 'string', 'max:200'],
+            'business_name' => [$businessNameRequired ? 'required' : 'nullable', 'string', 'max:200'],
             'business_name_ur' => ['nullable', 'string', 'max:200'],
             'other_business_of_proprietor' => ['nullable', 'string', 'max:200'],
             'business_nature_id' => ['nullable', 'uuid', 'exists:business_natures,id'],
@@ -317,11 +471,8 @@ class UpdateAccountOpeningStepRequest extends FormRequest
      */
     private function identificationRules(): array
     {
-        $customer = $this->route('accountOpeningRequest')?->customer;
-        $needsIdentification = $customer?->needsIndividualProfile() ?? true;
-
         return [
-            'identifications' => [$needsIdentification ? 'required' : 'nullable', 'array'],
+            'identifications' => ['nullable', 'array'],
             'identifications.*.identification_document_type_id' => ['required_with:identifications.*.document_number', 'nullable', 'uuid', 'exists:identification_document_types,id'],
             'identifications.*.document_number' => ['nullable', 'string', 'max:50'],
             'identifications.*.issue_date' => ['nullable', 'date'],

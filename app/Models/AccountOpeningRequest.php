@@ -165,6 +165,32 @@ class AccountOpeningRequest extends Model
         return $query->whereRaw('1 = 0');
     }
 
+    /**
+     * The branches this user may start a request for (same reach as scopeVisibleTo): null means every branch.
+     *
+     * @return array<int, int>|null
+     */
+    public static function branchIdsStartableBy(?User $user): ?array
+    {
+        if (! $user) {
+            return [];
+        }
+
+        if ($user->is_super_admin === 'Yes' || $user->hasRole(['super-admin', 'head-office'])) {
+            return null;
+        }
+
+        if ($user->hasRole('branch') && $user->branch_id) {
+            return [(int) $user->branch_id];
+        }
+
+        if ($user->hasRole('region') && $user->region_id) {
+            return Branch::where('region_id', $user->region_id)->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        }
+
+        return [];
+    }
+
     public function scopeBranchId(Builder $query, string $branchId): Builder
     {
         return $query->where('branch_id', $branchId);
