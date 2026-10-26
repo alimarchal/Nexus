@@ -73,6 +73,9 @@ class PaperAccountOpeningController extends Controller implements HasMiddleware
             ]);
             $accountOpeningRequest->paperForm()->save($form);
 
+            // The list filters by form type, so it has to follow the Nature of Account chosen on the paper form.
+            $accountOpeningRequest->update(['aof_form_type' => AccountOpeningRequest::formTypeForNature($clean['account_nature'] ?? null)]);
+
             $changes = $this->changes($before, $form->values());
 
             if ($changes !== []) {

@@ -109,6 +109,15 @@ class AccountOpeningRequest extends Model
         return $this->belongsTo(User::class, 'unlocked_by');
     }
 
+    /**
+     * The form type of an old (paper) request follows its Nature of Account: a business account is an Entity request,
+     * an individual account (single or joint) the Individual/Joint/Sole one.
+     */
+    public static function formTypeForNature(?string $accountNature): string
+    {
+        return $accountNature === 'business' ? self::FORM_ENTITY : self::FORM_INDIVIDUAL;
+    }
+
     public function isOldEdition(): bool
     {
         return $this->form_edition === self::EDITION_OLD;
