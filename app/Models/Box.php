@@ -93,6 +93,23 @@ class Box extends Model
     }
 
     /**
+     * Set the file count from the files that are really in the box, and keep a full/open box in step with it.
+     * A box that was closed by hand stays closed.
+     */
+    public function refreshFileCount(): void
+    {
+        $count = $this->files()->where('is_archived', true)->count();
+
+        $status = match (true) {
+            $this->status === 'open' && $count >= $this->capacity => 'full',
+            $this->status === 'full' && $count < $this->capacity => 'open',
+            default => $this->status,
+        };
+
+        $this->forceFill(['file_count' => $count, 'status' => $status])->save();
+    }
+
+    /**
      * Check if this box can accept more files.
      */
     public function canAcceptFiles(): bool

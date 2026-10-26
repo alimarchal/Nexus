@@ -146,3 +146,44 @@ test('with maker-checker switched off every file can be transferred and archived
 
     $this->actingAs($this->user)->get(route('file-management-systems.transfer', $file))->assertSuccessful();
 });
+
+test('a file that is already archived cannot be archived again and the box count stays right', function () {
+    $file = guardFile($this->branch);
+    $box = guardBox($this->branch, ['capacity' => 3]);
+    $other = guardBox($this->branch, ['capacity' => 3]);
+
+    $this->actingAs($this->user)->post(route('file-management-systems.archive', $file), ['box_id' => $box->id])->assertSessionHas('success');
+    $position = $file->fresh()->position_in_box;
+
+    foreach ([$box, $other] as $target) {
+        $this->actingAs($this->user)->post(route('file-management-systems.archive', $file), ['box_id' => $target->id])
+            ->assertRedirect(route('file-management-systems.show', $file))
+            ->assertSessionHas('error', fn (string $message) => str_contains($message, 'already archived in '.$box->box_number));
+    }
+    $this->actingAs($this->user)->get(route('file-management-systems.archive-form', $file))->assertRedirect(route('file-management-systems.show', $file))->assertSessionHas('error');
+
+    expect($box->fresh()->file_count)->toBe(1)->and($box->fresh()->status)->toBe('open')
+        ->and($other->fresh()->file_count)->toBe(0)
+        ->and($file->fresh()->box_id)->toBe($box->id)->and($file->fresh()->position_in_box)->toBe($position);
+});
+
+test('the box becomes full when its last place is taken', function () {
+    $box = guardBox($this->branch, ['capacity' => 2]);
+
+    foreach ([1, 2] as $_) {
+        $this->actingAs($this->user)->post(route('file-management-systems.archive', guardFile($this->branch)), ['box_id' => $box->id]);
+    }
+
+    expect($box->fresh())->file_count->toBe(2)->status->toBe('full');
+});
+
+test('the recount migration corrects boxes that were counted twice', function () {
+    $box = guardBox($this->branch, ['capacity' => 3, 'file_count' => 3, 'status' => 'full']);
+    $closed = guardBox($this->branch, ['capacity' => 3, 'file_count' => 5, 'status' => 'closed']);
+    guardFile($this->branch, ['box_id' => $box->id, 'is_archived' => true, 'position_in_box' => 1]);
+
+    (require database_path('migrations/2026_10_26_110000_recount_box_file_counts.php'))->up();
+
+    expect($box->fresh())->file_count->toBe(1)->status->toBe('open')
+        ->and($closed->fresh())->file_count->toBe(0)->status->toBe('closed');
+});
