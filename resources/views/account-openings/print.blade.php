@@ -72,7 +72,7 @@
     </header>
 
     {{-- #01 / #02 Particulars of Account + Bank Use Only --}}
-    <h2 class="section">Particulars of Account &mdash; For Bank Use Only</h2>
+    <h2 class="section">#01&ndash;#02 &middot; Particulars of Account &mdash; For Bank Use Only</h2>
     <table class="grid avoid-break">
         <tr>
             <th>Title of Account</th><td>{!! $val($account?->title_of_account) !!}</td>
@@ -103,7 +103,7 @@
     </table>
 
     {{-- #04 / #05 Customer Category --}}
-    <h2 class="section">Customer Information Form (CIF)</h2>
+    <h2 class="section">#03&ndash;#05 &middot; Customer Information Form (CIF)</h2>
     <table class="grid avoid-break">
         <tr>
             <th>Client / Relationship ID</th><td>{!! $val($customer?->cif_number) !!}</td>
@@ -132,7 +132,7 @@
 
     {{-- #06 Customer Details For Individuals --}}
     @if ($individual)
-        <h2 class="section">Customer Details For Individuals</h2>
+        <h2 class="section">#06 &middot; Customer Details For Individuals</h2>
         <table class="grid avoid-break">
             <tr>
                 <th>Name</th><td>{!! $val(trim(($individual->title ? $individual->title.' ' : '').$individual->full_name)) !!}</td>
@@ -186,7 +186,7 @@
 
     {{-- #06 Customer Details For Business --}}
     @if ($organization)
-        <h2 class="section">Customer Details For Business</h2>
+        <h2 class="section">#06 &middot; Customer Details For Business</h2>
         <table class="grid avoid-break">
             <tr>
                 <th>Company / Business Name</th><td>{!! $val($organization->business_name) !!}</td>
@@ -229,7 +229,7 @@
 
     {{-- #07 Identification (the entity AOF has no such block of its own) --}}
     @if ($customer?->identifications->isNotEmpty() || $customer?->needsIndividualProfile())
-    <h2 class="section">Identification</h2>
+    <h2 class="section">#07 &middot; Identification</h2>
     <table class="list avoid-break">
         <thead>
             <tr><th>Document</th><th>Number</th><th>Issued</th><th>Expiry</th><th>Place of Issuance</th><th>Attested</th><th>Verisys</th></tr>
@@ -253,7 +253,7 @@
     @endif
 
     {{-- #08 / #09 Contact Details --}}
-    <h2 class="section">Contact Details</h2>
+    <h2 class="section">#08&ndash;#09 &middot; Contact Details</h2>
     <table class="list avoid-break">
         <thead><tr><th>Address</th><th>House / Office</th><th>Street / Area</th><th>Tehsil / District</th><th>City</th><th>Country</th><th>Postal Code</th></tr></thead>
         <tbody>
@@ -293,6 +293,12 @@
             <th>E-Mail ID</th><td>{!! $val($contact('email_personal_office')?->value) !!}</td>
             <th>Fax</th><td>{!! $val($contact('fax_personal_office')?->value) !!}</td>
         </tr>
+    </table>
+
+    {{-- #10 Zakat Exemption (printed when the form holds zakat data) --}}
+    @if ($customer && ($customer->is_zakat_exempt || $customer->zakatExemptionReason || $customer->cz50_submitted_on))
+        <h2 class="section">#10 &middot; Zakat Exemption</h2>
+        <table class="grid avoid-break">
         <tr>
             <th>Zakat Exemption</th>
             <td colspan="3" class="checks">
@@ -301,10 +307,11 @@
                 <span>CZ-50 submitted: {!! $val($customer?->cz50_submitted_on?->format('d-m-Y')) !!}</span>
             </td>
         </tr>
-    </table>
+        </table>
+    @endif
 
     {{-- #12 / #13 / #14 FATCA, CRS, Tax Residency --}}
-    <h2 class="section">FATCA / CRS &amp; Tax Residency</h2>
+    <h2 class="section">#12&ndash;#14 &middot; FATCA / CRS &amp; Tax Residency</h2>
     @php $fatca = $customer?->fatcaDetail; @endphp
     <table class="grid avoid-break">
         @unless ($isEntity)
@@ -348,13 +355,6 @@
                 <th>Listed Stock Exchange</th><td>{!! $val($fatca?->listed_stock_exchange) !!}</td>
             </tr>
         @endunless
-        <tr>
-            <th>Politically Exposed Person</th>
-            <td colspan="3" class="checks">
-                <span>{!! $tick($customer?->is_pep) !!} PEP</span>
-                <span>{!! $tick($customer?->pep_form_attached) !!} PEP declaration form attached</span>
-            </td>
-        </tr>
     </table>
 
     <table class="list avoid-break">
@@ -390,8 +390,22 @@
         </table>
     @endif
 
+    {{-- #15 Politically Exposed Person (printed when the form holds PEP data) --}}
+    @if ($customer && ($customer->is_pep || $customer->pep_form_attached))
+        <h2 class="section">#15 &middot; Politically Exposed Person (PEP)</h2>
+        <table class="grid avoid-break">
+        <tr>
+            <th>Politically Exposed Person</th>
+            <td colspan="3" class="checks">
+                <span>{!! $tick($customer?->is_pep) !!} PEP</span>
+                <span>{!! $tick($customer?->pep_form_attached) !!} PEP declaration form attached</span>
+            </td>
+        </tr>
+        </table>
+    @endif
+
     {{-- #16 to #25 Account --}}
-    <h2 class="section">Type of Account, Operating Instructions &amp; Services</h2>
+    <h2 class="section">#16&ndash;#25 &middot; Type of Account, Operating Instructions &amp; Services</h2>
     @php $chequeBook = $account?->chequeBooks->first(); $debitCard = $account?->debitCards->first(); @endphp
     <table class="grid avoid-break">
         <tr>
@@ -436,8 +450,71 @@
         </tr>
     </table>
 
+    {{-- #26 Terms & Conditions --}}
+    <h2 class="section">#26 &middot; Terms &amp; Conditions</h2>
+    <table class="grid avoid-break">
+        <tr>
+            <th>Customer Acceptance</th>
+            <td colspan="3" class="checks">
+                <span>{!! $tick($request->terms_and_conditions_accepted) !!} Terms &amp; Conditions accepted</span>
+                <span>{!! $tick($request->aof_copy_received_by_customer) !!} Copy of AOF received</span>
+                <span>{!! $tick($request->shariah_compliant_investment_authorized) !!} Shariah compliant investment authorized</span>
+            </td>
+        </tr>
+    </table>
+
+    {{-- #27 Documentation --}}
+    <h2 class="section">#27 &middot; Minimum Documentation to be Obtained</h2>
+    <table class="list avoid-break">
+        <thead><tr><th>Document</th><th>Status</th><th>Attested</th><th>Remarks</th></tr></thead>
+        <tbody>
+            @forelse ($request->documents as $document)
+                <tr>
+                    <td>{{ $document->documentType?->name }}</td>
+                    <td>{{ ucfirst($document->status) }}</td>
+                    <td>{!! $tick($document->is_attested) !!}</td>
+                    <td>{{ $document->remarks ?? '—' }}</td>
+                </tr>
+            @empty
+                <tr><td colspan="4" class="muted">No documents recorded.</td></tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    {{-- #28 Indemnity & Undertaking --}}
+    <h2 class="section">#28 &middot; Indemnity &amp; Undertaking</h2>
+    <table class="grid avoid-break">
+        <tr>
+            <th>Customer Undertaking</th>
+            <td colspan="3" class="checks">
+                <span>{!! $tick($request->indemnity_undertaking_accepted) !!} Indemnity &amp; Undertaking signed</span>
+            </td>
+        </tr>
+    </table>
+
+    {{-- #29 Next of kin --}}
+    @if ($customer?->nextOfKin->isNotEmpty())
+        <h2 class="section">#29 &middot; Contact Persons (Next of Kin)</h2>
+        <table class="list avoid-break">
+            <thead><tr><th>Name</th><th>Relationship</th><th>ID Number</th><th>Address</th><th>City</th><th>Telephone</th><th>Email</th></tr></thead>
+            <tbody>
+                @foreach ($customer->nextOfKin as $kin)
+                    <tr>
+                        <td>{{ $kin->name }}</td>
+                        <td>{{ $kin->relationship?->name ?? '—' }}</td>
+                        <td>{{ $kin->identification_number ?? '—' }}</td>
+                        <td>{{ $kin->address ?? '—' }}</td>
+                        <td>{{ $kin->city ?? '—' }}</td>
+                        <td>{{ $kin->telephone ?? '—' }}</td>
+                        <td>{{ $kin->email ?? '—' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     {{-- #30 Applicants --}}
-    <h2 class="section">Applicants &amp; Specimen Signatures</h2>
+    <h2 class="section">#30 &middot; Applicants &amp; Specimen Signatures</h2>
     <table class="list avoid-break">
         <thead><tr><th>#</th><th>Client / Relationship ID</th><th>Name</th><th>Role</th><th>Designation</th><th>Signatory</th></tr></thead>
         <tbody>
@@ -472,30 +549,9 @@
         @endif
     </div>
 
-    {{-- #29 Next of kin --}}
-    @if ($customer?->nextOfKin->isNotEmpty())
-        <h2 class="section">Contact Persons (Next of Kin)</h2>
-        <table class="list avoid-break">
-            <thead><tr><th>Name</th><th>Relationship</th><th>ID Number</th><th>Address</th><th>City</th><th>Telephone</th><th>Email</th></tr></thead>
-            <tbody>
-                @foreach ($customer->nextOfKin as $kin)
-                    <tr>
-                        <td>{{ $kin->name }}</td>
-                        <td>{{ $kin->relationship?->name ?? '—' }}</td>
-                        <td>{{ $kin->identification_number ?? '—' }}</td>
-                        <td>{{ $kin->address ?? '—' }}</td>
-                        <td>{{ $kin->city ?? '—' }}</td>
-                        <td>{{ $kin->telephone ?? '—' }}</td>
-                        <td>{{ $kin->email ?? '—' }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
-
     {{-- #31 to #33 CDD --}}
     @if ($dueDiligence)
-        <h2 class="section">Customer Due Diligence &mdash; For Bank Use Only</h2>
+        <h2 class="section">#31&ndash;#33 &middot; Customer Due Diligence &mdash; For Bank Use Only</h2>
         <table class="grid avoid-break">
             <tr>
                 <th>Type of Customer</th>
@@ -556,36 +612,9 @@
         @endif
     @endif
 
-    {{-- #27 Documentation --}}
-    <h2 class="section">Minimum Documentation to be Obtained</h2>
-    <table class="list avoid-break">
-        <thead><tr><th>Document</th><th>Status</th><th>Attested</th><th>Remarks</th></tr></thead>
-        <tbody>
-            @forelse ($request->documents as $document)
-                <tr>
-                    <td>{{ $document->documentType?->name }}</td>
-                    <td>{{ ucfirst($document->status) }}</td>
-                    <td>{!! $tick($document->is_attested) !!}</td>
-                    <td>{{ $document->remarks ?? '—' }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="4" class="muted">No documents recorded.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-
-    {{-- #26 / #28 / #34 Declarations and recommendation --}}
-    <h2 class="section">Declarations &amp; Recommendation</h2>
+    {{-- #34 Recommendation --}}
+    <h2 class="section">#34 &middot; Recommendation</h2>
     <table class="grid avoid-break">
-        <tr>
-            <th>Customer Declarations</th>
-            <td colspan="3" class="checks">
-                <span>{!! $tick($request->terms_and_conditions_accepted) !!} Terms &amp; Conditions accepted</span>
-                <span>{!! $tick($request->indemnity_undertaking_accepted) !!} Indemnity &amp; Undertaking signed</span>
-                <span>{!! $tick($request->aof_copy_received_by_customer) !!} Copy of AOF received</span>
-                <span>{!! $tick($request->shariah_compliant_investment_authorized) !!} Shariah compliant investment authorized</span>
-            </td>
-        </tr>
         <tr>
             <th>Sales Staff / RM (1)</th><td>{!! $val($request->sales_staff_name_1) !!} {{ $request->sales_staff_employee_no_1 ? '('.$request->sales_staff_employee_no_1.')' : '' }}</td>
             <th>Sales Staff / RM (2)</th><td>{!! $val($request->sales_staff_name_2) !!} {{ $request->sales_staff_employee_no_2 ? '('.$request->sales_staff_employee_no_2.')' : '' }}</td>
