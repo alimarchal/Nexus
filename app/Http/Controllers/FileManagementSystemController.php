@@ -886,13 +886,24 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         }
 
         $alreadyArchived = false;
+        $boxUnavailable = false;
 
-        DB::transaction(function () use ($fileManagementSystem, $box, &$alreadyArchived) {
+        DB::transaction(function () use ($fileManagementSystem, &$box, &$alreadyArchived, &$boxUnavailable) {
             // Read the file again under a lock so two requests for the same file cannot both archive it.
             $current = FileManagementSystem::query()->lockForUpdate()->findOrFail($fileManagementSystem->id);
 
             if ($current->isArchived()) {
                 $alreadyArchived = true;
+
+                return;
+            }
+
+            // Lock the box too, so two users archiving into it at the same moment are handled one after the other:
+            // the capacity is checked on the locked row and every file gets the next free position.
+            $box = Box::query()->lockForUpdate()->findOrFail($box->id);
+
+            if (! $box->canAcceptFiles()) {
+                $boxUnavailable = true;
 
                 return;
             }
@@ -903,7 +914,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
                 'box_id' => $box->id,
                 'is_archived' => true,
                 'archived_at' => now(),
-                'position_in_box' => $box->file_count + 1,
+                'position_in_box' => $box->nextPosition(),
             ]);
 
             $this->moveMediaForArchive($fileManagementSystem, $box);
@@ -927,6 +938,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
 
         if ($alreadyArchived) {
             return $this->alreadyArchivedRedirect($fileManagementSystem->refresh());
+        }
+
+        if ($boxUnavailable) {
+            return redirect()->back()->with('error', 'Selected box is full or closed');
         }
 
         return redirect()
