@@ -400,11 +400,11 @@
                                                 </span>
                                                 <span class="ak-slot">
                                                     @can('transfer file management systems')
-                                                        @unless ($file->is_archived)
+                                                        @if (! $file->is_archived && $file->isReadyToMove())
                                                             <a href="{{ route('file-management-systems.transfer', $file) }}" class="ak-icon" title="Transfer file" aria-label="Transfer file {{ $file->digital_id }}">
                                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
                                                             </a>
-                                                        @endunless
+                                                        @endif
                                                     @endcan
                                                 </span>
                                             </div>

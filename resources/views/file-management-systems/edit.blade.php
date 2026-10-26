@@ -5,13 +5,15 @@
         </h2>
         <div class="flex justify-center items-center float-right gap-2">
             @can('transfer file management systems')
+                @if ($fileManagementSystem->isReadyToMove())
                 <a href="{{ route('file-management-systems.transfer', $fileManagementSystem) }}"
                     class="inline-flex items-center rounded-md border border-transparent bg-blue-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-blue-900">
                     Transfer
                 </a>
+                @endif
             @endcan
             @can('archive file management systems')
-                @if (! $fileManagementSystem->is_archived && $fileManagementSystem->isHeldBy(auth()->user()))
+                @if (! $fileManagementSystem->is_archived && $fileManagementSystem->isReadyToMove() && $fileManagementSystem->isHeldBy(auth()->user()))
                     <a href="{{ route('file-management-systems.archive-form', $fileManagementSystem) }}"
                         class="inline-flex items-center rounded-md border border-transparent bg-purple-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-purple-700">
                         Archive

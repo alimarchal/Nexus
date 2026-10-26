@@ -21,7 +21,7 @@ beforeEach(function () {
 
 function guardFile(Branch $branch, array $attributes = []): FileManagementSystem
 {
-    $file = FileManagementSystem::factory()->create(['fileable_type' => 'branch', 'fileable_id' => $branch->id, 'status' => 'approved'] + $attributes);
+    $file = FileManagementSystem::factory()->create($attributes + ['fileable_type' => 'branch', 'fileable_id' => $branch->id, 'status' => 'approved']);
     $file->addMedia(UploadedFile::fake()->create('scan.pdf', 20, 'application/pdf'))->toMediaCollection('pages');
 
     return $file;
@@ -29,7 +29,7 @@ function guardFile(Branch $branch, array $attributes = []): FileManagementSystem
 
 function guardBox(Branch $branch, array $attributes = []): Box
 {
-    return Box::factory()->create(['boxable_type' => 'branch', 'boxable_id' => $branch->id, 'status' => 'open'] + $attributes);
+    return Box::factory()->create($attributes + ['boxable_type' => 'branch', 'boxable_id' => $branch->id, 'status' => 'open']);
 }
 
 test('a user cannot archive a file of another office by sending the request directly', function () {
@@ -102,4 +102,47 @@ test('self approval of a transfer follows the file self approval setting', funct
 
     $this->actingAs($superAdmin)->patch(route('file-management-systems.transfers.decide', [$file, $transfer]), ['decision' => 'approved'])->assertSessionHas('success');
     expect($transfer->fresh()->status)->toBe('approved');
+});
+
+test('a file that is not approved cannot be transferred or archived and the screens say why', function (string $status, string $expected) {
+    $file = guardFile($this->branch, ['status' => $status]);
+    $box = guardBox($this->branch);
+    $recipient = User::factory()->create(['branch_id' => $this->otherBranch->id]);
+    $show = route('file-management-systems.show', $file);
+
+    $this->actingAs($this->user)->get($show)
+        ->assertSee($expected)
+        ->assertDontSee(route('file-management-systems.transfer', $file), false)
+        ->assertDontSee(route('file-management-systems.archive-form', $file), false);
+
+    $this->actingAs($this->user)->get(route('file-management-systems.transfer', $file))->assertRedirect($show)->assertSessionHas('error', fn (string $message) => str_contains($message, $expected));
+    $this->actingAs($this->user)->post(route('file-management-systems.transfers.store', $file), [
+        'destination_fileable_type' => 'branch', 'destination_fileable_id' => $this->otherBranch->id,
+        'recipient_id' => $recipient->id, 'reason' => 'Move',
+    ])->assertRedirect($show)->assertSessionHas('error', fn (string $message) => str_contains($message, $expected));
+    $this->actingAs($this->user)->get(route('file-management-systems.archive-form', $file))->assertRedirect($show)->assertSessionHas('error', fn (string $message) => str_contains($message, $expected));
+    $this->actingAs($this->user)->post(route('file-management-systems.archive', $file), ['box_id' => $box->id])->assertRedirect($show)->assertSessionHas('error', fn (string $message) => str_contains($message, $expected));
+
+    expect($file->fresh()->is_archived)->toBeFalsy()->and($box->fresh()->file_count)->toBe(0)->and($file->transfers()->count())->toBe(0);
+})->with([
+    'draft' => ['draft', 'has not been approved yet, so it cannot be'],
+    'rejected' => ['rejected', 'has not been approved yet, so it cannot be'],
+    'waiting for the checker' => ['submitted', 'is waiting for the checker, so it cannot be'],
+]);
+
+test('an approved file can be transferred and archived, also when it is locked', function () {
+    $file = guardFile($this->branch, ['locked_at' => now()]);
+    $box = guardBox($this->branch);
+
+    $this->actingAs($this->user)->get(route('file-management-systems.transfer', $file))->assertSuccessful();
+    $this->actingAs($this->user)->post(route('file-management-systems.archive', $file), ['box_id' => $box->id])->assertSessionHas('success');
+
+    expect($file->fresh()->is_archived)->toBeTrue();
+});
+
+test('with maker-checker switched off every file can be transferred and archived', function () {
+    config(['file_management.maker_checker.enabled' => false]);
+    $file = guardFile($this->branch, ['status' => 'draft']);
+
+    $this->actingAs($this->user)->get(route('file-management-systems.transfer', $file))->assertSuccessful();
 });
