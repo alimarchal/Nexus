@@ -743,17 +743,11 @@ class FileManagementSystemController extends Controller implements HasMiddleware
      */
     public function archiveForm(FileManagementSystem $fileManagementSystem)
     {
-        // Authorization check - user can only archive files from their org unit
         if (! $fileManagementSystem->load('fileable')->fileable) {
             abort(404, 'Record not found');
         }
 
-        $userOrgUnit = $this->getUserOrgUnit();
-        if ($userOrgUnit !== null && (
-            $fileManagementSystem->fileable_type !== $userOrgUnit['type'] ||
-            $fileManagementSystem->fileable_id !== $userOrgUnit['id'])) {
-            abort(403, 'You cannot archive files outside your organization unit');
-        }
+        $this->abortUnlessInOwnOffice($fileManagementSystem);
 
         // Get available boxes for this org unit
         $boxes = Box::where('boxable_type', $fileManagementSystem->fileable_type)
@@ -765,10 +759,27 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     }
 
     /**
+     * A user can only archive files held by their own office; a super admin (no office posting) can archive any.
+     */
+    private function abortUnlessInOwnOffice(FileManagementSystem $fileManagementSystem): void
+    {
+        $userOrgUnit = $this->getUserOrgUnit();
+
+        if ($userOrgUnit !== null && (
+            $fileManagementSystem->fileable_type !== $userOrgUnit['type'] ||
+            (int) $fileManagementSystem->fileable_id !== (int) $userOrgUnit['id'])) {
+            abort(403, 'You cannot archive files outside your organization unit');
+        }
+    }
+
+    /**
      * Archive a file to a box.
      */
     public function storeArchive(FileManagementSystem $fileManagementSystem, StoreFileArchivingRequest $request)
     {
+        $fileManagementSystem = $this->findVisible($fileManagementSystem);
+        $this->abortUnlessInOwnOffice($fileManagementSystem);
+
         $validated = $request->validated();
         $box = Box::findOrFail($validated['box_id']);
 
