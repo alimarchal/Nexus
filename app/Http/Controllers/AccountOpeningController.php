@@ -40,7 +40,6 @@ use App\Models\WealthSource;
 use App\Models\ZakatExemptionReason;
 use App\Services\AccountOpeningWorkflow;
 use App\Support\AccountOpeningSteps;
-use App\Support\PakistanIban;
 use App\Support\PaperForm\PaperFormSchema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -133,8 +132,10 @@ class AccountOpeningController extends Controller implements HasMiddleware
                             ->orWhereHas('customer', fn ($q) => $q->where('cif_number', 'like', "%{$term}%"))
                             ->orWhereHas('customer.individual', fn ($q) => $q->where('full_name', 'like', "%{$term}%"))
                             ->orWhereHas('customer.organization', fn ($q) => $q->where('business_name', 'like', "%{$term}%"))
+                            ->orWhereHas('customer.identifications', fn ($q) => $q->where('document_number', 'like', "%{$term}%"))
                             ->orWhereHas('account', fn ($q) => $q->where('account_number', 'like', "%{$term}%"))
-                            ->orWhereHas('paperForm', fn ($q) => $q->where('display_name', 'like', "%{$term}%"));
+                            // An old request not yet approved has no customer or account: search what its paper form holds (CNIC, account no.).
+                            ->orWhereHas('paperForm', fn ($q) => $q->where('display_name', 'like', "%{$term}%")->orWhere('data', 'like', "%{$term}%"));
                     });
                 }),
                 AllowedFilter::partial('request_number'),
@@ -149,6 +150,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
                         $inner->whereHas('customer', fn ($q) => $q->where('cif_number', 'like', "%{$value}%"))
                             ->orWhereHas('customer.individual', fn ($q) => $q->where('full_name', 'like', "%{$value}%"))
                             ->orWhereHas('customer.organization', fn ($q) => $q->where('business_name', 'like', "%{$value}%"))
+                            ->orWhereHas('customer.identifications', fn ($q) => $q->where('document_number', 'like', "%{$value}%"))
                             ->orWhereHas('paperForm', fn ($q) => $q->where('display_name', 'like', "%{$value}%"));
                     });
                 }),
@@ -325,7 +327,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
     {
         $this->workflow->markUnderReview($accountOpeningRequest, auth()->user());
 
-        $accountOpeningRequest->load(['branch', 'paperForm', 'histories.user', 'submitter', 'approver', 'rejecter', 'unlocker', 'creator']);
+        $accountOpeningRequest->load(['branch', 'paperForm', 'histories.user', 'submitter', 'approver', 'rejecter', 'unlocker', 'creator', 'customer', 'account.holders.customer.individual', 'account.holders.customer.organization']);
         $user = auth()->user();
         $values = $accountOpeningRequest->paperForm?->values() ?? [];
 
@@ -1123,19 +1125,9 @@ class AccountOpeningController extends Controller implements HasMiddleware
         }
     }
 
-    /**
-     * A valid Pakistan IBAN (PK + check digits + BAJK + branch code and serial), numbered in sequence per branch
-     * and checked against every IBAN already issued, so a repeat cannot happen.
-     */
     private function buildIban(Branch $branch): string
     {
-        $serial = Account::withTrashed()->where('branch_id', $branch->id)->count();
-
-        do {
-            $iban = PakistanIban::make(PakistanIban::accountNumber($branch->code, ++$serial));
-        } while (Account::withTrashed()->where('iban', $iban)->exists());
-
-        return $iban;
+        return Account::nextIban($branch);
     }
 
     /* ------------------------------------------------------------------ */

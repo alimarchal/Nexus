@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\PakistanIban;
 use App\Traits\UserTracking;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -46,6 +47,21 @@ class Account extends Model
             'terms_accepted_at' => 'datetime',
             'approved_at' => 'datetime',
         ];
+    }
+
+    /**
+     * A valid Pakistan IBAN (PK + check digits + BAJK + branch code and serial), numbered in sequence per branch
+     * and checked against every IBAN already issued, so a repeat cannot happen.
+     */
+    public static function nextIban(Branch $branch): string
+    {
+        $serial = self::withTrashed()->where('branch_id', $branch->id)->count();
+
+        do {
+            $iban = PakistanIban::make(PakistanIban::accountNumber($branch->code, ++$serial));
+        } while (self::withTrashed()->where('iban', $iban)->exists());
+
+        return $iban;
     }
 
     public function branch(): BelongsTo
