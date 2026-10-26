@@ -473,3 +473,42 @@ test('the business hold mail and customer type are saved under their own names',
 
     expect($request->fresh()->paperForm->data)->toMatchArray(['business_hold_mail' => 'yes', 'kyc_business_customer_type' => 'referred', 'kyc_business_referred_by' => 'Imran']);
 });
+
+test('the form type of an old request follows its nature of account', function () {
+    $request = startOldForm($this);
+    expect($request->aof_form_type)->toBe(AccountOpeningRequest::FORM_INDIVIDUAL);
+
+    saveOldForm($this, $request, ['account_nature' => 'business', 'business_kind' => 'partnership', 'partnership_kind' => 'registered'])->assertSessionHasNoErrors();
+    expect($request->fresh()->aof_form_type)->toBe(AccountOpeningRequest::FORM_ENTITY);
+
+    saveOldForm($this, $request, completeIndividual())->assertSessionHasNoErrors();
+    expect($request->fresh()->aof_form_type)->toBe(AccountOpeningRequest::FORM_INDIVIDUAL);
+});
+
+test('the list filter by form type shows old and new requests of that type', function () {
+    $business = startOldForm($this);
+    saveOldForm($this, $business, ['account_nature' => 'business', 'business_kind' => 'joint_stock', 'company_kind' => 'private']);
+    $individual = startOldForm($this);
+    saveOldForm($this, $individual, completeIndividual());
+
+    $this->actingAs($this->admin)->get(route('account-openings.index', ['filter' => ['aof_form_type' => AccountOpeningRequest::FORM_ENTITY]]))
+        ->assertSuccessful()->assertSee($business->request_number)->assertDontSee($individual->request_number);
+    $this->actingAs($this->admin)->get(route('account-openings.index', ['filter' => ['aof_form_type' => AccountOpeningRequest::FORM_INDIVIDUAL]]))
+        ->assertSuccessful()->assertSee($individual->request_number)->assertDontSee($business->request_number);
+});
+
+test('the migration corrects the form type of existing old business requests and leaves the rest alone', function () {
+    $business = startOldForm($this);
+    $individual = startOldForm($this);
+    $empty = startOldForm($this);
+    $business->paperForm->update(['data' => ['account_nature' => 'business']]);
+    $individual->paperForm->update(['data' => ['account_nature' => 'individual']]);
+    AccountOpeningRequest::whereKey($individual->id)->update(['aof_form_type' => AccountOpeningRequest::FORM_ENTITY]);
+    AccountOpeningRequest::whereKey($business->id)->update(['aof_form_type' => AccountOpeningRequest::FORM_INDIVIDUAL]);
+
+    (require database_path('migrations/2026_10_26_120000_set_old_account_opening_form_type_from_nature_of_account.php'))->up();
+
+    expect($business->fresh()->aof_form_type)->toBe(AccountOpeningRequest::FORM_ENTITY)
+        ->and($individual->fresh()->aof_form_type)->toBe(AccountOpeningRequest::FORM_INDIVIDUAL)
+        ->and($empty->fresh()->aof_form_type)->toBe(AccountOpeningRequest::FORM_INDIVIDUAL);
+});
