@@ -275,3 +275,35 @@ test('an approved transfer moves the pages to the new office folder', function (
     Storage::disk('local')->assertExists($newPath);
     Storage::disk('local')->assertMissing($previousPath);
 });
+
+test('every file in a box gets its own position, also after a file has left the box', function () {
+    $box = guardBox($this->branch, ['capacity' => 5]);
+    $first = guardFile($this->branch);
+    $second = guardFile($this->branch);
+    $third = guardFile($this->branch);
+
+    foreach ([$first, $second] as $file) {
+        $this->actingAs($this->user)->post(route('file-management-systems.archive', $file), ['box_id' => $box->id])->assertSessionHas('success');
+    }
+    expect([$first->fresh()->position_in_box, $second->fresh()->position_in_box])->toBe([1, 2]);
+
+    // The first file leaves the box; the next one must not take the position the second still holds.
+    $first->forceFill(['box_id' => null, 'is_archived' => false, 'position_in_box' => null])->save();
+    $this->actingAs($this->user)->post(route('file-management-systems.archive', $third), ['box_id' => $box->id])->assertSessionHas('success');
+
+    $positions = FileManagementSystem::where('box_id', $box->id)->pluck('position_in_box')->all();
+    expect($positions)->toHaveCount(2)->and(array_unique($positions))->toHaveCount(2)->and($third->fresh()->position_in_box)->toBe(3);
+});
+
+test('a box never holds more files than its capacity', function () {
+    $box = guardBox($this->branch, ['capacity' => 2]);
+    $files = [guardFile($this->branch), guardFile($this->branch), guardFile($this->branch)];
+
+    foreach ($files as $file) {
+        $this->actingAs($this->user)->post(route('file-management-systems.archive', $file), ['box_id' => $box->id]);
+    }
+
+    expect($box->fresh())->file_count->toBe(2)->status->toBe('full')
+        ->and(FileManagementSystem::where('box_id', $box->id)->count())->toBe(2)
+        ->and($files[2]->fresh()->is_archived)->toBeFalsy();
+});

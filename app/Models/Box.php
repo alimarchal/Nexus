@@ -110,6 +110,15 @@ class Box extends Model
     }
 
     /**
+     * The next free place in the box: one after the highest position in use, so no two files share a position
+     * even when a file has left the box.
+     */
+    public function nextPosition(): int
+    {
+        return (int) $this->files()->where('is_archived', true)->max('position_in_box') + 1;
+    }
+
+    /**
      * Check if this box can accept more files.
      */
     public function canAcceptFiles(): bool
