@@ -23,5 +23,6 @@
     <p>{{ $accountOpeningRequest->request_number }} &middot; {{ $accountOpeningRequest->branch?->code }} {{ $accountOpeningRequest->branch?->name }} &middot; {{ $accountOpeningRequest->request_date?->format('d.m.Y') }} &middot; {{ $accountOpeningRequest->editionLabel() }} form</p>
 
     @include('account-openings.paper._values', ['printing' => true])
+    @include('account-openings.paper._uploads', ['printing' => true])
 </body>
 </html>

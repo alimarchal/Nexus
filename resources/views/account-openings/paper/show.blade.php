@@ -57,6 +57,7 @@
 
             <div class="overflow-hidden bg-white p-6 shadow-xl dark:bg-gray-800 sm:rounded-lg">
                 @include('account-openings.paper._values')
+                @include('account-openings.paper._uploads')
             </div>
 
             @include('account-openings.partials.history')
