@@ -121,7 +121,7 @@ final class AccountOpeningWorkflow
                 'rejected_by' => null,
                 'rejected_at' => null,
             ]);
-            $request->customer?->update(['status' => 'pending_verification']);
+            $this->syncRecords($request, fn (AccountOpeningRequest $r) => $r->customer?->update(['status' => 'pending_verification']));
 
             $this->record($request, 'submitted', $user, note: $request->rejection_reason ? 'Resubmitted after the rejection.' : null);
         });
@@ -142,8 +142,14 @@ final class AccountOpeningWorkflow
                 'locked_at' => config('account_opening.lock_after_approval', true) ? now() : null,
             ]);
 
-            $request->customer?->update(['status' => 'active', 'approved_by' => $user->id, 'approved_at' => now()]);
-            $request->account?->update(['status' => 'active', 'approved_by' => $user->id, 'approved_at' => now()]);
+            if ($request->isOldEdition()) {
+                // The paper form carries no CIF or account of its own: they are created (or linked) now.
+                app(OldFormRegistrar::class)->register($request->loadMissing(['branch', 'paperForm', 'account']), $user);
+                $request->unsetRelation('customer')->unsetRelation('account');
+            } else {
+                $request->customer?->update(['status' => 'active', 'approved_by' => $user->id, 'approved_at' => now()]);
+                $request->account?->update(['status' => 'active', 'approved_by' => $user->id, 'approved_at' => now()]);
+            }
 
             $this->record($request, 'approved', $user, note: $request->isLocked() ? 'Approved and locked.' : 'Approved.');
         });
@@ -166,8 +172,10 @@ final class AccountOpeningWorkflow
                 'rejected_at' => now(),
                 'rejection_reason' => $reason,
             ]);
-            $request->customer?->update(['status' => 'draft']);
-            $request->account?->update(['status' => 'pending']);
+            $this->syncRecords($request, function (AccountOpeningRequest $r): void {
+                $r->customer?->update(['status' => 'draft']);
+                $r->account?->update(['status' => 'pending']);
+            });
 
             $this->record($request, 'rejected', $user, note: $reason);
         });
@@ -203,8 +211,10 @@ final class AccountOpeningWorkflow
                 'unlocked_at' => now(),
                 'unlock_reason' => $reason,
             ]);
-            $request->customer?->update(['status' => 'draft']);
-            $request->account?->update(['status' => 'pending']);
+            $this->syncRecords($request, function (AccountOpeningRequest $r): void {
+                $r->customer?->update(['status' => 'draft']);
+                $r->account?->update(['status' => 'pending']);
+            });
 
             $this->record($request, 'unlocked', $user, note: $reason);
         });
@@ -238,6 +248,17 @@ final class AccountOpeningWorkflow
             'changes' => $changes,
             'note' => $note,
         ]);
+    }
+
+    /**
+     * Move the request's customer and account along with its status. An old request created (or linked) its customer
+     * and account at approval and may share them with other requests, so they keep their status.
+     */
+    private function syncRecords(AccountOpeningRequest $request, Closure $update): void
+    {
+        if (! $request->isOldEdition()) {
+            $update($request);
+        }
     }
 
     private function assertCanDecide(AccountOpeningRequest $request, User $user): void

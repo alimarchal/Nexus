@@ -1,9 +1,12 @@
 <?php
 
+use App\Models\Account;
 use App\Models\AccountOpeningRequest;
 use App\Models\Branch;
+use App\Models\Customer;
 use App\Models\CustomerCategory;
 use App\Models\User;
+use App\Services\AccountOpeningWorkflow;
 use App\Support\PaperForm\PaperFormSchema;
 use Database\Seeders\BajkAccountOpeningSeeder;
 use Illuminate\Support\Facades\DB;
@@ -511,4 +514,144 @@ test('the migration corrects the form type of existing old business requests and
     expect($business->fresh()->aof_form_type)->toBe(AccountOpeningRequest::FORM_ENTITY)
         ->and($individual->fresh()->aof_form_type)->toBe(AccountOpeningRequest::FORM_INDIVIDUAL)
         ->and($empty->fresh()->aof_form_type)->toBe(AccountOpeningRequest::FORM_INDIVIDUAL);
+});
+
+/**
+ * Save a complete old individual form and take it through submit and approve.
+ *
+ * @param  array<string, mixed>  $data
+ */
+function approveOldIndividual(mixed $test, array $data = []): AccountOpeningRequest
+{
+    config(['account_opening.maker_checker.allow_self_approval' => true]);
+
+    $request = startOldForm($test);
+    saveOldForm($test, $request, completeIndividual([
+        'account_no' => '0101-5550001', 'pkr_account_types' => ['pls_saving'], 'mobile' => '0300-1234567', 'email' => 'ali@example.com',
+        'a1_dob' => '1990-05-01', 'a1_id_type' => 'cnic', 'a1_id_number' => '82101-1111111-1', 'signing_authority' => 'singly',
+        'mailing_post_code' => '13100', ...$data,
+    ]))->assertSessionHasNoErrors();
+    $test->actingAs($test->admin)->post(route('account-openings.submit', $request))->assertSessionHas('success');
+    $test->actingAs($test->admin)->post(route('account-openings.approve', $request))->assertSessionHas('success');
+
+    return $request->fresh();
+}
+
+test('approving an old request creates the customer and the account from the paper form', function () {
+    $request = approveOldIndividual($this);
+
+    $customer = $request->customer;
+    $account = $request->account;
+
+    $this->actingAs($this->admin)->get(route('account-openings.show', $request))
+        ->assertSee('Created from this form')->assertSee($customer->cif_number)->assertSee('0101-5550001');
+
+    expect($customer)->not->toBeNull()
+        ->and($customer->cif_number)->not->toBeEmpty()
+        ->and($customer->status)->toBe('active')
+        ->and($customer->individual->full_name)->toBe('Ali Raza')
+        ->and($customer->individual->date_of_birth->toDateString())->toBe('1990-05-01')
+        ->and($customer->identifications->first()->document_number)->toBe('82101-1111111-1')
+        ->and($customer->contacts->pluck('value')->all())->toContain('0300-1234567', 'ali@example.com')
+        ->and($customer->addresses->pluck('address_type')->all())->toContain('mailing')
+        ->and($account->account_number)->toBe('0101-5550001')
+        ->and($account->title_of_account)->toBe('Ali Raza')
+        ->and($account->status)->toBe('active')
+        ->and($account->product->code)->toBe('PLS')
+        ->and($account->currency->code)->toBe('PKR')
+        ->and($account->iban)->toStartWith('PK')
+        ->and($account->holders)->toHaveCount(1)
+        ->and($account->holders->first()->customer_id)->toBe($customer->id)
+        ->and($account->holders->first()->holder_role)->toBe('primary');
+});
+
+test('a customer with the same CNIC is linked, not duplicated', function () {
+    $first = approveOldIndividual($this);
+    $second = approveOldIndividual($this, ['account_no' => '0101-5550002', 'title_of_account' => 'Ali Raza (savings)']);
+
+    expect($second->customer_id)->toBe($first->customer_id)
+        ->and($second->account_id)->not->toBe($first->account_id)
+        ->and(Customer::count())->toBe(1)
+        ->and(Account::count())->toBe(2);
+
+    // The same CNIC typed without dashes is the same customer.
+    $third = approveOldIndividual($this, ['account_no' => '0101-5550003', 'a1_id_number' => '8210111111111']);
+    expect($third->customer_id)->toBe($first->customer_id)->and(Customer::count())->toBe(1);
+});
+
+test('a joint old request creates a customer for each applicant', function () {
+    $request = approveOldIndividual($this, [
+        'individual_kind' => 'joint',
+        'a2_name' => 'Sara Raza', 'a2_parent_relation' => 'do', 'a2_parent_name' => 'Hussain Raza', 'a2_gender' => 'female',
+        'a2_marital_status' => 'married', 'a2_nationality' => 'Pakistani', 'a2_country_of_residence' => 'Pakistan', 'a2_occupation' => 'house_wife',
+        'a2_id_type' => 'cnic', 'a2_id_number' => '82101-2222222-2',
+    ]);
+
+    expect($request->account->holders)->toHaveCount(2)
+        ->and($request->account->holders->pluck('holder_role')->all())->toBe(['primary', 'joint'])
+        ->and($request->account->holders->map(fn ($holder) => $holder->customer->displayName())->all())->toBe(['Ali Raza', 'Sara Raza']);
+});
+
+test('a business old request creates an entity customer linked by its NTN', function () {
+    config(['account_opening.maker_checker.allow_self_approval' => true]);
+    $request = startOldForm($this);
+    saveOldForm($this, $request, ['account_nature' => 'business', 'business_kind' => 'partnership', 'partnership_kind' => 'registered', 'business_name' => 'Kashmir Traders', 'title_of_account' => 'Kashmir Traders', 'business_ntn' => 'NTN-77', 'pkr_account_types' => ['current']]);
+    expect($request->fresh()->aof_form_type)->toBe(AccountOpeningRequest::FORM_ENTITY);
+
+    $workflow = app(AccountOpeningWorkflow::class);
+    $request->forceFill(['status' => 'submitted', 'submitted_by' => $this->admin->id])->save();
+    $workflow->approve($request->fresh(), $this->admin);
+
+    $customer = $request->fresh()->customer;
+    expect($customer->customer_type)->toBe(Customer::TYPE_ENTITY)
+        ->and($customer->organization->business_name)->toBe('Kashmir Traders')
+        ->and($customer->customerCategory->code)->toBe('PARTNERSHIP')
+        ->and($request->fresh()->account->product->code)->toBe('BCA');
+});
+
+test('approving the request again after an unlock updates its account instead of adding another', function () {
+    $request = approveOldIndividual($this);
+    $accountId = $request->account_id;
+    $customerId = $request->customer_id;
+
+    $this->actingAs($this->admin)->post(route('account-openings.unlock', $request), ['reason' => 'Title corrected'])->assertSessionHas('success');
+    saveOldForm($this, $request->fresh(), completeIndividual(['title_of_account' => 'Ali Raza Khan', 'account_no' => '0101-5550001', 'a1_id_number' => '82101-1111111-1', 'pkr_account_types' => ['pls_saving']]))->assertSessionHasNoErrors();
+    $this->actingAs($this->admin)->post(route('account-openings.submit', $request))->assertSessionHas('success');
+    $this->actingAs($this->admin)->post(route('account-openings.approve', $request))->assertSessionHas('success');
+
+    $request->refresh();
+    expect($request->account_id)->toBe($accountId)->and($request->customer_id)->toBe($customerId)
+        ->and($request->account->title_of_account)->toBe('Ali Raza Khan')
+        ->and(Customer::count())->toBe(1)->and(Account::count())->toBe(1);
+});
+
+test('a customer created from an old request is found for the holder box of a new form', function () {
+    $request = approveOldIndividual($this);
+
+    $results = $this->actingAs($this->admin)->getJson(route('account-openings.customers.search', ['q' => '82101-1111111-1']))->assertSuccessful()->json('results');
+
+    expect($results)->toHaveCount(1)->and($results[0]['id'])->toBe($request->customer_id)->and($results[0]['text'])->toContain('Ali Raza');
+});
+
+test('old requests are found in the list by CNIC and account number, before and after approval', function () {
+    $pending = startOldForm($this);
+    saveOldForm($this, $pending, completeIndividual(['account_no' => '0101-9990001', 'a1_id_number' => '82101-3333333-3']))->assertSessionHasNoErrors();
+    $approved = approveOldIndividual($this);
+
+    foreach (['82101-3333333-3', '0101-9990001'] as $term) {
+        $this->actingAs($this->admin)->get(route('account-openings.index', ['filter' => ['search' => $term]]))
+            ->assertSuccessful()->assertSee($pending->request_number)->assertDontSee($approved->request_number);
+    }
+    foreach (['82101-1111111-1', '0101-5550001'] as $term) {
+        $this->actingAs($this->admin)->get(route('account-openings.index', ['filter' => ['search' => $term]]))
+            ->assertSuccessful()->assertSee($approved->request_number)->assertDontSee($pending->request_number);
+    }
+});
+
+test('the customer and account keep their status when an old request is rejected or unlocked', function () {
+    $request = approveOldIndividual($this);
+
+    $this->actingAs($this->admin)->post(route('account-openings.unlock', $request), ['reason' => 'Check'])->assertSessionHas('success');
+
+    expect($request->fresh()->customer->status)->toBe('active')->and($request->fresh()->account->status)->toBe('active');
 });

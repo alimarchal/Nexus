@@ -43,6 +43,18 @@
                 </div>
             @endif
 
+            @if ($accountOpeningRequest->customer || $accountOpeningRequest->account)
+                <div class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900" data-registered>
+                    <b>Created from this form:</b>
+                    @foreach ($accountOpeningRequest->account?->holders ?? [] as $holder)
+                        <span>&nbsp;Applicant {{ $holder->applicant_number }}: {{ $holder->customer?->displayName() }} (CIF {{ $holder->customer?->cif_number }})</span>@if (! $loop->last) &middot; @endif
+                    @endforeach
+                    @if ($accountOpeningRequest->account)
+                        <span>&nbsp;&middot; Account {{ $accountOpeningRequest->account->account_number }} &middot; IBAN {{ $accountOpeningRequest->account->iban }}</span>
+                    @endif
+                </div>
+            @endif
+
             <div class="overflow-hidden bg-white p-6 shadow-xl dark:bg-gray-800 sm:rounded-lg">
                 @include('account-openings.paper._values')
             </div>
