@@ -159,9 +159,9 @@
                                     <span>#{{ $loop->iteration }}</span>
                                 </div>
 
-                                <a href="{{ $page->getUrl() }}" target="_blank" class="block">
+                                <a href="{{ route('file-management-systems.pages.show', [$fileManagementSystem, $page->id]) }}" target="_blank" class="block">
                                     @if (str_starts_with((string) $page->mime_type, 'image/'))
-                                        <img src="{{ $page->getUrl() }}"
+                                        <img src="{{ route('file-management-systems.pages.show', [$fileManagementSystem, $page->id, 'preview' => 1]) }}"
                                             alt="{{ $page->getCustomProperty('original_filename', $page->file_name) }}"
                                             class="mx-auto h-32 w-full rounded-md object-cover">
                                     @else
