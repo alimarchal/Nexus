@@ -27,7 +27,7 @@
     };
     $eventStyles = [
         'created' => 'ak-status-blue', 'updated' => 'ak-status-slate', 'transferred' => 'ak-status-amber',
-        'archived' => 'ak-status-slate', 'page_uploaded' => 'ak-status-green', 'page_removed' => 'ak-status-red',
+        'archived' => 'ak-status-slate', 'unarchived' => 'ak-status-amber', 'page_uploaded' => 'ak-status-green', 'page_removed' => 'ak-status-red',
         'submitted' => 'ak-status-blue', 'approved' => 'ak-status-green', 'rejected' => 'ak-status-red', 'unlocked' => 'ak-status-amber', 'reopened' => 'ak-status-amber',
         'viewed' => 'ak-status-slate', 'page_viewed' => 'ak-status-slate',
     ];
@@ -201,6 +201,16 @@
                             <div><dt>Position in box</dt><dd>{{ $val($file->position_in_box) }}</dd></div>
                             <div><dt>Shelf / location</dt><dd>{{ $val($file->box?->location) }}</dd></div>
                             <div><dt>Archived at</dt><dd>{{ $file->archived_at?->format('d.m.Y H:i') ?? $dash }}</dd></div>
+                            @if ($user->can('archive file management systems') && $file->isHeldBy($user))
+                                <div class="wide"><dt>Archived by mistake?</dt>
+                                    <dd>
+                                        <form method="POST" action="{{ route('file-management-systems.unarchive', $file) }}" onsubmit="return confirm('Take this file out of {{ $file->box?->box_number }}?')">
+                                            @csrf
+                                            <button class="ak-btn ak-btn-outline">Remove from box</button>
+                                        </form>
+                                    </dd>
+                                </div>
+                            @endif
                         @else
                             <div class="wide"><dt>Archive</dt>
                                 <dd>

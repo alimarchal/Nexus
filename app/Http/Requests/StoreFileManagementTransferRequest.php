@@ -16,6 +16,16 @@ class StoreFileManagementTransferRequest extends FormRequest
     }
 
     /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'recipient_id.exists' => 'The receiving custodian must be an active user.',
+        ];
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, ValidationRule|array<mixed>|string>
@@ -25,7 +35,7 @@ class StoreFileManagementTransferRequest extends FormRequest
         return [
             'destination_fileable_type' => ['required', Rule::in(['branch', 'region', 'division', 'head-office'])],
             'destination_fileable_id' => ['required', 'integer'],
-            'recipient_id' => ['required', 'integer', 'exists:users,id'],
+            'recipient_id' => ['required', 'integer', Rule::exists('users', 'id')->where('is_active', 'Yes')],
             'reason' => ['required', 'string', 'max:2000'],
         ];
     }

@@ -55,7 +55,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             new Middleware('role_or_permission:approve file management systems', only: ['approve', 'reject']),
             new Middleware('role_or_permission:unlock file management systems', only: ['unlock']),
             new Middleware('role_or_permission:view file management systems', only: ['page']),
-            new Middleware('role_or_permission:archive file management systems', only: ['archiveForm', 'storeArchive']),
+            new Middleware('role_or_permission:archive file management systems', only: ['archiveForm', 'storeArchive', 'removeFromBox']),
             new Middleware('role_or_permission:create boxes', only: ['createBox', 'storeBox']),
             new Middleware('role_or_permission:manage boxes', only: ['boxesList']),
         ];
@@ -380,6 +380,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         $recipient = User::query()->findOrFail($request->integer('recipient_id'));
 
         abort_unless($destination, 422);
+
+        if ($request->string('destination_fileable_type')->toString() === $fileManagementSystem->fileable_type && $destination->id === (int) $fileManagementSystem->fileable_id) {
+            return back()->withInput()->withErrors(['destination_fileable_id' => 'The file is already held by this office. Choose a different office.']);
+        }
 
         if (! $this->userBelongsToUnit($recipient, $request->string('destination_fileable_type')->toString(), $destination->id)) {
             return back()->withInput()->withErrors(['recipient_id' => 'The selected custodian does not belong to the destination office.']);
@@ -957,6 +961,56 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     }
 
     /**
+     * Take an archived file back out of its box (it was archived by mistake, or is needed again). The box count and
+     * status follow, the pages go back to the office folder and the history records who did it.
+     */
+    public function removeFromBox(FileManagementSystem $fileManagementSystem): RedirectResponse
+    {
+        $fileManagementSystem = $this->findVisible($fileManagementSystem);
+        $this->abortUnlessInOwnOffice($fileManagementSystem);
+
+        $notArchived = false;
+
+        DB::transaction(function () use ($fileManagementSystem, &$notArchived): void {
+            $current = FileManagementSystem::query()->lockForUpdate()->findOrFail($fileManagementSystem->id);
+
+            if (! $current->isArchived()) {
+                $notArchived = true;
+
+                return;
+            }
+
+            $box = Box::query()->lockForUpdate()->findOrFail($current->box_id);
+            $position = $current->position_in_box;
+
+            $fileManagementSystem->load('media');
+            $this->moveMediaBetweenBoxes($fileManagementSystem, $box, null);
+
+            $fileManagementSystem->forceFill([
+                'box_id' => null,
+                'is_archived' => false,
+                'archived_at' => null,
+                'position_in_box' => null,
+            ])->save();
+
+            $box->refreshFileCount();
+
+            activity('file-management')
+                ->performedOn($fileManagementSystem)
+                ->causedBy(auth()->user())
+                ->event('unarchived')
+                ->withProperties(['box_id' => $box->id, 'box_number' => $box->box_number, 'position_in_box' => $position])
+                ->log('File management record taken out of box '.$box->box_number);
+        });
+
+        if ($notArchived) {
+            return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('error', 'This file is not in a box.');
+        }
+
+        return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('success', 'File taken out of its box. It can be archived again.');
+    }
+
+    /**
      * Show create box form.
      */
     public function createBox()
@@ -1092,11 +1146,19 @@ class FileManagementSystemController extends Controller implements HasMiddleware
      */
     private function moveMediaForArchive(FileManagementSystem $fileManagementSystem, Box $box): void
     {
+        $this->moveMediaBetweenBoxes($fileManagementSystem, null, $box);
+    }
+
+    /**
+     * Move the pages from the folder of one box (or no box) to the folder of another (or no box).
+     */
+    private function moveMediaBetweenBoxes(FileManagementSystem $fileManagementSystem, ?Box $from, ?Box $to): void
+    {
         $previousRecord = clone $fileManagementSystem;
-        $previousRecord->forceFill(['box_id' => null])->setRelation('box', null);
+        $previousRecord->forceFill(['box_id' => $from?->id])->setRelation('box', $from);
 
         $newRecord = clone $fileManagementSystem;
-        $newRecord->setRelation('box', $box);
+        $newRecord->forceFill(['box_id' => $to?->id])->setRelation('box', $to);
 
         $pathGenerator = app(FileManagementSystemPathGenerator::class);
         $folders = [];

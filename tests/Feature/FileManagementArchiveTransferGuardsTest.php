@@ -307,3 +307,86 @@ test('a box never holds more files than its capacity', function () {
         ->and(FileManagementSystem::where('box_id', $box->id)->count())->toBe(2)
         ->and($files[2]->fresh()->is_archived)->toBeFalsy();
 });
+
+test('an inactive user cannot be the receiving custodian of a transfer', function () {
+    $file = guardFile($this->branch);
+    $inactive = User::factory()->create(['branch_id' => $this->otherBranch->id, 'is_active' => 'No']);
+    $payload = ['destination_fileable_type' => 'branch', 'destination_fileable_id' => $this->otherBranch->id, 'reason' => 'Move'];
+
+    $this->actingAs($this->user)->post(route('file-management-systems.transfers.store', $file), $payload + ['recipient_id' => $inactive->id])
+        ->assertSessionHasErrors(['recipient_id' => 'The receiving custodian must be an active user.']);
+    expect(FileManagementTransfer::count())->toBe(0);
+
+    $active = User::factory()->create(['branch_id' => $this->otherBranch->id, 'is_active' => 'Yes']);
+    $this->actingAs($this->user)->post(route('file-management-systems.transfers.store', $file), $payload + ['recipient_id' => $active->id])->assertSessionHasNoErrors();
+    expect(FileManagementTransfer::count())->toBe(1);
+});
+
+test('a transfer to the office that already holds the file is refused', function () {
+    $file = guardFile($this->branch);
+    $colleague = User::factory()->create(['branch_id' => $this->branch->id]);
+
+    $this->actingAs($this->user)->post(route('file-management-systems.transfers.store', $file), [
+        'destination_fileable_type' => 'branch', 'destination_fileable_id' => $this->branch->id,
+        'recipient_id' => $colleague->id, 'reason' => 'Move',
+    ])->assertSessionHasErrors('destination_fileable_id');
+
+    expect(FileManagementTransfer::count())->toBe(0);
+});
+
+test('a file can be taken out of its box, which updates the box count, the pages and the history', function () {
+    $file = guardFile($this->branch);
+    $box = guardBox($this->branch, ['capacity' => 1]);
+    $this->actingAs($this->user)->post(route('file-management-systems.archive', $file), ['box_id' => $box->id])->assertSessionHas('success');
+    expect($box->fresh())->file_count->toBe(1)->status->toBe('full');
+    $archivedPath = $file->fresh()->media()->first()->getPathRelativeToRoot();
+    expect($archivedPath)->toContain('Box-'.$box->box_number);
+
+    $this->actingAs($this->user)->get(route('file-management-systems.show', $file))->assertSee('Remove from box');
+    $this->actingAs($this->user)->post(route('file-management-systems.unarchive', $file))->assertRedirect(route('file-management-systems.show', $file))->assertSessionHas('success');
+
+    $file->refresh();
+    expect($file->is_archived)->toBeFalse()->and($file->box_id)->toBeNull()->and($file->position_in_box)->toBeNull()->and($file->archived_at)->toBeNull()
+        ->and($box->fresh())->file_count->toBe(0)->status->toBe('open');
+    $newPath = $file->media()->first()->getPathRelativeToRoot();
+    expect($newPath)->not->toContain('Box-');
+    Storage::disk('local')->assertExists($newPath);
+    Storage::disk('local')->assertMissing($archivedPath);
+    $this->assertDatabaseHas('activity_log', ['subject_id' => $file->id, 'event' => 'unarchived']);
+
+    $this->actingAs($this->user)->post(route('file-management-systems.unarchive', $file))->assertSessionHas('error', 'This file is not in a box.');
+    $this->actingAs($this->user)->post(route('file-management-systems.archive', $file), ['box_id' => $box->id])->assertSessionHas('success');
+});
+
+test('only the office that holds the file can take it out of a box', function () {
+    $box = guardBox($this->otherBranch);
+    $foreign = guardFile($this->otherBranch, ['box_id' => $box->id, 'is_archived' => true, 'position_in_box' => 1]);
+
+    $this->actingAs($this->user)->post(route('file-management-systems.unarchive', $foreign))->assertNotFound();
+    expect($foreign->fresh()->is_archived)->toBeTrue();
+});
+
+test('the policy follows the module permissions, the office and the stage of the record', function () {
+    $own = guardFile($this->branch);
+    $foreign = guardFile($this->otherBranch);
+    $draft = guardFile($this->branch, ['status' => 'draft']);
+    $archived = guardFile($this->branch, ['box_id' => guardBox($this->branch)->id, 'is_archived' => true, 'position_in_box' => 1]);
+    $noRole = User::factory()->create(['branch_id' => $this->branch->id]);
+    $superAdmin = User::where('email', 'superadmin@example.com')->firstOrFail();
+
+    expect($this->user->can('viewAny', FileManagementSystem::class))->toBeTrue()
+        ->and($this->user->can('view', $own))->toBeTrue()
+        ->and($this->user->can('view', $foreign))->toBeFalse()
+        ->and($this->user->can('update', $draft))->toBeTrue()
+        ->and($this->user->can('transfer', $own))->toBeTrue()
+        ->and($this->user->can('transfer', $draft))->toBeFalse()
+        ->and($this->user->can('transfer', $archived))->toBeFalse()
+        ->and($this->user->can('archive', $own))->toBeTrue()
+        ->and($this->user->can('archive', $archived))->toBeTrue()
+        ->and($this->user->can('archive', $foreign))->toBeFalse()
+        ->and($noRole->can('view', $own))->toBeFalse()
+        ->and($noRole->can('create', FileManagementSystem::class))->toBeFalse()
+        ->and($superAdmin->can('view', $foreign))->toBeTrue()
+        ->and($this->user->can('forceDelete', $own))->toBeFalse()
+        ->and($superAdmin->can('forceDelete', $own))->toBeTrue();
+});
