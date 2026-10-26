@@ -29,5 +29,11 @@ class DatabaseSeeder extends Seeder
             AksicBusinessCategorySeeder::class,
             BajkAccountOpeningSeeder::class,
         ]);
+
+        // Sample Account Opening requests for testing: only when asked for in .env (SEED_ACCOUNT_OPENING_DEMO=true).
+        // ACCOUNT_OPENING_DEMO_COUNT sets how many. Never run on its own, so a real database is not filled with samples.
+        if (filter_var(env('SEED_ACCOUNT_OPENING_DEMO', false), FILTER_VALIDATE_BOOLEAN)) {
+            $this->call(AccountOpeningDemoSeeder::class);
+        }
     }
 }
