@@ -103,6 +103,31 @@ class FileManagementSystem extends Model implements HasMedia
         return in_array($this->status, ['draft', 'rejected', 'approved'], true);
     }
 
+    /**
+     * A record can be transferred to another office or archived into a box only once a checker has approved it.
+     * Without maker-checker every record is treated as approved.
+     */
+    public function isReadyToMove(): bool
+    {
+        return ! config('file_management.maker_checker.enabled', true) || $this->status === 'approved';
+    }
+
+    /**
+     * Why the record cannot be transferred or archived yet, or null when it can.
+     *
+     * @param  string  $action  e.g. "transferred", "archived"
+     */
+    public function movementBlockedReason(string $action): ?string
+    {
+        if ($this->isReadyToMove()) {
+            return null;
+        }
+
+        return $this->status === 'submitted'
+            ? "This record is waiting for the checker, so it cannot be {$action} until it is approved."
+            : "This record has not been approved yet, so it cannot be {$action} until it is submitted and approved.";
+    }
+
     public function submitter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by');

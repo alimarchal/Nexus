@@ -349,6 +349,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         $this->findVisible($fileManagementSystem);
 
+        if ($blocked = $this->blockedFromMoving($fileManagementSystem, 'transferred')) {
+            return $blocked;
+        }
+
         return view('file-management-systems.transfer', [
             'fileManagementSystem' => $fileManagementSystem->load(['fileable', 'currentCustodian']),
             ...$this->transferOptions(),
@@ -358,6 +362,11 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     public function storeTransfer(StoreFileManagementTransferRequest $request, FileManagementSystem $fileManagementSystem)
     {
         $fileManagementSystem = $this->findVisible($fileManagementSystem);
+
+        if ($blocked = $this->blockedFromMoving($fileManagementSystem, 'transferred')) {
+            return $blocked;
+        }
+
         $destination = $this->resolveOrgUnit($request->string('destination_fileable_type')->toString(), $request->integer('destination_fileable_id'));
         $recipient = User::query()->findOrFail($request->integer('recipient_id'));
 
@@ -644,6 +653,16 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         return null;
     }
 
+    /**
+     * A record that is not approved cannot be transferred or archived; send the user back to the record with the reason.
+     */
+    private function blockedFromMoving(FileManagementSystem $fileManagementSystem, string $action): ?RedirectResponse
+    {
+        $reason = $fileManagementSystem->movementBlockedReason($action);
+
+        return $reason ? redirect()->route('file-management-systems.show', $fileManagementSystem)->with('error', $reason) : null;
+    }
+
     public function submit(FileManagementSystem $fileManagementSystem): RedirectResponse
     {
         return $this->runWorkflow($fileManagementSystem, 'Record submitted for approval.', fn () => $this->workflow->submit($fileManagementSystem, auth()->user()));
@@ -769,6 +788,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
 
         $this->abortUnlessInOwnOffice($fileManagementSystem);
 
+        if ($blocked = $this->blockedFromMoving($fileManagementSystem, 'archived')) {
+            return $blocked;
+        }
+
         // Get available boxes for this org unit
         $boxes = Box::where('boxable_type', $fileManagementSystem->fileable_type)
             ->where('boxable_id', $fileManagementSystem->fileable_id)
@@ -799,6 +822,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     {
         $fileManagementSystem = $this->findVisible($fileManagementSystem);
         $this->abortUnlessInOwnOffice($fileManagementSystem);
+
+        if ($blocked = $this->blockedFromMoving($fileManagementSystem, 'archived')) {
+            return $blocked;
+        }
 
         $validated = $request->validated();
         $box = Box::findOrFail($validated['box_id']);

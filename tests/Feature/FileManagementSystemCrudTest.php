@@ -154,6 +154,7 @@ test('authorized source user can create a pending transfer request', function ()
     $newBranchUser = User::factory()->create(['branch_id' => $newBranch->id]);
     $newBranchUser->assignRole('branch');
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
@@ -197,6 +198,7 @@ test('approving a transfer moves ownership and media and records custodian activ
     $newBranchUser = User::factory()->create(['branch_id' => $newBranch->id]);
     $newBranchUser->assignRole('branch');
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
@@ -351,6 +353,7 @@ test('archiving a document to a box does not require selecting files', function 
     Storage::fake('local');
 
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
@@ -424,6 +427,7 @@ test('file management systems index can be filtered by box number', function () 
 
 test('archive and new box links show only for the office that holds the file', function () {
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
@@ -658,6 +662,7 @@ test('head office seeder creates the head office once so transfers have a destin
 test('transfer form lists the head office as a destination option', function () {
     $this->seed(HeadOfficeSeeder::class);
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
@@ -672,6 +677,7 @@ test('transfer form lists the head office as a destination option', function () 
 
 test('transfer form explains when no head office exists yet', function () {
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
@@ -687,6 +693,7 @@ test('a head office user can be chosen as the receiving custodian of a transfer'
     $headOffice = HeadOffice::create(['name' => 'Head Office']);
     $custodian = User::factory()->create(['head_office_id' => $headOffice->id]);
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
@@ -712,6 +719,7 @@ test('a custodian from a different office is rejected with a field error', funct
     $destination = Branch::factory()->create();
     $wrongCustodian = User::factory()->create(['branch_id' => $otherBranch->id]);
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
@@ -733,6 +741,7 @@ test('a custodian from a different office is rejected with a field error', funct
 
 test('transfer form tells the user when the chosen office has no active custodian', function () {
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id,
@@ -824,6 +833,7 @@ test('a seeded branch manager can archive an own file into a box from the file p
     Storage::fake('local');
     $manager = User::whereNotNull('branch_id')->whereHas('roles', fn ($q) => $q->where('name', 'branch'))->first();
     $document = FileManagementSystem::factory()->create([
+        'status' => 'approved',
         'fileable_type' => 'branch',
         'fileable_id' => $manager->branch_id,
         'file_category_id' => $this->fileCategory->id,

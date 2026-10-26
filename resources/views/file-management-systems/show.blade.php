@@ -9,7 +9,8 @@
     $dash = '—';
     $val = fn ($value) => filled($value) ? $value : $dash;
     $pendingTransfer = $file->transfers->firstWhere('status', 'pending');
-    $canArchive = $user->can('archive file management systems') && ! $file->is_archived && $file->isHeldBy($user);
+    $ready = $file->isReadyToMove();
+    $canArchive = $user->can('archive file management systems') && ! $file->is_archived && $file->isHeldBy($user) && $ready;
     $office = $file->fileable_type === 'division'
         ? ($file->fileable?->short_name ?: $file->fileable_name)
         : trim((($file->fileable?->code ?? null) ? $file->fileable->code.' - ' : '').($file->fileable_name ?? ''));
@@ -63,9 +64,9 @@
                     @endif
                 @endcan
                 @can('transfer file management systems')
-                    @unless ($file->is_archived)
+                    @if (! $file->is_archived && $ready)
                         <a href="{{ route('file-management-systems.transfer', $file) }}" class="ak-btn {{ $canArchive ? 'ak-btn-outline' : 'ak-btn-primary' }}">Transfer</a>
-                    @endunless
+                    @endif
                 @endcan
                 @if ($canArchive)
                     <a href="{{ route('file-management-systems.archive-form', $file) }}" class="ak-btn ak-btn-primary">Archive to box</a>
@@ -206,6 +207,8 @@
                                     Not archived yet.
                                     @if ($canArchive)
                                         <a href="{{ route('file-management-systems.archive-form', $file) }}" class="font-semibold text-blue-800 underline">Archive to a box →</a>
+                                    @elseif (! $ready)
+                                        <span class="ak-muted">Available once the record is approved.</span>
                                     @else
                                         <span class="ak-muted">Only the owning office can archive it.</span>
                                     @endif
@@ -261,12 +264,15 @@
                 <div class="fm-card-head">
                     <h2 id="fm-transfers-title">Transfers</h2>
                     @can('transfer file management systems')
-                        @unless ($file->is_archived || $pendingTransfer)
+                        @if (! $file->is_archived && ! $pendingTransfer && $ready)
                             <a href="{{ route('file-management-systems.transfer', $file) }}" class="ak-btn ak-btn-outline">New transfer</a>
-                        @endunless
+                        @endif
                     @endcan
                 </div>
                 <div class="fm-card-body">
+                    @unless ($ready || $file->is_archived)
+                        <p class="ak-muted">{{ $file->movementBlockedReason('transferred') }}</p>
+                    @endunless
                     @if ($file->transfers->isNotEmpty())
                         <div class="overflow-x-auto">
                             <table class="fm-table">
