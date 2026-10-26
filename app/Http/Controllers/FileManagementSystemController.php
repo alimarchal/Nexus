@@ -29,6 +29,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
@@ -432,36 +433,45 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             'id' => $fileManagementSystem->fileable_id,
         ];
 
-        DB::transaction(function () use ($transfer, $fileManagementSystem, $previousFileable, $request): void {
-            $fileManagementSystem->update([
-                'fileable_type' => $transfer->destination_fileable_type,
-                'fileable_id' => $transfer->destination_fileable_id,
-                'current_custodian_id' => $transfer->recipient_id,
-            ]);
-            $fileManagementSystem->load('media');
-            $this->moveMediaForTransfer($fileManagementSystem, $previousFileable);
+        $movedFolders = [];
 
-            $transfer->update([
-                'status' => 'approved',
-                'decided_by' => auth()->id(),
-                'decision_note' => $request->string('decision_note')->toString() ?: null,
-            ]);
+        try {
+            DB::transaction(function () use ($transfer, $fileManagementSystem, $previousFileable, $request, &$movedFolders): void {
+                $fileManagementSystem->update([
+                    'fileable_type' => $transfer->destination_fileable_type,
+                    'fileable_id' => $transfer->destination_fileable_id,
+                    'current_custodian_id' => $transfer->recipient_id,
+                ]);
+                $fileManagementSystem->load('media');
+                $movedFolders = $this->moveMediaForTransfer($fileManagementSystem, $previousFileable);
 
-            activity('file-management')
-                ->performedOn($fileManagementSystem)
-                ->causedBy(auth()->user())
-                ->event('transferred')
-                ->withProperties([
-                    'transfer_id' => $transfer->id,
-                    'from' => $previousFileable,
-                    'to' => ['type' => $transfer->destination_fileable_type, 'id' => $transfer->destination_fileable_id],
-                    'reason' => $transfer->reason,
-                    'requester_id' => $transfer->requested_by,
-                    'recipient_id' => $transfer->recipient_id,
-                    'approver_id' => auth()->id(),
-                ])
-                ->log('File management record transferred');
-        });
+                $transfer->update([
+                    'status' => 'approved',
+                    'decided_by' => auth()->id(),
+                    'decision_note' => $request->string('decision_note')->toString() ?: null,
+                ]);
+
+                activity('file-management')
+                    ->performedOn($fileManagementSystem)
+                    ->causedBy(auth()->user())
+                    ->event('transferred')
+                    ->withProperties([
+                        'transfer_id' => $transfer->id,
+                        'from' => $previousFileable,
+                        'to' => ['type' => $transfer->destination_fileable_type, 'id' => $transfer->destination_fileable_id],
+                        'reason' => $transfer->reason,
+                        'requester_id' => $transfer->requested_by,
+                        'recipient_id' => $transfer->recipient_id,
+                        'approver_id' => auth()->id(),
+                    ])
+                    ->log('File management record transferred');
+            });
+        } catch (\Throwable $exception) {
+            // The record is rolled back, so the pages go back to the folder they came from.
+            $this->restoreMovedFolders($movedFolders);
+
+            throw $exception;
+        }
 
         return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('success', 'Transfer request approved and record ownership updated.');
     }
@@ -1098,11 +1108,13 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     }
 
     /**
-     * Move media files during file transfer between organization units.
+     * Move media files during file transfer between organization units. A folder that is missing is skipped,
+     * so an approval never fails on it. Returns the folders that were moved so they can be put back.
      *
      * @param  array{type: string, id: int}  $previousFileable
+     * @return array<int, array{disk: string, previous_path: string, new_path: string}>
      */
-    private function moveMediaForTransfer(FileManagementSystem $fileManagementSystem, array $previousFileable): void
+    private function moveMediaForTransfer(FileManagementSystem $fileManagementSystem, array $previousFileable): array
     {
         $previousRecord = clone $fileManagementSystem;
         $previousRecord->forceFill([
@@ -1127,10 +1139,35 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             ];
         }
 
+        $moved = [];
+
         foreach ($folders as $folder) {
-            if ($folder['previous_path'] !== $folder['new_path']) {
-                Storage::disk($folder['disk'])->move($folder['previous_path'], $folder['new_path']);
+            if ($folder['previous_path'] === $folder['new_path']) {
+                continue;
             }
+
+            if (! Storage::disk($folder['disk'])->exists($folder['previous_path'])) {
+                Log::warning('File management page folder not found while transferring, nothing to move.', ['record' => $fileManagementSystem->id] + $folder);
+
+                continue;
+            }
+
+            Storage::disk($folder['disk'])->move($folder['previous_path'], $folder['new_path']);
+            $moved[] = $folder;
+        }
+
+        return $moved;
+    }
+
+    /**
+     * Put folders moved by a transfer back where they were (used when saving the transfer fails).
+     *
+     * @param  array<int, array{disk: string, previous_path: string, new_path: string}>  $movedFolders
+     */
+    private function restoreMovedFolders(array $movedFolders): void
+    {
+        foreach (array_reverse($movedFolders) as $folder) {
+            rescue(fn () => Storage::disk($folder['disk'])->move($folder['new_path'], $folder['previous_path']));
         }
     }
 }

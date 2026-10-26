@@ -219,3 +219,59 @@ test('approving a transfer of a file archived after the request is refused and l
     expect($transfer->fresh()->status)->toBe('pending')
         ->and($file->fresh())->fileable_id->toBe($this->branch->id)->box_id->toBe($box->id);
 });
+
+function guardApprovedTransfer(mixed $test, FileManagementSystem $file): FileManagementTransfer
+{
+    $recipient = User::factory()->create(['branch_id' => $test->otherBranch->id]);
+    $transfer = guardTransfer($file, $test->user, $test->otherBranch, $recipient);
+
+    $test->flushSession();
+    app('auth')->forgetGuards();
+
+    return $transfer;
+}
+
+test('approving a transfer works when the page folder is missing', function () {
+    $superAdmin = User::where('email', 'superadmin@example.com')->firstOrFail();
+    $file = guardFile($this->branch);
+    $transfer = guardApprovedTransfer($this, $file);
+    Storage::disk('local')->deleteDirectory(dirname($file->media()->first()->getPathRelativeToRoot()));
+
+    $this->actingAs($superAdmin)->patch(route('file-management-systems.transfers.decide', [$file, $transfer]), ['decision' => 'approved'])->assertSessionHas('success');
+
+    expect($transfer->fresh()->status)->toBe('approved')->and($file->fresh()->fileable_id)->toBe($this->otherBranch->id);
+});
+
+test('the pages stay where they were when saving the approval fails', function () {
+    $superAdmin = User::where('email', 'superadmin@example.com')->firstOrFail();
+    $file = guardFile($this->branch);
+    $transfer = guardApprovedTransfer($this, $file);
+    $previousPath = $file->media()->first()->getPathRelativeToRoot();
+
+    FileManagementTransfer::updating(function (): void {
+        throw new RuntimeException('Saving the transfer failed');
+    });
+
+    $this->withoutExceptionHandling()->actingAs($superAdmin);
+    expect(fn () => $this->patch(route('file-management-systems.transfers.decide', [$file, $transfer]), ['decision' => 'approved']))->toThrow(RuntimeException::class);
+
+    $page = $file->fresh()->media()->first();
+    expect($transfer->fresh()->status)->toBe('pending')
+        ->and($file->fresh()->fileable_id)->toBe($this->branch->id)
+        ->and($page->getPathRelativeToRoot())->toBe($previousPath);
+    Storage::disk('local')->assertExists($previousPath);
+});
+
+test('an approved transfer moves the pages to the new office folder', function () {
+    $superAdmin = User::where('email', 'superadmin@example.com')->firstOrFail();
+    $file = guardFile($this->branch);
+    $transfer = guardApprovedTransfer($this, $file);
+    $previousPath = $file->media()->first()->getPathRelativeToRoot();
+
+    $this->actingAs($superAdmin)->patch(route('file-management-systems.transfers.decide', [$file, $transfer]), ['decision' => 'approved'])->assertSessionHas('success');
+
+    $newPath = $file->fresh()->media()->first()->getPathRelativeToRoot();
+    expect($newPath)->not->toBe($previousPath)->and($newPath)->toContain('Branch/'.$this->otherBranch->id);
+    Storage::disk('local')->assertExists($newPath);
+    Storage::disk('local')->assertMissing($previousPath);
+});
