@@ -98,7 +98,8 @@ class FileManagementSystem extends Model implements HasMedia
             return false;
         }
 
-        // Records that existed before maker-checker are approved but were never locked, so they stay editable.
+        // Records that existed before maker-checker are approved but were never locked, so they stay editable; a change
+        // to such a record (or to any approved record when locking is off) sends it back for approval.
         return in_array($this->status, ['draft', 'rejected', 'approved'], true);
     }
 
