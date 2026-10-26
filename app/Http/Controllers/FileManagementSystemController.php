@@ -383,6 +383,11 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     public function decideTransfer(DecideFileManagementTransferRequest $request, FileManagementSystem $fileManagementSystem, FileManagementTransfer $transfer)
     {
         abort_unless($transfer->file_management_system_id === $fileManagementSystem->id, 404);
+
+        if ($this->isTransferMaker($transfer)) {
+            return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('error', 'Maker-checker: you requested this transfer, so a different user must approve or reject it.');
+        }
+
         abort_unless($this->canApproveTransfer($transfer), 403);
         abort_unless($transfer->status === 'pending', 422, 'This transfer request has already been decided.');
 
@@ -596,7 +601,16 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         $user = auth()->user();
 
         return $user->can('approve file management transfers')
+            && ! $this->isTransferMaker($transfer)
             && ($this->isSuperAdmin() || $user->hasRole('head-office') || $this->userBelongsToUnit($user, $transfer->destination_fileable_type, $transfer->destination_fileable_id));
+    }
+
+    /**
+     * The user who requested a transfer cannot decide it (maker-checker), unless self-approval is allowed in the settings.
+     */
+    private function isTransferMaker(FileManagementTransfer $transfer): bool
+    {
+        return ! $this->workflow->selfApprovalAllowed() && (int) $transfer->requested_by === auth()->id();
     }
 
     /**

@@ -300,6 +300,8 @@
                                                             <button type="button" class="ak-btn ak-btn-ghost" @click="reject = false">Cancel</button>
                                                         </form>
                                                     </div>
+                                                @elseif ($transfer->status === 'pending' && (int) $transfer->requested_by === auth()->id() && ! $workflow->selfApprovalAllowed())
+                                                    <span class="ak-muted">You requested this transfer, so a different user has to approve or reject it.</span>
                                                 @else
                                                     {{ $val($transfer->decision_note) }}
                                                 @endif
