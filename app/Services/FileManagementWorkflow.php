@@ -42,10 +42,28 @@ final class FileManagementWorkflow
         return $user->is_super_admin === 'Yes' || $user->hasRole('super-admin');
     }
 
-    /** The people who made the record: whoever created it and whoever submitted it. */
+    /** Events that change what the record contains: its details and its scanned pages. */
+    private const EDIT_EVENTS = ['created', 'updated', 'page_uploaded', 'page_removed'];
+
+    /**
+     * The people who made the record: whoever created it, whoever submitted it and anyone who changed its details
+     * or its scanned pages (read from the history), so nobody approves a record they helped to make.
+     */
     public function isMaker(FileManagementSystem $file, User $user): bool
     {
-        return (int) $file->created_by === $user->id || (int) $file->submitted_by === $user->id;
+        return (int) $file->created_by === $user->id
+            || (int) $file->submitted_by === $user->id
+            || $this->hasEdited($file, $user);
+    }
+
+    private function hasEdited(FileManagementSystem $file, User $user): bool
+    {
+        return Activity::query()
+            ->where('subject_type', $file->getMorphClass())
+            ->where('subject_id', $file->getKey())
+            ->where('causer_id', $user->id)
+            ->whereIn('event', self::EDIT_EVENTS)
+            ->exists();
     }
 
     public function canSubmit(FileManagementSystem $file, User $user): bool
@@ -234,7 +252,7 @@ final class FileManagementWorkflow
         }
 
         if (! $this->selfApprovalAllowed() && $this->isMaker($file, $user)) {
-            throw new FileManagementWorkflowException('Maker-checker: you created or submitted this record, so a different user must approve or reject it.');
+            throw new FileManagementWorkflowException('Maker-checker: you created, edited or submitted this record, so a different user must approve or reject it.');
         }
     }
 }

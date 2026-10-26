@@ -94,6 +94,42 @@ test('the maker cannot approve or reject their own file', function () {
     expect($file->fresh()->status)->toBe('approved');
 });
 
+test('a checker who edited the details or the pages of a draft is a maker and cannot approve or reject it', function () {
+    $edit = fn (FileManagementSystem $file, User $user) => actAsFmsUser($this, $user)->put(route('file-management-systems.update', $file), ['title' => 'Edited by checker', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01']);
+
+    $edited = makerFile($this);
+    $edit($edited, $this->checker);
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $edited));
+
+    $pagesChanged = makerFile($this);
+    actAsFmsUser($this, $this->checker)->put(route('file-management-systems.update', $pagesChanged), ['title' => 'Loan file', 'file_category_id' => $pagesChanged->file_category_id, 'document_date' => '2026-01-01', 'pages' => [UploadedFile::fake()->create('extra.pdf', 20, 'application/pdf')]]);
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $pagesChanged));
+
+    foreach ([$edited, $pagesChanged] as $file) {
+        expect($file->fresh()->status)->toBe('submitted');
+
+        actAsFmsUser($this, $this->checker)->get(route('file-management-systems.show', $file))
+            ->assertSee('You created, edited or submitted this record, so a different user has to approve or reject it.');
+        actAsFmsUser($this, $this->checker)->post(route('file-management-systems.approve', $file))
+            ->assertSessionHas('error', fn (string $message) => str_contains($message, 'a different user must approve or reject it'));
+        actAsFmsUser($this, $this->checker)->post(route('file-management-systems.reject', $file), ['reason' => 'No'])->assertSessionHas('error');
+
+        expect($file->fresh()->status)->toBe('submitted');
+    }
+});
+
+test('a checker who only opened the record can still approve it, and an editor can approve when self approval is allowed', function () {
+    $file = makerFile($this, 'submitted');
+    actAsFmsUser($this, $this->checker)->get(route('file-management-systems.show', $file));
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.approve', $file))->assertSessionHas('success');
+
+    config(['file_management.maker_checker.allow_self_approval' => true]);
+    $editedFile = makerFile($this);
+    actAsFmsUser($this, $this->checker)->put(route('file-management-systems.update', $editedFile), ['title' => 'Edited', 'file_category_id' => $editedFile->file_category_id, 'document_date' => '2026-01-01']);
+    $editedFile->forceFill(['status' => 'submitted'])->save();
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.approve', $editedFile))->assertSessionHas('success');
+});
+
 test('self approval can be allowed by configuration', function () {
     config(['file_management.maker_checker.allow_self_approval' => true]);
     $file = makerFile($this, 'submitted');
