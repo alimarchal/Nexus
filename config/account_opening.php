@@ -17,6 +17,8 @@
 |   AOF_STRICT_STEPS=true             Step-wise wizard: a step opens only when the steps before it are
 |                                      complete, and Save & Continue moves on only when the step is
 |                                      complete. Set false to let staff jump between steps freely.
+|   AOF_PAPER_UPLOADS_DISK=local      Disk for the signatures, thumb impressions and documents uploaded on an old
+|                                      (paper) form. Keep it private: they are opened only through the request page.
 |
 */
 
@@ -29,6 +31,8 @@ return [
     ],
 
     'lock_after_approval' => (bool) env('AOF_LOCK_AFTER_APPROVAL', true),
+
+    'paper_uploads_disk' => env('AOF_PAPER_UPLOADS_DISK', 'local'),
 
     'strict_steps' => (bool) env('AOF_STRICT_STEPS', true),
 ];

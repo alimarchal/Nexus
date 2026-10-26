@@ -20,6 +20,7 @@ use App\Http\Controllers\FileCategoryController;
 use App\Http\Controllers\FileManagementSystemController;
 use App\Http\Controllers\ManagerController;
 use App\Http\Controllers\PaperAccountOpeningController;
+use App\Http\Controllers\PaperAccountOpeningUploadController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RegionController;
@@ -134,6 +135,9 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/{accountOpeningRequest}/print', [AccountOpeningController::class, 'print'])->name('print');
         Route::get('/{accountOpeningRequest}/paper', [PaperAccountOpeningController::class, 'edit'])->name('paper.edit');
         Route::put('/{accountOpeningRequest}/paper', [PaperAccountOpeningController::class, 'update'])->name('paper.update');
+        Route::post('/{accountOpeningRequest}/paper/uploads', [PaperAccountOpeningUploadController::class, 'store'])->name('paper.uploads.store');
+        Route::get('/{accountOpeningRequest}/paper/uploads/{media}', [PaperAccountOpeningUploadController::class, 'show'])->name('paper.uploads.show');
+        Route::delete('/{accountOpeningRequest}/paper/uploads/{media}', [PaperAccountOpeningUploadController::class, 'destroy'])->name('paper.uploads.destroy');
         Route::get('/{accountOpeningRequest}/steps/{step}', [AccountOpeningController::class, 'editStep'])->name('steps.edit');
         Route::put('/{accountOpeningRequest}/steps/{step}', [AccountOpeningController::class, 'updateStep'])->name('steps.update');
         Route::post('/{accountOpeningRequest}/submit', [AccountOpeningController::class, 'submit'])->name('submit');

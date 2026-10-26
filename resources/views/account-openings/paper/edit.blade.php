@@ -72,6 +72,8 @@
                         class="inline-flex items-center rounded-md border border-transparent bg-blue-950 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-green-800">Save</button>
                 </div>
             </form>
+
+            @include('account-openings.paper._upload_forms')
         </div>
     </div>
 </x-app-layout>

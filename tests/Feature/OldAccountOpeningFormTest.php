@@ -8,8 +8,11 @@ use App\Models\CustomerCategory;
 use App\Models\User;
 use App\Services\AccountOpeningWorkflow;
 use App\Support\PaperForm\PaperFormSchema;
+use App\Support\PaperForm\PaperUploads;
 use Database\Seeders\BajkAccountOpeningSeeder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\TestResponse;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -654,4 +657,140 @@ test('the customer and account keep their status when an old request is rejected
     $this->actingAs($this->admin)->post(route('account-openings.unlock', $request), ['reason' => 'Check'])->assertSessionHas('success');
 
     expect($request->fresh()->customer->status)->toBe('active')->and($request->fresh()->account->status)->toBe('active');
+});
+
+/**
+ * A saved old individual form (two applicants when joint) ready for uploads.
+ */
+function oldFormForUploads(mixed $test, array $data = []): AccountOpeningRequest
+{
+    Storage::fake('local');
+    Storage::fake('public');
+
+    $request = startOldForm($test);
+    saveOldForm($test, $request, completeIndividual($data))->assertSessionHasNoErrors();
+
+    return $request->fresh();
+}
+
+function uploadToOldForm(mixed $test, AccountOpeningRequest $request, string $slot, ?UploadedFile $file = null): TestResponse
+{
+    return $test->actingAs($test->admin)->post(route('account-openings.paper.uploads.store', $request), [
+        'slot' => $slot,
+        'file' => $file ?? UploadedFile::fake()->image('signature.png', 200, 80),
+    ]);
+}
+
+test('the signature, the thumb impression and each document of the checklist can be uploaded on the old form', function () {
+    $request = oldFormForUploads($this);
+
+    foreach (['signature:applicant_1', 'thumb:applicant_1', 'document:docs_individual.d1'] as $slot) {
+        uploadToOldForm($this, $request, $slot)->assertSessionHasNoErrors()->assertSessionHas('success');
+    }
+
+    $uploads = $request->fresh()->getMedia('paper_uploads');
+    expect($uploads)->toHaveCount(3)
+        ->and($uploads->pluck('disk')->unique()->all())->toBe(['local'])
+        ->and($uploads->map(fn ($media) => $media->getCustomProperty('slot'))->all())->toBe(['signature:applicant_1', 'thumb:applicant_1', 'document:docs_individual.d1']);
+    Storage::disk('local')->assertExists($uploads->first()->getPathRelativeToRoot());
+    Storage::disk('public')->assertMissing($uploads->first()->getPathRelativeToRoot());
+
+    $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))
+        ->assertSuccessful()->assertSee('Specimen signature - Applicant 1 (Ali Raza)')->assertSee('Thumb impression - Applicant 1')->assertSee('Attested copy of CNIC/Passport');
+});
+
+test('the uploads are shown on the request page and the print, and a new upload replaces the one in the same place', function () {
+    $request = oldFormForUploads($this);
+    uploadToOldForm($this, $request, 'signature:applicant_1', UploadedFile::fake()->image('first.png'));
+    uploadToOldForm($this, $request, 'signature:applicant_1', UploadedFile::fake()->image('second.png'));
+
+    $uploads = $request->fresh()->getMedia('paper_uploads');
+    expect($uploads)->toHaveCount(1)->and($uploads->first()->getCustomProperty('original_filename'))->toBe('second.png');
+
+    foreach (['account-openings.show', 'account-openings.print'] as $route) {
+        $this->actingAs($this->admin)->get(route($route, $request))
+            ->assertSee('Uploaded signatures and documents')->assertSee('second.png')
+            ->assertSee(route('account-openings.paper.uploads.show', [$request, $uploads->first()->id]), false);
+    }
+
+    $this->actingAs($this->admin)->get(route('account-openings.print', $request))->assertDontSee('first.png');
+
+    $this->actingAs($this->admin)->get(route('account-openings.paper.uploads.show', [$request, $uploads->first()->id]))->assertSuccessful();
+});
+
+test('an upload can be removed, and uploads and removals are written to the history', function () {
+    $request = oldFormForUploads($this);
+    uploadToOldForm($this, $request, 'document:docs_individual.d2', UploadedFile::fake()->create('service-card.pdf', 40, 'application/pdf'));
+    $media = $request->fresh()->getMedia('paper_uploads')->first();
+
+    $this->actingAs($this->admin)->delete(route('account-openings.paper.uploads.destroy', [$request, $media->id]))->assertSessionHas('success');
+
+    expect($request->fresh()->getMedia('paper_uploads'))->toHaveCount(0);
+    $changes = $request->histories()->where('step', 'paper')->get()->pluck('changes')->filter()->map(fn ($c) => collect($c)->first())->values();
+    expect($changes->contains(fn ($c) => $c['new'] === 'service-card.pdf'))->toBeTrue()
+        ->and($changes->contains(fn ($c) => $c['old'] === 'service-card.pdf' && $c['new'] === null))->toBeTrue();
+});
+
+test('only the signature and document slots of this form can be uploaded, as images or PDFs', function () {
+    $request = oldFormForUploads($this);
+
+    uploadToOldForm($this, $request, 'signature:applicant_2')->assertSessionHasErrors('slot');
+    uploadToOldForm($this, $request, 'document:docs_partnership.d1')->assertSessionHasErrors('slot');
+    uploadToOldForm($this, $request, 'signature:applicant_1', UploadedFile::fake()->create('virus.exe', 10, 'application/x-msdownload'))->assertSessionHasErrors('file');
+    uploadToOldForm($this, $request, 'signature:applicant_1', UploadedFile::fake()->create('big.pdf', 6000, 'application/pdf'))->assertSessionHasErrors('file');
+
+    expect($request->fresh()->getMedia('paper_uploads'))->toHaveCount(0);
+});
+
+test('a joint form has a signature and a thumb impression for each applicant', function () {
+    $request = oldFormForUploads($this, [
+        'individual_kind' => 'joint',
+        'a2_name' => 'Sara Raza', 'a2_parent_relation' => 'do', 'a2_parent_name' => 'Hussain Raza', 'a2_gender' => 'female',
+        'a2_marital_status' => 'married', 'a2_nationality' => 'Pakistani', 'a2_country_of_residence' => 'Pakistan', 'a2_occupation' => 'house_wife',
+    ]);
+
+    uploadToOldForm($this, $request, 'signature:applicant_2')->assertSessionHasNoErrors();
+    $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))->assertSee('Specimen signature - Applicant 2 (Sara Raza)');
+});
+
+test('uploads cannot be added or removed once the request is submitted or approved, but can still be opened', function () {
+    $request = oldFormForUploads($this);
+    uploadToOldForm($this, $request, 'signature:applicant_1');
+    $media = $request->fresh()->getMedia('paper_uploads')->first();
+
+    $this->actingAs($this->admin)->post(route('account-openings.submit', $request))->assertSessionHas('success');
+
+    uploadToOldForm($this, $request, 'thumb:applicant_1')->assertRedirect(route('account-openings.show', $request))->assertSessionHas('error');
+    $this->actingAs($this->admin)->delete(route('account-openings.paper.uploads.destroy', [$request, $media->id]))->assertSessionHas('error');
+    expect($request->fresh()->getMedia('paper_uploads'))->toHaveCount(1);
+    $this->actingAs($this->admin)->get(route('account-openings.paper.uploads.show', [$request, $media->id]))->assertSuccessful();
+
+    config(['account_opening.maker_checker.allow_self_approval' => true]);
+    $this->actingAs($this->admin)->post(route('account-openings.approve', $request))->assertSessionHas('success');
+    uploadToOldForm($this, $request, 'thumb:applicant_1')->assertSessionHas('error');
+    expect($request->fresh()->getMedia('paper_uploads'))->toHaveCount(1);
+});
+
+test('a user of another branch cannot open or change the uploads', function () {
+    $request = oldFormForUploads($this);
+    uploadToOldForm($this, $request, 'signature:applicant_1');
+    $media = $request->fresh()->getMedia('paper_uploads')->first();
+
+    $role = Role::firstOrCreate(['name' => 'branch', 'guard_name' => 'web']);
+    $role->givePermissionTo(Permission::where('guard_name', 'web')->whereIn('name', ['view account openings', 'edit account openings'])->get());
+    $outsider = User::factory()->create(['branch_id' => Branch::factory()->create()->id]);
+    $outsider->assignRole($role);
+
+    $this->flushSession();
+    app('auth')->forgetGuards();
+    $this->actingAs($outsider)->get(route('account-openings.paper.uploads.show', [$request, $media->id]))->assertNotFound();
+    $this->actingAs($outsider)->delete(route('account-openings.paper.uploads.destroy', [$request, $media->id]))->assertNotFound();
+});
+
+test('a business form offers a signature for each authorized applicant named on it', function () {
+    $request = startOldForm($this);
+    saveOldForm($this, $request, ['account_nature' => 'business', 'business_kind' => 'partnership', 'partnership_kind' => 'registered', 'signatories' => [['name' => 'Partner One'], ['name' => 'Partner Two']]]);
+
+    expect(PaperUploads::signatureSlots($request->fresh()->paperForm->values()))->toHaveKeys(['signature:applicant_1', 'thumb:applicant_2'])
+        ->and(PaperUploads::documentSlots($request->fresh()->paperForm->values()))->toHaveKey('document:docs_partnership.d1');
 });

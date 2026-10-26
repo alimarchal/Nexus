@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\PaperForm\PaperUploads;
 use App\Traits\UserTracking;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -15,15 +16,17 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * Bhara hua Account Opening Form khud -- T&C acceptance, Indemnity &
  * Undertaking, aur "I/We recommend to open the Account..." wala maker-checker
  * block (AOF #26, #28, #34).
  */
-class AccountOpeningRequest extends Model
+class AccountOpeningRequest extends Model implements HasMedia
 {
-    use HasFactory, HasUuids, LogsActivity, SoftDeletes, UserTracking;
+    use HasFactory, HasUuids, InteractsWithMedia, LogsActivity, SoftDeletes, UserTracking;
 
     protected $keyType = 'string';
 
@@ -116,6 +119,12 @@ class AccountOpeningRequest extends Model
     public static function formTypeForNature(?string $accountNature): string
     {
         return $accountNature === 'business' ? self::FORM_ENTITY : self::FORM_INDIVIDUAL;
+    }
+
+    public function registerMediaCollections(): void
+    {
+        // Signatures and documents of an old (paper) form are private: they are opened only through the request page.
+        $this->addMediaCollection(PaperUploads::COLLECTION)->useDisk((string) config('account_opening.paper_uploads_disk', 'local'));
     }
 
     public function isOldEdition(): bool
