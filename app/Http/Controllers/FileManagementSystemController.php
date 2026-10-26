@@ -649,9 +649,11 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     }
 
     /**
-     * Open one scanned page. Going through here (and not the raw storage link) writes who opened it to the history.
+     * Open one scanned page. Pages live on a private disk, so this is the only way to read one: it checks the user can
+     * see the record and writes who opened it to the history. A thumbnail preview (?preview=1) on the record page is
+     * served through the same checks but is not logged as an opening.
      */
-    public function page(FileManagementSystem $fileManagementSystem, int $media)
+    public function page(Request $request, FileManagementSystem $fileManagementSystem, int $media)
     {
         $this->findVisible($fileManagementSystem);
 
@@ -661,12 +663,14 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             ->where('model_id', $fileManagementSystem->getKey())
             ->firstOrFail();
 
-        activity('file-management')
-            ->performedOn($fileManagementSystem)
-            ->causedBy(auth()->user())
-            ->event('page_viewed')
-            ->withProperties($this->pageActivityProperties($page))
-            ->log('Opened a scanned page');
+        if (! $request->boolean('preview')) {
+            activity('file-management')
+                ->performedOn($fileManagementSystem)
+                ->causedBy(auth()->user())
+                ->event('page_viewed')
+                ->withProperties($this->pageActivityProperties($page))
+                ->log('Opened a scanned page');
+        }
 
         return Storage::disk($page->disk)->response($page->getPathRelativeToRoot(), $page->getCustomProperty('original_filename', $page->file_name));
     }

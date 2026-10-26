@@ -170,8 +170,8 @@ class FileManagementSystem extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        // Scanned documents (pdf/docx/images) are stored on the public disk so they're servable via /storage.
-        $this->addMediaCollection('pages')->useDisk('public');
+        // Scanned documents (pdf/docx/images) live on a private disk and are only opened through the protected page route.
+        $this->addMediaCollection('pages')->useDisk((string) config('file_management.pages_disk', 'local'));
     }
 
     /**

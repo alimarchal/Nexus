@@ -12,7 +12,7 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $this->seed(RolesAndPermissionsSeeder::class);
 
     $this->branch = Branch::factory()->create();

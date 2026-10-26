@@ -71,7 +71,7 @@ test('user without permission cannot view file management systems index', functi
 });
 
 test('authorized user can create a document record with a scanned page', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $response = $this->actingAs($this->admin)->post(route('file-management-systems.store'), [
         'file_category_id' => $this->fileCategory->id,
@@ -124,7 +124,7 @@ test('branch role can view files created by another user in their branch', funct
 });
 
 test('normal edits cannot change a document record owner', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $newBranch = Branch::factory()->create();
     $document = FileManagementSystem::factory()->create([
@@ -191,7 +191,7 @@ test('user without transfer permission cannot request a transfer', function () {
 });
 
 test('approving a transfer moves ownership and media and records custodian activity', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $newBranch = Branch::factory()->create();
     $newBranchUser = User::factory()->create(['branch_id' => $newBranch->id]);
@@ -232,7 +232,7 @@ test('approving a transfer moves ownership and media and records custodian activ
 });
 
 test('authorized user can create a document record with a manual file no and filter by it', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $this->actingAs($this->admin)->post(route('file-management-systems.store'), [
         'file_category_id' => $this->fileCategory->id,
@@ -330,7 +330,7 @@ test('branch role cannot view another branch document by guessing the url', func
 });
 
 test('uploaded pages are stored under the branch/digital-id folder', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $this->actingAs($this->admin)->post(route('file-management-systems.store'), [
         'file_category_id' => $this->fileCategory->id,
@@ -348,7 +348,7 @@ test('uploaded pages are stored under the branch/digital-id folder', function ()
 });
 
 test('archiving a document to a box does not require selecting files', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $document = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch',
@@ -468,7 +468,7 @@ test('file list searches, filters by status tab and counts the tabs', function (
 });
 
 test('file page shows the snapshot, pages and a pending transfer banner', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     $document = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch', 'fileable_id' => $this->branch->id,
         'file_category_id' => $this->fileCategory->id, 'title' => 'Board minutes',
@@ -530,7 +530,7 @@ function fmsDocumentWithPages(array $attributes, array $pages): FileManagementSy
 }
 
 test('filtered files download as a zip with one folder per file and an index', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     Permission::firstOrCreate(['name' => 'export file management systems']);
     Role::findByName('branch', 'web')->givePermissionTo('export file management systems');
 
@@ -560,7 +560,7 @@ test('filtered files download as a zip with one folder per file and an index', f
 });
 
 test('ticked rows download as a zip and csv, limited to the user office', function () {
-    Storage::fake('public');
+    Storage::fake('local');
     Permission::firstOrCreate(['name' => 'export file management systems']);
     Role::findByName('branch', 'web')->givePermissionTo('export file management systems');
 
@@ -610,7 +610,7 @@ test('updating a record that has no scanned page requires a page upload', functi
 });
 
 test('updating a record that already has a scanned page does not require a new upload', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $document = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch',
@@ -632,7 +632,7 @@ test('updating a record that already has a scanned page does not require a new u
 });
 
 test('the last scanned page of a record cannot be removed', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     $document = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch',
@@ -821,7 +821,7 @@ test('the seeded roles can archive files into boxes', function () {
 
 test('a seeded branch manager can archive an own file into a box from the file page', function () {
     $this->seed(RolesAndPermissionsSeeder::class);
-    Storage::fake('public');
+    Storage::fake('local');
     $manager = User::whereNotNull('branch_id')->whereHas('roles', fn ($q) => $q->where('name', 'branch'))->first();
     $document = FileManagementSystem::factory()->create([
         'fileable_type' => 'branch',
