@@ -187,3 +187,35 @@ test('the recount migration corrects boxes that were counted twice', function ()
     expect($box->fresh())->file_count->toBe(1)->status->toBe('open')
         ->and($closed->fresh())->file_count->toBe(0)->status->toBe('closed');
 });
+
+test('an archived file cannot be transferred, also by sending the request directly', function () {
+    $box = guardBox($this->branch);
+    $file = guardFile($this->branch, ['box_id' => $box->id, 'is_archived' => true, 'position_in_box' => 1]);
+    $recipient = User::factory()->create(['branch_id' => $this->otherBranch->id]);
+    $show = route('file-management-systems.show', $file);
+
+    $this->actingAs($this->user)->get(route('file-management-systems.transfer', $file))->assertRedirect($show)->assertSessionHas('error');
+    $this->actingAs($this->user)->post(route('file-management-systems.transfers.store', $file), [
+        'destination_fileable_type' => 'branch', 'destination_fileable_id' => $this->otherBranch->id,
+        'recipient_id' => $recipient->id, 'reason' => 'Move',
+    ])->assertRedirect($show)->assertSessionHas('error', fn (string $message) => str_contains($message, 'is archived in '.$box->box_number));
+
+    expect(FileManagementTransfer::count())->toBe(0);
+});
+
+test('approving a transfer of a file archived after the request is refused and leaves the file with its box', function () {
+    $superAdmin = User::where('email', 'superadmin@example.com')->firstOrFail();
+    $recipient = User::factory()->create(['branch_id' => $this->otherBranch->id]);
+    $file = guardFile($this->branch);
+    $transfer = guardTransfer($file, $this->user, $this->otherBranch, $recipient);
+    $box = guardBox($this->branch);
+    $this->actingAs($this->user)->post(route('file-management-systems.archive', $file), ['box_id' => $box->id])->assertSessionHas('success');
+
+    $this->flushSession();
+    app('auth')->forgetGuards();
+    $this->actingAs($superAdmin)->patch(route('file-management-systems.transfers.decide', [$file, $transfer]), ['decision' => 'approved'])
+        ->assertSessionHas('error', fn (string $message) => str_contains($message, 'is archived in'));
+
+    expect($transfer->fresh()->status)->toBe('pending')
+        ->and($file->fresh())->fileable_id->toBe($this->branch->id)->box_id->toBe($box->id);
+});

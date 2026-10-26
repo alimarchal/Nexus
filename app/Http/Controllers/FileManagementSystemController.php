@@ -353,6 +353,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             return $blocked;
         }
 
+        if ($archived = $this->blockedWhenArchived($fileManagementSystem)) {
+            return $archived;
+        }
+
         return view('file-management-systems.transfer', [
             'fileManagementSystem' => $fileManagementSystem->load(['fileable', 'currentCustodian']),
             ...$this->transferOptions(),
@@ -365,6 +369,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
 
         if ($blocked = $this->blockedFromMoving($fileManagementSystem, 'transferred')) {
             return $blocked;
+        }
+
+        if ($archived = $this->blockedWhenArchived($fileManagementSystem)) {
+            return $archived;
         }
 
         $destination = $this->resolveOrgUnit($request->string('destination_fileable_type')->toString(), $request->integer('destination_fileable_id'));
@@ -412,6 +420,11 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             ]);
 
             return redirect()->route('file-management-systems.show', $fileManagementSystem)->with('success', 'Transfer request rejected.');
+        }
+
+        // A file archived after the transfer was requested would end up in a box of an office that no longer holds it.
+        if ($archived = $this->blockedWhenArchived($fileManagementSystem->refresh())) {
+            return $archived;
         }
 
         $previousFileable = [
@@ -651,6 +664,19 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         }
 
         return null;
+    }
+
+    /**
+     * An archived file sits in a box of its office, so it cannot be transferred until it is out of the box.
+     */
+    private function blockedWhenArchived(FileManagementSystem $fileManagementSystem): ?RedirectResponse
+    {
+        if (! $fileManagementSystem->isArchived()) {
+            return null;
+        }
+
+        return redirect()->route('file-management-systems.show', $fileManagementSystem)
+            ->with('error', 'This file is archived in '.($fileManagementSystem->archive_location ?? 'a box').', so it cannot be transferred to another office.');
     }
 
     /**
