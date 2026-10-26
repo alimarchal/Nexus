@@ -42,7 +42,7 @@
                 <div class="ak-alert ak-alert-warn" role="status">
                     Waiting for a checker.
                     @if ($isMaker && ! $workflow->selfApprovalAllowed())
-                        You created or submitted this record, so a different user has to approve or reject it.
+                        You created, edited or submitted this record, so a different user has to approve or reject it.
                     @endif
                 </div>
             @endif
