@@ -792,6 +792,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             return $blocked;
         }
 
+        if ($fileManagementSystem->isArchived()) {
+            return $this->alreadyArchivedRedirect($fileManagementSystem);
+        }
+
         // Get available boxes for this org unit
         $boxes = Box::where('boxable_type', $fileManagementSystem->fileable_type)
             ->where('boxable_id', $fileManagementSystem->fileable_id)
@@ -827,6 +831,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             return $blocked;
         }
 
+        if ($fileManagementSystem->isArchived()) {
+            return $this->alreadyArchivedRedirect($fileManagementSystem);
+        }
+
         $validated = $request->validated();
         $box = Box::findOrFail($validated['box_id']);
 
@@ -841,7 +849,18 @@ class FileManagementSystemController extends Controller implements HasMiddleware
             return redirect()->back()->with('error', 'Selected box is full or closed');
         }
 
-        DB::transaction(function () use ($fileManagementSystem, $box) {
+        $alreadyArchived = false;
+
+        DB::transaction(function () use ($fileManagementSystem, $box, &$alreadyArchived) {
+            // Read the file again under a lock so two requests for the same file cannot both archive it.
+            $current = FileManagementSystem::query()->lockForUpdate()->findOrFail($fileManagementSystem->id);
+
+            if ($current->isArchived()) {
+                $alreadyArchived = true;
+
+                return;
+            }
+
             $fileManagementSystem->load('media');
 
             $fileManagementSystem->update([
@@ -853,13 +872,8 @@ class FileManagementSystemController extends Controller implements HasMiddleware
 
             $this->moveMediaForArchive($fileManagementSystem, $box);
 
-            // Update box file count
-            $box->increment('file_count');
-
-            // Check if box is now full
-            if ($box->file_count >= $box->capacity) {
-                $box->update(['status' => 'full']);
-            }
+            // The box count is the number of files really in the box; this also marks a box that is now full.
+            $box->refreshFileCount();
 
             // Log activity
             activity('file-management')
@@ -875,9 +889,20 @@ class FileManagementSystemController extends Controller implements HasMiddleware
                 ->log('File management record archived to box');
         });
 
+        if ($alreadyArchived) {
+            return $this->alreadyArchivedRedirect($fileManagementSystem->refresh());
+        }
+
         return redirect()
             ->route('file-management-systems.show', $fileManagementSystem)
             ->with('success', "File archived to {$box->box_number}");
+    }
+
+    private function alreadyArchivedRedirect(FileManagementSystem $fileManagementSystem): RedirectResponse
+    {
+        return redirect()
+            ->route('file-management-systems.show', $fileManagementSystem)
+            ->with('error', 'This file is already archived'.($fileManagementSystem->archive_location ? ' in '.$fileManagementSystem->archive_location : '').'.');
     }
 
     /**
