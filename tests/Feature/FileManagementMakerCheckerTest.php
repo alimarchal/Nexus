@@ -287,6 +287,52 @@ test('records that existed before maker-checker stay approved and editable', fun
     expect($legacy->isEditable())->toBeTrue();
 });
 
+test('changing an approved file that is not locked sends it back for approval', function () {
+    config(['file_management.lock_after_approval' => false]);
+    $file = makerFile($this);
+    actAsFmsUser($this, $this->maker)->post(route('file-management-systems.submit', $file));
+    actAsFmsUser($this, $this->checker)->post(route('file-management-systems.approve', $file));
+    expect($file->fresh())->status->toBe('approved')->locked_at->toBeNull();
+
+    // A change of the details.
+    actAsFmsUser($this, $this->checker)->put(route('file-management-systems.update', $file), ['title' => 'Changed after approval', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01'])
+        ->assertSessionHas('success', fn (string $message) => str_contains($message, 'sent back for approval'));
+    expect($file->fresh()->status)->toBe('draft')->and($file->fresh()->approved_by)->toBeNull()->and(activityEvents($file))->toContain('reopened');
+
+    // Added pages and removed pages.
+    foreach ([
+        fn () => actAsFmsUser($this, $this->maker)->put(route('file-management-systems.update', $file), ['title' => 'Changed after approval', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01', 'pages' => [UploadedFile::fake()->create('more.pdf', 20, 'application/pdf')]]),
+        fn () => actAsFmsUser($this, $this->maker)->delete(route('file-management-systems.media.destroy', [$file, $file->media()->first()->id])),
+    ] as $change) {
+        FileManagementSystem::whereKey($file->id)->update(['status' => 'approved']);
+        $change();
+        expect($file->fresh()->status)->toBe('draft');
+    }
+
+    // A save that changes nothing leaves an approved file approved.
+    FileManagementSystem::whereKey($file->id)->update(['status' => 'approved']);
+    actAsFmsUser($this, $this->maker)->put(route('file-management-systems.update', $file), ['title' => 'Changed after approval', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01']);
+    expect($file->fresh()->status)->toBe('approved');
+});
+
+test('a record that existed before maker-checker also goes back for approval when it is changed', function () {
+    $legacy = FileManagementSystem::factory()->create(['fileable_type' => 'branch', 'fileable_id' => $this->branch->id, 'status' => 'approved', 'title' => 'Old']);
+    $legacy->addMedia(UploadedFile::fake()->create('scan.pdf', 20, 'application/pdf'))->toMediaCollection('pages');
+
+    actAsFmsUser($this, $this->maker)->put(route('file-management-systems.update', $legacy), ['title' => 'New', 'file_category_id' => $legacy->file_category_id, 'document_date' => '2026-01-01']);
+
+    expect($legacy->fresh()->status)->toBe('draft');
+});
+
+test('with maker-checker switched off a changed approved file stays approved', function () {
+    config(['file_management.maker_checker.enabled' => false]);
+    $file = makerFile($this, 'approved');
+
+    actAsFmsUser($this, $this->maker)->put(route('file-management-systems.update', $file), ['title' => 'Changed', 'file_category_id' => $file->file_category_id, 'document_date' => '2026-01-01']);
+
+    expect($file->fresh()->status)->toBe('approved');
+});
+
 test('the permissions can be taken away from a user to remove the buttons', function () {
     $file = makerFile($this, 'submitted');
     $this->checker->revokePermissionTo('approve file management systems');

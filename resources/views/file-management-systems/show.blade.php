@@ -27,7 +27,7 @@
     $eventStyles = [
         'created' => 'ak-status-blue', 'updated' => 'ak-status-slate', 'transferred' => 'ak-status-amber',
         'archived' => 'ak-status-slate', 'page_uploaded' => 'ak-status-green', 'page_removed' => 'ak-status-red',
-        'submitted' => 'ak-status-blue', 'approved' => 'ak-status-green', 'rejected' => 'ak-status-red', 'unlocked' => 'ak-status-amber',
+        'submitted' => 'ak-status-blue', 'approved' => 'ak-status-green', 'rejected' => 'ak-status-red', 'unlocked' => 'ak-status-amber', 'reopened' => 'ak-status-amber',
         'viewed' => 'ak-status-slate', 'page_viewed' => 'ak-status-slate',
     ];
     $canEditNow = $file->isEditable();

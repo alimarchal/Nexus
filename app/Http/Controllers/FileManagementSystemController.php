@@ -333,12 +333,16 @@ class FileManagementSystemController extends Controller implements HasMiddleware
         $fileManagementSystem->update([
             ...$request->safe()->except(['pages']),
         ]);
+        $detailsChanged = array_diff_key($fileManagementSystem->getChanges(), ['updated_by' => 1, 'updated_at' => 1]) !== [];
 
         foreach ($request->file('pages', []) as $page) {
             $this->logPageUploaded($fileManagementSystem, $this->addPage($fileManagementSystem, $page));
         }
 
-        return redirect()->route('file-management-systems.index')->with('success', 'Document record updated successfully.');
+        $sentBack = ($detailsChanged || $request->hasFile('pages'))
+            && $this->workflow->sendBackForApproval($fileManagementSystem, auth()->user(), $detailsChanged ? 'details' : 'pages');
+
+        return redirect()->route('file-management-systems.index')->with('success', 'Document record updated successfully.'.($sentBack ? ' It was approved before, so it has been sent back for approval.' : ''));
     }
 
     public function transfer(FileManagementSystem $fileManagementSystem)
@@ -488,7 +492,9 @@ class FileManagementSystemController extends Controller implements HasMiddleware
 
         $page->delete();
 
-        return redirect()->back()->with('success', 'Page removed successfully.');
+        $sentBack = $this->workflow->sendBackForApproval($fileManagementSystem, auth()->user(), 'page removed');
+
+        return redirect()->back()->with('success', 'Page removed successfully.'.($sentBack ? ' The record was approved before, so it has been sent back for approval.' : ''));
     }
 
     /**

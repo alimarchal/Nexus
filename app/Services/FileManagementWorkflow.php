@@ -176,6 +176,30 @@ final class FileManagementWorkflow
     }
 
     /**
+     * An approved record that is still changed (locking is switched off, or it is an older record that was never
+     * locked) goes back to draft so a checker sees the change before it is approved again. Returns whether it did.
+     */
+    public function sendBackForApproval(FileManagementSystem $file, User $user, string $change): bool
+    {
+        if (! $this->makerCheckerEnabled() || $file->status !== 'approved') {
+            return false;
+        }
+
+        DB::transaction(function () use ($file, $user, $change): void {
+            $file->forceFill([
+                'status' => 'draft',
+                'locked_at' => null,
+                'approved_by' => null,
+                'approved_at' => null,
+            ])->save();
+
+            $this->record($file, 'reopened', $user, 'Changed after approval ('.$change.'); sent back for approval.');
+        });
+
+        return true;
+    }
+
+    /**
      * A super admin reopens one approved record for changes. It goes back to draft and must be approved again.
      */
     public function unlock(FileManagementSystem $file, User $user, string $reason): void
