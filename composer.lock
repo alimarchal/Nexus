@@ -4,15 +4,21 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d5c0abeaf258cea0cfd6dd8850524893",
+    "content-hash": "432b4c96c21011eeb7a385584d6d750d",
     "packages": [
         {
             "name": "alimarchal/id-generator",
-            "version": "1.1.0",
+            "version": "v1.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/alimarchal/id-generator.git",
+                "reference": "1e0c85c4f5d907fe9ddce165706c37eaefe644a4"
+            },
             "dist": {
-                "type": "path",
-                "url": "packages/id-generator",
-                "reference": "825f910e961ddaad9b76dd358962b6781828f55f"
+                "type": "zip",
+                "url": "https://api.github.com/repos/alimarchal/id-generator/zipball/1e0c85c4f5d907fe9ddce165706c37eaefe644a4",
+                "reference": "1e0c85c4f5d907fe9ddce165706c37eaefe644a4",
+                "shasum": ""
             },
             "require": {
                 "illuminate/database": "^11.0 || ^12.0 || ^13.0",
@@ -37,19 +43,7 @@
                     "Alimarchal\\IdGenerator\\": "src/"
                 }
             },
-            "autoload-dev": {
-                "psr-4": {
-                    "Alimarchal\\IdGenerator\\Tests\\": "tests/"
-                }
-            },
-            "scripts": {
-                "test": [
-                    "vendor/bin/pest"
-                ],
-                "test-coverage": [
-                    "vendor/bin/pest --coverage"
-                ]
-            },
+            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -60,10 +54,11 @@
                 }
             ],
             "description": "A Laravel package to generate unique, prefixed IDs with database transaction safety",
-            "transport-options": {
-                "symlink": true,
-                "relative": true
-            }
+            "support": {
+                "issues": "https://github.com/alimarchal/id-generator/issues",
+                "source": "https://github.com/alimarchal/id-generator/tree/v1.2.0"
+            },
+            "time": "2026-10-28T08:32:07+00:00"
         },
         {
             "name": "bacon/bacon-qr-code",
