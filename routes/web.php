@@ -29,6 +29,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserModuleController;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -198,4 +199,23 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/view/{path}', [DownloadController::class, 'view'])->where('path', '.*')->name('file.view');
     });
 
+});
+
+// TEMPORARY one-off route to run config:clear, migrate and optimize:clear from the browser on a server without shell
+// access. It answers 404 unless RUN_ARTISAN_KEY is set in .env and the key in the URL matches. Remove this route, the
+// 'artisan_runner_key' line in config/app.php and RUN_ARTISAN_KEY from .env once it has been used.
+Route::get('/run-artisan/{key}', function (string $key) {
+    $expected = (string) config('app.artisan_runner_key');
+
+    abort_unless($expected !== '' && hash_equals($expected, $key), 404);
+
+    set_time_limit(0);
+    $output = [];
+
+    foreach (['config:clear', 'migrate --force', 'config:clear', 'optimize:clear'] as $command) {
+        Artisan::call($command);
+        $output[] = '$ php artisan '.$command."\n".Artisan::output();
+    }
+
+    return response(implode("\n", $output), 200, ['Content-Type' => 'text/plain']);
 });

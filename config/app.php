@@ -67,6 +67,9 @@ return [
 
     'timezone' => env('APP_TIMEZONE', 'UTC'),
 
+    // TEMPORARY: key for the one-off /run-artisan/{key} route (routes/web.php). Remove it with the route.
+    'artisan_runner_key' => env('RUN_ARTISAN_KEY'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
