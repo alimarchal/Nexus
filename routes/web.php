@@ -201,7 +201,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 
 });
 
-// TEMPORARY one-off route to run config:clear, migrate and optimize:clear from the browser on a server without shell
+// TEMPORARY one-off route to run config:clear, migrate, storage:link and optimize:clear from the browser on a server without shell
 // access. It answers 404 unless RUN_ARTISAN_KEY is set in .env and the key in the URL matches. Remove this route, the
 // 'artisan_runner_key' line in config/app.php and RUN_ARTISAN_KEY from .env once it has been used.
 Route::get('/run-artisan/{key}', function (string $key) {
@@ -212,7 +212,7 @@ Route::get('/run-artisan/{key}', function (string $key) {
     set_time_limit(0);
     $output = [];
 
-    foreach (['config:clear', 'migrate --force', 'config:clear', 'optimize:clear'] as $command) {
+    foreach (['config:clear', 'migrate --force', 'storage:link --force', 'config:clear', 'optimize:clear'] as $command) {
         Artisan::call($command);
         $output[] = '$ php artisan '.$command."\n".Artisan::output();
     }
