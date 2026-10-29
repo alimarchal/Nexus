@@ -127,6 +127,11 @@ class UserController extends Controller implements HasMiddleware
             }
         }
 
+        // Role permissions revoked for this user are not granted to them.
+        foreach ($user->deniedPermissions()->pluck('permissions.id') as $deniedId) {
+            unset($grants[(string) $deniedId]);
+        }
+
         $activity = rescue(fn () => Activity::query()
             ->where(fn ($q) => $q->where(fn ($c) => $c->where('causer_type', $user->getMorphClass())->where('causer_id', $user->id))
                 ->orWhere(fn ($s) => $s->where('subject_type', $user->getMorphClass())->where('subject_id', $user->id)))
@@ -220,6 +225,8 @@ class UserController extends Controller implements HasMiddleware
             'roles.*' => 'exists:roles,id',
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
+            'denied_permissions' => 'array',
+            'denied_permissions.*' => 'exists:permissions,id',
         ]);
 
         $user = User::create([
@@ -247,6 +254,8 @@ class UserController extends Controller implements HasMiddleware
             $user->syncPermissions($permissionNames);
         }
 
+        $this->syncDeniedPermissions($user, $request);
+
         return redirect()->route('users.index')->with('success', 'User created successfully with assigned roles and permissions.');
     }
 
@@ -260,8 +269,9 @@ class UserController extends Controller implements HasMiddleware
         $permissions = Permission::all();
         $userRoles = $user->roles->pluck('id')->map(fn (int $roleId): string => (string) $roleId)->all();
         $userPermissions = $user->permissions->pluck('id')->toArray();
+        $userDenied = $user->deniedPermissions()->pluck('permissions.id')->map(fn (int $id): string => (string) $id)->all();
 
-        return view('users.edit', compact('user', 'branches', 'regions', 'divisions', 'headOffices', 'roles', 'permissions', 'userRoles', 'userPermissions'));
+        return view('users.edit', compact('user', 'branches', 'regions', 'divisions', 'headOffices', 'roles', 'permissions', 'userRoles', 'userPermissions', 'userDenied'));
     }
 
     public function update(Request $request, User $user)
@@ -295,6 +305,8 @@ class UserController extends Controller implements HasMiddleware
             'roles.*' => 'exists:roles,id',
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
+            'denied_permissions' => 'array',
+            'denied_permissions.*' => 'exists:permissions,id',
         ]);
 
         $updateData = [
@@ -335,7 +347,22 @@ class UserController extends Controller implements HasMiddleware
             $user->syncPermissions([]);
         }
 
+        $this->syncDeniedPermissions($user, $request);
+
         return redirect()->route('users.index')->with('success', 'User updated successfully with assigned roles and permissions.');
+    }
+
+    /**
+     * Keep only the revoked permissions that a selected role really grants: a
+     * revoke means "the role gives this, but not to this user".
+     */
+    private function syncDeniedPermissions(User $user, Request $request): void
+    {
+        $roleGranted = $user->fresh()->getPermissionsViaRoles()->pluck('id');
+        $denied = collect($request->input('denied_permissions', []))->map(fn ($id) => (int) $id)->intersect($roleGranted)->values()->all();
+
+        $user->deniedPermissions()->sync($denied);
+        $user->forgetDeniedPermissions();
     }
 
     public function destroy(User $user)

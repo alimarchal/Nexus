@@ -12,6 +12,7 @@
 
     $selectedRoleIds = array_map('strval', old('roles', $userRoles));
     $selectedPermissionIds = array_map('strval', old('permissions', $userPermissions));
+    $deniedPermissionIds = array_map('strval', old('denied_permissions', $userDenied ?? []));
 
     // Permissions arranged by product module (File management, Account opening ...), then by
     // subject ("view aksic claims" -> "Aksic Claims"). Picking a module shows only its permissions.
@@ -82,6 +83,7 @@
                 x-data="userEditForm({
                     roles: {{ \Illuminate\Support\Js::from($selectedRoleIds) }},
                     permissions: {{ \Illuminate\Support\Js::from($selectedPermissionIds) }},
+                    denied: {{ \Illuminate\Support\Js::from($deniedPermissionIds) }},
                     roleMap: {{ \Illuminate\Support\Js::from($roles->pluck('name', 'id')) }},
                     rolePermissions: {{ \Illuminate\Support\Js::from($rolePermissionMap) }},
                     permissionNames: {{ \Illuminate\Support\Js::from($permissionNames) }},
@@ -160,7 +162,7 @@
                             <div class="flex justify-between gap-3"><dt class="text-gray-700 dark:text-gray-300">Roles</dt>
                                 <dd class="text-right font-semibold text-black dark:text-gray-100" x-text="roleNames().join(', ') || 'None'"></dd></div>
                             <div class="flex justify-between"><dt class="text-gray-700 dark:text-gray-300">Permissions from roles</dt>
-                                <dd class="font-semibold text-black dark:text-gray-100" x-text="inheritedIds().length"></dd></div>
+                                <dd class="font-semibold text-black dark:text-gray-100" x-text="inheritedIds().filter((id) => !denied.includes(id)).length"></dd></div>
                             <div class="flex justify-between"><dt class="text-gray-700 dark:text-gray-300">Extra (individual) permissions</dt>
                                 <dd class="font-semibold text-black dark:text-gray-100" x-text="permissions.length"></dd></div>
                         </dl>
@@ -292,8 +294,16 @@
                                                         class="size-4 rounded border-gray-500 text-blue-700 focus:ring-blue-600">
                                                     <span class="text-black dark:text-gray-100">{{ $permission->name }}</span>
                                                 </span>
-                                                <span x-show="inheritedIds().includes('{{ $permission->id }}')"
-                                                    class="shrink-0 rounded bg-green-100 px-1.5 text-[10px] font-semibold text-green-800" style="font-size:10px">via role</span>
+                                                <span class="flex shrink-0 items-center gap-1.5" x-show="inheritedIds().includes('{{ $permission->id }}')">
+                                                    <span class="rounded px-1.5 text-[10px] font-semibold"
+                                                        :class="denied.includes('{{ $permission->id }}') ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'" style="font-size:10px"
+                                                        x-text="denied.includes('{{ $permission->id }}') ? 'revoked for this user' : 'via role'"></span>
+                                                    <label class="flex items-center gap-1 text-[10px] text-gray-700" style="font-size:10px" title="Switch this role permission off for this user only">
+                                                        <input type="checkbox" name="denied_permissions[]" value="{{ $permission->id }}" x-model="denied"
+                                                            class="size-3 rounded border-gray-500 text-red-700 focus:ring-red-600">
+                                                        revoke
+                                                    </label>
+                                                </span>
                                             </label>
                                         @endforeach
                                     </div>
@@ -372,6 +382,7 @@
                 return {
                     roles: config.roles,
                     permissions: config.permissions,
+                    denied: config.denied || [],
                     roleMap: config.roleMap,
                     rolePermissions: config.rolePermissions,
                     permissionNames: config.permissionNames,
