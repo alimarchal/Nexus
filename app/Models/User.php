@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -14,6 +15,8 @@ use Laravel\Sanctum\HasApiTokens;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\CausesActivity;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Permission\Contracts\Permission as PermissionContract;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\QueryBuilder\AllowedFilter;
 use Spatie\QueryBuilder\AllowedInclude;
@@ -25,11 +28,16 @@ class User extends Authenticatable
     use HasApiTokens;
     use HasFactory;
     use HasProfilePhoto;
-    use HasRoles;
+    use HasRoles {
+        hasPermissionTo as protected hasPermissionThroughSpatie;
+    }
     use LogsActivity;
     use Notifiable;
     use SoftDeletes;
     use TwoFactorAuthenticatable;
+
+    /** @var array<int, string>|null */
+    protected ?array $deniedPermissionNames = null;
 
     /**
      * The attributes that are mass assignable.
@@ -184,6 +192,52 @@ class User extends Authenticatable
             AllowedSort::field('updated_at'),
             AllowedSort::field('is_active'),
         ];
+    }
+
+    /**
+     * Role permissions switched off for this user only.
+     *
+     * @return BelongsToMany<Permission, $this>
+     */
+    public function deniedPermissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'user_denied_permissions', 'user_id', 'permission_id')->withTimestamps();
+    }
+
+    /**
+     * Names of the permissions revoked for this user (empty until the table is migrated).
+     *
+     * @return array<int, string>
+     */
+    public function deniedPermissionNames(): array
+    {
+        return $this->deniedPermissionNames ??= rescue(
+            fn () => $this->deniedPermissions()->pluck('name')->all(),
+            [],
+            false
+        );
+    }
+
+    /**
+     * A permission revoked for this user is denied even when a role grants it. This is
+     * also what Gate / @can / middleware ask, so one override covers every check.
+     *
+     * @param  string|int|PermissionContract|\BackedEnum  $permission
+     */
+    public function hasPermissionTo($permission, $guardName = null): bool
+    {
+        $name = $permission instanceof PermissionContract ? $permission->name : (is_string($permission) ? $permission : null);
+
+        if ($name !== null && in_array($name, $this->deniedPermissionNames(), true)) {
+            return false;
+        }
+
+        return $this->hasPermissionThroughSpatie($permission, $guardName);
+    }
+
+    public function forgetDeniedPermissions(): void
+    {
+        $this->deniedPermissionNames = null;
     }
 
     public static function getAllowedIncludes(): array
