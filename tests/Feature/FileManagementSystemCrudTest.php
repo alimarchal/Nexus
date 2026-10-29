@@ -860,3 +860,36 @@ test('a seeded branch manager can archive an own file into a box from the file p
 
     expect($document->fresh()->is_archived)->toBeTrue();
 });
+
+test('a page just under the configured limit is accepted and one just over is rejected', function () {
+    Storage::fake('local');
+    config(['file_management.max_page_mb' => 50]);
+    $limitKb = 50 * 1024;
+
+    $payload = fn (int $sizeKb, string $title) => [
+        'file_category_id' => $this->fileCategory->id,
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'document_date' => '2026-08-01',
+        'title' => $title,
+        'pages' => [UploadedFile::fake()->create('scan.pdf', $sizeKb, 'application/pdf')],
+    ];
+
+    $this->actingAs($this->admin)->post(route('file-management-systems.store'), $payload($limitKb + 1, 'Too big'))
+        ->assertSessionHasErrors('pages.0');
+
+    $this->actingAs($this->admin)->post(route('file-management-systems.store'), $payload($limitKb, 'Just fits'))
+        ->assertSessionDoesntHaveErrors();
+
+    expect(FileManagementSystem::where('title', 'Just fits')->exists())->toBeTrue()
+        ->and(FileManagementSystem::where('title', 'Too big')->exists())->toBeFalse();
+});
+
+test('create form help text shows the configured page limit', function () {
+    config(['file_management.max_page_mb' => 35]);
+
+    $this->actingAs($this->admin)->get(route('file-management-systems.create'))
+        ->assertSuccessful()
+        ->assertSee('up to 35 MB each')
+        ->assertSee('const maxMb = 35;', false);
+});
