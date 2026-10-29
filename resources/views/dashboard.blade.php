@@ -22,7 +22,7 @@
     <x-slot name="header">
         <div class="ak-head">
             <div class="ak-head-text">
-                <h1 class="ak-title">Dashboard</h1>
+                <h1 class="ak-title">{{ $pageTitle }}</h1>
                 <p class="ak-sub">{{ $greeting }}, {{ $user->name }} &middot; {{ now()->format('l, d F Y') }}</p>
             </div>
             <div class="ak-head-actions db-scopes" aria-label="What you are viewing">
@@ -83,6 +83,14 @@
     </style>
 
     <div class="db-page mx-auto max-w-7xl space-y-10 px-4 py-6 sm:px-6 lg:px-8">
+        @if (count($tabs) > 0)
+            <nav class="ak-tabs" aria-label="Dashboards" role="tablist">
+                <a href="{{ route('dashboard') }}" role="tab" aria-selected="{{ $only === null ? 'true' : 'false' }}" class="ak-tab {{ $only === null ? 'is-active' : '' }}">Overview</a>
+                @foreach ($tabs as $key => $tab)
+                    <a href="{{ $tab['url'] }}" role="tab" aria-selected="{{ $only === $key ? 'true' : 'false' }}" class="ak-tab {{ $only === $key ? 'is-active' : '' }}">{{ $tab['label'] }}</a>
+                @endforeach
+            </nav>
+        @endif
         @if (! empty($pendingMigrations))
             <div class="ak-alert ak-alert-warn" role="alert">
                 <b>{{ count($pendingMigrations) }} database {{ \Illuminate\Support\Str::plural('update', count($pendingMigrations)) }} not applied yet.</b>

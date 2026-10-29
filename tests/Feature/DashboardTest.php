@@ -220,3 +220,37 @@ test('super admin is warned about migrations that have not been run', function (
     $this->actingAs($admin)->get(route('dashboard'))->assertOk()
         ->assertSee('1 database update not applied yet')->assertSee('2026_09_23_000004_seed_access_permissions');
 });
+
+test('each module has its own dashboard page showing only that module', function (): void {
+    $user = User::factory()->create(['branch_id' => $this->own->id]);
+    $user->assignRole('branch');
+
+    $this->actingAs($user)->get(route('dashboard.section', 'aksic'))->assertOk()
+        ->assertSee('AKSIC dashboard')
+        ->assertSee('id="db-aksic"', false)
+        ->assertDontSee('id="db-files"', false)
+        ->assertDontSee('id="db-aof"', false);
+
+    $this->actingAs($user)->get(route('dashboard.section', 'file-management'))->assertOk()
+        ->assertSee('File management dashboard')
+        ->assertSee('id="db-files"', false)
+        ->assertDontSee('id="db-aksic"', false);
+
+    $this->actingAs($user)->get(route('dashboard.section', 'account-opening'))->assertOk()
+        ->assertSee('Account opening dashboard')
+        ->assertSee('id="db-aof"', false)
+        ->assertDontSee('id="db-aksic"', false);
+});
+
+test('a dashboard page and its tab need that dashboard permission', function (): void {
+    $user = User::factory()->create(['branch_id' => $this->own->id]);
+    $user->assignRole('branch');
+    Role::findByName('branch')->revokePermissionTo('view aksic dashboard');
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $this->actingAs($user->fresh())->get(route('dashboard.section', 'aksic'))->assertForbidden();
+
+    $this->actingAs($user->fresh())->get(route('dashboard'))->assertOk()
+        ->assertDontSee('href="'.route('dashboard.section', 'aksic').'"', false)
+        ->assertSee('href="'.route('dashboard.section', 'file-management').'"', false);
+});
