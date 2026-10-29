@@ -29,7 +29,7 @@ class UpdateFileManagementSystemRequest extends FormRequest
             'document_date' => ['required', 'date'],
             'title' => ['nullable', 'string', 'max:255'],
             'pages' => ['nullable', 'array'],
-            'pages.*' => ['file', 'max:10240', 'mimes:pdf,doc,docx,jpg,jpeg,png'],
+            'pages.*' => ['file', 'max:'.(config('file_management.max_page_mb') * 1024), 'mimes:pdf,doc,docx,jpg,jpeg,png'],
         ];
     }
 
