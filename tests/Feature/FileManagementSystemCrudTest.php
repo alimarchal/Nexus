@@ -860,3 +860,121 @@ test('a seeded branch manager can archive an own file into a box from the file p
 
     expect($document->fresh()->is_archived)->toBeTrue();
 });
+
+function pendingTransferTo(FileManagementSystem $document, Branch $destination, User $requester, User $recipient): FileManagementTransfer
+{
+    return FileManagementTransfer::create([
+        'file_management_system_id' => $document->id,
+        'source_fileable_type' => $document->fileable_type,
+        'source_fileable_id' => $document->fileable_id,
+        'destination_fileable_type' => 'branch',
+        'destination_fileable_id' => $destination->id,
+        'recipient_id' => $recipient->id,
+        'requested_by' => $requester->id,
+        'reason' => 'Branch responsibility changed.',
+        'status' => 'pending',
+    ]);
+}
+
+test('incoming transfer filter lists only files with a pending transfer to my office, and matches the card', function () {
+    $otherBranch = Branch::factory()->create();
+    $otherUser = User::factory()->create(['branch_id' => $otherBranch->id]);
+    $otherUser->assignRole('branch');
+
+    $incoming = FileManagementSystem::factory()->create(['status' => 'approved', 'fileable_type' => 'branch', 'fileable_id' => $otherBranch->id, 'file_category_id' => $this->fileCategory->id]);
+    $toSomeoneElse = FileManagementSystem::factory()->create(['status' => 'approved', 'fileable_type' => 'branch', 'fileable_id' => $otherBranch->id, 'file_category_id' => $this->fileCategory->id]);
+    $own = FileManagementSystem::factory()->create(['status' => 'approved', 'fileable_type' => 'branch', 'fileable_id' => $this->branch->id, 'file_category_id' => $this->fileCategory->id]);
+    $third = Branch::factory()->create();
+
+    pendingTransferTo($incoming, $this->branch, $otherUser, $this->branchUser);
+    pendingTransferTo($toSomeoneElse, $third, $otherUser, $otherUser);
+
+    $response = $this->actingAs($this->branchUser)->get(route('file-management-systems.index', ['filter' => ['incoming_transfer' => 1]]))->assertSuccessful();
+
+    $ids = $response->viewData('fileManagementSystems')->pluck('id')->all();
+    expect($ids)->toBe([$incoming->id])
+        ->and($response->viewData('stats')['incoming'])->toBe(count($ids));
+
+    // The destination office can open the file to accept or reject, a bystander still cannot.
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.show', $incoming))->assertSuccessful();
+    $this->actingAs($this->branchUser)->get(route('file-management-systems.show', $toSomeoneElse))->assertNotFound();
+
+    // Without the filter the list is still only my own office's files.
+    $plain = $this->actingAs($this->branchUser)->get(route('file-management-systems.index'))->viewData('fileManagementSystems')->pluck('id')->all();
+    expect($plain)->toBe([$own->id]);
+});
+
+test('a user with no incoming transfers gets an empty list, not other offices files', function () {
+    $otherBranch = Branch::factory()->create();
+    FileManagementSystem::factory()->create(['status' => 'approved', 'fileable_type' => 'branch', 'fileable_id' => $otherBranch->id, 'file_category_id' => $this->fileCategory->id]);
+
+    $response = $this->actingAs($this->branchUser)->get(route('file-management-systems.index', ['filter' => ['incoming_transfer' => 1]]))->assertSuccessful();
+
+    expect($response->viewData('fileManagementSystems')->total())->toBe(0)
+        ->and($response->viewData('stats')['incoming'])->toBe(0);
+});
+
+test('summary cards link to all files, the in circulation tab and incoming transfers', function () {
+    $otherBranch = Branch::factory()->create();
+    $otherUser = User::factory()->create(['branch_id' => $otherBranch->id]);
+    $otherUser->assignRole('branch');
+    $incoming = FileManagementSystem::factory()->create(['status' => 'approved', 'fileable_type' => 'branch', 'fileable_id' => $otherBranch->id, 'file_category_id' => $this->fileCategory->id]);
+    pendingTransferTo($incoming, $this->branch, $otherUser, $this->branchUser);
+
+    $page = $this->actingAs($this->branchUser)->get(route('file-management-systems.index'))->assertSuccessful();
+    $page->assertSee('filter%5Bstatus%5D=active', false)
+        ->assertSee('filter%5Bincoming_transfer%5D=1', false);
+
+    // Already on the in-circulation tab: the card goes back to all files.
+    $active = $this->actingAs($this->branchUser)->get(route('file-management-systems.index', ['filter' => ['status' => 'active']]))->getContent();
+    preg_match_all('/<a href="([^"]*)" class="ak-kpi/', $active, $links);
+    $circulationCard = html_entity_decode($links[1][1] ?? '');
+    expect($circulationCard)->not->toContain('status');
+});
+
+test('a page just under the configured limit is accepted and one just over is rejected', function () {
+    Storage::fake('local');
+    config(['file_management.max_page_mb' => 50]);
+    $limitKb = 50 * 1024;
+
+    $payload = fn (int $sizeKb, string $title) => [
+        'file_category_id' => $this->fileCategory->id,
+        'fileable_type' => 'branch',
+        'fileable_id' => $this->branch->id,
+        'document_date' => '2026-08-01',
+        'title' => $title,
+        'pages' => [UploadedFile::fake()->create('scan.pdf', $sizeKb, 'application/pdf')],
+    ];
+
+    $this->actingAs($this->admin)->post(route('file-management-systems.store'), $payload($limitKb + 1, 'Too big'))
+        ->assertSessionHasErrors('pages.0');
+
+    $this->actingAs($this->admin)->post(route('file-management-systems.store'), $payload($limitKb, 'Just fits'))
+        ->assertSessionDoesntHaveErrors();
+
+    expect(FileManagementSystem::where('title', 'Just fits')->exists())->toBeTrue()
+        ->and(FileManagementSystem::where('title', 'Too big')->exists())->toBeFalse();
+});
+
+test('create form help text shows the configured page limit', function () {
+    config(['file_management.max_page_mb' => 35]);
+
+    $this->actingAs($this->admin)->get(route('file-management-systems.create'))
+        ->assertSuccessful()
+        ->assertSee('up to 35 MB each')
+        ->assertSee('const maxMb = 35;', false);
+});
+
+test('create form warns when an office list is empty and carries the offices when it is not', function () {
+    HeadOffice::query()->delete();
+
+    $this->actingAs($this->admin)->get(route('file-management-systems.create'))
+        ->assertSuccessful()
+        ->assertSee('data-empty-office-list', false)
+        ->assertViewHas('headOffices', fn ($headOffices) => $headOffices->isEmpty());
+
+    $this->seed(HeadOfficeSeeder::class);
+
+    $this->actingAs($this->admin)->get(route('file-management-systems.create'))
+        ->assertViewHas('headOffices', fn ($headOffices) => $headOffices->isNotEmpty());
+});

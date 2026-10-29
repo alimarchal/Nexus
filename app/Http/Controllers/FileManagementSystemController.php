@@ -97,7 +97,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
      */
     private function listQuery(Request $request): QueryBuilder
     {
-        return QueryBuilder::for(FileManagementSystem::query()->visibleTo($request->user()), $request)
+        return QueryBuilder::for($this->listBaseQuery($request), $request)
             ->allowedFilters($this->listFilters())
             ->allowedSorts(['document_date', 'created_at', 'digital_id', 'file_no', 'title'])
             ->defaultSort('-document_date')
@@ -200,11 +200,42 @@ class FileManagementSystemController extends Controller implements HasMiddleware
                     ->orWhere('file_no', 'like', $escaped.'%')
                     ->orWhere('title', 'like', '%'.$escaped.'%'));
             }),
+            // Files with a pending transfer to the user's office (the "Incoming transfers" card).
+            AllowedFilter::callback('incoming_transfer', function ($query, $value): void {
+                if ($value) {
+                    $this->wherePendingTransferToMyOffice($query);
+                }
+            }),
             // Tabs: in circulation / archived in a box.
             AllowedFilter::callback('status', function ($query, $value): void {
                 $query->where('is_archived', $value === 'archived');
             }),
         ];
+    }
+
+    /**
+     * The files the list starts from: the user's own office's files, or, for the
+     * "incoming transfers" filter, files owned by other offices that have a
+     * transfer waiting for this office (the filter then narrows them to exactly those).
+     */
+    private function listBaseQuery(Request $request): Builder
+    {
+        $incoming = filter_var(data_get((array) $request->query('filter', []), 'incoming_transfer'), FILTER_VALIDATE_BOOLEAN);
+
+        return $incoming ? FileManagementSystem::query() : FileManagementSystem::query()->visibleTo($request->user());
+    }
+
+    /**
+     * Pending transfers addressed to the user's office (any office for a super admin; none for a user without one).
+     */
+    private function wherePendingTransferToMyOffice(Builder $query): Builder
+    {
+        $unit = FileManagementSystem::officeUnitOf(auth()->user());
+
+        return $query->whereHas('transfers', fn ($q) => $q->where('status', 'pending')
+            ->when(! $this->isSuperAdmin(), fn ($q) => $unit
+                ? $q->where('destination_fileable_type', $unit[0])->where('destination_fileable_id', $unit[1])
+                : $q->whereRaw('1 = 0')));
     }
 
     /**
@@ -216,7 +247,7 @@ class FileManagementSystemController extends Controller implements HasMiddleware
     private function listStats(Request $request): array
     {
         $statsRequest = $request->duplicate(['filter' => collect((array) $request->query('filter', []))->except('status')->all()]);
-        $scoped = fn () => QueryBuilder::for(FileManagementSystem::query()->visibleTo($request->user()), $statsRequest)
+        $scoped = fn () => QueryBuilder::for($this->listBaseQuery($statsRequest), $statsRequest)
             ->allowedFilters($this->listFilters())
             ->getEloquentBuilder();
 
@@ -281,8 +312,10 @@ class FileManagementSystemController extends Controller implements HasMiddleware
      */
     public function show(FileManagementSystem $fileManagementSystem)
     {
+        // The owning office, or the office a pending transfer is waiting for (it has to open the file to accept or reject it).
         abort_unless(
-            FileManagementSystem::visibleTo(auth()->user())->whereKey($fileManagementSystem->id)->exists(),
+            FileManagementSystem::visibleTo(auth()->user())->whereKey($fileManagementSystem->id)->exists()
+                || $this->wherePendingTransferToMyOffice(FileManagementSystem::query())->whereKey($fileManagementSystem->id)->exists(),
             404
         );
 

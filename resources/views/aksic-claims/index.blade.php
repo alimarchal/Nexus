@@ -133,8 +133,8 @@
                                 <td>{{ \App\Support\AksicDate::display($claim->claim_date) }}</td>
                                 <td>{{ \App\Support\AksicDate::display($claim->period_from) }} &ndash; {{ \App\Support\AksicDate::display($claim->period_to) }}</td>
                                 <td>{{ $claim->filterLabel() }}</td>
-                                <td class="num">{{ number_format($claim->total_loans) }}</td>
-                                <td class="num"><b>{{ number_format((float) $claim->total_markup, 2) }}</b></td>
+                                <td class="num">{{ number_format($claim->visible_loans ?? $claim->total_loans) }}</td>
+                                <td class="num"><b>{{ number_format((float) ($claim->visible_markup ?? $claim->total_markup), 2) }}</b></td>
                                 <td class="ctr"><span class="rounded-full px-2 py-1 text-xs font-semibold {{ $badge[$claim->status] ?? 'bg-gray-100 text-gray-700' }}">{{ $claim->status }}</span></td>
                                 <td class="ctr print:hidden"><a href="{{ route('aksic-claims.show', $claim) }}" class="font-semibold text-blue-700 hover:underline">View</a></td>
                             </tr>

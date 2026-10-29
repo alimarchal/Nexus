@@ -179,6 +179,10 @@
                                                     <option :value="String(o.id)" x-text="o.label" :selected="String(o.id) === officeId"></option>
                                                 </template>
                                             </select>
+                                            <p class="mt-1 text-sm text-amber-700" x-show="(options[type] || []).length === 0" x-cloak data-empty-office-list>
+                                                No <span x-text="(types[type] || '').toLowerCase()"></span> has been set up yet, so a file cannot be recorded for it.
+                                                Ask an administrator to add it (for head offices: run the head office seeder).
+                                            </p>
                                             @error('fileable_id') <p class="{{ $ui::ERROR }}">{{ $message }}</p> @enderror
                                         </div>
                                     @endif
@@ -189,7 +193,7 @@
                             <section class="{{ $ui::CARD }}">
                                 <header class="{{ $ui::CARD_HEAD }}">
                                     <h2 class="{{ $ui::CARD_TITLE }}"><span class="fc-step">3</span>Scanned pages <span class="fc-req">*</span></h2>
-                                    <p class="{{ $ui::CARD_SUBTITLE }}">PDF, Word, JPG or PNG &middot; up to 10 MB each &middot; saved in the order listed.</p>
+                                    <p class="{{ $ui::CARD_SUBTITLE }}">PDF, Word, JPG or PNG &middot; up to {{ config('file_management.max_page_mb') }} MB each &middot; saved in the order listed.</p>
                                 </header>
                                 <div class="p-5">
                                     <div class="fc-drop" role="button" tabindex="0" :class="over && 'is-over'"
@@ -314,7 +318,8 @@
         <script>
             function fmsCreate(init) {
                 const allowed = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
-                const maxBytes = 10 * 1024 * 1024;
+                const maxMb = @js(config('file_management.max_page_mb'));
+                const maxBytes = maxMb * 1024 * 1024;
 
                 return {
                     ...init,
@@ -332,7 +337,7 @@
                             const ext = (file.name.split('.').pop() || '').toLowerCase();
                             let error = '';
                             if (! allowed.includes(ext)) error = 'Not allowed: use PDF, Word, JPG or PNG';
-                            else if (file.size > maxBytes) error = 'Too large: ' + this.size(file.size) + ' (10 MB max)';
+                            else if (file.size > maxBytes) error = 'Too large: ' + this.size(file.size) + ' (' + maxMb + ' MB max)';
                             this.files.push({
                                 key: file.name + file.size + Math.random(),
                                 file, ext: ext.toUpperCase() || 'FILE', error,
