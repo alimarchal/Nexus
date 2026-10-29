@@ -8,6 +8,8 @@ use App\Models\AksicClaimItem;
 use App\Models\Branch;
 use App\Models\District;
 use App\Models\Region;
+use App\Models\User;
+use App\Support\OfficeAccess;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -135,8 +137,10 @@ class AksicClaimService
      *
      * @param  array<string, mixed>  $filters  status / date_from / date_to / district_id / region_id / branch_id / gender
      * @return Collection<int, object{label: string, claims: int, loans: int, principal: float, markup: float}>
+     *
+     * When a user is given, only claim lines for the branches that user may see are counted.
      */
-    public function summary(string $groupBy, array $filters): Collection
+    public function summary(string $groupBy, array $filters, ?User $user = null): Collection
     {
         $column = match ($groupBy) {
             'region' => 'aksic_claim_items.region_id',
@@ -148,6 +152,7 @@ class AksicClaimService
         $rows = AksicClaimItem::query()
             ->join('aksic_claims', 'aksic_claims.id', '=', 'aksic_claim_items.aksic_claim_id')
             ->whereNull('aksic_claims.deleted_at')
+            ->when($user, fn ($q) => OfficeAccess::scope($q, $user, 'aksic_claim_items.branch_id'))
             ->when($filters['status'] ?? null, fn ($q, $v) => $q->where('aksic_claims.status', $v))
             ->when($filters['date_from'] ?? null, fn ($q, $v) => $q->whereDate('aksic_claims.claim_date', '>=', $v))
             ->when($filters['date_to'] ?? null, fn ($q, $v) => $q->whereDate('aksic_claims.claim_date', '<=', $v))

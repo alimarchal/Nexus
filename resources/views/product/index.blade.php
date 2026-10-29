@@ -73,12 +73,19 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-12 mb-4 gap-6">
 
+                @canany(['view aksics', 'view aksic claims', 'view file management systems', 'view account openings'])
+                @else
+                    <div class="col-span-12 rounded-lg bg-white p-8 text-center text-gray-600 shadow-xl" id="no-modules">
+                        No module has been enabled for your role yet. Ask the administrator to grant access from Settings &rarr; Roles.
+                    </div>
+                @endcanany
+
                 @can('view aksics')
                     <a href="{{ route('aksic.index') }}"
                         class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
-                                <div class="text-3xl font-bold leading-8">{{ \App\Models\Aksic::count() }}</div>
+                                <div class="text-3xl font-bold leading-8">{{ $aksicCount }}</div>
                                 <div class="mt-1 text-base font-extrabold text-black">AKSIC</div>
                             </div>
                             <img src="{{ url('icons-images/logo (1).png') }}" alt="AKSIC" class="h-16 w-16">
@@ -91,7 +98,7 @@
                         class="transform hover:scale-110 transition duration-300 shadow-xl rounded-lg col-span-4 intro-y bg-white block">
                         <div class="p-5 flex justify-between">
                             <div>
-                                <div class="text-3xl font-bold leading-8">{{ \Illuminate\Support\Facades\Schema::hasTable('aksic_claims') ? \App\Models\AksicClaim::count() : 0 }}</div>
+                                <div class="text-3xl font-bold leading-8">{{ $aksicClaimCount }}</div>
                                 <div class="mt-1 text-base font-extrabold text-black">AKSIC Claims</div>
                             </div>
                             <img src="{{ url('icons-images/logo (1).png') }}" alt="AKSIC Claims" class="h-16 w-16">

@@ -893,3 +893,17 @@ test('create form help text shows the configured page limit', function () {
         ->assertSee('up to 35 MB each')
         ->assertSee('const maxMb = 35;', false);
 });
+
+test('create form warns when an office list is empty and carries the offices when it is not', function () {
+    HeadOffice::query()->delete();
+
+    $this->actingAs($this->admin)->get(route('file-management-systems.create'))
+        ->assertSuccessful()
+        ->assertSee('data-empty-office-list', false)
+        ->assertViewHas('headOffices', fn ($headOffices) => $headOffices->isEmpty());
+
+    $this->seed(HeadOfficeSeeder::class);
+
+    $this->actingAs($this->admin)->get(route('file-management-systems.create'))
+        ->assertViewHas('headOffices', fn ($headOffices) => $headOffices->isNotEmpty());
+});

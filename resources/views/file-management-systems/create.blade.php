@@ -179,6 +179,10 @@
                                                     <option :value="String(o.id)" x-text="o.label" :selected="String(o.id) === officeId"></option>
                                                 </template>
                                             </select>
+                                            <p class="mt-1 text-sm text-amber-700" x-show="(options[type] || []).length === 0" x-cloak data-empty-office-list>
+                                                No <span x-text="(types[type] || '').toLowerCase()"></span> has been set up yet, so a file cannot be recorded for it.
+                                                Ask an administrator to add it (for head offices: run the head office seeder).
+                                            </p>
                                             @error('fileable_id') <p class="{{ $ui::ERROR }}">{{ $message }}</p> @enderror
                                         </div>
                                     @endif
