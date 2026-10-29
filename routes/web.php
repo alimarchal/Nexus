@@ -49,10 +49,15 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::resource('/settings/branch/branches', BranchController::class);
     Route::resource('/settings/branch/regions', RegionController::class);
     Route::resource('/settings/branch/districts', DistrictController::class);
-    Route::resource('/settings/roles', RoleController::class);
-    Route::resource('/settings/permissions', PermissionController::class)->middleware('auth');
+    // The Roles and Permissions lists live under the user module (roles.index / permissions.index below); the old URLs go there.
+    Route::get('/settings/roles', fn () => to_route('roles.index'));
+    Route::get('/settings/permissions', fn () => to_route('permissions.index'));
+    Route::resource('/settings/roles', RoleController::class)->except('index');
+    Route::resource('/settings/permissions', PermissionController::class)->except('index')->middleware('auth');
     Route::post('/settings/users/bulk-update', [UserController::class, 'bulkUpdate'])->name('users.bulk-update');
-    Route::resource('/settings/users', UserController::class);
+    // The Users list lives under the user module (users.index below); the old URL goes there.
+    Route::get('/settings/users', fn () => to_route('users.index'));
+    Route::resource('/settings/users', UserController::class)->except('index');
 
     // Updated route to point to the ReportController's method
     Route::get('reports/deposit-advances-reports-branch', [ReportController::class, 'depositadvancesregionPositionReport'])->name('reports.deposit-advances-reports-branch');
