@@ -26,12 +26,14 @@
                     </div>
                 @endif
 
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link href="{{ route('product.index') }}" :active="request()->is('product*')">
+                @canany(['view aksics', 'view aksic claims', 'view file management systems', 'view account openings'])
+                    <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                        <x-nav-link href="{{ route('product.index') }}" :active="request()->is('product*')">
 
-                        {{ __('Product') }}
-                    </x-nav-link>
-                </div>
+                            {{ __('Product') }}
+                        </x-nav-link>
+                    </div>
+                @endcanany
 
                 @can('view reports')
                     <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
