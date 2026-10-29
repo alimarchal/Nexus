@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreAksicClaimRequest;
 use App\Models\AksicClaim;
+use App\Models\AksicClaimItem;
 use App\Models\Branch;
 use App\Models\District;
 use App\Models\Region;
 use App\Services\AksicClaimService;
 use App\Support\AksicDate;
+use App\Support\OfficeAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -49,7 +51,10 @@ class AksicClaimController extends Controller implements HasMiddleware
 
     public function index(Request $request): View
     {
-        $claims = QueryBuilder::for(AksicClaim::class)
+        $user = $request->user();
+        $itemScope = fn ($q) => OfficeAccess::scope($q, $user);
+
+        $claims = QueryBuilder::for(OfficeAccess::seesAll($user) ? AksicClaim::query() : AksicClaim::query()->whereHas('items', $itemScope))
             ->allowedFilters([
                 AllowedFilter::exact('status'),
                 AllowedFilter::exact('district_id'),
@@ -61,6 +66,8 @@ class AksicClaimController extends Controller implements HasMiddleware
                 AllowedFilter::callback('date_to', fn ($q, $v) => $q->whereDate('claim_date', '<=', AksicDate::toDatabase($v))),
             ])
             ->with(['district:id,name', 'region:id,name', 'branch:id,code,name', 'creator:id,name'])
+            ->withCount(['items as visible_loans' => $itemScope])
+            ->withSum(['items as visible_markup' => $itemScope], 'markup_amount')
             ->defaultSort('-claim_date')
             ->allowedSorts(['claim_date', 'claim_no', 'total_markup', 'total_loans'])
             ->paginate(15)
@@ -76,7 +83,7 @@ class AksicClaimController extends Controller implements HasMiddleware
             'region_id' => $filter['region_id'] ?? null,
             'branch_id' => $filter['branch_id'] ?? null,
             'gender' => $filter['gender'] ?? null,
-        ]);
+        ], $user);
 
         return view('aksic-claims.index', [
             'claims' => $claims,
@@ -132,14 +139,27 @@ class AksicClaimController extends Controller implements HasMiddleware
             ->with('success', "Claim {$claim->claim_no} lodged for {$claim->total_loans} loans.");
     }
 
-    public function show(AksicClaim $aksicClaim): View
+    public function show(Request $request, AksicClaim $aksicClaim): View
     {
+        $user = $request->user();
+
+        abort_unless(
+            OfficeAccess::seesAll($user) || OfficeAccess::scope(AksicClaimItem::query()->where('aksic_claim_id', $aksicClaim->getKey()), $user)->exists(),
+            403,
+            'This claim has no loans in your office.'
+        );
+
         $aksicClaim->load([
             'district:id,name', 'region:id,name', 'branch:id,code,name', 'creator:id,name', 'updater:id,name',
-            'items' => fn ($q) => $q->orderBy('id'),
+            'items' => fn ($q) => OfficeAccess::scope($q->getQuery(), $user)->orderBy('id'),
             'items.aksic:id,application_no,account_no,name,cnic',
             'items.district:id,name', 'items.region:id,name', 'items.branch:id,code,name',
         ]);
+
+        // Header and footer totals follow the items this user may see.
+        $aksicClaim->total_loans = $aksicClaim->items->count();
+        $aksicClaim->total_principal_outstanding = $aksicClaim->items->sum('principal_outstanding');
+        $aksicClaim->total_markup = $aksicClaim->items->sum('markup_amount');
 
         $breakdowns = collect(self::GROUPS)->mapWithKeys(fn (string $label, string $key) => [
             $key => $aksicClaim->items
