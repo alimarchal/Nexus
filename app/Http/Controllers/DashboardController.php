@@ -26,10 +26,34 @@ class DashboardController extends Controller
             return redirect()->to($dashboard->landingUrl($user));
         }
 
+        return $this->render($user, $dashboard, null);
+    }
+
+    /**
+     * One module's own dashboard (AKSIC, file management or account opening).
+     * It needs the module's view permission and its dashboard permission.
+     */
+    public function section(Request $request, DashboardService $dashboard, string $section): View
+    {
+        $user = $request->user();
+        $key = DashboardService::sectionForSlug($section);
+
+        abort_unless($key !== null && $dashboard->shows($user, $key), 403);
+
+        return $this->render($user, $dashboard, $key);
+    }
+
+    private function render($user, DashboardService $dashboard, ?string $only): View
+    {
+        $wants = fn (string $key) => $only === null || $only === $key;
+
         return view('dashboard', [
-            'aksic' => $dashboard->aksic($user),
-            'files' => $dashboard->files($user),
-            'accountOpenings' => $dashboard->accountOpenings($user),
+            'aksic' => $wants('aksic') ? $dashboard->aksic($user) : null,
+            'files' => $wants('files') ? $dashboard->files($user) : null,
+            'accountOpenings' => $wants('account_openings') ? $dashboard->accountOpenings($user) : null,
+            'tabs' => $dashboard->tabsFor($user),
+            'only' => $only,
+            'pageTitle' => $only ? DashboardService::SECTION_PAGES[$only][1] : 'Dashboard',
             'greeting' => DashboardService::greeting(),
             // Super admin is warned when the code has migrations the database has not run yet.
             'pendingMigrations' => DashboardService::isSuperAdmin($user) ? PendingMigrations::list() : [],

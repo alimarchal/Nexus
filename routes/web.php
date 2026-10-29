@@ -39,6 +39,7 @@ Route::get('/', function () {
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/{section}', [DashboardController::class, 'section'])->whereIn('section', ['aksic', 'file-management', 'account-opening'])->name('dashboard.section');
     Route::get('product', [ProductController::class, 'product'])->name('product.index');
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
 

@@ -42,6 +42,13 @@ class DashboardService
         'account_openings' => ['view account openings', 'view account opening dashboard'],
     ];
 
+    /** @var array<string, array{0: string, 1: string}> section => [URL slug, page title] of its own dashboard page */
+    public const SECTION_PAGES = [
+        'aksic' => ['aksic', 'AKSIC dashboard'],
+        'files' => ['file-management', 'File management dashboard'],
+        'account_openings' => ['account-opening', 'Account opening dashboard'],
+    ];
+
     /** Account opening statuses in display order. */
     public const AOF_STATUSES = [
         'draft' => 'Draft',
@@ -297,6 +304,36 @@ class DashboardService
             array_keys(self::SECTION_PERMISSIONS),
             fn (string $section) => $this->shows($user, $section)
         ));
+    }
+
+    /**
+     * Each dashboard the user may open (section => label and URL), for the tab strip.
+     *
+     * @return array<string, array{label: string, url: string}>
+     */
+    public function tabsFor(User $user): array
+    {
+        $tabs = [];
+        foreach ($this->sectionsFor($user) as $section) {
+            [$slug, $title] = self::SECTION_PAGES[$section];
+            $tabs[$section] = ['label' => str_replace(' dashboard', '', $title), 'url' => route('dashboard.section', $slug)];
+        }
+
+        return $tabs;
+    }
+
+    /**
+     * The section key behind a dashboard page's URL slug, or null.
+     */
+    public static function sectionForSlug(string $slug): ?string
+    {
+        foreach (self::SECTION_PAGES as $section => [$pageSlug]) {
+            if ($pageSlug === $slug) {
+                return $section;
+            }
+        }
+
+        return null;
     }
 
     /**
