@@ -276,10 +276,8 @@ final class PaperFormSections
             'key' => 'wallet', 'number' => 10, 'title' => 'BAJK Wallet',
             'fields' => [
                 ['name' => 'card_type', 'type' => 'radio', 'label' => 'Type of ATM/Debit Card (tick only one; for individual and sole proprietorship only)',
-                    'show' => ['any' => [['account_nature' => 'individual'], ['business_kind' => 'sole_proprietorship']]],
                     'options' => ['silver' => 'Silver', 'gold' => 'Gold']],
-                ['name' => 'name_on_card', 'type' => 'text', 'label' => 'Name on Card', 'max' => 19,
-                    'show' => ['any' => [['account_nature' => 'individual'], ['business_kind' => 'sole_proprietorship']]]],
+                ['name' => 'name_on_card', 'type' => 'text', 'label' => 'Name on Card', 'max' => 19],
                 ['name' => 'supplementary_card', 'type' => 'radio', 'label' => 'Supplementary Card Required (fill the prescribed form)', 'options' => ['no' => 'No', 'yes' => 'Yes']],
             ],
         ];

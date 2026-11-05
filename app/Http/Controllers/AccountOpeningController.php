@@ -105,7 +105,7 @@ class AccountOpeningController extends Controller implements HasMiddleware
         $perPage = in_array((int) $request->query('per_page'), self::PER_PAGE, true) ? (int) $request->query('per_page') : 25;
 
         $accountOpeningRequests = $this->listQuery($request, $request->user())
-            ->with(['branch', 'paperForm', 'customer.individual', 'customer.organization', 'customer.customerCategory', 'account.product'])
+            ->with(['branch', 'paperForm', 'customer.individual', 'customer.organization', 'customer.customerCategory', 'customer.identifications', 'account.product', 'account.holders.customer.identifications'])
             ->paginate($perPage)
             ->withQueryString();
 

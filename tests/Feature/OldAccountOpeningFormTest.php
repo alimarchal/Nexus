@@ -410,11 +410,15 @@ test('the documents checklist follows the nature of account', function () {
     }
 });
 
-test('the BAJK Wallet card applies to individual and sole proprietorship accounts only', function () {
+test('the Type of ATM/Debit Card field is always shown in the BAJK Wallet section and its value is kept', function () {
     $request = startOldForm($this);
 
+    $html = $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))->assertSuccessful()->getContent();
+    expect($html)->toContain('data-field="card_type"')->toContain('data-field="name_on_card"')
+        ->and($html)->not->toMatch('/data-field="card_type"\s+x-show/');
+
     saveOldForm($this, $request, ['account_nature' => 'business', 'business_kind' => 'partnership', 'card_type' => 'gold', 'name_on_card' => 'X'])->assertSessionHasNoErrors();
-    expect($request->fresh()->paperForm->data)->not->toHaveKeys(['card_type', 'name_on_card']);
+    expect($request->fresh()->paperForm->data)->toMatchArray(['card_type' => 'gold', 'name_on_card' => 'X']);
 
     saveOldForm($this, $request, ['account_nature' => 'business', 'business_kind' => 'sole_proprietorship', 'card_type' => 'silver', 'name_on_card' => 'RAZA TRADERS'])->assertSessionHasNoErrors();
     expect($request->fresh()->paperForm->data)->toMatchArray(['card_type' => 'silver', 'name_on_card' => 'RAZA TRADERS']);
@@ -793,4 +797,36 @@ test('a business form offers a signature for each authorized applicant named on 
 
     expect(PaperUploads::signatureSlots($request->fresh()->paperForm->values()))->toHaveKeys(['signature:applicant_1', 'thumb:applicant_2'])
         ->and(PaperUploads::documentSlots($request->fresh()->paperForm->values()))->toHaveKey('document:docs_partnership.d1');
+});
+
+test('an upload can be made and removed in place with a JSON answer, so the page does not reload and unsaved form data is kept', function () {
+    $request = oldFormForUploads($this);
+
+    $response = $this->actingAs($this->admin)->postJson(route('account-openings.paper.uploads.store', $request), [
+        'slot' => 'signature:applicant_1',
+        'file' => UploadedFile::fake()->image('signature.png', 200, 80),
+    ])->assertOk()->assertJsonPath('upload.name', 'signature.png')->assertJsonStructure(['message', 'upload' => ['name', 'show_url', 'destroy_url']]);
+
+    expect($request->fresh()->getMedia('paper_uploads'))->toHaveCount(1);
+
+    $this->actingAs($this->admin)->deleteJson($response->json('upload.destroy_url'))->assertOk()->assertJsonStructure(['message']);
+    expect($request->fresh()->getMedia('paper_uploads'))->toHaveCount(0);
+});
+
+test('a bad file is answered with JSON validation errors and nothing is stored', function () {
+    $request = oldFormForUploads($this);
+
+    $this->actingAs($this->admin)->postJson(route('account-openings.paper.uploads.store', $request), [
+        'slot' => 'signature:applicant_1',
+        'file' => UploadedFile::fake()->create('malware.exe', 10),
+    ])->assertUnprocessable()->assertJsonValidationErrors('file');
+
+    expect($request->fresh()->getMedia('paper_uploads'))->toHaveCount(0);
+});
+
+test('the upload screen uploads without reloading the page', function () {
+    $request = oldFormForUploads($this);
+
+    $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))->assertSuccessful()
+        ->assertSee('paperUpload(', false)->assertSee('@submit.prevent="send($event.target)"', false);
 });

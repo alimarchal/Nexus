@@ -3,6 +3,7 @@
 use App\Models\AccountOpeningRequest;
 use App\Models\Branch;
 use App\Models\CustomerCategory;
+use App\Models\IdentificationDocumentType;
 use App\Models\User;
 use Database\Seeders\BajkAccountOpeningSeeder;
 use Spatie\Permission\Models\Permission;
@@ -190,4 +191,47 @@ test('a started form continues into the wizard from the redesigned screen', func
 
     expect($request->customer->economic_sector_code)->toBe('8411')
         ->and($request->aof_form_type)->toBe(AccountOpeningRequest::FORM_ENTITY);
+});
+
+test('a business account row on the list shows the CNIC of its proprietor, a new request from the customer and an old one from its paper form', function () {
+    $this->actingAs($this->admin)->post(route('account-openings.store'), [
+        'branch_id' => $this->branchA->id,
+        'aof_form_type' => AccountOpeningRequest::FORM_ENTITY,
+        'customer_category_id' => CustomerCategory::code('GOVT_INSTITUTION')->firstOrFail()->id,
+        'request_date' => now()->toDateString(),
+        'economic_sector_code' => '8411',
+    ])->assertRedirect();
+
+    $new = AccountOpeningRequest::latest('id')->firstOrFail();
+    $new->customer->identifications()->create([
+        'identification_document_type_id' => IdentificationDocumentType::query()->where('code', 'CNIC')->value('id'),
+        'document_number' => '35202-1234567-1',
+        'is_primary' => true,
+    ]);
+
+    $this->actingAs($this->admin)->post(route('account-openings.store'), [
+        'form_edition' => 'old',
+        'branch_id' => $this->branchA->id,
+        'request_date' => now()->toDateString(),
+    ])->assertRedirect();
+
+    $old = AccountOpeningRequest::latest('id')->firstOrFail();
+    $old->update(['aof_form_type' => AccountOpeningRequest::FORM_ENTITY]);
+    $old->paperForm->update(['data' => ['account_nature' => 'business', 'business_kind' => 'sole_proprietorship', 'business_cnic' => '42101-7654321-9']]);
+
+    $this->actingAs($this->admin)->get(route('account-openings.index'))
+        ->assertSuccessful()
+        ->assertSee('CNIC 35202-1234567-1')
+        ->assertSee('CNIC 42101-7654321-9');
+});
+
+test('an individual account row does not get a CNIC line on the list', function () {
+    $request = makeAof($this, $this->branchA);
+    $request->customer->identifications()->create([
+        'identification_document_type_id' => IdentificationDocumentType::query()->where('code', 'CNIC')->value('id'),
+        'document_number' => '35202-1111111-1',
+        'is_primary' => true,
+    ]);
+
+    $this->actingAs($this->admin)->get(route('account-openings.index'))->assertSuccessful()->assertDontSee('CNIC 35202-1111111-1');
 });
