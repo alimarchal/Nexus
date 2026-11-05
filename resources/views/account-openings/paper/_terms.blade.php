@@ -6,10 +6,13 @@
 
 <div class="paper-terms md:col-span-2" data-terms>
     @if ($terms === [] && $indemnity === '')
+        {{-- An internal set-up note for the person filling the form in; it never goes on a printed form. --}}
+        @unless ($printing ?? false)
         <p class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900" data-terms-missing>
             The official Terms &amp; Conditions and Indemnity &amp; Undertaking text has not been loaded yet. Add it to
             <code>resources/paper-form/terms.txt</code> and <code>resources/paper-form/indemnity.txt</code>.
         </p>
+        @endunless
     @else
         <div class="{{ ($printing ?? false) ? '' : 'max-h-72 overflow-y-auto' }} rounded-md border border-gray-300 p-3 text-xs leading-relaxed">
             @if ($terms !== [])

@@ -830,3 +830,12 @@ test('the upload screen uploads without reloading the page', function () {
     $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))->assertSuccessful()
         ->assertSee('paperUpload(', false)->assertSee('@submit.prevent="send($event.target)"', false);
 });
+
+test('the print of an old form never shows the "text has not been loaded" warning, while the edit screen still does', function () {
+    config(['paper_form.terms' => [], 'paper_form.indemnity' => '']);
+    $request = startOldForm($this);
+    saveOldForm($this, $request, completeIndividual())->assertSessionHasNoErrors();
+
+    $this->actingAs($this->admin)->get(route('account-openings.paper.edit', $request))->assertSee('has not been loaded yet');
+    $this->actingAs($this->admin)->get(route('account-openings.print', $request))->assertSuccessful()->assertDontSee('has not been loaded yet');
+});
