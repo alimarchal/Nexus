@@ -103,3 +103,24 @@ test('the terms, indemnity and recommendation are printed in their own sections'
         ->and(strpos($html, 'Indemnity &amp; Undertaking signed'))->toBeGreaterThan(strpos($html, '#27 &middot;'))->toBeLessThan(strpos($html, '#30 &middot;'))
         ->and(strpos($html, 'Manager One'))->toBeGreaterThan(strpos($html, '#34 &middot;'));
 });
+
+test('the print of the new form carries the official terms and indemnity text, next to the acceptance', function (string $formType, string $category) {
+    config(['paper_form.terms' => ['The customer shall keep the PIN secret.', 'The bank may close dormant accounts.'], 'paper_form.indemnity' => 'I indemnify the Bank against all loss.']);
+
+    [$request] = printedSectionNumbers($this, $formType, $category);
+    $html = $this->actingAs($this->admin)->get(route('account-openings.print', $request))->assertSuccessful()->getContent();
+
+    expect($html)->toContain('The customer shall keep the PIN secret.', 'The bank may close dormant accounts.', 'I indemnify the Bank against all loss.')
+        ->and(strpos($html, 'The bank may close dormant accounts.'))->toBeGreaterThan(strpos($html, '#26'))->toBeLessThan(strpos($html, '#27'))
+        ->and(strpos($html, 'I indemnify the Bank against all loss.'))->toBeGreaterThan(strpos($html, '#28'))->toBeLessThan(strpos($html, '#30'));
+})->with([
+    'individual' => [AccountOpeningRequest::FORM_INDIVIDUAL, 'INDIVIDUAL'],
+    'entity' => [AccountOpeningRequest::FORM_ENTITY, 'GOVT_INSTITUTION'],
+]);
+
+test('a print never shows the internal "text has not been loaded" warning', function () {
+    config(['paper_form.terms' => [], 'paper_form.indemnity' => '']);
+
+    [$request] = printedSectionNumbers($this, AccountOpeningRequest::FORM_INDIVIDUAL, 'INDIVIDUAL');
+    $this->actingAs($this->admin)->get(route('account-openings.print', $request))->assertDontSee('has not been loaded yet');
+});

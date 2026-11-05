@@ -38,6 +38,11 @@
         table.list td { border: 1px solid #b8b8b8; padding: 4px 6px; }
         .checks span { display: inline-block; margin-right: 14px; white-space: nowrap; }
         .muted { color: #777; }
+        .legal { border: 1px solid #999; padding: 6px 10px; font-size: 8.5pt; line-height: 1.35; margin-bottom: 8px; }
+        .legal h3 { margin: 0 0 4px; font-size: 9pt; }
+        .legal ol { margin: 0; padding-left: 18px; columns: 2; column-gap: 24px; }
+        .legal li { break-inside: avoid; margin-bottom: 2px; }
+        .legal p { margin: 0; white-space: pre-line; }
         .sig-row { display: flex; gap: 18px; margin-top: 14px; }
         .sig-box { flex: 1; border: 1px solid #b8b8b8; height: 82px; padding: 4px 6px; font-size: 9px; position: relative; }
         .sig-box .cap { position: absolute; bottom: 4px; left: 6px; right: 6px; border-top: 1px solid #999; padding-top: 2px; color: #555; }
@@ -462,6 +467,16 @@
             </td>
         </tr>
     </table>
+    @if (config('paper_form.terms', []) !== [])
+        <div class="legal" data-terms>
+            <h3>Terms &amp; Conditions</h3>
+            <ol>
+                @foreach (config('paper_form.terms') as $clause)
+                    <li>{{ $clause }}</li>
+                @endforeach
+            </ol>
+        </div>
+    @endif
 
     {{-- #27 Documentation --}}
     <h2 class="section">#27 &middot; Minimum Documentation to be Obtained</h2>
@@ -491,6 +506,12 @@
             </td>
         </tr>
     </table>
+    @if (config('paper_form.indemnity', '') !== '')
+        <div class="legal" data-indemnity>
+            <h3>Indemnity &amp; Undertaking</h3>
+            <p>{{ config('paper_form.indemnity') }}</p>
+        </div>
+    @endif
 
     {{-- #29 Next of kin --}}
     @if ($customer?->nextOfKin->isNotEmpty())
