@@ -32,6 +32,61 @@
             step first &mdash; due diligence is recorded against the account.
         </div>
     @else
+        <x-aof-section title="Minimum Documentation to be Obtained"
+            subtitle="Checklist generated from the customer category selected on the form."
+            reference="AOF-Individual page 12 / AOF-Entity pages 12-14">
+            @forelse ($documentRequirements as $requirement)
+                @php $onFile = $documentsOnFile[$requirement->document_type_id] ?? null; @endphp
+                <div class="mb-2 grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-5 dark:border-gray-700">
+                    <div class="md:col-span-2">
+                        <p class="text-sm font-medium">
+                            {{ $requirement->documentType->name }}
+                            @if ($requirement->is_mandatory)
+                                <span class="ml-1 rounded bg-red-100 px-1 text-[10px] font-bold text-red-700">MANDATORY</span>
+                            @endif
+                        </p>
+                        @if ($requirement->applies_when)
+                            <p class="text-xs text-gray-400">{{ $requirement->applies_when }}</p>
+                        @endif
+                    </div>
+
+                    <select name="documents[{{ $requirement->document_type_id }}][status]"
+                        class="block w-full rounded-md border-gray-300 text-sm shadow-sm">
+                        @foreach (['pending', 'received', 'verified', 'waived', 'rejected'] as $status)
+                            <option value="{{ $status }}" @selected(($onFile?->status ?? 'pending') === $status)>
+                                {{ ucfirst($status) }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    <div>
+                        <input type="file" name="documents[{{ $requirement->document_type_id }}][file]"
+                            class="block w-full text-xs">
+                        @if ($onFile?->file_path)
+                            <a class="text-xs text-blue-600 underline"
+                                href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($onFile->file_path) }}" target="_blank">
+                                {{ $onFile->file_name ?? 'View file' }}
+                            </a>
+                        @endif
+                    </div>
+
+                    <div class="flex items-center">
+                        <label class="inline-flex items-center text-xs">
+                            <input type="hidden" name="documents[{{ $requirement->document_type_id }}][is_attested]" value="0">
+                            <input type="checkbox" name="documents[{{ $requirement->document_type_id }}][is_attested]"
+                                value="1" @checked($onFile?->is_attested)
+                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                            <span class="ml-2">Attested</span>
+                        </label>
+                    </div>
+                </div>
+            @empty
+                <p class="text-sm text-gray-500">
+                    No documentation checklist is configured for this customer category yet.
+                </p>
+            @endforelse
+        </x-aof-section>
+
         <x-aof-section title="Type of Customer" reference="For Bank Use Only — Walk In / Marketed / Referred By">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
                 <div>
@@ -371,61 +426,6 @@
                         placeholder="ID number" :value="$row['identification_number'] ?? null" />
                 </div>
             @endforeach
-        </x-aof-section>
-
-        <x-aof-section title="Minimum Documentation to be Obtained"
-            subtitle="Checklist generated from the customer category selected on the form."
-            reference="AOF-Individual page 12 / AOF-Entity pages 12-14">
-            @forelse ($documentRequirements as $requirement)
-                @php $onFile = $documentsOnFile[$requirement->document_type_id] ?? null; @endphp
-                <div class="mb-2 grid grid-cols-1 gap-3 rounded-lg border border-gray-200 p-3 md:grid-cols-5 dark:border-gray-700">
-                    <div class="md:col-span-2">
-                        <p class="text-sm font-medium">
-                            {{ $requirement->documentType->name }}
-                            @if ($requirement->is_mandatory)
-                                <span class="ml-1 rounded bg-red-100 px-1 text-[10px] font-bold text-red-700">MANDATORY</span>
-                            @endif
-                        </p>
-                        @if ($requirement->applies_when)
-                            <p class="text-xs text-gray-400">{{ $requirement->applies_when }}</p>
-                        @endif
-                    </div>
-
-                    <select name="documents[{{ $requirement->document_type_id }}][status]"
-                        class="block w-full rounded-md border-gray-300 text-sm shadow-sm">
-                        @foreach (['pending', 'received', 'verified', 'waived', 'rejected'] as $status)
-                            <option value="{{ $status }}" @selected(($onFile?->status ?? 'pending') === $status)>
-                                {{ ucfirst($status) }}
-                            </option>
-                        @endforeach
-                    </select>
-
-                    <div>
-                        <input type="file" name="documents[{{ $requirement->document_type_id }}][file]"
-                            class="block w-full text-xs">
-                        @if ($onFile?->file_path)
-                            <a class="text-xs text-blue-600 underline"
-                                href="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($onFile->file_path) }}" target="_blank">
-                                {{ $onFile->file_name ?? 'View file' }}
-                            </a>
-                        @endif
-                    </div>
-
-                    <div class="flex items-center">
-                        <label class="inline-flex items-center text-xs">
-                            <input type="hidden" name="documents[{{ $requirement->document_type_id }}][is_attested]" value="0">
-                            <input type="checkbox" name="documents[{{ $requirement->document_type_id }}][is_attested]"
-                                value="1" @checked($onFile?->is_attested)
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                            <span class="ml-2">Attested</span>
-                        </label>
-                    </div>
-                </div>
-            @empty
-                <p class="text-sm text-gray-500">
-                    No documentation checklist is configured for this customer category yet.
-                </p>
-            @endforelse
         </x-aof-section>
 
         <x-aof-section title="Recommendation" reference="AOF last page — Sales Staff / Relationship Manager">

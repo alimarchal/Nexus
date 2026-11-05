@@ -253,6 +253,9 @@
                                         <td data-label="Customer">
                                             <div>{{ $customerName($accountOpeningRequest) }}</div>
                                             <div class="ak-muted ak-hide-compact ak-mono">{{ $accountOpeningRequest->isOldEdition() ? 'Old paper form' : 'CIF '.($accountOpeningRequest->customer?->cif_number ?? '—') }}</div>
+                                            @if ($listedCnic = $accountOpeningRequest->listedCnic())
+                                                <div class="ak-muted ak-hide-compact ak-mono" data-cnic>CNIC {{ $listedCnic }}</div>
+                                            @endif
                                         </td>
                                         <td data-label="Form / category">
                                             <div>{{ $accountOpeningRequest->aof_form_type === 'entity' ? 'Entity' : 'Individual' }} <span class="ak-muted" data-form-edition>({{ $accountOpeningRequest->editionLabel() }} form)</span></div>

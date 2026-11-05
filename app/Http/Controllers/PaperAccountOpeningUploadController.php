@@ -8,6 +8,7 @@ use App\Exceptions\AccountOpeningWorkflowException;
 use App\Models\AccountOpeningRequest;
 use App\Services\AccountOpeningWorkflow;
 use App\Support\PaperForm\PaperUploads;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -35,11 +36,11 @@ class PaperAccountOpeningUploadController extends Controller implements HasMiddl
         ];
     }
 
-    public function store(Request $request, AccountOpeningRequest $accountOpeningRequest): RedirectResponse
+    public function store(Request $request, AccountOpeningRequest $accountOpeningRequest): RedirectResponse|JsonResponse
     {
         $this->authorizeRequest($accountOpeningRequest);
 
-        if ($blocked = $this->blockedFromEditing($accountOpeningRequest)) {
+        if ($blocked = $this->blockedFromEditing($accountOpeningRequest, $request)) {
             return $blocked;
         }
 
@@ -58,7 +59,7 @@ class PaperAccountOpeningUploadController extends Controller implements HasMiddl
         $previous = $this->inSlot($accountOpeningRequest, $slot);
         $file = $request->file('file');
 
-        $accountOpeningRequest->addMedia($file)
+        $stored = $accountOpeningRequest->addMedia($file)
             ->usingFileName(Str::uuid().'.'.$file->getClientOriginalExtension())
             ->withCustomProperties(['slot' => $slot, 'original_filename' => $file->getClientOriginalName()])
             ->toMediaCollection(PaperUploads::COLLECTION);
@@ -69,14 +70,25 @@ class PaperAccountOpeningUploadController extends Controller implements HasMiddl
             $slots[$slot] => ['old' => $previous?->getCustomProperty('original_filename'), 'new' => $file->getClientOriginalName()],
         ]);
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Uploaded: '.$slots[$slot].'.',
+                'upload' => [
+                    'name' => $stored->getCustomProperty('original_filename', $stored->file_name),
+                    'show_url' => route('account-openings.paper.uploads.show', [$accountOpeningRequest, $stored->id]),
+                    'destroy_url' => route('account-openings.paper.uploads.destroy', [$accountOpeningRequest, $stored->id]),
+                ],
+            ]);
+        }
+
         return redirect()->back()->with('success', 'Uploaded: '.$slots[$slot].'.');
     }
 
-    public function destroy(Request $request, AccountOpeningRequest $accountOpeningRequest, int $media): RedirectResponse
+    public function destroy(Request $request, AccountOpeningRequest $accountOpeningRequest, int $media): RedirectResponse|JsonResponse
     {
         $this->authorizeRequest($accountOpeningRequest);
 
-        if ($blocked = $this->blockedFromEditing($accountOpeningRequest)) {
+        if ($blocked = $this->blockedFromEditing($accountOpeningRequest, $request)) {
             return $blocked;
         }
 
@@ -87,6 +99,10 @@ class PaperAccountOpeningUploadController extends Controller implements HasMiddl
             $label => ['old' => $upload->getCustomProperty('original_filename'), 'new' => null],
         ]);
         $upload->delete();
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Upload removed: '.$label.'.']);
+        }
 
         return redirect()->back()->with('success', 'Upload removed: '.$label.'.');
     }
@@ -124,11 +140,15 @@ class PaperAccountOpeningUploadController extends Controller implements HasMiddl
         abort_unless($accountOpeningRequest->isOldEdition(), 404);
     }
 
-    private function blockedFromEditing(AccountOpeningRequest $accountOpeningRequest): ?RedirectResponse
+    private function blockedFromEditing(AccountOpeningRequest $accountOpeningRequest, Request $request): RedirectResponse|JsonResponse|null
     {
         try {
             $this->workflow->assertEditable($accountOpeningRequest);
         } catch (AccountOpeningWorkflowException $exception) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $exception->getMessage()], 409);
+            }
+
             return redirect()->route('account-openings.show', $accountOpeningRequest)->with('error', $exception->getMessage());
         }
 

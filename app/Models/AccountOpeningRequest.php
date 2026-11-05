@@ -127,6 +127,34 @@ class AccountOpeningRequest extends Model implements HasMedia
         $this->addMediaCollection(PaperUploads::COLLECTION)->useDisk((string) config('account_opening.paper_uploads_disk', 'local'));
     }
 
+    /**
+     * The CNIC shown beside a business account on the list: the CNIC of the proprietor or authorised person.
+     * An old request reads it from its paper form; a new one from the customer's own identification, else from the account's holders.
+     */
+    public function listedCnic(): ?string
+    {
+        if ($this->aof_form_type !== self::FORM_ENTITY) {
+            return null;
+        }
+
+        if ($this->isOldEdition()) {
+            $data = $this->paperForm?->data ?? [];
+
+            return collect([$data['business_cnic'] ?? null, $data['a1_id_number'] ?? null])->first(fn ($number) => filled($number));
+        }
+
+        $customer = $this->customer;
+        $own = $customer?->primaryIdentificationNumber() ?? $customer?->identifications->first()?->document_number;
+
+        if (filled($own)) {
+            return $own;
+        }
+
+        return $this->account?->holders
+            ->map(fn (AccountHolder $holder) => $holder->customer?->primaryIdentificationNumber() ?? $holder->customer?->identifications->first()?->document_number)
+            ->first(fn ($number) => filled($number));
+    }
+
     public function isOldEdition(): bool
     {
         return $this->form_edition === self::EDITION_OLD;

@@ -28,6 +28,27 @@
     </x-aof-section>
 
     @if ($customer->needsIndividualProfile())
+        <x-aof-section title="Special Category of Account"
+            reference="AOF-Individual page 2 — Special Category (if any)">
+            <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+                @foreach ($specialCategories as $special)
+                    <label class="flex items-start space-x-2 text-sm">
+                        <input type="checkbox" name="special_categories[]" value="{{ $special->id }}"
+                            @checked(in_array($special->id, (array) $selectedSpecial, true))
+                            class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                        <span>
+                            {{ $special->name }}
+                            @if ($special->requires_extra_value)
+                                <x-input name="special_category_values[{{ $special->id }}]" type="text"
+                                    class="mt-1 block w-full text-xs" placeholder="{{ $special->extra_value_label }}"
+                                    :value="old('special_category_values.' . $special->id, $customer->specialCategories->firstWhere('id', $special->id)?->pivot?->extra_value)" />
+                            @endif
+                        </span>
+                    </label>
+                @endforeach
+            </div>
+        </x-aof-section>
+
         <x-aof-section title="Customer Details For Individuals"
             reference="AOF-Individual page 2 — Name, parentage, gender, DOB, profession">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -332,26 +353,6 @@
             </div>
         </x-aof-section>
 
-        <x-aof-section title="Special Category of Account"
-            reference="AOF-Individual page 2 — Special Category (if any)">
-            <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-                @foreach ($specialCategories as $special)
-                    <label class="flex items-start space-x-2 text-sm">
-                        <input type="checkbox" name="special_categories[]" value="{{ $special->id }}"
-                            @checked(in_array($special->id, (array) $selectedSpecial, true))
-                            class="mt-1 rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500">
-                        <span>
-                            {{ $special->name }}
-                            @if ($special->requires_extra_value)
-                                <x-input name="special_category_values[{{ $special->id }}]" type="text"
-                                    class="mt-1 block w-full text-xs" placeholder="{{ $special->extra_value_label }}"
-                                    :value="old('special_category_values.' . $special->id, $customer->specialCategories->firstWhere('id', $special->id)?->pivot?->extra_value)" />
-                            @endif
-                        </span>
-                    </label>
-                @endforeach
-            </div>
-        </x-aof-section>
     @endif
 
     @if ($customer->needsOrganizationProfile())

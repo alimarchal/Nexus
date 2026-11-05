@@ -457,3 +457,16 @@ test('submitting warns when no other user can approve the request', function () 
 
     expect($workflow->hasAnotherChecker($request, $this->admin))->toBeTrue();
 });
+
+test('the wizard sections follow the order of the print: special category before the customer details, documents before due diligence', function () {
+    $request = aoiStart($this);
+
+    $cif = $this->actingAs($this->admin)->get(route('account-openings.steps.edit', [$request, 'cif']))->assertSuccessful()->getContent();
+    expect(strpos($cif, 'Special Category of Account'))->toBeLessThan(strpos($cif, 'Customer Details For Individuals'));
+
+    aoiAccount($this, $request)->assertSessionHasNoErrors();
+
+    $cdd = $this->actingAs($this->admin)->get(route('account-openings.steps.edit', [$request, 'cdd']))->assertSuccessful()->getContent();
+    expect(strpos($cdd, 'Minimum Documentation to be Obtained'))->toBeLessThan(strpos($cdd, 'Type of Customer'))
+        ->and(strpos($cdd, 'Type of Customer'))->toBeLessThan(strpos($cdd, 'Recommendation'));
+});
